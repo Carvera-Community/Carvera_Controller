@@ -6,7 +6,7 @@ on:
 jobs:
   build-windows-artifacts:
     name: build-windows-${{ matrix.platform }}
-    runs-on: windows-2022
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
@@ -30,6 +30,9 @@ jobs:
       uses: ./.github/actions/bootstrap-poetry
       with:
         os: windows
+
+    - name: Install 7zip
+      run: choco install 7zip.install
     
     - name: Install Mesa
       shell: cmd
