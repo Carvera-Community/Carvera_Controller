@@ -61,7 +61,7 @@ jobs:
           - platform: Intel
             image: macos-13
           - platform: AppleSilicon
-            image: macos-14
+            image: macos-13
     defaults:
       run:
         shell: bash
@@ -102,7 +102,7 @@ jobs:
 
   build-linux-artifacts:
     name: build-linux-generic
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     defaults:
       run:
         shell: bash
