@@ -43,7 +43,7 @@ jobs:
       run: poetry run build --os windows
 
     - name: Rename artifact
-      run: ./scripts/rename-release-file.sh windows
+      run: poetry run bash ./scripts/rename-release-file.sh windows
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -93,7 +93,7 @@ jobs:
       run: ./scripts/create-dmg.sh
 
     - name: Rename artifact
-      run: ./scripts/rename-release-file.sh macos
+      run: poetry run bash ./scripts/rename-release-file.sh macos
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -128,7 +128,7 @@ jobs:
       run: xvfb-run poetry run build --os linux
 
     - name: Rename artifact
-      run: ./scripts/rename-release-file.sh linux
+      run: poetry run bash ./scripts/rename-release-file.sh linux
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
