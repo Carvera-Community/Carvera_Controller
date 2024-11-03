@@ -60,6 +60,9 @@ def build_pyinstaller_args(
     if os == "macos":
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.icns')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.icns')}"]
+    if os == "windows":
+        logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.ico')}")
+        build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.ico')}"]
     else:
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
