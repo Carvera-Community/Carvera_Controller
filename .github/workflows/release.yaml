@@ -117,7 +117,7 @@ jobs:
       run: sudo apt-get install -y mtdev-tools
 
     - name: Build release
-      run: poetry run build --os linux
+      run: xvfb-run poetry run build --os linux
 
     - name: Rename artifact
       run: ./scripts/rename-release-file.sh linux
