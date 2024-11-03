@@ -148,9 +148,6 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{  github.ref_name }}
-          tag_name: ${{  github.ref_name }}
-          draft: true
           files: |
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
