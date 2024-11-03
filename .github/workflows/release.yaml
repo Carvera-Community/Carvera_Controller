@@ -37,7 +37,7 @@ jobs:
       run: |
         curl -L --output mesa.7z --url https://github.com/pal1000/mesa-dist-win/releases/download/24.2.5/mesa3d-24.2.5-release-msvc.7z
         7z x mesa.7z -o*
-        powershell.exe mesa\systemwidedeploy.cmd 1
+        powershell.exe mesa\\systemwidedeploy.cmd 1
 
     - name: Build release
       run: poetry run build --os windows
