@@ -5,6 +5,8 @@ import argparse
 import logging
 import subprocess
 import sys
+import os
+from glob import glob
 from pathlib import Path
 
 import PyInstaller.__main__
@@ -43,7 +45,7 @@ def build_pyinstaller_args(
 ) -> list[str]:
     logger.info("Build Pyinstaller args.")
     build_args = []
-    script_entrypoint = f"carveracontroller/main.py"
+    script_entrypoint = f"{PACKAGE_NAME}/main.py"
 
     logger.info(f"entrypoint: {script_entrypoint}")
     build_args += [script_entrypoint]
@@ -57,19 +59,22 @@ def build_pyinstaller_args(
     logger.info(f"Output exe filename: {output_filename}")
     build_args += ["-n", output_filename]
 
-    logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
-    build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
+    if os == "macos":
+        logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.icns')}")
+        build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.icns')}"]
+    if os == "windows":
+        logger.info("Build option: onefile")
+        build_args += ["--onefile"]
+        logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.ico')}")
+        build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.ico')}"]
+    else:
+        logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
+        build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
 
     logger.info(f"Add bundled package assets: {PACKAGE_PATH}")
     build_args += ["--add-data", f"{PACKAGE_PATH}:."]
 
-    if os in ["windows"]:
-        logger.info("Build options: onefile")
-        build_args += [
-            "--onefile",  # One compressed output file
-        ]
-
-    logger.info("Build options: noconsole, noconfirm noupx, clean")
+    logger.info("Build options: noconsole, noconfirm, noupx, clean")
     build_args += [
         "--noconsole",
         # "--debug=all",  # debug output toggle
@@ -118,6 +123,13 @@ def run_appimage_builder()-> None:
         logger.error(f"stderr: {result.stderr}")
         sys.exit(result.returncode)
 
+
+def remove_shared_libraries(freeze_dir, *filename_patterns):
+    for pattern in filename_patterns:
+        for file_path in glob(os.path.join(freeze_dir, pattern)):
+            logger.info(f"Removing {file_path}")
+            os.remove(file_path)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -153,6 +165,10 @@ def main():
     run_pyinstaller(build_args=build_args)
 
     if os == "linux":
+        # Need to remove some libs for opinionated backwards compatibility
+        # https://github.com/pyinstaller/pyinstaller/issues/6993 
+        frozen_dir = f"dist/{PACKAGE_NAME}/_internal"
+        remove_shared_libraries(frozen_dir, 'libstdc++.so.*', 'libtinfo.so.*', 'libreadline.so.*', 'libdrm.so.*')
         run_appimage_builder()
 
 if __name__ == "__main__":
