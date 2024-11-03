@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: win64
+        platform: [win64]
         include:
           - platform: win64
             arch: x64
