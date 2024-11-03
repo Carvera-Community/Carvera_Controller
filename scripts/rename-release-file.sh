@@ -24,7 +24,7 @@ case "$OS_NAME" in
     "linux")
         ARCH_NAME=$(uname -m)
         FILE_NAME="carveracontroller-community-${VERSION}-${ARCH_NAME}.appimage"
-        mv ./dist/CarveraController-Community.AppImage "./dist/$FILE_NAME"
+        mv ./dist/carveracontroller-community.AppImage "./dist/$FILE_NAME"
         ;;
     *)
         echo "Unsupported OS: $OS_NAME"
