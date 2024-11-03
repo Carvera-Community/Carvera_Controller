@@ -102,7 +102,7 @@ jobs:
 
   build-linux-artifacts:
     name: build-linux-generic
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     defaults:
       run:
         shell: bash
