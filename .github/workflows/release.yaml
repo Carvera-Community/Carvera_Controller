@@ -33,9 +33,9 @@ jobs:
     
     - name: Download and Set Up Mesa
       run: |
-        curl -LO https://github.com/pal1000/mesa-dist-win/releases/download/latest/mesa3d.zip
+        curl -LO https://github.com/pal1000/mesa-dist-win/releases/download/24.2.5/mesa3d-24.2.5-release-msvc.7z
         mkdir mesa
-        tar -xf mesa3d.zip -C mesa
+        C:\Program Files\7-Zip\7z.exe" x mesa.7z
         # Adding Mesa's DLLs to the PATH
         echo "::add-path::$(pwd)/mesa/x64"
         echo "Mesa installed and added to PATH."
