@@ -138,7 +138,8 @@ jobs:
   publish-release:
     needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts ]
     runs-on: ubuntu-latest
-    environment: publish-release
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
