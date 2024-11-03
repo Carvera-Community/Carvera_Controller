@@ -1,0 +1,39 @@
+# Reusable action to install and configure poetry environment
+name: 'Bootstrap poetry'
+description: 'Install and configure poetry, then install dependencies'
+inputs:
+  os:
+    type: choice
+    description: 'OS name'
+    options:
+      - windows
+      - linux
+      - macos
+runs:
+  using: "composite"
+  steps:
+    - name: Install poetry
+      shell: bash
+      run: curl -sSL https://install.python-poetry.org | python - -y
+
+    - name: Update poetry path
+      shell: bash
+      if: ${{ env.OS_NAME != 'windows' }}
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      env:
+        OS_NAME: ${{ inputs.os }}
+
+    - name: Update poetry path for windows
+      shell: bash
+      if: ${{ env.OS_NAME == 'windows' }}
+      run: echo "$APPDATA\Python\Scripts" >> $GITHUB_PATH
+      env:
+        OS_NAME: ${{ inputs.os }}
+
+    - name: Configure poetry
+      shell: bash
+      run: poetry config virtualenvs.in-project true
+
+    - name: Install dependencies
+      shell: bash
+      run: poetry install
