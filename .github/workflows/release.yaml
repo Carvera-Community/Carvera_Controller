@@ -74,6 +74,9 @@ jobs:
 
     - name: Build release
       run: poetry run build --os macos
+    
+    - name: Debug
+      run: ls ./dist
 
     - name: Install create-dmg
       run: brew install create-dmg
@@ -109,6 +112,9 @@ jobs:
       uses: ./.github/actions/bootstrap-poetry
       with:
         os: linux
+    
+    - name: Install MTDev
+      run: sudo apt-get install -y mtdev-devel
 
     - name: Build release
       run: poetry run build --os linux

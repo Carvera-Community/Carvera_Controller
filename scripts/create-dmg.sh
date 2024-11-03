@@ -15,4 +15,4 @@ create-dmg \
     --format UDBZ \
     --no-internet-enable \
     "./dist/carveracontroller-community.dmg" \
-    "./dist/carveracontroller/carveracontroller.app"
+    "./dist/carveracontroller.app"
