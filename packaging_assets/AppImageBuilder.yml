@@ -2,10 +2,10 @@ version: 1
 script:
   - TARGET_APPDIR=./AppDir
   - rm -rf $TARGET_APPDIR | true
-  - mkdir -p $TARGET_APPDIR/usr/src
+  - mkdir -p $TARGET_APPDIR/usr/bin/
   - mkdir -p $TARGET_APPDIR/usr/share/icons/
   - cp ./packaging_assets/icon-src.png $TARGET_APPDIR/usr/share/icons/carveracontroller.png
-  - cp -r ./dist/carveracontroller/ $TARGET_APPDIR/usr/bin/
+  - cp ./dist/carveracontroller $TARGET_APPDIR/usr/bin/carveracontroller
 
 AppDir:
   path: ./AppDir
@@ -18,4 +18,4 @@ AppDir:
     exec_args: $@
 AppImage:
   arch: x86_64
-  file_name: ./dist/CarveraController-Community.AppImage
+  file_name: ./dist/carveracontroller-community.AppImage

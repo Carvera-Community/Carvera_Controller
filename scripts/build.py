@@ -57,21 +57,20 @@ def build_pyinstaller_args(
     logger.info(f"Output exe filename: {output_filename}")
     build_args += ["-n", output_filename]
 
-    logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
-    build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
+    if os == "macos":
+        logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.icns')}")
+        build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.icns')}"]
+    else:
+        logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
+        build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
 
     logger.info(f"Add bundled package assets: {PACKAGE_PATH}")
     build_args += ["--add-data", f"{PACKAGE_PATH}:."]
 
-    if os in ["windows"]:
-        logger.info("Build options: onefile")
-        build_args += [
-            "--onefile",  # One compressed output file
-        ]
-
-    logger.info("Build options: noconsole, noconfirm noupx, clean")
+    logger.info("Build options: noconsole, noconfirm, noupx, clean")
     build_args += [
         "--noconsole",
+        "--onefile",
         # "--debug=all",  # debug output toggle
         "--noconfirm",
         "--noupx",  # Not sure if the false positive AV hits are worth it
