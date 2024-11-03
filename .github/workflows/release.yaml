@@ -30,18 +30,15 @@ jobs:
       uses: ./.github/actions/bootstrap-poetry
       with:
         os: windows
-
-    - name: Install 7zip
-      run: choco install 7zip.install
     
-    - name: Install Mesa
-      shell: cmd
+    - name: Download and Set Up Mesa
       run: |
-        curl.exe -L --output mesa.7z --url https://github.com/pal1000/mesa-dist-win/releases/download/20.3.2/mesa3d-20.3.2-release-msvc.7z
-        "C:\Program Files\7-Zip\7z.exe" x mesa.7z
-        mklink opengl32.dll "x64\opengl32.dll"
-        mklink libglapi.dll "x64\libglapi.dll"
-      working-directory: build\tests\Debug
+        curl -LO https://github.com/pal1000/mesa-dist-win/releases/download/latest/mesa3d.zip
+        mkdir mesa
+        tar -xf mesa3d.zip -C mesa
+        # Adding Mesa's DLLs to the PATH
+        echo "::add-path::$(pwd)/mesa/x64"
+        echo "Mesa installed and added to PATH."
 
     - name: Build release
       run: poetry run build --os windows
