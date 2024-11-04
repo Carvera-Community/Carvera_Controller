@@ -154,6 +154,7 @@ jobs:
       with:
         base_image: raspios_lite_arm64:latest
         commands: |
+          sudo apt install python3-dev build-essential squashfs-tools
           curl -sSL https://install.python-poetry.org | python3 - -y
           export PATH="/home/runner/.local/bin:$PATH"
           poetry config virtualenvs.in-project true
