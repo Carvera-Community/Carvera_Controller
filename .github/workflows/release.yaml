@@ -154,7 +154,7 @@ jobs:
       with:
         base_image: raspi_4_bookworm:20231109
         commands: |
-          curl -sSL https://install.python-poetry.org | python - -y
+          curl -sSL https://install.python-poetry.org | python3 - -y
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.in-project true
           poetry install
