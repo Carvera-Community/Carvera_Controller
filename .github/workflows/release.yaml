@@ -106,12 +106,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ x64, aarch64 ]
+        platform: [ x64 ]  # github hosted arm runners not standard yet
         include:
           - platform: x64
             image: ubuntu-20.04
-          - platform: aarch64
-            image: ubuntu-20.04
+          # - platform: aarch64
+          #   image: ubuntu-20.04
     defaults:
       run:
         shell: bash
@@ -144,8 +144,33 @@ jobs:
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
         retention-days: 2
 
+  build-linux-artifacts-arm64:
+    name: build-linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: pguyot/arm-runner-action@v2
+      id: build_image
+      with:
+        base_image: raspi_4_bookworm:20231109
+        cpu: cortex-a76
+        commands: |
+          curl -sSL https://install.python-poetry.org | python - -y
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.in-project true
+          poetry install
+          xvfb-run poetry run build --os linux
+          poetry run bash ./scripts/rename-release-file.sh linux
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-assets
+        path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
+        retention-days: 2
+
   publish-release:
-    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts ]
+    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-linux-artifacts-arm64 ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
