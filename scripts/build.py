@@ -118,7 +118,7 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     return versionfile_path
 
 def run_appimage_builder()-> None:
-    revise_appimage_arch_definition()
+    revise_appimage_definition()
     command = f"appimage-builder --recipe {ROOT_ASSETS_PATH}/AppImageBuilder.yml"
     result = subprocess.run(command, shell=True, capture_output=False, text=True)
     if result.returncode != 0:
@@ -134,13 +134,17 @@ def remove_shared_libraries(freeze_dir, *filename_patterns):
             os.remove(file_path)
 
 
-def revise_appimage_arch_definition():
-    arch = platform.machine()
+def revise_appimage_definition():
     yaml = YAML()
     with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml") as file:
         appimage_def = yaml.load(file)
 
-    appimage_def["AppImage"]["arch"] = arch
+    # revise definition to current system arch
+    appimage_def["AppImage"]["arch"] = platform.machine()
+
+    # version
+    appimage_def["AppDir"]["app_info"]["version"] = get_version_info()
+
     with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml", 'wb') as file:
         yaml.dump(appimage_def, file)
 
