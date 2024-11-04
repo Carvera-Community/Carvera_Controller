@@ -22,7 +22,7 @@ case "$OS_NAME" in
         mv ./dist/carveracontroller.exe "./dist/$FILE_NAME"
         ;;
     "linux")
-        ARCH_NAME=$(uname -m)
+        ARCH_NAME=$(python -c "import platform;print(platform.machine())")
         FILE_NAME="carveracontroller-community-${VERSION}-${ARCH_NAME}.appimage"
         mv ./dist/carveracontroller-community.AppImage "./dist/$FILE_NAME"
         ;;
