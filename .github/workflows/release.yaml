@@ -154,6 +154,7 @@ jobs:
       with:
         base_image: raspios_lite_arm64:latest
         image_additional_mb: 10240
+        bind_mount_repository: true
         commands: |
           sudo apt install -y python3-dev build-essential xvfb squashfs-tools
           curl -sSL https://install.python-poetry.org | python3 - -y
