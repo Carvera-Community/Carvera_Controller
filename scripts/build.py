@@ -83,6 +83,7 @@ def build_pyinstaller_args(
         "--noconfirm",
         "--noupx",  # Not sure if the false positive AV hits are worth it
         "--clean",
+        "--log-level=INFO",
     ]
 
     if versionfile_path is not None:
