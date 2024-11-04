@@ -155,7 +155,7 @@ jobs:
         base_image: raspios_lite_arm64:latest
         image_additional_mb: 10240
         commands: |
-          sudo apt install -y python3-dev build-essential squashfs-tools
+          sudo apt install -y python3-dev build-essential xvfb squashfs-tools
           curl -sSL https://install.python-poetry.org | python3 - -y
           export PATH="/home/runner/.local/bin:$PATH"
           poetry config virtualenvs.in-project true
