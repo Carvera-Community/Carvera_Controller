@@ -155,7 +155,7 @@ jobs:
         base_image: raspios_lite_arm64:latest
         commands: |
           curl -sSL https://install.python-poetry.org | python3 - -y
-          echo "$HOME/.local/bin" >> $PATH
+          export PATH="/home/runner/.local/bin:$PATH"
           poetry config virtualenvs.in-project true
           poetry install
           xvfb-run poetry run build --os linux
