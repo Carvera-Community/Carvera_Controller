@@ -101,8 +101,17 @@ jobs:
         retention-days: 2
 
   build-linux-artifacts:
-    name: build-linux-generic
-    runs-on: ubuntu-20.04
+    name: build-linux-${{ matrix.platform }}
+    runs-on: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ x64, aarch64 ]
+        include:
+          - platform: x64
+            image: ubuntu-20.04
+          - platform: aarch64
+            image: ubuntu-20.04
     defaults:
       run:
         shell: bash
