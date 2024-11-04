@@ -6,12 +6,14 @@ import logging
 import subprocess
 import sys
 import os
+import platform
 from glob import glob
 from pathlib import Path
 
 import PyInstaller.__main__
 import pyinstaller_versionfile
 from setuptools_scm import get_version
+from ruamel.yaml import YAML
 
 from . import patch_pyinstaller
 
@@ -116,7 +118,8 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     return versionfile_path
 
 def run_appimage_builder()-> None:
-    command = "appimage-builder --recipe packaging_assets/AppImageBuilder.yml"
+    revise_appimage_arch_definition()
+    command = f"appimage-builder --recipe {ROOT_ASSETS_PATH}/AppImageBuilder.yml"
     result = subprocess.run(command, shell=True, capture_output=False, text=True)
     if result.returncode != 0:
         logger.error(f"Error executing command: {command}")
@@ -130,6 +133,18 @@ def remove_shared_libraries(freeze_dir, *filename_patterns):
             logger.info(f"Removing {file_path}")
             os.remove(file_path)
 
+
+def revise_appimage_arch_definition():
+    arch = platform.machine()
+    yaml = YAML()
+    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml") as file:
+        appimage_def = yaml.load(file)
+
+    appimage_def["AppImage"]["arch"] = arch
+    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml", 'wb') as file:
+        yaml.dump(appimage_def, file)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -142,11 +157,14 @@ def main():
         help="Choices are: windows, macos, or linux. Default is linux."
     )
 
+    parser.add_argument('--no-appimage', dest='appimage', action='store_false')
+
     # temp workaround for https://github.com/kivy/kivy/issues/8653
     patch_pyinstaller.main()
 
     args = parser.parse_args()
     os = args.os
+    appimage = args.appimage
     package_version = get_version_info()
     output_filename = PACKAGE_NAME
     versionfile_path = None
@@ -169,7 +187,9 @@ def main():
         # https://github.com/pyinstaller/pyinstaller/issues/6993 
         frozen_dir = f"dist/{PACKAGE_NAME}/_internal"
         remove_shared_libraries(frozen_dir, 'libstdc++.so.*', 'libtinfo.so.*', 'libreadline.so.*', 'libdrm.so.*')
-        run_appimage_builder()
+
+        if appimage:
+            run_appimage_builder()
 
 if __name__ == "__main__":
     main()

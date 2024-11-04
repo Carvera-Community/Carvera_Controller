@@ -199,8 +199,11 @@ name = "docutils"
 version = "0.20.1"
 description = "Docutils -- Python Documentation Utilities"
 optional = false
-python-versions = "*"
-files = []
+python-versions = ">=3.7"
+files = [
+    {file = "docutils-0.20.1-py3-none-any.whl", hash = "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6"},
+    {file = "docutils-0.20.1.tar.gz", hash = "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b"},
+]
 
 [[package]]
 name = "emrichen"
@@ -1128,4 +1131,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<3.14,>=3.8"
-content-hash = "386f3ad8d117a5cffdb8446b1aec86d9abe65e9f3242adcec6f02e4e01616d4a"
+content-hash = "45bfe7202a388f3bca7a72637af13edabf9768538a15ed6ca5cd1bafbc374c6a"

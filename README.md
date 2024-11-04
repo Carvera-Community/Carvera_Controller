@@ -66,5 +66,7 @@ poetry run python carveracontroller/main.py
 The application is packaged using PyInstaller. This tool converts Python applications into a standalone executable, so it can be run on systems without requiring management of a installed Python interpreter or dependent libraries. An build helper script is configured with Poetry and can be run with:
 
 ```bash
-poetry run build --os ["windows", "linux", "macos"]
+poetry run usage: build --os os [--no-appimage]
 ```
+
+The options for `os` are windows, macos, or linux. Default is linux. If selecting `linux`, an appimage is built by default unless --no-appimage is specified.
