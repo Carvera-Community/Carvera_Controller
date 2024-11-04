@@ -152,7 +152,7 @@ jobs:
     - uses: pguyot/arm-runner-action@v2
       id: build_image
       with:
-        base_image: raspi_4_bookworm:20231109
+        base_image: raspios_lite_arm64:latest
         commands: |
           curl -sSL https://install.python-poetry.org | python3 - -y
           echo "$HOME/.local/bin" >> $GITHUB_PATH
