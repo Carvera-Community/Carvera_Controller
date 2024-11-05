@@ -144,8 +144,8 @@ jobs:
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
         retention-days: 2
 
-  build-linux-artifacts-arm64:
-    name: build-linux-arm64
+  build-linux-artifacts-arm:
+    name: build-linux-arm
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -173,7 +173,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: linux-assets
+        name: linux-arm-assets
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
         retention-days: 2
 
