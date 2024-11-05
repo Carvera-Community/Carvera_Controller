@@ -165,10 +165,9 @@ jobs:
           export PATH="/home/runner/.local/bin:$PATH"
           poetry config virtualenvs.in-project true
           poetry install
-          git status
           xvfb-run poetry run build --os linux
           poetry run bash ./scripts/rename-release-file.sh linux
-          git status
+
 
 
     - name: Upload artifact
@@ -196,3 +195,4 @@ jobs:
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
             linux-assets/carveracontroller-community-*.appimage
+            linux-arm-assets/carveracontroller-community-*.appimage
