@@ -75,3 +75,4 @@ dmypy.json
 AppDir/
 appimage-build/
 AppDir.squashfs
+AppImageBuilder.yml

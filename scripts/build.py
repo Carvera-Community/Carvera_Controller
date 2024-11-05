@@ -137,7 +137,7 @@ def remove_shared_libraries(freeze_dir, *filename_patterns):
 
 def revise_appimage_definition():
     yaml = YAML()
-    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml") as file:
+    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder-template.yml") as file:
         appimage_def = yaml.load(file)
 
     # revise definition to current system arch

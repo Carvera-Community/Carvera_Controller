@@ -13,9 +13,9 @@ AppDir:
     id: org.carvera-community.carveracontroller
     name: CarveraController-Community
     icon: carveracontroller.png
-    version: latest
+    version: latest    # Customised by build.py
     exec: usr/bin/carveracontroller
     exec_args: $@
 AppImage:
-  arch: x86_64
+  arch: x86_64  # Customised by build.py
   file_name: ./dist/carveracontroller-community.AppImage
