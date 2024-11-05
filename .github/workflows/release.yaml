@@ -165,9 +165,10 @@ jobs:
           export PATH="/home/runner/.local/bin:$PATH"
           poetry config virtualenvs.in-project true
           poetry install
+          git status
           xvfb-run poetry run build --os linux
           poetry run bash ./scripts/rename-release-file.sh linux
-
+          git status
 
 
     - name: Upload artifact
@@ -178,7 +179,7 @@ jobs:
         retention-days: 2
 
   publish-release:
-    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-linux-artifacts-arm64 ]
+    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-linux-artifacts-arm ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
