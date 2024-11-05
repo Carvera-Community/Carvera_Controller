@@ -164,7 +164,7 @@ jobs:
           xvfb-run poetry run build --os linux
           poetry run bash ./scripts/rename-release-file.sh linux
 
-          - name: troubleshooting
+    - name: troubleshooting
       run: ls -ltah
 
     - name: Upload artifact
