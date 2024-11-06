@@ -15,7 +15,7 @@ import pyinstaller_versionfile
 from setuptools_scm import get_version
 from ruamel.yaml import YAML
 
-from . import patch_pyinstaller
+import patch_pyinstaller
 
 logger = logging.getLogger(__name__)
 

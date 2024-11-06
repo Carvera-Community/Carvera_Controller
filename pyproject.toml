@@ -13,6 +13,9 @@ Kivy = "^2.3.0"
 pyserial = "^3.5"
 pyquicklz = "^1.4.1"
 
+[tool.poetry.scripts]
+carvera-controller-community = "carveracontroller:gui_entry"
+
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.11.0"
 pyinstaller-versionfile = "^2.1.1"
@@ -23,8 +26,5 @@ ruamel-yaml = "^0.18.6"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-build = "scripts.build:main"
 
 [tool.setuptools_scm]

@@ -38,7 +38,7 @@ jobs:
         powershell.exe mesa\\systemwidedeploy.cmd 1
 
     - name: Build release
-      run: poetry run build --os windows
+      run: poetry run python scripts/build.py --os windows
 
     - name: Rename artifact
       run: poetry run bash ./scripts/rename-release-file.sh windows
@@ -79,7 +79,7 @@ jobs:
         os: macos
 
     - name: Build release
-      run: poetry run build --os macos
+      run: poetry run python scripts/build.py --os macos
     
     - name: Debug
       run: ls ./dist
@@ -132,7 +132,7 @@ jobs:
       run: sudo apt-get install -y mtdev-tools
 
     - name: Build release
-      run: xvfb-run poetry run build --os linux
+      run: xvfb-run poetry run python scripts/build.py --os linux
 
     - name: Rename artifact
       run: poetry run bash ./scripts/rename-release-file.sh linux
@@ -165,7 +165,7 @@ jobs:
           export PATH="/home/runner/.local/bin:$PATH"
           poetry config virtualenvs.in-project true
           poetry install
-          xvfb-run poetry run build --os linux
+          xvfb-run poetry run python scripts/build.py --os linux
           poetry run bash ./scripts/rename-release-file.sh linux
 
 
