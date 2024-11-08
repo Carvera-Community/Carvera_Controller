@@ -8,8 +8,6 @@ from kivy.uix.recycleview import RecycleView
 
 from CNC import CNC
 
-import os
-
 class RV(RecycleView):
     def __init__(self, **kwargs):
         super(RV, self).__init__(**kwargs)

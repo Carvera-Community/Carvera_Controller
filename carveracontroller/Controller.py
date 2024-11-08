@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import os
 import re
 import sys
 import time
@@ -21,7 +20,6 @@ from CNC import CNC
 from USBStream import USBStream
 from WIFIStream import WIFIStream
 from XMODEM import EOT, CAN
-import Utils
 
 STREAM_POLL = 0.2 # s
 DIAGNOSE_POLL = 0.5  # s

@@ -2,8 +2,6 @@
 import time
 import serial
 import sys
-import os
-import Utils
 
 from XMODEM import XMODEM
 import logging
