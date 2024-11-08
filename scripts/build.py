@@ -47,7 +47,7 @@ def build_pyinstaller_args(
 ) -> list[str]:
     logger.info("Build Pyinstaller args.")
     build_args = []
-    script_entrypoint = f"{PACKAGE_NAME}/main.py"
+    script_entrypoint = f"{PACKAGE_NAME}/__main__.py"
 
     logger.info(f"entrypoint: {script_entrypoint}")
     build_args += [script_entrypoint]
@@ -74,7 +74,7 @@ def build_pyinstaller_args(
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
 
     logger.info(f"Add bundled package assets: {PACKAGE_PATH}")
-    build_args += ["--add-data", f"{PACKAGE_PATH}:."]
+    build_args += ["--add-data", f"{PACKAGE_PATH}:carveracontroller"]
 
     logger.info("Build options: noconsole, noconfirm, noupx, clean")
     build_args += [
