@@ -2,7 +2,7 @@
 
 Community developed version of the Makera Carvera Controller software.
 
-## Development Build Environment Setup
+## Development Environment Setup
 
 To contribute to this project or set up a local development environment, follow these steps to install dependencies and prepare your environment.
 
@@ -10,7 +10,8 @@ To contribute to this project or set up a local development environment, follow 
 
 - Ensure you have [Python](https://www.python.org/downloads/) installed on your system (preferably version 3.8 or later).
 - [Poetry](https://python-poetry.org/) is required for dependency management. Poetry simplifies packaging and simplifies the management of Python dependencies.
-- [Squashfs-tools](https://github.com/plougher/squashfs-tools) is required if building Linux AppImages. On Debian based systems it's provided by the package `squashfs-tools`
+- One of the python dependencies [QuickLZ](https://pypi.org/project/pyquicklz/) will be compiled by Poetry when installed. Ensure that you have a compiler that Poetry/Pip can use and the Pythong headers. On a debian based Linux system this can be accomplished with `sudo apt-get install python3-dev build essential`. On Windows installation of (just) the Visual C++ 14.x compiler is required, this can be accomplished with [MSBuild tools package](https://wiki.python.org/moin/WindowsCompilers#Microsoft_Visual_C.2B-.2B-_14.2_standalone:_Build_Tools_for_Visual_Studio_2019_.28x86.2C_x64.2C_ARM.2C_ARM64.29). 
+- [Squashfs-tools](https://github.com/plougher/squashfs-tools) is required if building Linux AppImages. On Debian based systems it's provided by the package `squashfs-tools`. This is only required if packaging for linux.
 
 ### Installing Poetry
 
@@ -55,7 +56,7 @@ Once you have Poetry installed, setting up the development environment is straig
 
 ### Running the Project
 
-You can run your project or specific scripts using Poetry's run command. For example:
+You can run your project or specific scripts using Poetry's run command. This is handy for iterative development. For example:
 
 ```bash
 poetry run python carveracontroller/main.py
