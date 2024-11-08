@@ -2,6 +2,28 @@
 
 Community developed version of the Makera Carvera Controller software.
 
+## Supported OS
+
+The Controller software works on the following systems:
+
+- Windows
+- MacOS using Intel CPUs running Ventura (13) or above
+- MacOS using Apple Silicon CPUs running Sonoma (14) or above
+- Linux using x64 CPU running a Linux distribution with Glibc 2.31 or above (eg. Ubuntu 20.04 or higher)
+- Linux using ARM64 CPUs (eg RasPi 3 or above) running a distribution Glibc 2.36 or above (eg. Raspios Bookworm or higher) 
+
+
+## Installation
+
+See the assets section of [latest release](https://github.com/carvera-community/carvera_controller/releases/latest) for installation packages for your system.
+
+- carveracontroller-community-<version>-windows-x64.exe - Standalone Windows binary, without a installer
+- carveracontroller-community-<version>-Intel.dmg - MacOS with Intel CPU
+- carveracontroller-community-<version>-AppleSilicon.dmg - MacOS with Apple CPU (M1 etc)
+- carveracontroller-community-<version>-x86_64.appimage - Linux AppImage for x64 systems
+- carveracontroller-community-<version>-aarch64.appimage - Linux AppImage for ARM64 systems
+
+
 ## Development Environment Setup
 
 To contribute to this project or set up a local development environment, follow these steps to install dependencies and prepare your environment.
