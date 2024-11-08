@@ -172,7 +172,7 @@ from kivy.metrics import dp
 
 from serial.tools.list_ports import comports
 from functools import partial
-from WIFIStream import MachineDetector
+from .WIFIStream import MachineDetector
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
 from kivy.resources import resource_add_path
@@ -184,11 +184,11 @@ from pathlib import Path
 import shutil
 import string
 
-import Utils
+from . import Utils
 from kivy.config import ConfigParser
-from CNC import CNC
-from GcodeViewer import GCodeViewer
-from Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
+from .CNC import CNC
+from .GcodeViewer import GCodeViewer
+from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
     LOAD_DIR, LOAD_MV, LOAD_RM, LOAD_MKDIR, LOAD_WIFI, LOAD_CONN_WIFI, CONN_USB, CONN_WIFI, SEND_FILE
 
 #Config.set('graphics', 'width', '960')

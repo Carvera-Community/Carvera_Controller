@@ -78,10 +78,16 @@ Once you have Poetry installed, setting up the development environment is straig
 
 ### Running the Project
 
-You can run your project or specific scripts using Poetry's run command. This is handy for iterative development. For example:
+You can run the Controller software using Poetry's run command without installation. This is handy for iterative development. 
 
 ```bash
-poetry run python carveracontroller/main.py
+poetry run carvera-controller-community
+```
+
+Alternatively it can be run directly with python:
+
+```bash
+python -m carveracontroller
 ```
 
 ### Local Packaging

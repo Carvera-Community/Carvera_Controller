@@ -3,7 +3,7 @@ import time
 import serial
 import sys
 
-from XMODEM import XMODEM
+from .XMODEM import XMODEM
 import logging
 
 

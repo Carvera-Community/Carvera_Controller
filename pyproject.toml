@@ -14,7 +14,7 @@ pyserial = "^3.5"
 pyquicklz = "^1.4.1"
 
 [tool.poetry.scripts]
-carvera-controller-community = "carveracontroller:gui_entry"
+carvera-controller-community = "carveracontroller:__main__"
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.11.0"

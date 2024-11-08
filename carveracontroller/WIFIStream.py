@@ -4,7 +4,7 @@ import time
 import socket
 import select
 
-from XMODEM import XMODEM
+from .XMODEM import XMODEM
 import logging
 
 

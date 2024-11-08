@@ -27,10 +27,10 @@ def get_elapsed(str):
     start_time = end_time
     print(f"{str} -> {elapsed_time}")
 
-from Objloader import ObjFile
+from .Objloader import ObjFile
 #arc camera
 import math
-from arcball_from_cpp import *
+from .arcball_from_cpp import *
 #input
 from kivy.input.provider import MotionEventProvider
 from kivy.input.factory import MotionEventFactory
