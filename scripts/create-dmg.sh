@@ -5,7 +5,9 @@ rm -rf ./dist/carveracontroller-community.dmg
 
 echo "Create DMG ..."
 create-dmg \
-    --volname "carveracontroller-community" \
+    --volname "carvera-controller-community" \
+    --background "packaging_assets/dmg_background.jpg" \
+    --volicon "packaging_assets/icon-src.icns" \
     --window-pos 200 200 \
     --window-size 460 160 \
     --icon "carveracontroller.app" 256 256 \
