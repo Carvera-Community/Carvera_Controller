@@ -20,7 +20,7 @@ import patch_pyinstaller
 logger = logging.getLogger(__name__)
 
 # ------ Build config ------
-APP_NAME = "CarveraController-Community"
+APP_NAME = "Carvera-Controller-Community"
 PACKAGE_NAME = "carveracontroller"
 ASSETS_FOLDER = "packaging_assets"
 

@@ -3610,7 +3610,7 @@ class MakeraApp(App):
     def build(self):
         self.settings_cls = SettingsWithSidebar
         self.use_kivy_settings = True
-        self.title = tr._('Carvera Controller')
+        self.title = tr._('Carvera Controller Community')
 
         return Makera(ctl_version=VERSION)
 
