@@ -100,11 +100,11 @@ jobs:
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.dmg
         retention-days: 2
     
-    - name: Upload artifact troubleshootings
+    - name: Upload artifact troubleshooting
       uses: actions/upload-artifact@v4
       with:
-        name: linux-assets
-        path: ${{ github.workspace }}/dist/carveracontroller.app
+        name: macos-assets-app-troubleshooting-${{ matrix.platform }}
+        path: ${{ github.workspace }}/dist/*
         retention-days: 2
 
   build-linux-artifacts:
