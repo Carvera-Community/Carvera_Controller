@@ -10,10 +10,10 @@ create-dmg \
     --volicon "packaging_assets/icon-src.icns" \
     --window-pos 200 200 \
     --window-size 460 160 \
-    --icon "carveracontroller.app" 256 256 \
+    --icon "carveracontroller.app" 130 130 \
     --icon-size 64 \
     --hide-extension "carveracontroller.app" \
-    --app-drop-link 325 80 \
+    --app-drop-link 510 130 \
     --format UDBZ \
     --no-internet-enable \
     "./dist/carveracontroller-community.dmg" \
