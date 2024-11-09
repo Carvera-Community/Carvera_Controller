@@ -237,6 +237,7 @@ jobs:
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
             linux-assets/carveracontroller-community-*.appimage
+            macos-assets-*/carveracontroller-community-*.app
 
   publish-release-arm:
     needs: [ build-linux-artifacts-arm ]
