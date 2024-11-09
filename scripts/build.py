@@ -150,6 +150,14 @@ def revise_appimage_definition():
         yaml.dump(appimage_def, file)
 
 
+def fix_macos_version_string(version)-> None:
+    command = f"plutil -replace CFBundleShortVersionString -string {version} dist/*.app/Contents/Info.plist"
+    result = subprocess.run(command, shell=True, capture_output=False, text=True)
+    if result.returncode != 0:
+        logger.error(f"Error executing command: {command}")
+        logger.error(f"stderr: {result.stderr}")
+        sys.exit(result.returncode)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -195,6 +203,12 @@ def main():
 
         if appimage:
             run_appimage_builder()
+    
+    if os == "macos":
+        # Need to manually revise the version string due to
+        # https://github.com/pyinstaller/pyinstaller/issues/6943
+        pass
+        fix_macos_version_string(get_version_info())
 
 if __name__ == "__main__":
     main()
