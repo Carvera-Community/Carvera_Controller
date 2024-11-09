@@ -5,8 +5,6 @@ rm -rf ./dist/carveracontroller-community.dmg
 
 # rename .app
 mv "./dist/carveracontroller.app" "./dist/Carvera Controller Community.app"
-ls "./dist/"
-
 
 echo "Creating DMG ..."
 create-dmg \
