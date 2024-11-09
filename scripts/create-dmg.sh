@@ -3,6 +3,9 @@
 echo "Remove previous build if exists ..."
 rm -rf ./dist/carveracontroller-community.dmg
 
+# rename .app
+mv "./dist/carveracontroller.app" "./dist/Carvera Controller Community.app"
+
 echo "Create DMG ..."
 create-dmg \
     --volname "carvera-controller-community" \
@@ -17,4 +20,4 @@ create-dmg \
     --format UDBZ \
     --no-internet-enable \
     "./dist/carveracontroller-community.dmg" \
-    "./dist/carveracontroller.app"
+    "./dist/Carvera Controller Community.app"
