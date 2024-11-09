@@ -99,6 +99,13 @@ jobs:
         name: macos-assets-${{ matrix.platform }}
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.dmg
         retention-days: 2
+    
+    - name: Upload artifact troubleshootings
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-assets
+        path: ${{ github.workspace }}/dist/carveracontroller.app
+        retention-days: 2
 
   build-linux-artifacts:
     name: build-linux-${{ matrix.platform }}
@@ -142,13 +149,6 @@ jobs:
       with:
         name: linux-assets
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
-        retention-days: 2
-
-    - name: Upload artifact troubleshooting
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-assets
-        path: ${{ github.workspace }}/dist/carveracontroller.app
         retention-days: 2
 
   build-linux-artifacts-arm:
