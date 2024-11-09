@@ -3527,7 +3527,7 @@ class Makera(RelativeLayout):
             self.loading_file = False
             if f:
                 f.close()
-            Clock.schedule_once(partial(self.load_error, tr._('Openning file error:') + '\n\'%s\'\n' % (filepath) + tr._('Please make sure the GCode file is valid')), 0)
+            Clock.schedule_once(partial(self.load_error, tr._('Opening file error:') + '\n\'%s\'\n' % (filepath) + tr._('Please make sure the GCode file is valid')), 0)
             return
 
         Clock.schedule_once(self.load_end, 0)
