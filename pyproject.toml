@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "carveracontroller-community"
+name = "carvera-controller-community"
 description = "Controller for the Carvera CNC"
 version = "0.0.0" # version is managed in git
 license = "GPL-2.0"
@@ -12,9 +12,6 @@ python = "<3.14,>=3.8"
 Kivy = "^2.3.0"
 pyserial = "^3.5"
 pyquicklz = "^1.4.1"
-
-[tool.poetry.scripts]
-carvera-controller-community = "carveracontroller:__main__"
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.11.0"
