@@ -12,7 +12,7 @@ create-dmg \
     --background "packaging_assets/dmg_background.jpg" \
     --volicon "packaging_assets/icon-src.icns" \
     --window-pos 200 200 \
-    --window-size 460 160 \
+    --window-size 460 480 \
     --icon "Carvera Controller Community.app" 130 130 \
     --icon-size 64 \
     --hide-extension "Carvera Controller Community.app" \
