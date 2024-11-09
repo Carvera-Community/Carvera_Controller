@@ -80,9 +80,6 @@ jobs:
 
     - name: Build release
       run: poetry run python scripts/build.py --os macos
-    
-    - name: Debug
-      run: ls ./dist
 
     - name: Install create-dmg
       run: brew install create-dmg
