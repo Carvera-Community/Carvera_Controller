@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "carvera-controller-community"
-description = "Controller for the Carvera CNC"
+description = "Community developed controller for the Carvera CNC"
 version = "0.0.0" # version is managed in git
 license = "GPL-2.0"
 readme = "README.md"

@@ -177,6 +177,36 @@ jobs:
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
         retention-days: 2
 
+
+  build-pypi-artifacts:
+    name: build-python
+    runs-on: ubuntu-20.04
+    permissions:
+      id-token: write
+
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Install poetry and dependencies
+      uses: ./.github/actions/bootstrap-poetry
+      with:
+        os: linux
+
+    - name: Build python package
+      run: poetry build
+
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+
   publish-release:
     needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts ]
     runs-on: ubuntu-latest
