@@ -17,11 +17,26 @@ The Controller software works on the following systems:
 
 See the assets section of [latest release](https://github.com/carvera-community/carvera_controller/releases/latest) for installation packages for your system.
 
-- carveracontroller-community-<version>-windows-x64.exe - Standalone Windows binary, without a installer
-- carveracontroller-community-<version>-Intel.dmg - MacOS with Intel CPU
-- carveracontroller-community-<version>-AppleSilicon.dmg - MacOS with Apple CPU (M1 etc)
-- carveracontroller-community-<version>-x86_64.appimage - Linux AppImage for x64 systems
-- carveracontroller-community-<version>-aarch64.appimage - Linux AppImage for ARM64 systems
+- carveracontroller-community-\<version\>-windows-x64.exe - Standalone Windows binary, without a installer
+- carveracontroller-community-\<version\>-Intel.dmg - MacOS with Intel CPU
+- carveracontroller-community-\<version\>-AppleSilicon.dmg - MacOS with Apple CPU (M1 etc)
+- carveracontroller-community-\<version\>-x86_64.appimage - Linux AppImage for x64 systems
+- carveracontroller-community-\<version\>-aarch64.appimage - Linux AppImage for ARM64 systems
+
+
+## Alternative Installation: Python Package 
+
+It's best to use a one of pre-built packages as they they have frozen versions of tested dependenies, however if you prefer the software can be installed as a Python package. This might allow you to use a unsupported platform (eg raspi 1) provided that the dependencies can be met.
+
+``` bash
+pip install carvera-controller-community
+```
+
+Once installed it can be run via the module
+
+``` bash
+python3 -m carveracontroller
+```
 
 
 ## Development Environment Setup
@@ -81,13 +96,7 @@ Once you have Poetry installed, setting up the development environment is straig
 You can run the Controller software using Poetry's run command without installation. This is handy for iterative development. 
 
 ```bash
-poetry run carvera-controller-community
-```
-
-Alternatively it can be run directly with python:
-
-```bash
-python -m carveracontroller
+poetry run python -m carveracontroller
 ```
 
 ### Local Packaging
@@ -98,4 +107,4 @@ The application is packaged using PyInstaller. This tool converts Python applica
 poetry run python scripts/build.py --os os [--no-appimage]
 ```
 
-The options for `os` are windows, macos, or linux. Default is linux. If selecting `linux`, an appimage is built by default unless --no-appimage is specified.
+The options for `os` are windows, macos, or linux. If selecting `linux`, an appimage is built by default unless --no-appimage is specified.
