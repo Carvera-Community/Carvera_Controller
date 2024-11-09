@@ -148,7 +148,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: linux-assets
-        path: ${{ github.workspace }}/dist/carveracontroller-community-*.app
+        path: ${{ github.workspace }}/dist/carveracontroller.app
         retention-days: 2
 
   build-linux-artifacts-arm:
@@ -237,7 +237,7 @@ jobs:
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
             linux-assets/carveracontroller-community-*.appimage
-            macos-assets-*/carveracontroller-community-*.app
+            macos-assets-*/carveracontroller.app
 
   publish-release-arm:
     needs: [ build-linux-artifacts-arm ]
