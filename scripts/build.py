@@ -12,6 +12,7 @@ from pathlib import Path
 
 import PyInstaller.__main__
 import pyinstaller_versionfile
+import PyInstaller.utils.osx as osxutils
 from setuptools_scm import get_version
 from ruamel.yaml import YAML
 
@@ -209,6 +210,7 @@ def main():
         # https://github.com/pyinstaller/pyinstaller/issues/6943
         pass
         fix_macos_version_string(get_version_info())
+        osxutils.sign_binary(f"dist/{PACKAGE_NAME}.app", deep=True)
 
 if __name__ == "__main__":
     main()
