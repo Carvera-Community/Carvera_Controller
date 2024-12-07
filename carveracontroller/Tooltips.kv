@@ -1,0 +1,49 @@
+
+<ToolTipButton>:
+
+<Tooltip>:
+    size_hint: None, None
+    size: self.minimum_size
+    orientation: 'vertical'
+    padding: 10, 15
+    spacing: 15
+    canvas.before:
+        Color:
+            rgba: 0.1, 0.1, 0.1, 0.9
+        Rectangle:
+            size: self.minimum_size
+            pos: self.pos
+
+    BoxLayout:
+        size_hint: None, None
+        size: tooltip_image.size
+        orientation: 'vertical'
+        Image:
+            id: tooltip_image
+            size_hint: None, None
+            allow_stretch: False
+            keep_ratio: True
+            size: self.texture_size
+            pos_hint: {"center_x": 0.5}
+
+    ToolTipLabel:
+        id: tooltip_label
+        size_hint: None, None
+        text_size: self.width, None
+        size: self.texture_size
+        halign: 'left'
+        valign: 'top'
+
+<ToolTipLabel>:
+    id: tooltip_label
+    size_hint: 1.0, None
+    height: self.texture_size[1]
+    halign: 'left'
+    valign: 'top'
+
+    canvas.before:
+        Color:
+            rgba: 0.2, 0.2, 0.2 , 0
+        Rectangle:
+            size: self.size
+            pos: self.pos

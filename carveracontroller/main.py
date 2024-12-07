@@ -114,6 +114,10 @@ from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
     LOAD_DIR, LOAD_MV, LOAD_RM, LOAD_MKDIR, LOAD_WIFI, LOAD_CONN_WIFI, CONN_USB, CONN_WIFI, SEND_FILE
 from .__version__ import __version__
 
+from kivy.lang import Builder
+from .Tooltips import Tooltip,ToolTipButton 
+Builder.load_file('tooltips.kv')
+
 
 def load_halt_translations(tr: Lang):
     """Loads the appropriate language translation"""
@@ -611,21 +615,21 @@ class ComPortsDropDown(DropDown):
 class OperationDropDown(DropDown):
     pass
 
-class MachineButton(Button):
+class MachineButton(ToolTipButton):
     ip = StringProperty("")
     port = NumericProperty(2222)
     busy = BooleanProperty(False)
 
-class IconButton(BoxLayout, Button):
+class IconButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
 
-class TransparentButton(BoxLayout, Button):
+class TransparentButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
 
-class TransparentGrayButton(BoxLayout, Button):
+class TransparentGrayButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
 
-class WiFiButton(BoxLayout, Button):
+class WiFiButton(BoxLayout, ToolTipButton):
     ssid = StringProperty("")
     encrypted = BooleanProperty(False)
     strength = NumericProperty(1000)

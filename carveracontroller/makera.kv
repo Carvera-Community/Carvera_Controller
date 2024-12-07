@@ -923,6 +923,7 @@
         small_icon: True
         size_hint_y: None
         height: '50dp'
+        tooltip_txt: 'Language is a very tricky subject and this should wrap around a few times for reasons'
         on_release:
             root.select('')
             app.root.language_popup.open()
@@ -939,6 +940,8 @@
     IconButton:
         icon: 'data/open_iconic_UI/oi--bug.png'
         icon_size: 24
+        tooltip_image: 'data/open_iconic_UI/oi--bug.png'
+        tooltip_txt: 'send bug report'
         small_icon: True
         size_hint_y: None
         height: '50dp'
@@ -3787,6 +3790,9 @@
                         size: self.size
                 IconButton:
                     icon: 'data/file.png'
+                    tooltip_image: 'data/feedhold2.png'
+                    tooltip_txt: 'this is some text'
+                    tooltip_image_size: 50,50
                     icon_size: 21
                     disabled: app.state != 'Idle' and app.state != 'N/A' and not app.playing
                     on_release:
