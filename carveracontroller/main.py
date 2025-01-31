@@ -514,6 +514,18 @@ class DiagnosePopup(ModalView):
     def on_dismiss(self):
         self.showing = False
 
+class ProbingPopup(ModalView):
+    showing = False
+
+    def __init__(self, **kwargs):
+        super(ProbingPopup, self).__init__(**kwargs)
+
+    def on_open(self):
+        self.showing = True
+
+    def on_dismiss(self):
+        self.showing = False
+
 class ConfigPopup(ModalView):
     def __init__(self, **kwargs):
         super(ConfigPopup, self).__init__(**kwargs)
@@ -1164,6 +1176,7 @@ class Makera(RelativeLayout):
     file_popup = ObjectProperty()
     coord_popup = ObjectProperty()
     diagnose_popup = ObjectProperty()
+    probing_popup = ObjectProperty()
     config_popup = ObjectProperty()
     x_drop_down = ObjectProperty()
     y_drop_down = ObjectProperty()
@@ -1325,6 +1338,7 @@ class Makera(RelativeLayout):
                 break
 
         self.diagnose_popup = DiagnosePopup()
+        self.probing_popup = ProbingPopup()
 
         self.x_drop_down = XDropDown()
         self.y_drop_down = YDropDown()
@@ -3390,7 +3404,7 @@ class Makera(RelativeLayout):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open, self.pairing_popup._is_open,
                    self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open, self.confirm_popup._is_open,
-                   self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open, self.config_popup._is_open]
+                   self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open, self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
     
