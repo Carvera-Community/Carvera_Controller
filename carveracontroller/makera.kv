@@ -4255,34 +4255,6 @@
     pos_hint: {"right": 0.9, "top": 0.9}
     auto_dismiss: False
 
-    # switch widget variables
-    sw_spindle: sw_spindle
-    sw_laser: sw_laser
-
-    sw_light: sw_light
-    sw_tool_sensor_pwr: sw_tool_sensor_pwr
-    sw_air: sw_air
-    sw_wp_charge_pwr: sw_wp_charge_pwr
-
-    # slider widget variables
-    sl_spindle: sl_spindle
-    sl_spindlefan: sl_spindlefan
-    sl_vacuum: sl_vacuum
-    sl_laser: sl_laser
-
-    # state widget variables
-    st_x_min: st_x_min
-    st_x_max: st_x_max
-    st_y_min: st_y_min
-    st_y_max: st_y_max
-    st_z_max: st_z_max
-    st_atc_home: st_atc_home
-    st_probe: st_probe
-    st_calibrate: st_calibrate
-    st_cover: st_cover
-    st_tool_sensor: st_tool_sensor
-    st_e_stop: st_e_stop
-
     BoxLayout:
         orientation: 'vertical'
         BoxLayout:
@@ -4299,101 +4271,6 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint_x: 1.5
-                SwitchBox:
-                    id: sw_spindle
-                    label: tr._('Spindle Motor')
-                    control_name: 'spindle_switch'
-                Label:
-                    id: sw_spindlefan
-                    text: tr._('Spindle Fan')
-                Label:
-                    id: sw_vacuum
-                    text: tr._('Vacuum') if app.model != 'CA1' else tr._('PowerFan')
-                SwitchBox:
-                    id: sw_laser
-                    label: tr._('Engraving Laser')
-                    control_name: 'laser_switch'
-                SwitchBox:
-                    id: sw_light
-                    label: tr._('Enclosure Light')
-                    control_name: 'light_switch'
-                SwitchBox:
-                    id: sw_air
-                    label: tr._('Air Assist')
-                    control_name: 'air_switch'
-                    disabled: app.model == 'CA1'
-            BoxLayout:
-                orientation: 'vertical'
-                size_hint_x: 1.5
-                SliderBox:
-                    id: sl_spindle
-                    max: 15000 if app.model != 'CA1' else 12000
-                    step: 100
-                    control_name: 'spindle_slider'
-                SliderBox:
-                    id: sl_spindlefan
-                    step: 10
-                    control_name: 'spindlefan_slider'
-                    label: tr._('Spindle Fan')
-                SliderBox:
-                    id: sl_vacuum
-                    step: 10
-                    control_name: 'vacuum_slider'
-                SliderBox:
-                    id: sl_laser
-                    step: 10
-                    control_name: 'laser_slider'
-                SwitchBox:
-                    id: sw_tool_sensor_pwr
-                    label: tr._('ToolSensorPWR') if app.model != 'CA1' else tr._('Probe Laser')
-                    control_name: 'tool_sensor_switch'
-                SwitchBox:
-                    id: sw_wp_charge_pwr
-                    label: tr._('WPChargePWR') if app.model != 'CA1' else tr._('Beep')
-                    control_name: 'wp_charge_switch'
-            BoxLayout:
-                orientation: 'vertical'
-                StateBox:
-                    id: st_x_min
-                    label: tr._('X- Limit')
-                StateBox:
-                    id: st_y_min
-                    label: tr._('Y- Limit')
-                StateBox:
-                    id: st_atc_home
-                    label: tr._('ATC Limit')
-                    disabled: app.model == 'CA1'
-                StateBox:
-                    id: st_probe
-                    label: tr._('Probe')
-                StateBox:
-                    id: st_tool_sensor
-                    label: tr._('Tool Sensor')
-                    disabled: app.model == 'CA1'
-                StateBox:
-                    id: st_e_stop
-                    label: tr._('E-Stop')
-            BoxLayout:
-                orientation: 'vertical'
-                StateBox:
-                    id: st_x_max
-                    label: tr._('X+ Limit')
-                StateBox:
-                    id: st_y_max
-                    label: tr._('Y+ Limit')
-                StateBox:
-                    id: st_z_max
-                    label: tr._('Z+ Limit')
-                StateBox:
-                    id: st_calibrate
-                    label: tr._('Tool Length Setter')
-                StateBox:
-                    id: st_cover
-                    label: tr._('Cover Switch')
-                Label:
-        BoxLayout:
-            size_hint_y: None
-            height: '20dp'
             Label:
                 text: tr._("Changes in values are applied after 2 seconds.")
                 halign: "right"
