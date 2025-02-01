@@ -1,6 +1,7 @@
 #:kivy 1.11.1
 #:import Factory kivy.factory.Factory
 #:import tr __main__.tr
+#:include screens/ProbingPopup.kv
 
 <Label>:
     font_name: 'ARIALUNI'
@@ -995,7 +996,7 @@
         icon_size: 24
         small_icon: True
         size_hint_y: None
-        disabled: app.state == 'N/A'
+        # disabled: app.state == 'N/A'
         height: '50dp'
         on_release:
             root.select('')
@@ -4248,41 +4249,4 @@
                 text: tr._('Ok')
                 on_release:
                     app.root.controller.RapMoveA(float(txt_offset.text))
-                    root.dismiss()
-<ProbingPopup>:
-    padding: dp(10)
-    size_hint: 0.8, 0.8
-    pos_hint: {"right": 0.9, "top": 0.9}
-    auto_dismiss: False
-
-    BoxLayout:
-        orientation: 'vertical'
-        BoxLayout:
-            size_hint_y: None
-            height: '40dp'
-            Label:
-                text: tr._("   Probing Panel")
-                bold: True
-                halign: "left"
-                valign: "middle"
-                text_size: self.size
-        BoxLayout:
-            orientation: 'horizontal'
-            BoxLayout:
-                orientation: 'vertical'
-                size_hint_x: 1.5
-            Label:
-                text: tr._("Changes in values are applied after 2 seconds.")
-                halign: "right"
-                valign: "middle"
-                text_size: self.size
-        BoxLayout:
-            size_hint_y: None
-            height: '50dp'
-            spacing: '5dp'
-            padding: '5dp'
-            size_hint_y: None
-            Button:
-                text: tr._("Close")
-                on_release:
                     root.dismiss()

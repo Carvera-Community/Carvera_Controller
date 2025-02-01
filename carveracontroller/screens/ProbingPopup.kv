@@ -1,0 +1,85 @@
+``<ProbingPopup>:
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    cbx_anchor1: cbx_anchor1
+    txt_x_offset: txt_x_offset
+    txt_y_offset: txt_y_offset
+    TabbedPanel:
+        do_default_tab: False
+        tab_width: root.width / 2 - dp(2)
+        TabbedPanelItem:
+            text: tr._('Single Axis')
+            BoxLayout:
+                padding: '15dp'
+                orientation: 'vertical'
+                BoxLayout:
+                    size_hint_y: None
+                    height: '50dp'
+
+                    MCQCheckBox:
+                        id: cbx_anchor1
+                        group: 'anchor'
+                        active: True
+                    MCQLabel:
+                        on_press: cbx_anchor1._do_press()
+                        text: tr._('Invert Probe')
+                    # Label:
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: '30dp'
+                    Label:
+                        text: tr._('X Offset:')
+                        halign: "left"
+                        valign: "middle"
+                        text_size: self.size
+                    TextInput:
+                        id: txt_x_offset
+                        hint_text: tr._('Enter X Offset')
+                        multiline: False
+                        text: '10'
+                        input_type: 'number'
+                        input_filter: 'float'
+                    Label:
+                        size_hint_x: 0.3
+                    Label:
+                        text: tr._('Y Offset:')
+                        halign: "left"
+                        valign: "middle"
+                        text_size: self.size
+                    TextInput:
+                        id: txt_y_offset
+                        hint_text: tr._('Enter Y Offset')
+                        multiline: False
+                        text: '10'
+                        input_type: 'number'
+                        input_filter: 'float'
+                BoxLayout:
+                    id: empty
+                    Label:
+                        halign: "left"
+                        valign: "middle"
+                        text_size: self.size
+                        text: tr._('Note: Use Invert probe if your probe is NC (normally closed).')
+                        color: 52/255, 152/255, 219/255, 1
+
+                BoxLayout:
+                    spacing: '5dp'
+                    size_hint_y: None
+                    height: '40dp'
+                    Button:
+                        id: btn_cancel
+                        text: tr._('Cancel')
+                        on_release: root.dismiss()
+                    Button:
+                        id: btn_ok
+                        text: tr._('Ok')
+                        on_release:
+                            root.coord_popup.set_config('origin', 'anchor', root.selected_anchor())
+                            root.coord_popup.set_config('origin', 'x_offset', float(txt_x_offset.text))
+                            root.coord_popup.set_config('origin', 'y_offset', float(txt_y_offset.text))
+                            app.root.set_work_origin()
+                            # root.coord_popup.load_origin_label()
+                            root.dismiss()
+        # TabbedPanelItem: TODO: add another probing option here

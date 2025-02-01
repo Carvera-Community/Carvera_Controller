@@ -470,6 +470,12 @@ class CoordPopup(ModalView):
         self.auto_level_popup.sp_height.text = str(self.config['leveling']['height'])
         self.load_leveling_label()
 
+        # init probing options
+        
+        PROBE_CTX = 'probing'
+        self.origin_popup.txt_x_offset.text = str(self.config[PROBE_CTX]['x'])
+        self.origin_popup.txt_y_offset.text = str(self.config[PROBE_CTX]['y'])
+
     def load_origin_label(self):
         app = App.get_running_app()
         if app.has_4axis:
@@ -515,16 +521,17 @@ class DiagnosePopup(ModalView):
         self.showing = False
 
 class ProbingPopup(ModalView):
-    showing = False
-
     def __init__(self, **kwargs):
         super(ProbingPopup, self).__init__(**kwargs)
 
-    def on_open(self):
-        self.showing = True
-
-    def on_dismiss(self):
-        self.showing = False
+    def selected_anchor(self):
+        if self.cbx_anchor2.active:
+            return 2
+        elif self.cbx_4axis_origin.active:
+            return 3
+        elif self.cbx_current_position.active:
+            return 4
+        return 1
 
 class ConfigPopup(ModalView):
     def __init__(self, **kwargs):
@@ -1338,7 +1345,7 @@ class Makera(RelativeLayout):
                 break
 
         self.diagnose_popup = DiagnosePopup()
-        self.probing_popup = ProbingPopup()
+        self.probing_popup = ProbingPopup(self)
 
         self.x_drop_down = XDropDown()
         self.y_drop_down = YDropDown()
