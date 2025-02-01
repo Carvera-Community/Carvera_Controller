@@ -19,6 +19,7 @@ import datetime
 import threading
 import logging
 
+
 class Lang(Observable):
     observers = []
     lang = None
@@ -62,6 +63,7 @@ class Lang(Observable):
         # update all the kv rules attached to this text
         for func, largs, kwargs in self.observers:
             func(largs, None, None)
+
 
 import json
 import re
@@ -111,7 +113,7 @@ from . import Utils
 from kivy.config import ConfigParser
 from .CNC import CNC
 from .GcodeViewer import GCodeViewer
-from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
+from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF, \
     LOAD_DIR, LOAD_MV, LOAD_RM, LOAD_MKDIR, LOAD_WIFI, LOAD_CONN_WIFI, CONN_USB, CONN_WIFI, SEND_FILE
 from .__version__ import __version__
 
@@ -120,15 +122,15 @@ def load_halt_translations(tr: Lang):
     """Loads the appropriate language translation"""
     HALT_REASON = {
         # Just need to unlock the mahchine
-        1:  tr._("Halt Manually"),
-        2:  tr._("Home Fail"),
-        3:  tr._("Probe Fail"),
-        4:  tr._("Calibrate Fail"),
-        5:  tr._("ATC Home Fail"),
-        6:  tr._("ATC Invalid Tool Number"),
-        7:  tr._("ATC Drop Tool Fail"),
-        8:  tr._("ATC Position Occupied"),
-        9:  tr._("Spindle Overheated"),
+        1: tr._("Halt Manually"),
+        2: tr._("Home Fail"),
+        3: tr._("Probe Fail"),
+        4: tr._("Calibrate Fail"),
+        5: tr._("ATC Home Fail"),
+        6: tr._("ATC Invalid Tool Number"),
+        7: tr._("ATC Drop Tool Fail"),
+        8: tr._("ATC Position Occupied"),
+        9: tr._("Spindle Overheated"),
         10: tr._("Soft Limit Triggered"),
         11: tr._("Cover opened when playing"),
         12: tr._("Wireless probe dead or not set"),
@@ -144,6 +146,7 @@ def load_halt_translations(tr: Lang):
         41: tr._("Spindle Alarm, power off/on needed"),
     }
     return HALT_REASON
+
 
 def init_lang():
     # init language
@@ -163,8 +166,10 @@ def init_lang():
 
     return default_lang
 
+
 def is_android():
     return 'ANDROID_ARGUMENT' in os.environ or 'ANDROID_PRIVATE' in os.environ or 'ANDROID_APP_PATH' in os.environ
+
 
 def app_base_path():
     """
@@ -173,6 +178,7 @@ def app_base_path():
     where the application is both frozen in pyinstaller, and when run normally
     """
     return os.path.abspath(os.path.dirname(__file__))
+
 
 def register_fonts(base_path):
     """
@@ -215,6 +221,7 @@ class GcodePlaySlider(Slider):
             return True
         return released
 
+
 class FloatBox(FloatLayout):
     touch_interval = 0
 
@@ -224,7 +231,7 @@ class FloatBox(FloatLayout):
 
         if self.collide_point(*touch.pos) and not self.gcode_ctl_bar.collide_point(*touch.pos):
             if ('button' in touch.profile and touch.button == 'left') or not 'button' in touch.profile:
-                    self.touch_interval =  time.time()
+                self.touch_interval = time.time()
 
     def on_touch_up(self, touch):
         if super(FloatBox, self).on_touch_up(touch):
@@ -236,8 +243,10 @@ class FloatBox(FloatLayout):
                 if time.time() - self.touch_interval < MAX_TOUCH_INTERVAL:
                     app.show_gcode_ctl_bar = not app.show_gcode_ctl_bar
 
+
 class BoxStencil(BoxLayout, StencilView):
     pass
+
 
 class ConfirmPopup(ModalView):
     showing = False
@@ -256,12 +265,15 @@ class MessagePopup(ModalView):
     def __init__(self, **kwargs):
         super(MessagePopup, self).__init__(**kwargs)
 
+
 class InputPopup(ModalView):
     cache_var1 = StringProperty('')
     cache_var2 = StringProperty('')
     cache_var3 = StringProperty('')
+
     def __init__(self, **kwargs):
         super(InputPopup, self).__init__(**kwargs)
+
 
 class ProgressPopup(ModalView):
     progress_text = StringProperty('')
@@ -269,6 +281,7 @@ class ProgressPopup(ModalView):
 
     def __init__(self, **kwargs):
         super(ProgressPopup, self).__init__(**kwargs)
+
 
 class OriginPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
@@ -284,18 +297,32 @@ class OriginPopup(ModalView):
             return 4
         return 1
 
+
+class ProbingPopup(ModalView):
+    def __init__(self, coord_popup, **kwargs):
+        self.coord_popup = coord_popup
+        super(ProbingPopup, self).__init__(**kwargs)
+
+    def shouldInvertProbe(self):
+        if self.cb_invert_probe.active:
+            return 1
+        return 0
+
 class ZProbePopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(ZProbePopup, self).__init__(**kwargs)
 
+
 class XYZProbePopup(ModalView):
     def __init__(self, **kwargs):
         super(XYZProbePopup, self).__init__(**kwargs)
 
+
 class LanguagePopup(ModalView):
     def __init__(self, **kwargs):
         super(LanguagePopup, self).__init__(**kwargs)
+
 
 class PairingPopup(ModalView):
     pairing = BooleanProperty(0)
@@ -327,9 +354,11 @@ class PairingPopup(ModalView):
             self.pairing_note = self.pairing_string['timeout']
             self.countdown_event.cancel()
 
+
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
         super(UpgradePopup, self).__init__(**kwargs)
+
 
 class AutoLevelPopup(ModalView):
     execute = False
@@ -348,14 +377,16 @@ class AutoLevelPopup(ModalView):
         self.lb_max_y.text = "{:.2f}".format(CNC.vars['ymax'])
         self.lb_step_y.text = "{:.2f}".format((CNC.vars['ymax'] - CNC.vars['ymin']) * 1.0 / y_steps)
 
-    def init_and_open(self, execute = False):
+    def init_and_open(self, execute=False):
         self.execute = execute
         self.init()
         self.open()
 
+
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
         super(UpgradePopup, self).__init__(**kwargs)
+
 
 class FilePopup(ModalView):
     firmware_mode = BooleanProperty(False)
@@ -380,10 +411,12 @@ class FilePopup(ModalView):
         has_select = False
         app = App.get_running_app()
         for key in self.local_rv.view_adapter.views:
-            if self.local_rv.view_adapter.views[key].selected and not self.local_rv.view_adapter.views[key].selected_dir:
-               has_select = True
-               break
-        self.btn_view.disabled = (not self.firmware_mode and not has_select) or (self.firmware_mode and app.state != 'Idle')
+            if self.local_rv.view_adapter.views[key].selected and not self.local_rv.view_adapter.views[
+                key].selected_dir:
+                has_select = True
+                break
+        self.btn_view.disabled = (not self.firmware_mode and not has_select) or (
+                self.firmware_mode and app.state != 'Idle')
         self.btn_upload.disabled = not has_select or app.state != 'Idle'
 
     # -----------------------------------------------------------------------
@@ -400,11 +433,13 @@ class FilePopup(ModalView):
         self.btn_rename.disabled = not has_select
         self.btn_select.disabled = (not has_select) or select_dir
 
+
 class CoordPopup(ModalView):
     config = {}
     mode = StringProperty()
     vacuummode = ObjectProperty()
     origin_popup = ObjectProperty()
+    probing_popup = ObjectProperty()
     zprobe_popup = ObjectProperty()
     auto_level_popup = ObjectProperty()
     setx_popup = ObjectProperty()
@@ -416,6 +451,7 @@ class CoordPopup(ModalView):
     def __init__(self, config, **kwargs):
         self.config = config
         self.origin_popup = OriginPopup(self)
+        self.probing_popup = ProbingPopup(self)
         self.zprobe_popup = ZProbePopup(self)
         self.auto_level_popup = AutoLevelPopup(self)
         self.setx_popup = SetXPopup(self)
@@ -423,7 +459,7 @@ class CoordPopup(ModalView):
         self.setz_popup = SetZPopup(self)
         self.seta_popup = SetAPopup(self)
         self.MoveA_popup = MoveAPopup(self)
-        self.mode = 'Run' # 'Margin' / 'ZProbe' / 'Leveling'
+        self.mode = 'Run'  # 'Margin' / 'ZProbe' / 'Leveling'
         super(CoordPopup, self).__init__(**kwargs)
 
     def set_config(self, key1, key2, value):
@@ -443,7 +479,6 @@ class CoordPopup(ModalView):
         self.origin_popup.txt_y_offset.text = str(self.config['origin']['y_offset'])
 
         self.load_origin_label()
-
 
         if CNC.vars["vacuummode"] == 1:
             self.vacuummode = True
@@ -471,32 +506,45 @@ class CoordPopup(ModalView):
         self.load_leveling_label()
 
         # init probing options
-        
-        PROBE_CTX = 'probing'
-        self.origin_popup.txt_x_offset.text = str(self.config[PROBE_CTX]['x'])
-        self.origin_popup.txt_y_offset.text = str(self.config[PROBE_CTX]['y'])
+
+        probe_ctx = 'probing'
+        self.origin_popup.cbx_anchor1.active = self.config[probe_ctx]['invert_probe'] == 1
+        self.origin_popup.txt_x_offset.text = str(self.config[probe_ctx]['x'])
+        self.origin_popup.txt_y_offset.text = str(self.config[probe_ctx]['y'])
+        self.origin_popup.txt_z_offset.text = str(self.config[probe_ctx]['z'])
+        self.origin_popup.txt_a_offset.text = str(self.config[probe_ctx]['a'])
 
     def load_origin_label(self):
         app = App.get_running_app()
         if app.has_4axis:
-            self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars["wcox"] - CNC.vars['anchor1_x'] - CNC.vars['rotation_offset_x'], 4), \
-                                                                  round(CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['rotation_offset_y'], 4)) + tr._('from Headstock')
+            self.lb_origin.text = '(%g, %g) ' % (
+                round(CNC.vars["wcox"] - CNC.vars['anchor1_x'] - CNC.vars['rotation_offset_x'], 4), \
+                round(CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['rotation_offset_y'], 4)) + tr._(
+                'from Headstock')
         else:
             laser_x = CNC.vars['laser_module_offset_x'] if CNC.vars['lasermode'] else 0.0
             laser_y = CNC.vars['laser_module_offset_y'] if CNC.vars['lasermode'] else 0.0
             if self.config['origin']['anchor'] == 2:
-                self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4), \
-                                                                 round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)) + tr._('from Anchor2')
+                self.lb_origin.text = '(%g, %g) ' % (
+                    round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4), \
+                    round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)) + tr._(
+                    'from Anchor2')
             else:
-                self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4), round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)) + tr._('from Anchor1')
+                self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4),
+                                                     round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"],
+                                                           4)) + tr._('from Anchor1')
 
     def load_zprobe_label(self):
         app = App.get_running_app()
         if app.has_4axis:
-            self.lb_zprobe.text = '(%g, %g) ' % (round(CNC.vars["anchor1_x"] + CNC.vars['rotation_offset_x'] - 3, 4), round(CNC.vars["anchor1_y"] + CNC.vars['rotation_offset_y'], 4)) + tr._('Fixed Pos')
+            self.lb_zprobe.text = '(%g, %g) ' % (round(CNC.vars["anchor1_x"] + CNC.vars['rotation_offset_x'] - 3, 4),
+                                                 round(CNC.vars["anchor1_y"] + CNC.vars['rotation_offset_y'],
+                                                       4)) + tr._('Fixed Pos')
         else:
-            self.lb_zprobe.text = '(%g, %g) ' % (round(self.config['zprobe']['x_offset'], 4), round(self.config['zprobe']['y_offset'], 4)) + tr._('from') \
-                                  + ' %s' % (tr._('Work Origin') if self.config['zprobe']['origin'] == 1 else tr._('Path Origin'))
+            self.lb_zprobe.text = '(%g, %g) ' % (
+                round(self.config['zprobe']['x_offset'], 4), round(self.config['zprobe']['y_offset'], 4)) + tr._('from') \
+                                  + ' %s' % (tr._('Work Origin') if self.config['zprobe']['origin'] == 1 else tr._(
+                'Path Origin'))
 
     def load_leveling_label(self):
         self.lb_leveling.text = tr._('X Points: ') + '%d ' % (self.config['leveling']['x_points']) \
@@ -507,6 +555,7 @@ class CoordPopup(ModalView):
         # upldate main status
         app = App.get_running_app()
         app.root.update_coord_config()
+
 
 class DiagnosePopup(ModalView):
     showing = False
@@ -520,18 +569,6 @@ class DiagnosePopup(ModalView):
     def on_dismiss(self):
         self.showing = False
 
-class ProbingPopup(ModalView):
-    def __init__(self, **kwargs):
-        super(ProbingPopup, self).__init__(**kwargs)
-
-    def selected_anchor(self):
-        if self.cbx_anchor2.active:
-            return 2
-        elif self.cbx_4axis_origin.active:
-            return 3
-        elif self.cbx_current_position.active:
-            return 4
-        return 1
 
 class ConfigPopup(ModalView):
     def __init__(self, **kwargs):
@@ -543,30 +580,37 @@ class ConfigPopup(ModalView):
     def on_dismiss(self):
         pass
 
+
 class SetXPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetXPopup, self).__init__(**kwargs)
+
 
 class SetYPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetYPopup, self).__init__(**kwargs)
 
+
 class SetZPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetZPopup, self).__init__(**kwargs)
+
 
 class SetAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetAPopup, self).__init__(**kwargs)
 
+
 class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+
+
 class MakeraConfigPanel(SettingsWithSidebar):
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
@@ -582,20 +626,26 @@ class MakeraConfigPanel(SettingsWithSidebar):
             elif key == 'default' and value == 'DEFAULT':
                 app.root.open_setting_default_confirm_popup()
 
+
 class JogSpeedDropDown(DropDown):
     pass
+
 
 class XDropDown(DropDown):
     pass
 
+
 class YDropDown(DropDown):
     pass
+
 
 class ZDropDown(DropDown):
     pass
 
+
 class ADropDown(DropDown):
     pass
+
 
 class FeedDropDown(DropDown):
     opened = False
@@ -603,17 +653,20 @@ class FeedDropDown(DropDown):
     def on_dismiss(self):
         self.opened = False
 
+
 class SpindleDropDown(DropDown):
     opened = False
 
     def on_dismiss(self):
         self.opened = False
 
+
 class ToolDropDown(DropDown):
     opened = False
 
     def on_dismiss(self):
         self.opened = False
+
 
 class LaserDropDown(DropDown):
     opened = False
@@ -625,9 +678,11 @@ class LaserDropDown(DropDown):
 class FuncDropDown(DropDown):
     pass
 
+
 class StatusDropDown(DropDown):
     def __init__(self, **kwargs):
         super(StatusDropDown, self).__init__(**kwargs)
+
 
 class ComPortsDropDown(DropDown):
     def __init__(self, **kwargs):
@@ -637,25 +692,31 @@ class ComPortsDropDown(DropDown):
 class OperationDropDown(DropDown):
     pass
 
+
 class MachineButton(Button):
     ip = StringProperty("")
     port = NumericProperty(2222)
     busy = BooleanProperty(False)
 
+
 class IconButton(BoxLayout, Button):
     icon = StringProperty("fresk.png")
+
 
 class TransparentButton(BoxLayout, Button):
     icon = StringProperty("fresk.png")
 
+
 class TransparentGrayButton(BoxLayout, Button):
     icon = StringProperty("fresk.png")
+
 
 class WiFiButton(BoxLayout, Button):
     ssid = StringProperty("")
     encrypted = BooleanProperty(False)
     strength = NumericProperty(1000)
     connected = BooleanProperty(False)
+
 
 class CNCWorkspace(Widget):
     config = {}
@@ -695,10 +756,12 @@ class CNCWorkspace(Widget):
                     Color(75 / 255, 75 / 255, 75 / 255, 1)
                 else:
                     Color(55 / 255, 55 / 255, 55 / 255, 1)
-                Rectangle(pos=(self.x + CNC.vars['anchor2_offset_x'] * zoom, self.y + CNC.vars['anchor2_offset_y'] * zoom),
-                          size=(CNC.vars['anchor_length'] * zoom, CNC.vars['anchor_width'] * zoom))
-                Rectangle(pos=(self.x + CNC.vars['anchor2_offset_x'] * zoom, self.y + CNC.vars['anchor2_offset_y'] * zoom),
-                          size=(CNC.vars['anchor_width'] * zoom, CNC.vars['anchor_length'] * zoom))
+                Rectangle(
+                    pos=(self.x + CNC.vars['anchor2_offset_x'] * zoom, self.y + CNC.vars['anchor2_offset_y'] * zoom),
+                    size=(CNC.vars['anchor_length'] * zoom, CNC.vars['anchor_width'] * zoom))
+                Rectangle(
+                    pos=(self.x + CNC.vars['anchor2_offset_x'] * zoom, self.y + CNC.vars['anchor2_offset_y'] * zoom),
+                    size=(CNC.vars['anchor_width'] * zoom, CNC.vars['anchor_length'] * zoom))
 
             else:
                 rotation_base_y_center = (CNC.vars['anchor_width'] + CNC.vars['rotation_offset_y']) * zoom
@@ -713,12 +776,14 @@ class CNCWorkspace(Widget):
 
                 # draw rotation chuck
                 Color(75 / 255, 75 / 255, 75 / 255, 1)
-                Rectangle(pos=(self.x + (CNC.vars['rotation_head_width'] + CNC.vars['rotation_chuck_interval']) * zoom, self.y + rotation_base_y_center - CNC.vars['rotation_chuck_dia'] * zoom / 2),
+                Rectangle(pos=(self.x + (CNC.vars['rotation_head_width'] + CNC.vars['rotation_chuck_interval']) * zoom,
+                               self.y + rotation_base_y_center - CNC.vars['rotation_chuck_dia'] * zoom / 2),
                           size=(CNC.vars['rotation_chuck_width'] * zoom, CNC.vars['rotation_chuck_dia'] * zoom))
 
                 # draw rotation tail
                 Color(75 / 255, 75 / 255, 75 / 255, 1)
-                Rectangle(pos=(self.x + (CNC.vars['rotation_base_width'] - CNC.vars['rotation_tail_width']) * zoom, self.y + rotation_base_y_center - CNC.vars['rotation_tail_height'] * zoom / 2),
+                Rectangle(pos=(self.x + (CNC.vars['rotation_base_width'] - CNC.vars['rotation_tail_width']) * zoom,
+                               self.y + rotation_base_y_center - CNC.vars['rotation_tail_height'] * zoom / 2),
                           size=(CNC.vars['rotation_tail_width'] * zoom, CNC.vars['rotation_tail_height'] * zoom))
 
                 # draw rotation probe position
@@ -728,40 +793,42 @@ class CNCWorkspace(Widget):
                 # Line(points=[self.x + (CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width']) * zoom, self.y + (CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width'] - 5) * zoom,
                 #              self.x + (CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width']) * zoom, self.y + (CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width'] + 5) * zoom], width=1)
 
-
             laser_x = CNC.vars['laser_module_offset_x'] if CNC.vars['lasermode'] else 0.0
             laser_y = CNC.vars['laser_module_offset_y'] if CNC.vars['lasermode'] else 0.0
 
             # origin
-            Color(52/255, 152/255, 219/255, 1)
+            Color(52 / 255, 152 / 255, 219 / 255, 1)
             origin_x = CNC.vars['wcox'] - CNC.vars['anchor1_x'] + CNC.vars['anchor_width'] + laser_x
             origin_y = CNC.vars['wcoy'] - CNC.vars['anchor1_y'] + CNC.vars['anchor_width'] + laser_y
             Ellipse(pos=(self.x + origin_x * zoom - 10, self.y + origin_y * zoom - 10), size=(20, 20))
 
             # work area
             Color(0, 0.8, 0, 1)
-            Line(width=(2 if self.config['margin']['active'] else 1), rectangle=(self.x + (origin_x + CNC.vars['xmin']) * zoom, self.y + (origin_y + CNC.vars['ymin']) * zoom,
-                                     (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom, (CNC.vars['ymax'] - CNC.vars['ymin']) * zoom))
+            Line(width=(2 if self.config['margin']['active'] else 1), rectangle=(
+                self.x + (origin_x + CNC.vars['xmin']) * zoom, self.y + (origin_y + CNC.vars['ymin']) * zoom,
+                (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom, (CNC.vars['ymax'] - CNC.vars['ymin']) * zoom))
 
             # z probe
             if self.config['zprobe']['active']:
                 Color(231 / 255, 76 / 255, 60 / 255, 1)
-                zprobe_x = self.config['zprobe']['x_offset'] + (origin_x if self.config['zprobe']['origin'] == 1 else origin_x + CNC.vars['xmin'])
-                zprobe_y = self.config['zprobe']['y_offset'] + (origin_y if self.config['zprobe']['origin'] == 1 else origin_y + CNC.vars['ymin'])
+                zprobe_x = self.config['zprobe']['x_offset'] + (
+                    origin_x if self.config['zprobe']['origin'] == 1 else origin_x + CNC.vars['xmin'])
+                zprobe_y = self.config['zprobe']['y_offset'] + (
+                    origin_y if self.config['zprobe']['origin'] == 1 else origin_y + CNC.vars['ymin'])
                 if app.has_4axis:
                     zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
                     zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
                 Ellipse(pos=(self.x + zprobe_x * zoom - 7.5, self.y + zprobe_y * zoom - 7.5), size=(15, 15))
 
-
             # auto leveling
             if self.config['leveling']['active']:
-                Color(244/255, 208/255, 63/255, 1)
+                Color(244 / 255, 208 / 255, 63 / 255, 1)
                 for x in Utils.xfrange(0.0, CNC.vars['xmax'] - CNC.vars['xmin'], self.config['leveling']['x_points']):
-                    for y in Utils.xfrange(0.0, CNC.vars['ymax'] - CNC.vars['ymin'], self.config['leveling']['y_points']):
-                        Ellipse(pos=(self.x + (origin_x + CNC.vars['xmin'] + x) * zoom - 5, self.y + (origin_y + CNC.vars['ymin'] + y) * zoom - 5), size=(10, 10))
+                    for y in Utils.xfrange(0.0, CNC.vars['ymax'] - CNC.vars['ymin'],
+                                           self.config['leveling']['y_points']):
+                        Ellipse(pos=(self.x + (origin_x + CNC.vars['xmin'] + x) * zoom - 5,
+                                     self.y + (origin_y + CNC.vars['ymin'] + y) * zoom - 5), size=(10, 10))
                         # print('x=%f, y=%f' % (x, y))
-
 
     def on_draw(self, obj, value):
         self.draw()
@@ -771,17 +838,22 @@ class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
                                  RecycleBoxLayout):
     ''' Adds selection and focus behaviour to the view. '''
 
+
 class TopDataView(BoxLayout, Button):
     pass
+
 
 class DirectoryView(BoxLayout, Button):
     pass
 
+
 class DropDownHint(Label):
     pass
 
+
 class DropDownSplitter(Label):
     pass
+
 
 class SelectableLabel(RecycleDataViewBehavior, Label):
     ''' Add selection support to the Label '''
@@ -809,6 +881,7 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
+
 
 class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
     ''' Add selection support to the Label '''
@@ -846,6 +919,7 @@ class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
             rv.set_curr_selected_file(rv.data[self.index]['filename'], rv.data[self.index]['intsize'])
             rv.dispatch('on_select')
 
+
 # -----------------------------------------------------------------------
 # Data Recycle View
 # -----------------------------------------------------------------------
@@ -864,7 +938,7 @@ class DataRV(RecycleView):
     curr_full_path_list = []
     curr_file_list_buff = []
 
-    default_sort_reverse = {'name': False, 'date': True, 'size' : False}
+    default_sort_reverse = {'name': False, 'date': True, 'size': False}
     search_event = None
 
     curr_selected_file = ''
@@ -880,7 +954,7 @@ class DataRV(RecycleView):
 
     # -----------------------------------------------------------------------
     def set_curr_selected_file(self, filename, filesize):
-        self.curr_selected_file =  os.path.join(self.curr_dir, filename)
+        self.curr_selected_file = os.path.join(self.curr_dir, filename)
         self.curr_selected_filesize = filesize
 
     # -----------------------------------------------------------------------
@@ -892,9 +966,9 @@ class DataRV(RecycleView):
     # -----------------------------------------------------------------------
     def child_dir(self, child_dir):
         new_path = os.path.join(self.curr_dir, child_dir)
-        self.list_dir(new_dir = new_path)
+        self.list_dir(new_dir=new_path)
 
-    def fill_dir(self, sort_key = None, switch_reverse = True, keyword = None):
+    def fill_dir(self, sort_key=None, switch_reverse=True, keyword=None):
         if sort_key == None:
             sort_key = self.curr_sort_key
         sort_reverse = self.curr_sort_reverse
@@ -912,7 +986,7 @@ class DataRV(RecycleView):
             self.curr_sort_str = ['', '↓' if sort_reverse else '↑', '']
         elif sort_key == 'size':
             self.curr_sort_str = ['', '', '↓' if sort_reverse else '↑']
-        self.curr_file_list_buff = sorted(self.curr_file_list_buff, key = lambda x: x[sort_key], reverse = sort_reverse)
+        self.curr_file_list_buff = sorted(self.curr_file_list_buff, key=lambda x: x[sort_key], reverse=sort_reverse)
 
         filtered_list = []
         app = App.get_running_app()
@@ -940,18 +1014,19 @@ class DataRV(RecycleView):
         if index < len(self.curr_full_path_list):
             app = App.get_running_app()
             app.root.file_popup.ti_local_search.text = ''
-            self.list_dir(new_dir = self.curr_full_path_list[index])
+            self.list_dir(new_dir=self.curr_full_path_list[index])
 
     def delay_search(self, keyword):
-        #if keyword == None or keyword.strip() == '':
+        # if keyword == None or keyword.strip() == '':
         #    return
         if self.search_event is not None:
             self.search_event.cancel()
         self.search_event = Clock.schedule_once(partial(self.execute_search, keyword), 1)
 
     def execute_search(self, keyword, *args):
-        self.fill_dir(keyword = keyword, switch_reverse = False)
+        self.fill_dir(keyword=keyword, switch_reverse=False)
         self.search_event = None
+
 
 # -----------------------------------------------------------------------
 # Remote Recycle View
@@ -972,16 +1047,16 @@ class RemoteRV(DataRV):
     def parent_dir(self):
         normpath = os.path.normpath(self.curr_dir)
         if normpath == self.base_dir or normpath == self.base_dir_win:
-            self.list_dir(new_dir = normpath)
+            self.list_dir(new_dir=normpath)
         else:
-            self.list_dir(new_dir = os.path.dirname(normpath))
+            self.list_dir(new_dir=os.path.dirname(normpath))
 
     # -----------------------------------------------------------------------
     def current_dir(self, *args):
-        self.list_dir(new_dir = os.path.normpath(self.curr_dir))
+        self.list_dir(new_dir=os.path.normpath(self.curr_dir))
 
     # -----------------------------------------------------------------------
-    def list_dir(self, new_dir = None):
+    def list_dir(self, new_dir=None):
         if new_dir == None:
             new_dir = self.curr_dir
 
@@ -992,6 +1067,7 @@ class RemoteRV(DataRV):
         app.root.loadRemoteDir(new_dir)
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
+
 
 # -----------------------------------------------------------------------
 # Local Recycle View
@@ -1009,10 +1085,10 @@ class LocalRV(DataRV):
 
     # -----------------------------------------------------------------------
     def parent_dir(self):
-        self.list_dir(new_dir = os.path.abspath(os.path.join(self.curr_dir, os.pardir)))
+        self.list_dir(new_dir=os.path.abspath(os.path.join(self.curr_dir, os.pardir)))
 
     # -----------------------------------------------------------------------
-    def list_dir(self, new_dir = None):
+    def list_dir(self, new_dir=None):
         if new_dir == None:
             new_dir = self.curr_dir
 
@@ -1030,7 +1106,7 @@ class LocalRV(DataRV):
                     except:
                         continue
                     self.curr_file_list_buff.append({'name': dirname, 'path': file_path,
-                                           'is_dir': True, 'size': 0, 'date': file_time})
+                                                     'is_dir': True, 'size': 0, 'date': file_time})
             for filename in filenames:
                 if not filename.startswith('.'):
                     file_size = 0
@@ -1042,10 +1118,10 @@ class LocalRV(DataRV):
                     except:
                         continue
                     self.curr_file_list_buff.append({'name': filename, 'path': file_path,
-                                       'is_dir': False, 'size': file_size, 'date': file_time})
+                                                     'is_dir': False, 'size': file_size, 'date': file_time})
             break
 
-        self.fill_dir(switch_reverse = False)
+        self.fill_dir(switch_reverse=False)
 
         self.curr_dir = os.path.normpath(new_dir)
         win_drivers = ['%s:' % d for d in string.ascii_uppercase]
@@ -1077,6 +1153,7 @@ class LocalRV(DataRV):
 
         if self.curr_path_list[0] == self.base_dir:
             self.curr_path_list[0] = 'root'
+
 
 # -----------------------------------------------------------------------
 # GCode Recycle View
@@ -1115,12 +1192,14 @@ class GCodeRV(RecycleView):
                 self.new_selected_line = line - 1
                 Clock.schedule_once(self.select_line, 0)
                 if time.time() - self.scroll_time > 3:
-                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length -  page_lines / 2 + 1, 1.0, 0.0)
+                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length - page_lines / 2 + 1,
+                                                   1.0, 0.0)
                     if scroll_value < 0:
                         scroll_value = 0
                     if scroll_value > 1:
                         scroll_value = 1
                     self.scroll_y = scroll_value
+
 
 # -----------------------------------------------------------------------
 # Manual Recycle View
@@ -1134,41 +1213,54 @@ class ManualRV(RecycleView):
 class TopBar(BoxLayout):
     pass
 
+
 class BottomBar(BoxLayout):
     pass
+
+
 # -----------------------------------------------------------------------
 class Content(ScreenManager):
     pass
+
 
 # Declare both screens
 class FilePage(Screen):
     pass
 
+
 class ControlPage(Screen):
     pass
 
+
 class SettingPage(Screen):
     pass
+
 
 # -----------------------------------------------------------------------
 class CMDManager(ScreenManager):
     pass
 
+
 class GCodeCMDPage(Screen):
     pass
 
+
 class ManualCMDPage(Screen):
     pass
+
 
 # -----------------------------------------------------------------------
 class PopupManager(ScreenManager):
     pass
 
+
 class RemotePage(Screen):
     pass
 
+
 class LocalPage(Screen):
     pass
+
 
 class Makera(RelativeLayout):
     holding = 0
@@ -1254,8 +1346,8 @@ class Makera(RelativeLayout):
     filetype_support = 'nc'
     filetype = ''
 
-    fileCompressionBlocks = 0    #文件压缩后的块数
-    decompercent = 0    #carvera解压压缩文件的块数
+    fileCompressionBlocks = 0  # 文件压缩后的块数
+    decompercent = 0  # carvera解压压缩文件的块数
     decompercentlast = 0  # carvera解压压缩文件的块数
     decompstatus = False
     decomptime = 0
@@ -1274,22 +1366,22 @@ class Makera(RelativeLayout):
 
     control_list = {
         # 'control_name: [update_time, value]'
-        'feedrate_scale':     [0.0, 100],
-        'spindle_scale':      [0.0, 100],
-        'vacuum_mode':        [0.0, 0],
-        'laser_mode':         [0.0, 0],
-        'laser_scale':        [0.0, 100],
-        'laser_test':         [0.0, 0],
-        'spindle_switch':     [0.0, 0],
-        'spindle_slider':     [0.0, 0],
-        'spindlefan_slider':  [0.0, 0],
-        'vacuum_slider':      [0.0, 0],
-        'laser_switch':       [0.0, 0],
-        'laser_slider':       [0.0, 0],
-        'light_switch':       [0.0, 0],
+        'feedrate_scale': [0.0, 100],
+        'spindle_scale': [0.0, 100],
+        'vacuum_mode': [0.0, 0],
+        'laser_mode': [0.0, 0],
+        'laser_scale': [0.0, 100],
+        'laser_test': [0.0, 0],
+        'spindle_switch': [0.0, 0],
+        'spindle_slider': [0.0, 0],
+        'spindlefan_slider': [0.0, 0],
+        'vacuum_slider': [0.0, 0],
+        'laser_switch': [0.0, 0],
+        'laser_slider': [0.0, 0],
+        'light_switch': [0.0, 0],
         'tool_sensor_switch': [0.0, 0],
-        'air_switch':         [0.0, 0],
-        'wp_charge_switch'  : [0.0, 0],
+        'air_switch': [0.0, 0],
+        'wp_charge_switch': [0.0, 0],
     }
 
     status_index = 0
@@ -1310,6 +1402,13 @@ class Makera(RelativeLayout):
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
 
         self.coord_config = {
+            'probing': {
+                'invert_probe': 0,
+                'x': 0.0,
+                'y': 0.0,
+                'z': 0.0,
+                'a': 0.0
+            },
             'origin': {
                 'anchor': 1,
                 'x_offset': 0.0,
@@ -1338,14 +1437,13 @@ class Makera(RelativeLayout):
         self.upgrade_popup = UpgradePopup()
         self.language_popup = LanguagePopup()
         self.language_popup.sp_language.values = LANGS.values()
-        self.language_popup.sp_language.text =  'English'
+        self.language_popup.sp_language.text = 'English'
         for lang_key in LANGS.keys():
             if lang_key == default_lang:
                 self.language_popup.sp_language.text = LANGS[lang_key]
                 break
 
         self.diagnose_popup = DiagnosePopup()
-        self.probing_popup = ProbingPopup(self)
 
         self.x_drop_down = XDropDown()
         self.y_drop_down = YDropDown()
@@ -1410,7 +1508,7 @@ class Makera(RelativeLayout):
             self.past_machine_addr = Config.get('carvera', 'address')
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
-           self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
@@ -1426,16 +1524,16 @@ class Makera(RelativeLayout):
             shutil.rmtree(self.temp_dir)
         except Exception as e:
             print(f"Error cleaning up temporary directory: {e}")
-        
+
         # Save the last window size. 
         # Seems that kivvy uses the window size before dpi scaling in the config, 
         # but after dp scaling in Window.size
-        Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
-        Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
+        Config.set('graphics', 'width', int(Window.size[0] / Metrics.dp))
+        Config.set('graphics', 'height', int(Window.size[1] / Metrics.dp))
         Config.write()
-    
+
     def load_controller_config(self):
-        config_def_file = os.path.join(os.path.dirname(__file__),'controller_config.json')
+        config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
         with open(config_def_file) as file:
             controller_config_definition = json.load(file)
         controller_config = []
@@ -1449,15 +1547,14 @@ class Makera(RelativeLayout):
 
         self.config_popup.settings_panel.add_json_panel('Controller', Config, data=json.dumps(controller_config))
 
-
     def open_download(self):
-        webbrowser.open(DOWNLOAD_ADDRESS, new = 2)
-    
+        webbrowser.open(DOWNLOAD_ADDRESS, new=2)
+
     def send_bug_report(self):
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues')
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues')
         log_dir = Path.home() / ".kivy" / "logs"
-        
+
         # Open the log directory with whatever native file browser is availiable
         if sys.platform == "win32":
             os.startfile(log_dir)
@@ -1481,8 +1578,8 @@ class Makera(RelativeLayout):
         self.fw_upd_text = ''
         self.fw_version_checked = False
         self.ctl_upd_text = ''
-        UrlRequest(FW_UPD_ADDRESS, on_success = self.fw_upd_loaded)
-        UrlRequest(CTL_UPD_ADDRESS, on_success = self.ctl_upd_loaded)
+        UrlRequest(FW_UPD_ADDRESS, on_success=self.fw_upd_loaded)
+        UrlRequest(CTL_UPD_ADDRESS, on_success=self.ctl_upd_loaded)
 
     def fw_upd_loaded(self, req, result):
         # parse result
@@ -1493,12 +1590,13 @@ class Makera(RelativeLayout):
         self.upgrade_popup.fw_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
         versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
         if versions != None:
-            self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
+            self.fw_version_new = versions[0][1: len(versions[0]) - 1]
             if self.fw_version_old != '':
                 app = App.get_running_app()
                 if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version_old):
                     app.fw_has_update = True
-                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(
+                        ' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
                 else:
                     app.fw_has_update = False
                     self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version_old
@@ -1520,17 +1618,17 @@ class Makera(RelativeLayout):
         self.message_popup.lb_content.text = tr._('Language setting applied, restart Controller app to take effect !')
         self.message_popup.open()
 
-
     def check_ctl_version(self, *args):
         self.upgrade_popup.ctl_upd_text.text = self.ctl_upd_text
         self.upgrade_popup.ctl_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
         versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
         if versions != None:
-            self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
+            self.ctl_version_new = versions[0][1: len(versions[0]) - 1]
             app = App.get_running_app()
             if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version_old):
                 app.ctl_has_update = True
-                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(
+                    ' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
             else:
                 app.ctl_has_update = False
                 self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version_old
@@ -1548,7 +1646,7 @@ class Makera(RelativeLayout):
         self.controller.playCommand(file_name)
 
     # -----------------------------------------------------------------------
-    def apply(self, buffer = False):
+    def apply(self, buffer=False):
         app = App.get_running_app()
 
         goto_origin = False
@@ -1559,7 +1657,8 @@ class Makera(RelativeLayout):
         if app.has_4axis:
             goto_origin = True
         elif not apply_margin and not apply_zprobe and not apply_leveling:
-            if CNC.vars['wx'] < CNC.vars['xmin'] or CNC.vars['wx'] > CNC.vars['xmax'] or CNC.vars['wy'] < CNC.vars['ymin'] \
+            if CNC.vars['wx'] < CNC.vars['xmin'] or CNC.vars['wx'] > CNC.vars['xmax'] or CNC.vars['wy'] < CNC.vars[
+                'ymin'] \
                     or CNC.vars['wy'] > CNC.vars['ymax']:
                 goto_origin = True
 
@@ -1576,12 +1675,12 @@ class Makera(RelativeLayout):
         self.controller.autoCommand(apply_margin, apply_zprobe,
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
-                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer)
+                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'],
+                                    buffer)
 
         # change back to last tool if needed
         if buffer and self.upcoming_tool == 0 and (apply_margin or apply_zprobe or apply_leveling):
             self.controller.bufferChangeToolCommand(CNC.vars["tool"])
-
 
     # -----------------------------------------------------------------------
     def set_work_origin(self):
@@ -1606,7 +1705,6 @@ class Makera(RelativeLayout):
 
         # refresh after 1 seconds
         Clock.schedule_once(self.refresh_work_origin, 1)
-
 
     # -----------------------------------------------------------------------
     def refresh_work_origin(self, *args):
@@ -1681,13 +1779,17 @@ class Makera(RelativeLayout):
     def fetch_common_local_dir_list(self):
         home_path = Path.home()
         if home_path.exists():
-            self.common_local_dir_list.append({'name': os.path.basename(home_path), 'path': str(home_path), 'icon': 'data/folder-home.png'})
+            self.common_local_dir_list.append(
+                {'name': os.path.basename(home_path), 'path': str(home_path), 'icon': 'data/folder-home.png'})
         if home_path.joinpath('Documents').exists():
-            self.common_local_dir_list.append({'name': tr._('Documents'), 'path': str(home_path.joinpath('Documents')), 'icon': 'data/folder-documents.png'})
+            self.common_local_dir_list.append({'name': tr._('Documents'), 'path': str(home_path.joinpath('Documents')),
+                                               'icon': 'data/folder-documents.png'})
         if home_path.joinpath('Downloads').exists():
-            self.common_local_dir_list.append({'name': tr._('Downloads'), 'path': str(home_path.joinpath('Downloads')), 'icon': 'data/folder-downloads.png'})
+            self.common_local_dir_list.append({'name': tr._('Downloads'), 'path': str(home_path.joinpath('Downloads')),
+                                               'icon': 'data/folder-downloads.png'})
         if home_path.joinpath('Desktop').exists():
-            self.common_local_dir_list.append({'name': tr._('Desktop'), 'path': str(home_path.joinpath('Desktop')), 'icon': 'data/folder-desktop.png'})
+            self.common_local_dir_list.append({'name': tr._('Desktop'), 'path': str(home_path.joinpath('Desktop')),
+                                               'icon': 'data/folder-desktop.png'})
 
         # android storage
         if platform == 'android':
@@ -1744,7 +1846,8 @@ class Makera(RelativeLayout):
         self.local_dir_drop_down.clear_widgets()
 
         for common_dir in self.common_local_dir_list:
-            btn = DirectoryView(full_path = common_dir['path'], data_text = common_dir['name'], data_icon = common_dir['icon'], size_hint_y=None, height='30dp')
+            btn = DirectoryView(full_path=common_dir['path'], data_text=common_dir['name'],
+                                data_icon=common_dir['icon'], size_hint_y=None, height='30dp')
             btn.bind(on_release=lambda btn: self.local_dir_drop_down.select(btn.full_path))
             self.local_dir_drop_down.add_widget(btn)
 
@@ -1752,7 +1855,8 @@ class Makera(RelativeLayout):
         self.local_dir_drop_down.add_widget(splitter)
 
         for recent_dir in self.recent_local_dir_list:
-            btn = DirectoryView(full_path = recent_dir, data_text = os.path.basename(recent_dir), data_icon = '', size_hint_y=None, height='30dp')
+            btn = DirectoryView(full_path=recent_dir, data_text=os.path.basename(recent_dir), data_icon='',
+                                size_hint_y=None, height='30dp')
             btn.bind(on_release=lambda btn: self.local_dir_drop_down.select(btn.full_path))
             self.local_dir_drop_down.add_widget(btn)
 
@@ -1796,7 +1900,8 @@ class Makera(RelativeLayout):
         self.remote_dir_drop_down.add_widget(splitter)
 
         for recent_dir in self.recent_remote_dir_list:
-            btn = DirectoryView(full_path = recent_dir, data_text = os.path.basename(recent_dir), data_icon = '', size_hint_y=None, height='30dp')
+            btn = DirectoryView(full_path=recent_dir, data_text=os.path.basename(recent_dir), data_icon='',
+                                size_hint_y=None, height='30dp')
             btn.bind(on_release=lambda btn: self.remote_dir_drop_down.select(btn.full_path))
             self.remote_dir_drop_down.add_widget(btn)
 
@@ -1807,10 +1912,13 @@ class Makera(RelativeLayout):
         if self.past_machine_addr:
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
-            else: 
-                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+            else:
+                Clock.schedule_once(
+                    partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False),
+                    0)
         else:
-            Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
 
     def open_wifi_conn_drop_down(self, button):
@@ -1836,7 +1944,8 @@ class Makera(RelativeLayout):
             self.wifi_conn_drop_down.add_widget(btn)
         else:
             for machine in machines:
-                btn = MachineButton(text=machine['machine']+('(Busy)' if machine['busy'] else ''), ip=machine['ip'], port=machine['port'], size_hint_y=None, height='35dp')
+                btn = MachineButton(text=machine['machine'] + ('(Busy)' if machine['busy'] else ''), ip=machine['ip'],
+                                    port=machine['port'], size_hint_y=None, height='35dp')
                 btn.bind(on_release=lambda btn: self.wifi_conn_drop_down.select(btn.ip + ':' + str(btn.port)))
                 self.wifi_conn_drop_down.add_widget(btn)
                 self.wifi_conn_drop_down.unbind(on_select=self.wifi_event)
@@ -1862,7 +1971,7 @@ class Makera(RelativeLayout):
             return False
         self.store_machine_address(ip)
         self.openWIFI(ip)
-    
+
     def store_machine_address(self, address):
         Config.set('carvera', 'address', address)
         Config.write()
@@ -1915,9 +2024,9 @@ class Makera(RelativeLayout):
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
-                        self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
+                        self.manual_rv.data.append({'text': line, 'color': (103 / 255, 150 / 255, 186 / 255, 1)})
                     elif msg == Controller.MSG_ERROR:
-                        self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
+                        self.manual_rv.data.append({'text': line, 'color': (250 / 255, 105 / 255, 102 / 255, 1)})
                 except:
                     print(sys.exc_info()[1])
                     break
@@ -1947,9 +2056,11 @@ class Makera(RelativeLayout):
             if self.controller.loadNUM == LOAD_DIR:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
-                        Clock.schedule_once(partial(self.loadError, tr._('Error loading dir') + ' \'%s\'!' % (self.loading_dir)), 0)
+                        Clock.schedule_once(
+                            partial(self.loadError, tr._('Error loading dir') + ' \'%s\'!' % (self.loading_dir)), 0)
                     elif t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                        Clock.schedule_once(partial(self.loadError, tr._('Timeout loading dir') + ' \'%s\'!' % (self.loading_dir)), 0)
+                        Clock.schedule_once(
+                            partial(self.loadError, tr._('Timeout loading dir') + ' \'%s\'!' % (self.loading_dir)), 0)
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
@@ -1957,9 +2068,11 @@ class Makera(RelativeLayout):
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
-                        Clock.schedule_once(partial(self.loadError, tr._('Error deleting') + ' \'%s\'!' % (self.file_popup.remote_rv.curr_selected_file)), 0)
+                        Clock.schedule_once(partial(self.loadError, tr._('Error deleting') + ' \'%s\'!' % (
+                            self.file_popup.remote_rv.curr_selected_file)), 0)
                     elif t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                        Clock.schedule_once(partial(self.loadError, tr._('Timeout deleting') + '\'%s\'!' % (self.file_popup.remote_rv.curr_selected_file)), 0)
+                        Clock.schedule_once(partial(self.loadError, tr._('Timeout deleting') + '\'%s\'!' % (
+                            self.file_popup.remote_rv.curr_selected_file)), 0)
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
@@ -1967,9 +2080,11 @@ class Makera(RelativeLayout):
             if self.controller.loadNUM == LOAD_MV:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
-                        Clock.schedule_once(partial(self.loadError, tr._('Error renaming') +' \'%s\'!' % (self.file_popup.remote_rv.curr_selected_file)), 0)
+                        Clock.schedule_once(partial(self.loadError, tr._('Error renaming') + ' \'%s\'!' % (
+                            self.file_popup.remote_rv.curr_selected_file)), 0)
                     elif t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                        Clock.schedule_once(partial(self.loadError, tr._('Timeout renaming') + ' \'%s\'!' % (self.file_popup.remote_rv.curr_selected_file)), 0)
+                        Clock.schedule_once(partial(self.loadError, tr._('Timeout renaming') + ' \'%s\'!' % (
+                            self.file_popup.remote_rv.curr_selected_file)), 0)
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
@@ -1977,9 +2092,11 @@ class Makera(RelativeLayout):
             if self.controller.loadNUM == LOAD_MKDIR:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
-                        Clock.schedule_once(partial(self.loadError, tr._('Error making dir:') + ' \'%s\'!' % (self.input_popup.txt_content.text.strip())), 0)
+                        Clock.schedule_once(partial(self.loadError, tr._('Error making dir:') + ' \'%s\'!' % (
+                            self.input_popup.txt_content.text.strip())), 0)
                     elif t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                        Clock.schedule_once(partial(self.loadError, tr._('Timeout making dir:') + ' \'%s\'!' % (self.input_popup.txt_content.text.strip())), 0)
+                        Clock.schedule_once(partial(self.loadError, tr._('Timeout making dir:') + ' \'%s\'!' % (
+                            self.input_popup.txt_content.text.strip())), 0)
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
@@ -2010,7 +2127,8 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def open_del_confirm_popup(self):
         self.confirm_popup.lb_title.text = tr._('Delete File or Dir')
-        self.confirm_popup.lb_content.text = tr._('Confirm to delete file or dir') + '\'%s\'?' % (self.file_popup.remote_rv.curr_selected_file)
+        self.confirm_popup.lb_content.text = tr._('Confirm to delete file or dir') + '\'%s\'?' % (
+            self.file_popup.remote_rv.curr_selected_file)
         self.confirm_popup.confirm = partial(self.removeRemoteFile, self.file_popup.remote_rv.curr_selected_file)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
@@ -2022,7 +2140,8 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
 
         if CNC.vars["halt_reason"] in HALT_REASON:
-            self.confirm_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
+            self.confirm_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (
+                HALT_REASON[CNC.vars["halt_reason"]])
         else:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted!')
         self.confirm_popup.cancel = None
@@ -2057,11 +2176,11 @@ class Makera(RelativeLayout):
         elif CNC.vars['target_tool'] == 8888:
             target_tool = 'Laser'
         self.confirm_popup.lb_title.text = tr._('Changing Tool')
-        self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._(
+            'Then press \' Confirm\' or main button to proceed')
         self.confirm_popup.cancel = None
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
-
 
     # -----------------------------------------------------------------------
     def resetMachine(self):
@@ -2087,7 +2206,8 @@ class Makera(RelativeLayout):
         self.file_popup.local_rv.child_dir(dir)
 
     def open_rename_input_popup(self):
-        self.input_popup.lb_title.text = tr._('Change name') +'\'%s\' to:' % (self.file_popup.remote_rv.curr_selected_file)
+        self.input_popup.lb_title.text = tr._('Change name') + '\'%s\' to:' % (
+            self.file_popup.remote_rv.curr_selected_file)
         self.input_popup.txt_content.text = ''
         self.input_popup.txt_content.password = False
         self.input_popup.confirm = partial(self.renameRemoteFile, self.file_popup.remote_rv.curr_selected_file)
@@ -2138,7 +2258,8 @@ class Makera(RelativeLayout):
         app.selected_remote_filename = remote_path
         self.wpb_play.value = 0
 
-        Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
+        Clock.schedule_once(
+            partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
         self.load_selected_gcode_file()
 
     def check_upload_and_select(self):
@@ -2220,8 +2341,10 @@ class Makera(RelativeLayout):
                     try:
                         self.setting_list[key.strip()] = value.strip()
                     except AttributeError:
-                        Clock.schedule_once(partial(self.load_error, tr._('Error loading machine config setting. Possibly malformed value.\nSkipping setting key: ') + str(key)), 0)
-            
+                        Clock.schedule_once(partial(self.load_error, tr._(
+                            'Error loading machine config setting. Possibly malformed value.\nSkipping setting key: ') + str(
+                            key)), 0)
+
             self.load_coordinates()
             self.load_laser_offsets()
             self.setting_change_list = {}
@@ -2231,7 +2354,7 @@ class Makera(RelativeLayout):
             self.config_popup.btn_apply.disabled = True if len(self.setting_change_list) == 0 else False
         else:
             self.controller.log.put(Controller.MSG_ERROR, tr._('Download config file error'))
-            #self.controller.close()
+            # self.controller.close()
 
         app = App.get_running_app()
         app.selected_local_filename = ''
@@ -2241,12 +2364,13 @@ class Makera(RelativeLayout):
     def doDownload(self):
         app = App.get_running_app()
         if not self.downloading_config and not os.path.exists(os.path.dirname(app.selected_local_filename)):
-            #os.mkdir(os.path.dirname(app.selected_local_filename))
+            # os.mkdir(os.path.dirname(app.selected_local_filename))
             os.makedirs(os.path.dirname(app.selected_local_filename))
         if os.path.exists(app.selected_local_filename):
             shutil.copyfile(app.selected_local_filename, app.selected_local_filename + '.tmp')
 
-        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % app.selected_local_filename), \
+        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (
+                tr._('Checking') + ' \n%s' % app.selected_local_filename), \
                                     None if self.downloading_config else self.cancelProcessingFile), 0)
         self.downloading = True
         download_result = False
@@ -2296,7 +2420,9 @@ class Makera(RelativeLayout):
                 self.filetype = ''
                 Clock.schedule_once(self.controller.queryFtype, 0.4)
             else:
-                Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
+                Clock.schedule_once(
+                    partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename,
+                            True), 0)
                 # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
                 self.load_selected_gcode_file()
 
@@ -2318,18 +2444,19 @@ class Makera(RelativeLayout):
         if model != app.model:
             app.model = model.strip()
             if app.model == 'CA1':
-                self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                           'Tool: 5',
                                                            'Tool: 6', 'Laser']
                 self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
                                                               'Tool: 5', 'Tool: 6', 'Laser']
                 CNC.vars['rotation_base_width'] = 300
                 CNC.vars['rotation_head_width'] = 38
 
-
     # -----------------------------------------------------------------------
     def downloadCallback(self, packet_size, success_count, error_count):
         packets = self.downloading_size / packet_size + (1 if self.downloading_size % packet_size > 0 else 0)
-        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
+        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets,
+                                    tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
 
     # -----------------------------------------------------------------------
     def cancelSelectFile(self):
@@ -2345,7 +2472,8 @@ class Makera(RelativeLayout):
         if self.wifi_ap_status_bar != None:
             self.wifi_ap_status_bar.ssid = tr._('WiFi: Searching for network...')
         else:
-            self.wifi_ap_status_bar = WiFiButton(ssid=tr._('WiFi: Searching for network...'), color=(180 / 255, 180 / 255, 180 / 255, 1))
+            self.wifi_ap_status_bar = WiFiButton(ssid=tr._('WiFi: Searching for network...'),
+                                                 color=(180 / 255, 180 / 255, 180 / 255, 1))
             self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
 
         # load wifi AP
@@ -2365,22 +2493,26 @@ class Makera(RelativeLayout):
             if len(ap_info) > 3:
                 if ap_info[3] == '1':
                     has_connected = True
-                ap_list.append({'ssid': ap_info[0].replace('\x01', ' '), 'connected': True if ap_info[3] == '1' else False,
-                                'encrypted': True if ap_info[1] == '1' else False, 'strength': (int)(ap_info[2])})
+                ap_list.append(
+                    {'ssid': ap_info[0].replace('\x01', ' '), 'connected': True if ap_info[3] == '1' else False,
+                     'encrypted': True if ap_info[1] == '1' else False, 'strength': (int)(ap_info[2])})
 
         self.wifi_ap_drop_down.clear_widgets()
         self.wifi_ap_status_bar = None
-        self.wifi_ap_status_bar = WiFiButton(ssid = tr._('WiFi: Connected') if has_connected else tr._('WiFi: Not Connected'), color=(180 / 255, 180 / 255, 180 / 255, 1))
+        self.wifi_ap_status_bar = WiFiButton(
+            ssid=tr._('WiFi: Connected') if has_connected else tr._('WiFi: Not Connected'),
+            color=(180 / 255, 180 / 255, 180 / 255, 1))
         self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
         if has_connected:
-            btn = WiFiButton(ssid = tr._('Close Connection'))
+            btn = WiFiButton(ssid=tr._('Close Connection'))
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(''))
             self.wifi_ap_drop_down.add_widget(btn)
         # interval
         btn = WiFiButton(height='10dp')
         self.wifi_ap_drop_down.add_widget(btn)
         for ap in ap_list:
-            btn = WiFiButton(connected = ap['connected'], ssid = ap['ssid'], encrypted = ap['encrypted'], strength = ap['strength'])
+            btn = WiFiButton(connected=ap['connected'], ssid=ap['ssid'], encrypted=ap['encrypted'],
+                             strength=ap['strength'])
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(btn.ssid))
             self.wifi_ap_drop_down.add_widget(btn)
 
@@ -2414,15 +2546,16 @@ class Makera(RelativeLayout):
             if new_name in self.setting_list:
                 CNC.vars[coord_name] = float(self.setting_list[new_name])
             else:
-                self.controller.log.put((Controller.MSG_ERROR, tr._('Can not load coordinate value:') + ' {}'.format(new_name)))
+                self.controller.log.put(
+                    (Controller.MSG_ERROR, tr._('Can not load coordinate value:') + ' {}'.format(new_name)))
 
     def load_laser_offsets(self):
         for offset_name in CNC.laser_names:
             if offset_name in self.setting_list:
                 CNC.vars[offset_name] = float(self.setting_list[offset_name])
             else:
-                self.controller.log.put((Controller.MSG_ERROR, tr._('Can not load laser offset value:') + ' {}'.format(offset_name)))
-
+                self.controller.log.put(
+                    (Controller.MSG_ERROR, tr._('Can not load laser offset value:') + ' {}'.format(offset_name)))
 
     # -----------------------------------------------------------------------
     def loadRemoteDir(self, ls_dir):
@@ -2482,7 +2615,8 @@ class Makera(RelativeLayout):
         self.controller.readERR = False
         self.wifi_load_time = time.time()
 
-        Clock.schedule_once(partial(self.show_message_popup, tr._('Connecting to') + ' %s...\n' % self.input_popup.cache_var1, True), 0)
+        Clock.schedule_once(
+            partial(self.show_message_popup, tr._('Connecting to') + ' %s...\n' % self.input_popup.cache_var1, True), 0)
 
         self.controller.connectWiFiCommand(self.input_popup.cache_var1, password)
         return True
@@ -2494,7 +2628,7 @@ class Makera(RelativeLayout):
         self.message_popup.open()
 
     # -----------------------------------------------------------------------
-    def compress_file(self,input_filename):
+    def compress_file(self, input_filename):
         try:
             # 如果上传的文件为固件，则直接返回原文件名不进行压缩
             if input_filename.find('.bin') != -1:
@@ -2537,8 +2671,9 @@ class Makera(RelativeLayout):
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return None
+
     # -----------------------------------------------------------------------
-    def decompress_file(self,input_filename,output_filename):
+    def decompress_file(self, input_filename, output_filename):
         try:
             # 打开输入文件和输出文件
             sum = 0
@@ -2547,7 +2682,7 @@ class Makera(RelativeLayout):
                 # 获取文件大小（以字节为单位）
                 file_size = os.path.getsize(input_filename)
                 while True:
-                    if read_size == (file_size-2):
+                    if read_size == (file_size - 2):
                         break
                     # 读取块数据长度
                     block = f_in.read(BLOCK_HEADER_SIZE)
@@ -2571,7 +2706,7 @@ class Makera(RelativeLayout):
             sumfile = struct.unpack('>H', sumfile)[0]
             sumdata = sum & 0xffff
 
-            if(sumfile != sumdata):
+            if (sumfile != sumdata):
                 print(f"deCompress failed: sum checksum mismatch")
                 return False
 
@@ -2583,32 +2718,35 @@ class Makera(RelativeLayout):
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return False
+
     # -----------------------------------------------------------------------
     def uploadLocalFile(self, filepath, callback=None):
         self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
-        if 'lz' in self.filetype:               #如果固件支持的上传文件类型为.lz，则进行压缩
+        if 'lz' in self.filetype:  # 如果固件支持的上传文件类型为.lz，则进行压缩
             qlzfilename = self.compress_file(filepath)
             if qlzfilename:
                 self.uploading_file = qlzfilename
-        threading.Thread(target=self.doUpload,args=(callback,)).start()
+        threading.Thread(target=self.doUpload, args=(callback,)).start()
 
     # -----------------------------------------------------------------------
     def doUpload(self, callback):
         self.uploading_size = os.path.getsize(self.uploading_file)
-        remotename = os.path.join(self.file_popup.remote_rv.curr_dir, os.path.basename(os.path.normpath(self.uploading_file)))
+        remotename = os.path.join(self.file_popup.remote_rv.curr_dir,
+                                  os.path.basename(os.path.normpath(self.uploading_file)))
         if self.file_popup.firmware_mode:
             remotename = '/sd/firmware.bin'
         displayname = self.uploading_file
         if displayname.endswith(".lz"):
             # 删除 ".lz" 后缀
             displayname = displayname[:-3]
-        Clock.schedule_once(partial(self.progressStart, tr._('Uploading') + '\n%s' % displayname, self.cancelProcessingFile), 0)
+        Clock.schedule_once(
+            partial(self.progressStart, tr._('Uploading') + '\n%s' % displayname, self.cancelProcessingFile), 0)
         self.uploading = True
         self.controller.pauseStream(1)
         upload_result = None
         try:
-            #md5 = Utils.md5(self.uploading_file)
+            # md5 = Utils.md5(self.uploading_file)
             md5 = Utils.md5(displayname)
             self.controller.uploadCommand(os.path.normpath(remotename))
             upload_result = self.controller.stream.upload(self.uploading_file, md5, self.uploadCallback)
@@ -2637,30 +2775,31 @@ class Makera(RelativeLayout):
             Clock.schedule_once(partial(self.show_message_popup, tr._("Upload file error!"), False), 0)
         else:
             # copy file to application directory if needed
-            remote_path = os.path.join(self.file_popup.remote_rv.curr_dir, os.path.basename(os.path.normpath(self.uploading_file)))
+            remote_path = os.path.join(self.file_popup.remote_rv.curr_dir,
+                                       os.path.basename(os.path.normpath(self.uploading_file)))
             remote_post_path = remote_path.replace('/sd/', '').replace('\\sd\\', '')
             local_path = os.path.join(self.temp_dir, remote_post_path)
             if self.uploading_file != local_path and not self.file_popup.firmware_mode:
                 if self.uploading_file.endswith('.lz'):
-                    #copy lz file to .lz dir
+                    # copy lz file to .lz dir
                     lzpath, filename = os.path.split(local_path)
                     lzpath = os.path.join(lzpath, ".lz")
                     lzpath = os.path.join(lzpath, filename)
                     if not os.path.exists(os.path.dirname(lzpath)):
-                        #os.mkdir(os.path.dirname(lzpath))
+                        # os.mkdir(os.path.dirname(lzpath))
                         os.makedirs(os.path.dirname(lzpath))
                     shutil.copyfile(self.uploading_file, lzpath)
 
-                    #copy the origin file
+                    # copy the origin file
                     origin_file = self.uploading_file[0:-3]
                     origin_path = local_path[0:-3]
                     if not os.path.exists(os.path.dirname(origin_path)):
-                        #os.mkdir(os.path.dirname(origin_path))
+                        # os.mkdir(os.path.dirname(origin_path))
                         os.makedirs(os.path.dirname(origin_path))
                     shutil.copyfile(origin_file, origin_path)
                 else:
                     if not os.path.exists(os.path.dirname(local_path)):
-                        #os.mkdir(os.path.dirname(local_path))
+                        # os.mkdir(os.path.dirname(local_path))
                         os.makedirs(os.path.dirname(local_path))
                     shutil.copyfile(self.uploading_file, local_path)
             if self.file_popup.firmware_mode:
@@ -2675,7 +2814,8 @@ class Makera(RelativeLayout):
                 self.decompstatus = True
                 os.remove(self.uploading_file)
                 self.decomptime = time.time()
-                Clock.schedule_once(partial(self.progressStart, tr._('Decompressing') + '\n%s' % displayname, False), 0.2)
+                Clock.schedule_once(partial(self.progressStart, tr._('Decompressing') + '\n%s' % displayname, False),
+                                    0.2)
 
         self.controller.sendNUM = 0
         if upload_result and callback:  # Only run callback if upload succeeded
@@ -2683,7 +2823,6 @@ class Makera(RelativeLayout):
                 callback(remotename[:-3], origin_path)
             else:
                 callback(remotename, local_path)
-
 
     # -----------------------------------------------------------------------
     def confirm_reset(self, *args):
@@ -2709,7 +2848,8 @@ class Makera(RelativeLayout):
             line = self.controller.load_buffer.get_nowait().strip('\r').strip('\n')
             if len(line) > 0 and line[0] != "<":
                 file_infos = line.split()
-                if len(file_infos) == 3 and not file_infos[0].startswith('.') and file_infos[1].isdigit() and file_infos[2].isdigit():
+                if len(file_infos) == 3 and not file_infos[0].startswith('.') and file_infos[1].isdigit() and \
+                        file_infos[2].isdigit():
                     is_dir = False
                     file_infos[0] = file_infos[0].replace('\x01', ' ')
                     if file_infos[0].endswith('/'):
@@ -2721,10 +2861,13 @@ class Makera(RelativeLayout):
                     except:
                         pass
                     self.file_popup.remote_rv.curr_file_list_buff.append({'name': file_infos[0],
-                                                     'path': os.path.join(self.file_popup.remote_rv.curr_dir, file_infos[0]),
-                                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
+                                                                          'path': os.path.join(
+                                                                              self.file_popup.remote_rv.curr_dir,
+                                                                              file_infos[0]),
+                                                                          'is_dir': is_dir, 'size': int(file_infos[1]),
+                                                                          'date': timestamp})
 
-        self.file_popup.remote_rv.fill_dir(switch_reverse = False)
+        self.file_popup.remote_rv.fill_dir(switch_reverse=False)
 
         self.file_popup.remote_rv.curr_dir = os.path.normpath(self.file_popup.remote_rv.curr_dir)
         self.file_popup.remote_rv.curr_dir_name = os.path.basename(os.path.normpath(self.file_popup.remote_rv.curr_dir))
@@ -2879,7 +3022,7 @@ class Makera(RelativeLayout):
             self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["ma"])
             self.a_data_view.minr_text = "{:.3f}".format(CNC.vars["ma"])
 
-            #update feed data
+            # update feed data
             self.feed_data_view.main_text = "{:.0f}".format(CNC.vars["curfeed"])
             self.feed_data_view.scale = CNC.vars["OvFeed"]
             self.feed_data_view.active = CNC.vars["curfeed"] > 0.0
@@ -2922,7 +3065,6 @@ class Makera(RelativeLayout):
                 if self.spindle_drop_down.vacuum_switch.active != CNC.vars["vacuummode"]:
                     self.spindle_drop_down.vacuum_switch.set_flag = True
                     self.spindle_drop_down.vacuum_switch.active = CNC.vars["vacuummode"]
-
 
             elapsed = now - self.control_list['spindle_scale'][0]
             if elapsed < 2:
@@ -2986,7 +3128,6 @@ class Makera(RelativeLayout):
             self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
-
             elapsed = now - self.control_list['laser_mode'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
@@ -3047,16 +3188,20 @@ class Makera(RelativeLayout):
                     self.played_lines = CNC.vars["playedlines"]
                     self.wpb_play.value = CNC.vars["playedpercent"]
                     self.progress_info = ''
-                    if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0:
+                    if (
+                            app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0:
                         # update gcode list
                         self.gcode_rv.set_selected_line(self.played_lines)
                         # update gcode viewer
                         self.gcode_viewer.set_distance_by_lineidx(self.played_lines, 0.5)
                         # update progress info
-                        self.progress_info = os.path.basename(app.selected_remote_filename if app.selected_remote_filename != '' else app.selected_local_filename) + ' ( {}/{} - {}%, {} elapsed'.format( \
-                                                     self.played_lines, self.selected_file_line_count, int(self.wpb_play.value), Utils.second2hour(CNC.vars["playedseconds"]))
+                        self.progress_info = os.path.basename(
+                            app.selected_remote_filename if app.selected_remote_filename != '' else app.selected_local_filename) + ' ( {}/{} - {}%, {} elapsed'.format( \
+                            self.played_lines, self.selected_file_line_count, int(self.wpb_play.value),
+                            Utils.second2hour(CNC.vars["playedseconds"]))
                         if self.wpb_play.value > 0:
-                            self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour((100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value))
+                            self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour(
+                                (100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value))
                         else:
                             self.progress_info = self.progress_info + ' )'
                 # playing margin
@@ -3096,7 +3241,8 @@ class Makera(RelativeLayout):
             elapsed = now - self.control_list['spindle_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setSpindleSwitch(self.control_list['spindle_switch'][1], self.diagnose_popup.sl_spindle.slider.value)
+                    self.controller.setSpindleSwitch(self.control_list['spindle_switch'][1],
+                                                     self.diagnose_popup.sl_spindle.slider.value)
                     self.control_list['spindle_switch'][0] = now - 2
             elif elapsed > 3:
                 if self.diagnose_popup.sw_spindle.switch.active != CNC.vars["sw_spindle"]:
@@ -3105,7 +3251,8 @@ class Makera(RelativeLayout):
             elapsed = now - self.control_list['spindle_slider'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setSpindleSwitch(self.diagnose_popup.sw_spindle.switch.active, self.control_list['spindle_slider'][1])
+                    self.controller.setSpindleSwitch(self.diagnose_popup.sw_spindle.switch.active,
+                                                     self.control_list['spindle_slider'][1])
                     self.control_list['spindle_slider'][0] = now - 2
             elif elapsed > 3:
                 if self.diagnose_popup.sl_spindle.slider.value != CNC.vars["sl_spindle"]:
@@ -3225,7 +3372,7 @@ class Makera(RelativeLayout):
             self.control_list[name][0] = time.time()
             self.control_list[name][1] = value
 
-    def moveLineIndex(self, up = True):
+    def moveLineIndex(self, up=True):
         if up:
             self.test_line = self.test_line - 1
         else:
@@ -3235,13 +3382,13 @@ class Makera(RelativeLayout):
         self.gcode_rv.set_selected_line(self.test_line - 1)
 
     def execCallback(self, line):
-        self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
+        self.manual_rv.data.append({'text': line, 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
 
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
-           self.controller.open(CONN_USB, device)
-           self.controller.connection_type = CONN_USB
+            self.controller.open(CONN_USB, device)
+            self.controller.connection_type = CONN_USB
         except:
             print(sys.exc_info()[1])
         self.updateStatus()
@@ -3284,7 +3431,7 @@ class Makera(RelativeLayout):
         for panel in panels.values():
             if panel.title == 'Controller':
                 controller_config_panels = 1
-        
+
         if len(panels.values()) - controller_config_panels > 0:
             # already have panels, update data
             for panel in panels.values():
@@ -3309,10 +3456,10 @@ class Makera(RelativeLayout):
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
-                            
+
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
-                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics']:
+                        elif child.section.lower() not in ['restore', 'default', 'carvera', 'graphics']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
                             self.controller.close()
@@ -3349,13 +3496,15 @@ class Makera(RelativeLayout):
                                 self.setting_type_list[setting['key']] = setting['type']
                             elif 'default' in setting:
                                 has_setting = True
-                                self.config.setdefaults(setting['section'], {setting['key']: Utils.from_config(setting['type'], setting['default'])})
+                                self.config.setdefaults(setting['section'], {
+                                    setting['key']: Utils.from_config(setting['type'], setting['default'])})
                                 self.setting_type_list[setting['key']] = setting['type']
                                 self.setting_change_list[setting['key']] = setting['default']
                                 self.controller.log.put(
                                     (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(setting['key'])))
-                            elif setting['key'].lower() != 'restore' and setting['key'].lower() != 'default' :
-                                self.controller.log.put((Controller.MSG_ERROR, 'Load config error, Key: {}'.format(setting['key'])))
+                            elif setting['key'].lower() != 'restore' and setting['key'].lower() != 'default':
+                                self.controller.log.put(
+                                    (Controller.MSG_ERROR, 'Load config error, Key: {}'.format(setting['key'])))
                                 self.controller.close()
                                 self.updateStatus()
                                 return False
@@ -3382,9 +3531,12 @@ class Makera(RelativeLayout):
                         advanced.pop('section')
                     elif 'default' in advanced:
                         advanced.pop('default')
-                self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
-                self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
-                self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
+                self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config,
+                                                                data=json.dumps(basic_config))
+                self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config,
+                                                                data=json.dumps(advanced_config))
+                self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config,
+                                                                data=json.dumps(restore_config))
         return True
 
     # -----------------------------------------------------------------------
@@ -3396,8 +3548,8 @@ class Makera(RelativeLayout):
         if not app.root.show_advanced_jog_controls:
             app.root.keyboard_jog_control = False
             app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)    
-    
+            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+
     def toggle_keyboard_jog_control(self):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
@@ -3406,20 +3558,24 @@ class Makera(RelativeLayout):
             Window.bind(on_key_down=self._keyboard_jog_keydown)
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown)
-    
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
-        popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open, self.pairing_popup._is_open,
-                   self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open, self.confirm_popup._is_open,
-                   self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open, self.config_popup._is_open, self.probing_popup._is_open]
+        popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
+                           self.pairing_popup._is_open,
+                           self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open,
+                           self.confirm_popup._is_open,
+                           self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open,
+                           self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
-    
+
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open():
+        if (app.state in ['Idle', 'Run', 'Pause'] or (
+                app.playing and app.state == 'Pause')) and not self._is_popup_open():
             key = args[1]  # keycode
             if key == 274:  # down button
                 app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
@@ -3440,7 +3596,6 @@ class Makera(RelativeLayout):
         if self.controller_setting_change_list:
             self.apply_controller_setting_changes()
 
-
     def apply_machine_setting_changes(self):
         for key in self.setting_change_list:
             self.controller.setConfigValue(key, self.setting_change_list[key])
@@ -3450,17 +3605,18 @@ class Makera(RelativeLayout):
         self.message_popup.lb_content.text = tr._('Settings applied, need machine reset to take effect !')
         self.message_popup.open()
 
-    
     def apply_controller_setting_changes(self):
-        if self.controller_setting_change_list.get("ui_density_override") or self.controller_setting_change_list.get("ui_density"):
+        if self.controller_setting_change_list.get("ui_density_override") or self.controller_setting_change_list.get(
+                "ui_density"):
             self.message_popup.lb_content.text = tr._('UI Density changed, restart application to apply.')
             self.message_popup.open()
-        
-        if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
-            self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
+
+        if self.controller_setting_change_list.get(
+                "allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
+            self.allow_mdi_while_machine_running = self.controller_setting_change_list.get(
+                "allow_mdi_while_machine_running")
 
         self.config_popup.btn_apply.disabled = True
-
 
     # -----------------------------------------------------------------------
     def open_setting_restore_confirm_popup(self):
@@ -3487,10 +3643,11 @@ class Makera(RelativeLayout):
 
     def enable_laser_mode_confirm_popup(self):
         self.confirm_popup.size_hint = (0.6, 0.7)
-        self.confirm_popup.pos_hint={'center_x': 0.5, 'center_y': 0.5}
+        self.confirm_popup.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
         self.confirm_popup.lb_title.text = tr._('Entering Laser Mode')
         self.confirm_popup.lb_title.size_hint_y = None
-        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you read to proceed ?')
+        self.confirm_popup.lb_content.text = tr._(
+            'You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you read to proceed ?')
         self.confirm_popup.confirm = partial(self.enter_laser_mode)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
@@ -3577,7 +3734,7 @@ class Makera(RelativeLayout):
             page_no = app.total_pages
         self.gcode_rv.data = []
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
-        for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
+        for line in self.lines[(page_no - 1) * MAX_LOAD_LINES: MAX_LOAD_LINES * page_no]:
             line_txt = line[:-1].replace("\x0d", "")
             self.gcode_rv.data.append(
                 {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
@@ -3630,7 +3787,8 @@ class Makera(RelativeLayout):
             self.coord_popup.set_config('leveling', 'active', False)
             self.coord_popup.set_config('origin', 'anchor', 3)
         else:
-            if (CNC.vars['wcox'] - CNC.vars['anchor1_x'] - CNC.vars['anchor2_offset_x']) >= 0 and (CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['anchor2_offset_y']) >= 0:
+            if (CNC.vars['wcox'] - CNC.vars['anchor1_x'] - CNC.vars['anchor2_offset_x']) >= 0 and (
+                    CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['anchor2_offset_y']) >= 0:
                 self.coord_popup.set_config('origin', 'anchor', 2)
             else:
                 self.coord_popup.set_config('origin', 'anchor', 1)
@@ -3652,6 +3810,7 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def last_page(self):
         self.load_page(9999)
+
     # -----------------------------------------------------------------------
     def previous_page(self):
         self.load_page(-1)
@@ -3671,21 +3830,21 @@ class Makera(RelativeLayout):
             with open(filepath, "rb") as f:
                 # 读取文件开头的两个字节
                 first_two_bytes = f.read(2)
-            if first_two_bytes == b'\x00\x00':  #we just confirm this is a file compressed by quicklz
+            if first_two_bytes == b'\x00\x00':  # we just confirm this is a file compressed by quicklz
                 # copy lz file to .lz dir
                 lzpath, filename = os.path.split(filepath)
                 lzpath = os.path.join(lzpath, ".lz")
                 lzpath = os.path.join(lzpath, filename)
                 if not os.path.exists(os.path.dirname(lzpath)):
-                    #os.mkdir(os.path.dirname(lzpath))
+                    # os.mkdir(os.path.dirname(lzpath))
                     os.makedirs(os.path.dirname(lzpath))
                 lzpath = lzpath + ".lz"
                 shutil.copyfile(filepath, lzpath)
-                if  not self.decompress_file(lzpath,filepath):
+                if not self.decompress_file(lzpath, filepath):
                     return
 
             self.cnc.init()
-            f = open(filepath, "r", encoding = 'utf-8')
+            f = open(filepath, "r", encoding='utf-8')
             self.lines = f.readlines()
             self.selected_file_line_count = len(self.lines)
             f.close()
@@ -3723,7 +3882,8 @@ class Makera(RelativeLayout):
             self.loading_file = False
             if f:
                 f.close()
-            Clock.schedule_once(partial(self.load_error, tr._('Opening file error:') + '\n\'%s\'\n' % (filepath) + tr._('Please make sure the GCode file is valid')), 0)
+            Clock.schedule_once(partial(self.load_error, tr._('Opening file error:') + '\n\'%s\'\n' % (filepath) + tr._(
+                'Please make sure the GCode file is valid')), 0)
             return
 
         Clock.schedule_once(self.load_end, 0)
@@ -3737,7 +3897,6 @@ class Makera(RelativeLayout):
             tool_button.min_active = True
         self.float_layout.hide_all.active = True
 
-
     # -----------------------------------------------------------------------
     def filter_tool(self):
         mask = 0.0
@@ -3746,7 +3905,7 @@ class Makera(RelativeLayout):
                         self.float_layout.laser]
         enabled_tools = []
         visible_tools = []
-        for index, tool_button in enumerate(tool_buttons, start = 1):
+        for index, tool_button in enumerate(tool_buttons, start=1):
             if not tool_button.disabled:
                 enabled_tools.append(index)
                 if tool_button.min_active:
@@ -3783,6 +3942,29 @@ class Makera(RelativeLayout):
         self.stop.set()
         self.controller.stop.set()
 
+    def startProbing(self, x, y, z, a, shouldInvert):
+
+        if shouldInvert == 1:
+            command = "G38.4"
+        else:
+            command = "G38.2"
+
+        suffix = ""
+        if len(x) > 0:
+            suffix += f" X{x}"
+        if len(y) > 0:
+            suffix += f" Y{y}"
+        if len(z) > 0:
+            suffix += f" Z{z}"
+        if len(a) > 0:
+            suffix += f" A{a}"
+
+        final = command + suffix + "\n"
+        print(final)
+
+        if len(suffix) > 0:
+            self.controller.executeCommand(final);
+
 
 class MakeraApp(App):
     state = StringProperty(NOT_CONNECTED)
@@ -3811,6 +3993,7 @@ class MakeraApp(App):
 
         return Makera(ctl_version=__version__)
 
+
 def android_tweaks():
     """Android specific app changes"""
     try:
@@ -3824,7 +4007,7 @@ def android_tweaks():
         metrics = DisplayMetrics()
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics)
 
-        screen_width_density  = int(metrics.widthPixels  * 10 / 960) / 10
+        screen_width_density = int(metrics.widthPixels * 10 / 960) / 10
         screen_height_density = int(metrics.heightPixels * 10 / 550) / 10
 
         os.environ["KIVY_METRICS_DENSITY"] = str(min(screen_width_density, screen_height_density))
@@ -3832,9 +4015,11 @@ def android_tweaks():
     except ImportError:
         print("Pyjnius Import Fail.")
 
+
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
+
 
 def set_config_defaults(default_lang):
     if not Config.has_section('carvera'):
@@ -3866,11 +4051,12 @@ def set_config_defaults(default_lang):
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '900')
     Config.write()
 
+
 def load_constants():
     Window.softinput_mode = "below_target"
 
-    _device     = None
-    _baud       = None
+    _device = None
+    _baud = None
 
     global SHORT_LOAD_TIMEOUT
     global WIFI_LOAD_TIMEOUT
@@ -3892,23 +4078,22 @@ def load_constants():
     CTL_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_controller/main/CHANGELOG.md'
     DOWNLOAD_ADDRESS = 'https://github.com/carvera-community/carvera_controller/releases/latest'
 
-
     LANGS = {
-        'en':  'English',
+        'en': 'English',
         'zh-CN': '中文简体(Simplified Chinese)',
     }
 
     SHORT_LOAD_TIMEOUT = 3  # s
-    WIFI_LOAD_TIMEOUT = 30 # s
+    WIFI_LOAD_TIMEOUT = 30  # s
     HEARTBEAT_TIMEOUT = 10
 
     MAX_TOUCH_INTERVAL = 0.15
     GCODE_VIEW_SPEED = 1
 
-    LOAD_INTERVAL = 10000 # must be divisible by MAX_LOAD_LINES
+    LOAD_INTERVAL = 10000  # must be divisible by MAX_LOAD_LINES
     MAX_LOAD_LINES = 10000
 
-    1# 定义块大小
+    1  # 定义块大小
     BLOCK_SIZE = 4096
     BLOCK_HEADER_SIZE = 4
 
@@ -3934,6 +4119,7 @@ def main():
     register_fonts(base_path)
     register_images(base_path)
     MakeraApp().run()
+
 
 if __name__ == '__main__':
     main()

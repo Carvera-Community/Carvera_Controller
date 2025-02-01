@@ -1,60 +1,92 @@
-``<ProbingPopup>:
+<ProbingPopup>:
     size_hint: 0.5, 0.4
     pos_hint: {"right": 0.75, "top": 0.7}
     auto_dismiss: False
-    cbx_anchor1: cbx_anchor1
-    txt_x_offset: txt_x_offset
-    txt_y_offset: txt_y_offset
+    cb_invert_probe: cb_invert_probe
+    txt_x: txt_x
+    txt_y: txt_y
+    txt_z: txt_z
+    txt_a: txt_a
     TabbedPanel:
         do_default_tab: False
         tab_width: root.width / 2 - dp(2)
         TabbedPanelItem:
-            text: tr._('Single Axis')
+            text: tr._('Straight Probe (G38.x)')
             BoxLayout:
                 padding: '15dp'
                 orientation: 'vertical'
                 BoxLayout:
                     size_hint_y: None
+                    height: '28dp'
+                    Label:
+                        text: tr._('X: ')
+                        halign: "center"
+                        valign: "middle"
+                        text_size: self.size
+                        size_hint_x: 0.3
+
+                    TextInput:
+                        id: txt_x
+                        hint_text: tr._('X')
+                        multiline: False
+                        text: ''
+                        input_type: 'number'
+                        input_filter: 'float'
+                        focus: True
+                    Label:
+                        text: tr._('Y:')
+                        halign: "left"
+                        valign: "middle"
+                        text_size: self.size
+                        size_hint_x: 0.3
+
+                    TextInput:
+                        id: txt_y
+                        hint_text: tr._('Y')
+                        multiline: False
+                        text: ''
+                        input_type: 'number'
+                        input_filter: 'float'
+
+                    Label:
+                        text: tr._('Z:')
+                        halign: "left"
+                        valign: "middle"
+                        text_size: self.size
+                        size_hint_x: 0.3
+                    TextInput:
+                        id: txt_z
+                        hint_text: tr._('Z')
+                        multiline: False
+                        text: ''
+                        input_type: 'number'
+                        input_filter: 'float'
+
+                    Label:
+                        text: tr._('A:')
+                        halign: "left"
+                        valign: "middle"
+                        text_size: self.size
+                        size_hint_x: 0.3
+                    TextInput:
+                        id: txt_a
+                        hint_text: tr._('A')
+                        multiline: False
+                        text: ''
+                        input_type: 'number'
+                        input_filter: 'float'
+                BoxLayout:
+                    size_hint_y: None
                     height: '50dp'
 
                     MCQCheckBox:
-                        id: cbx_anchor1
+                        id: cb_invert_probe
                         group: 'anchor'
-                        active: True
+                        active: False
                     MCQLabel:
-                        on_press: cbx_anchor1._do_press()
+                        on_press: cb_invert_probe._do_press()
                         text: tr._('Invert Probe')
                     # Label:
-
-                BoxLayout:
-                    size_hint_y: None
-                    height: '30dp'
-                    Label:
-                        text: tr._('X Offset:')
-                        halign: "left"
-                        valign: "middle"
-                        text_size: self.size
-                    TextInput:
-                        id: txt_x_offset
-                        hint_text: tr._('Enter X Offset')
-                        multiline: False
-                        text: '10'
-                        input_type: 'number'
-                        input_filter: 'float'
-                    Label:
-                        size_hint_x: 0.3
-                    Label:
-                        text: tr._('Y Offset:')
-                        halign: "left"
-                        valign: "middle"
-                        text_size: self.size
-                    TextInput:
-                        id: txt_y_offset
-                        hint_text: tr._('Enter Y Offset')
-                        multiline: False
-                        text: '10'
-                        input_type: 'number'
-                        input_filter: 'float'
                 BoxLayout:
                     id: empty
                     Label:
@@ -69,17 +101,18 @@
                     size_hint_y: None
                     height: '40dp'
                     Button:
-                        id: btn_cancel
-                        text: tr._('Cancel')
+                        id: btn_close
+                        text: tr._('Close')
                         on_release: root.dismiss()
                     Button:
                         id: btn_ok
-                        text: tr._('Ok')
+                        text: tr._('Start')
                         on_release:
-                            root.coord_popup.set_config('origin', 'anchor', root.selected_anchor())
-                            root.coord_popup.set_config('origin', 'x_offset', float(txt_x_offset.text))
-                            root.coord_popup.set_config('origin', 'y_offset', float(txt_y_offset.text))
-                            app.root.set_work_origin()
-                            # root.coord_popup.load_origin_label()
-                            root.dismiss()
-        # TabbedPanelItem: TODO: add another probing option here
+                            root.coord_popup.set_config('probing', 'invert_probe', root.shouldInvertProbe())
+                            root.coord_popup.set_config('probing', 'x', txt_x.text)
+                            root.coord_popup.set_config('probing', 'y', txt_y.text)
+                            root.coord_popup.set_config('probing', 'z', txt_z.text)
+                            root.coord_popup.set_config('probing', 'a', txt_a.text)
+
+                            app.root.startProbing(txt_x.text, txt_y.text, txt_z.text, txt_a.text, root.shouldInvertProbe())
+                            #root.dismiss()
