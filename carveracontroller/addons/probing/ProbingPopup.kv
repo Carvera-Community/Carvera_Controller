@@ -26,7 +26,10 @@
             padding: dp(3)
 
             ProbingTabs:
+                size_hint_min_x: (root.width * .65)
+
             ProbeSettingsTab:
+                size_hint_min_x: (root.width * .3) + dp(10)
 
         BoxLayout:
             spacing: '5dp'
@@ -36,16 +39,4 @@
                 id: btn_close
                 text: tr._('Close')
                 on_release: root.dismiss()
-            Button:
-                id: btn_ok
-                text: tr._('Start')
-                on_release:
-                    root.coord_popup.set_config(ProbingConstants.config_section, ProbingConstants.probe_switch_type, root.get_probe_switch_type())
-                    root.coord_popup.set_config(ProbingConstants.config_section, 'x', txt_x.text)
-                    root.coord_popup.set_config(ProbingConstants.config_section, 'y', txt_y.text)
-                    root.coord_popup.set_config(ProbingConstants.config_section, 'z', txt_z.text)
-                    root.coord_popup.set_config(ProbingConstants.config_section, 'a', txt_a.text)
-
-                    app.root.start_probing(txt_x.text, txt_y.text, txt_z.text, txt_a.text, root.get_probe_switch_type())
-                    #root.dismiss()
 
