@@ -1,0 +1,42 @@
+<SingleAxisTab@TabbedPanelItem>
+    text: tr._('Single Axis')
+    GridLayout:
+        cols: 3
+        rows: 3
+        spacing: dp(8)
+        padding: 10
+
+        Label:
+            size: dp(100), dp(100)
+            size_hint: None, None
+
+        ProbeButton:
+            on_press: root.on_minus_y()
+            image:'addons/probing/data/icons_1024x768/Y-.png'
+
+        Label:
+            size: dp(100), dp(100)
+            size_hint: None, None
+        ProbeButton:
+            on_press: app.on_plus_x(5)
+            image: 'addons/probing/data/icons_1024x768/X+.png'
+
+        ProbeButton:
+            on_press: app.probe_z(4)
+            image: 'addons/probing/data/icons_1024x768/probe_z.png'
+
+        ProbeButton:
+            on_press: app.on_minus_x(5)
+            image: 'addons/probing/data/icons_1024x768/X-.png'
+
+        Label:
+            size: dp(100), dp(100)
+            size_hint: None, None
+
+        ProbeButton:
+            on_press: app.on_plus_y(7)
+            image: 'addons/probing/data/icons_1024x768/Y+.png'
+
+        Label:
+            size: dp(100), dp(100)
+            size_hint: None, None

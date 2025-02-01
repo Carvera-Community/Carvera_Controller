@@ -1,0 +1,49 @@
+<CornersTab@TabbedPanelItem>
+    text: tr._('Corners')
+    GridLayout:
+        cols:2
+        rows:1
+        spacing:dp(10)
+        padding:dp(10)
+
+        GridLayout:
+            cols: 2
+            rows: 2
+            spacing: dp(8)
+            padding: 10
+
+            ProbeButton:
+                on_press: app.on_button_press(3)
+                image: 'addons/probing/data/icons_1024x768/inX+Y-.png'
+
+            ProbeButton:
+                on_press: app.on_button_press(3)
+                image: 'addons/probing/data/icons_1024x768/inX-Y-.png'
+
+            ProbeButton:
+                on_press: app.on_button_press(6)
+                image: 'addons/probing/data/icons_1024x768/inX+Y+.png'
+
+            ProbeButton:
+                on_press: app.on_button_press(8)
+                image: 'addons/probing/data/icons_1024x768/inX-Y+.png'
+
+        GridLayout:
+            cols: 2
+            rows: 2
+            spacing: dp(8)
+            padding: 10
+
+            ProbeButton:
+                image: 'addons/probing/data/icons_1024x768/X+Y-.png'
+            ProbeButton:
+                on_press: app.on_button_press(3)
+                image: 'addons/probing/data/icons_1024x768/X-Y-.png'
+
+            ProbeButton:
+                on_press: app.on_button_press(6)
+                image: 'addons/probing/data/icons_1024x768/X+Y+.png'
+
+            ProbeButton:
+                on_press: app.on_button_press(8)
+                image: 'addons/probing/data/icons_1024x768/X-Y+.png'

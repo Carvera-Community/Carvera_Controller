@@ -1,0 +1,15 @@
+<BoreBossTab@TabbedPanelItem>
+    text: tr._('Bore/Boss')
+    GridLayout:
+        cols: 3
+        rows: 3
+        spacing: dp(8)
+        padding: 10
+
+        ProbeButton:
+            on_press: root.on_xy_center()
+            image: 'addons/probing/data/icons_1024x768/xy_center.png'
+
+        ProbeButton:
+            on_press: root.on_inhole()
+            image: 'addons/probing/data/icons_1024x768/inHole.png'

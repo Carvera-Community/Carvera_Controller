@@ -19,6 +19,9 @@ class ProbingPopup(ModalView):
 
         return 0
 
+    def on_minus_y(self):
+        self.root.start_probing(txt_x.text, txt_y.text, txt_z.text, txt_a.text, root.get_probe_switch_type())
+
     def update_preview(self):
         switch_type = self.get_probe_switch_type();
         generator = ProbeGcodeGenerator()
