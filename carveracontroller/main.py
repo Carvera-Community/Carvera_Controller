@@ -19,6 +19,9 @@ import datetime
 import threading
 import logging
 
+from carveracontroller.addons.probing.Probing import ProbingPopup, ProbeGcodeGenerator
+from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
+
 
 class Lang(Observable):
     observers = []
@@ -298,16 +301,6 @@ class OriginPopup(ModalView):
         return 1
 
 
-class ProbingPopup(ModalView):
-    def __init__(self, coord_popup, **kwargs):
-        self.coord_popup = coord_popup
-        super(ProbingPopup, self).__init__(**kwargs)
-
-    def shouldInvertProbe(self):
-        if self.cb_invert_probe.active:
-            return 1
-        return 0
-
 class ZProbePopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
@@ -506,13 +499,16 @@ class CoordPopup(ModalView):
         self.load_leveling_label()
 
         # init probing options
-
-        probe_ctx = 'probing'
-        self.origin_popup.cbx_anchor1.active = self.config[probe_ctx]['invert_probe'] == 1
-        self.origin_popup.txt_x_offset.text = str(self.config[probe_ctx]['x'])
-        self.origin_popup.txt_y_offset.text = str(self.config[probe_ctx]['y'])
-        self.origin_popup.txt_z_offset.text = str(self.config[probe_ctx]['z'])
-        self.origin_popup.txt_a_offset.text = str(self.config[probe_ctx]['a'])
+        self.probing_popup.cb_probe_normally_open.active = self.config[ProbingConstants.config_section][
+                                                               ProbingConstants.probe_switch_type] == 1
+        self.probing_popup.txt_x_offset.text = str(
+            self.config[ProbingConstants.config_section][ProbingConstants.x_axis])
+        self.probing_popup.txt_y_offset.text = str(
+            self.config[ProbingConstants.config_section][ProbingConstants.y_axis])
+        self.probing_popup.txt_z_offset.text = str(
+            self.config[ProbingConstants.config_section][ProbingConstants.z_axis])
+        self.probing_popup.txt_a_offset.text = str(
+            self.config[ProbingConstants.config_section][ProbingConstants.a_axis])
 
     def load_origin_label(self):
         app = App.get_running_app()
@@ -3941,29 +3937,6 @@ class Makera(RelativeLayout):
     def stop_run(self):
         self.stop.set()
         self.controller.stop.set()
-
-    def startProbing(self, x, y, z, a, shouldInvert):
-
-        if shouldInvert == 1:
-            command = "G38.4"
-        else:
-            command = "G38.2"
-
-        suffix = ""
-        if len(x) > 0:
-            suffix += f" X{x}"
-        if len(y) > 0:
-            suffix += f" Y{y}"
-        if len(z) > 0:
-            suffix += f" Z{z}"
-        if len(a) > 0:
-            suffix += f" A{a}"
-
-        final = command + suffix + "\n"
-        print(final)
-
-        if len(suffix) > 0:
-            self.controller.executeCommand(final);
 
 
 class MakeraApp(App):
