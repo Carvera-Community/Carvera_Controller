@@ -3938,6 +3938,11 @@ class Makera(RelativeLayout):
         self.stop.set()
         self.controller.stop.set()
 
+    def start_probing(self, x, y, z, a, switch_type):
+        gcode = ProbeGcodeGenerator(x, y, z, a, switch_type)
+        if len(gcode) > 0:
+            self.controller.executeCommand(gcode + "\n")
+
 
 class MakeraApp(App):
     state = StringProperty(NOT_CONNECTED)

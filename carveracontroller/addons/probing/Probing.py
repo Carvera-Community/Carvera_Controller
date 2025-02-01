@@ -1,13 +1,13 @@
 from kivy.uix.modalview import ModalView
 
-from carveracontroller.Controller import Controller
+# from carveracontroller.Controller import Controller
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
 
 
-class ProbingPopup(ModalView, Controller):
-    def __init__(self, coord_popup, controller, **kwargs):
+class ProbingPopup(ModalView):
+    def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
-        self.controller = controller
+        # self.controller = controller
         super(ProbingPopup, self).__init__(**kwargs)
 
     def get_probe_switch_type(self):
@@ -29,10 +29,10 @@ class ProbingPopup(ModalView, Controller):
         else:
             self.probe_preview_label.text = "N/A"
 
-    def start_probing(self, x, y, z, a, switch_type):
-        gcode = ProbeGcodeGenerator(x, y, z, a, switch_type)
-        if len(gcode) > 0:
-            self.controller.executeCommand(gcode + "\n")
+    # def start_probing(self, x, y, z, a, switch_type):
+    #     gcode = ProbeGcodeGenerator(x, y, z, a, switch_type)
+    #     if len(gcode) > 0:
+    #         self.controller.executeCommand(gcode + "\n")
 
 class ProbeGcodeGenerator():
     @staticmethod
