@@ -1257,7 +1257,6 @@ class Makera(RelativeLayout):
     file_popup = ObjectProperty()
     coord_popup = ObjectProperty()
     diagnose_popup = ObjectProperty()
-    probing_popup = ObjectProperty()
     config_popup = ObjectProperty()
     x_drop_down = ObjectProperty()
     y_drop_down = ObjectProperty()

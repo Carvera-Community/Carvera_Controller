@@ -1,13 +1,20 @@
+from kivy.properties import ObjectProperty
 from kivy.uix.modalview import ModalView
 
 from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeGcodeGenerator
 # from carveracontroller.Controller import Controller
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
+from carveracontroller.addons.probing.ProbingPreviewAndRunPopup import ProbingPreviewAndRunPopup
+
 
 class ProbingPopup(ModalView):
+
+    preview_popup = ObjectProperty()
+
     def __init__(self, config, **kwargs):
         self.config = config
         # self.controller = controller
+        self.preview_popup = ProbingPreviewAndRunPopup(self.config)
         super(ProbingPopup, self).__init__(**kwargs)
 
     def get_probe_switch_type(self):
@@ -21,6 +28,8 @@ class ProbingPopup(ModalView):
 
     def on_probing_pressed(self, probe_type):
         print("Probing pressed: " + probe_type)
+        # todo: need to fix popup or decide another way to handle these calls to do the actual probing
+        #self.preview_popup.open()
 
     # nicked from CoordPopup
     def set_config(self, key1, key2, value):
