@@ -1,41 +1,36 @@
+from kivy.properties import ObjectProperty
 from kivy.uix.modalview import ModalView
-from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeOperation, M464Params
-from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
+from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase
+from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOperationType import OutsideCornerOperationType
+from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerSettings import OutsideCornerSettings
 from carveracontroller.addons.probing.preview.ProbingPreviewPopup import ProbingPreviewPopup
 
 class ProbingPopup(ModalView):
+    outside_corner_settings = ObjectProperty()
 
-    def __init__(self, config, controller, **kwargs):
-        self.config = config
-        self.preview_popup = ProbingPreviewPopup(config, controller)
+    def __init__(self, controller, **kwargs):
+        self.preview_popup = ProbingPreviewPopup(controller)
+
+        self.outside_corner_settings = OutsideCornerSettings()
         super(ProbingPopup, self).__init__(**kwargs)
 
-    def on_probing_pressed(self, operation: ProbeOperation):
+    # def on_single_axis_probing_pressed(self, operation: SingleAxisOperation):
+    # def on_inside_corner_probing_pressed(self, operation: CornerProbeOperation):
+    # def on_bore_boss_corner_probing_pressed(self, operation: BoreBossOperationType):
 
-        cfg = {
-            M464Params.XAxisDistance: 1.2,
-            M464Params.YAxisDistance: 2.5
-        }
+    def on_outside_corner_probing_pressed(self, operation_key: str):
 
-        self.preview_popup.update_operation(operation, cfg)
+        cfg = self.outside_corner_settings.get_config()
+        the_op = OperationsBase(OutsideCornerOperationType[operation_key].value) # down cast
+
+        self.preview_popup.update_operation(the_op, cfg)
         self.preview_popup.open()
 
-    # nicked from CoordPopup
-    def set_config(self, key1, key2, value):
-        self.config[key1][key2] = value
-        # self.cnc_workspace.draw()
+    # def set_config(self, key1, key2, value):
+    #     self.config[key1][key2] = value
+    #     # self.cnc_workspace.draw()
 
     def load_config(self):
-        # init probing options
-        self.probing_popup.cb_probe_normally_open.active = self.config[
-                                                               ProbingConstants.config_section][
-                                                               ProbingConstants.probe_switch_type] == 1
-        self.probing_popup.txt_x_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.x_axis])
-        self.probing_popup.txt_y_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.y_axis])
-        self.probing_popup.txt_z_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.z_axis])
-        self.probing_popup.txt_a_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.a_axis])
+        # todo
+        pass
 

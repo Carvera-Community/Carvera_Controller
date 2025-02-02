@@ -1383,16 +1383,6 @@ class Makera(RelativeLayout):
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
 
-        self.probing_config = {
-            'probing': {
-                'use_switch_type_nc': 0,
-                'x': 0.0,
-                'y': 0.0,
-                'z': 0.0,
-                'a': 0.0
-            },
-        }
-
         self.coord_config = {
             'origin': {
                 'anchor': 1,
@@ -1448,7 +1438,7 @@ class Makera(RelativeLayout):
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
 
-        self.probing_popup = ProbingPopup(self.probing_config, self.controller)
+        self.probing_popup = ProbingPopup(self.controller)
 
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
         self.wifi_conn_drop_down = DropDown(auto_width=False, width='250dp')

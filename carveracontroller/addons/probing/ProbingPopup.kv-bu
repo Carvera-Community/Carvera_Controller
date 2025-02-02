@@ -1,0 +1,194 @@
+
+#:include addons/probing/preview/ProbingPreviewPopup.kv
+#:include addons/probing/ProbingControls.kv
+# #:import SingleAxisOperationType carveracontroller.addons.probing.operations.SingleAxis.SingleAxisOperationType
+# #:import InsideCornerOperationType carveracontroller.addons.probing.operations.InsideCorner.InsideCornerOperationType
+#:import OutsideCornerOperationType carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOperationType
+# #:import BoreBossOperationType carveracontroller.addons.probing.operations.BoreBoss.BoreBossOperationType
+<ProbingPopup>:
+    title:"Probing"
+    size_hint: 0.618, 0.6
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+#    cb_probe_normally_open: cb_probe_normally_open
+#    cb_probe_normally_closed: cb_probe_normally_closed
+#    probe_preview_label: probe_preview_label
+#    txt_x: txt_x
+#    txt_y: txt_y
+#    txt_z: txt_z
+#    txt_a: txt_a
+    GridLayout:
+        cols:1
+        rows:2
+        spacing: dp(10)
+        padding: dp(3)
+        GridLayout:
+            cols:2
+            rows:1
+            spacing: dp(10)
+            padding: dp(3)
+
+            TabbedPanel:
+                size_hint_min_x: (root.width * .65)
+                do_default_tab: False
+                tab_width: dp(111)
+
+                TabbedPanelItem:
+                    text: tr._('Single Axis')
+                    GridLayout:
+                        cols: 3
+                        rows: 3
+                        spacing: dp(8)
+                        padding: 10
+
+                        Label:
+                            size: dp(100), dp(100)
+                            size_hint: None, None
+
+                        ProbeButton:
+#                            on_press: root.on_single_axis_probing_pressed(SingleAxisOperationType.SingleAxisYMinus)
+                            image:'addons/probing/data/icons_1024x768/Y-.png'
+
+                        Label:
+                            size: dp(100), dp(100)
+                            size_hint: None, None
+
+                        ProbeButton:
+#                            on_press: root.on_single_axis_probing_pressed(SingleAxisOperationType.SingleAxisXPlus)
+                            image: 'addons/probing/data/icons_1024x768/X+.png'
+
+                        ProbeButton:
+#                            on_press: root.on_single_axis_probing_pressed(SingleAxisOperationType.ProbeZ)
+                            image: 'addons/probing/data/icons_1024x768/probe_z.png'
+
+                        ProbeButton:
+#                            on_press: root.on_single_axis_probing_pressed(SingleAxisOperationType.SingleAxisXMinus)
+                            image: 'addons/probing/data/icons_1024x768/X-.png'
+
+                        Label:
+                            size: dp(100), dp(100)
+                            size_hint: None, None
+
+                        ProbeButton:
+#                            on_press: root.on_single_axis_probing_pressed(SingleAxisOperationType.SingleAxisYPlus)
+                            image: 'addons/probing/data/icons_1024x768/Y+.png'
+
+                        Label:
+                            size: dp(100), dp(100)
+                            size_hint: None, None
+
+                TabbedPanelItem:
+                    text: tr._('Corners')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        spacing:dp(10)
+                        padding:dp(10)
+
+                        GridLayout:
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
+
+                            ProbeButton:
+#                                on_press: root.on_inside_corner_probing_pressed(InsideCornerOperationType.InsideCornerTopLeft)
+                                image: 'addons/probing/data/icons_1024x768/inX+Y-.png'
+
+                            ProbeButton:
+#                                on_press: root.on_inside_corner_probing_pressed(InsideCornerOperationType.InsideCornerTopRight)
+                                image: 'addons/probing/data/icons_1024x768/inX-Y-.png'
+
+                            ProbeButton:
+#                                on_press: root.on_inside_corner_probing_pressed(InsideCornerOperationType.InsideCornerBottomLeft)
+                                image: 'addons/probing/data/icons_1024x768/inX+Y+.png'
+
+                            ProbeButton:
+#                                on_press: root.on_inside_corner_probing_pressed(InsideCornerOperationType.InsideCornerBottomRight)
+                                image: 'addons/probing/data/icons_1024x768/inX-Y+.png'
+
+                        GridLayout:
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
+
+                            ProbeButton:
+                                on_press: root.on_outside_corner_probing_pressed("TopLeft")
+                                image: 'addons/probing/data/icons_1024x768/X+Y-.png'
+
+                            ProbeButton:
+#                                on_press: root.on_outside_corner_probing_pressed(OutsideCornerOperationType.TopRight)
+                                image: 'addons/probing/data/icons_1024x768/X-Y-.png'
+
+                            ProbeButton:
+#                                on_press: root.on_outside_corner_probing_pressed(OutsideCornerOperationType.BottomLeft)
+                                image: 'addons/probing/data/icons_1024x768/X+Y+.png'
+
+                            ProbeButton:
+#                                on_press: root.on_outside_corner_probing_pressed(OutsideCornerOperationType.BottomRight)
+                                image: 'addons/probing/data/icons_1024x768/X-Y+.png'
+
+                TabbedPanelItem
+                    text: tr._('Bore/Boss')
+                    GridLayout:
+                        cols: 3
+                        rows: 3
+                        spacing: dp(8)
+                        padding: 10
+
+                        ProbeButton:
+#                            on_press: root.on_bore_boss_corner_probing_pressed(BoreBossOperationType.BossCircleCenter)
+                            image: 'addons/probing/data/icons_1024x768/xy_center.png'
+
+                        ProbeButton:
+#                            on_press: root.on_bore_boss_corner_probing_pressed(BoreBossOperationType.InsideHole)
+                            image: 'addons/probing/data/icons_1024x768/inHole.png'
+
+                TabbedPanelItem:
+                    text: tr._('Misc')
+                    GridLayout:
+                        cols: 3
+                        rows: 10
+                        spacing: dp(8)
+                        padding: 0
+
+
+
+            TabbedPanel:
+                size_hint_min_x: (root.width * .3) + dp(10)
+                do_default_tab: False
+                tab_width: self.width
+                TabbedPanelItem:
+                    text: tr._('Settings')
+                    GridLayout:
+                        cols:1
+                        rows:10
+                        spacing:dp(3)
+                        padding:dp(1)
+
+                        ProbeSettingLabel:
+                            label_text: 'Tip Dia:'
+                            hint_text: 'tip diameter'
+
+                        ProbeSettingLabel:
+                            label_text: 'Slow Feed Rate:'
+                            hint_text: 'Slow Feed Rate'
+
+                        ProbeSettingLabel:
+                            label_text: 'Fast Feed:'
+                            hint_text: 'Fast feed rate'
+
+                        ProbeSettingLabel:
+                            label_text: 'Max Distance:'
+                            hint_text: 'Max Probing distance'
+                            visible: False
+
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '40dp'
+            Button:
+                id: btn_close
+                text: tr._('Close')
+                on_release: root.dismiss()

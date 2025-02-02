@@ -1,0 +1,33 @@
+<ProbeButton@Button>:
+    background_color: 0,0,0,0  # the last zero is the critical on, make invisible
+    size: dp(100), dp(100)
+    size_hint: None, None
+    image: ''
+    canvas.before:
+        Color:
+            rgba: (88/255,88/255,88/255,1) if self.state=='normal' else (50/255,164/255,206/255,1)  # visual feedback of press
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(3),]
+    Image:
+        source: root.image
+        size: root.size
+        size_hint: None, None
+        center_x: self.parent.center_x
+        center_y: self.parent.center_y
+
+<ProbeSettingLabel@GridLayout>:
+    cols:2
+    rows:1
+    spacing: dp(3)
+    padding: dp(3)
+    size_hint_max_x: dp(300)
+    size_hint_max_y: dp(33)
+    label_text:''
+    Label:
+        text: root.label_text
+        size_hint_min_x: dp(75)
+        halign: 'right'
+        valign: 'middle'
+        text_size: self.size

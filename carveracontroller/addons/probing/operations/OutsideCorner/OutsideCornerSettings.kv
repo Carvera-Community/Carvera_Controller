@@ -1,0 +1,110 @@
+<OutsideCornerSettings>:
+    GridLayout:
+        cols:1
+        rows:10
+        spacing:dp(3)
+        padding:dp(1)
+
+        ProbeSettingLabel:
+            label_text: 'X:'
+            hint_text: 'X Distance'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('XAxisDistance', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'Y:'
+            hint_text: 'Y Distance'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('YAxisDistance', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'Tip Dia:'
+            hint_text: 'tip diameter'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('ProbeTipDiameter', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'PocketProbeDepth:'
+            hint_text: 'PocketProbeDepth'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('PocketProbeDepth', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'FastFeedRate:'
+            hint_text: 'FastFeedRate'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('FastFeedRate', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'RapidFeedRate:'
+            hint_text: 'RapidFeedRate'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('RapidFeedRate', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'RepeatOperationCount:'
+            hint_text: 'RepeatOperationCount'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('RepeatOperationCount', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'EdgeRetractDistance:'
+            hint_text: 'EdgeRetractDistance'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('EdgeRetractDistance', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'BottomSurfaceRetract:'
+            hint_text: 'BottomSurfaceRetract'
+            TextInput:
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                on_text: root.setting_changed('BottomSurfaceRetract', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'ZeroXYPosition:'
+            hint_text: 'ZeroXYPosition'
+            Switch:
+                id: vacuum_switch_play
+                canvas.before:
+                    Color:
+                        rgba: 50/255, 50/255, 50/255, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                active: True
+                on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")

@@ -2,17 +2,24 @@
     size_hint: 0.5, 0.4
     pos_hint: {"right": 0.75, "top": 0.7}
     auto_dismiss: False
-    BoxLayout:
-        padding: '15dp'
-        orientation: 'vertical'
-        Label:
-            size_hint_y: 0.4
-            id: lb_title
-            text: root.title
-            bold: True
-        Label:
-            id: lb_preview
-            text: root.probe_preview_label
+    GridLayout:
+        cols:1
+        rows:2
+        GridLayout:
+            cols:2
+            rows:1
+
+            BoxLayout:
+                padding: '15dp'
+                orientation: 'vertical'
+                Label:
+                    size_hint_y: 0.4
+                    id: lb_title
+                    text: root.title
+                    bold: True
+                Label:
+                    id: lb_preview
+                    text: root.probe_preview_label
         BoxLayout:
             size_hint_y: 0.4
             Button:
