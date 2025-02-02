@@ -21,11 +21,18 @@ class ProbingPreviewPopup(ModalView):
 
         return 0
 
-    # def on_minus_y(self):
-    #     self.root.start_probing(txt_x.text, txt_y.text, txt_z.text, txt_a.text, root.get_probe_switch_type())
-
     def start_probing(self, x, y, z, a, switch_type):
         gcode = ProbeGcodeGenerator(x, y, z, a, switch_type)
         print(gcode)
         if len(gcode) > 0:
             self.controller.executeCommand(gcode + "\n")
+
+    def update_preview(self):
+        switch_type = self.get_probe_switch_type();
+        generator = ProbeGcodeGenerator()
+        gcode = generator.get_straight_probe(self.txt_x.text, self.txt_y.text, self.txt_z.text, self.txt_a.text,
+                                             switch_type)
+        if len(gcode) > 0:
+            self.probe_preview_label.text = gcode
+        else:
+            self.probe_preview_label.text = "N/A"

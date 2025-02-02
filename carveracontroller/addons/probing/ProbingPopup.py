@@ -1,8 +1,8 @@
 from kivy.uix.modalview import ModalView
 
-from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeGcodeGenerator
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
-from carveracontroller.addons.probing.ProbingPreview import ProbingPreviewPopup
+from carveracontroller.addons.probing.preview.ProbingPreviewPopup import ProbingPreviewPopup
+
 
 class ProbingPopup(ModalView):
 
@@ -41,22 +41,3 @@ class ProbingPopup(ModalView):
             self.config[ProbingConstants.config_section][ProbingConstants.z_axis])
         self.probing_popup.txt_a_offset.text = str(
             self.config[ProbingConstants.config_section][ProbingConstants.a_axis])
-
-    # def on_minus_y(self):
-    #     self.root.start_probing(txt_x.text, txt_y.text, txt_z.text, txt_a.text, root.get_probe_switch_type())
-
-    def update_preview(self):
-        switch_type = self.get_probe_switch_type();
-        generator = ProbeGcodeGenerator()
-        gcode = generator.get_straight_probe(self.txt_x.text, self.txt_y.text, self.txt_z.text, self.txt_a.text,
-                                             switch_type)
-
-        if len(gcode) > 0:
-            self.probe_preview_label.text = gcode
-        else:
-            self.probe_preview_label.text = "N/A"
-
-    # def start_probing(self, x, y, z, a, switch_type):
-    #     gcode = ProbeGcodeGenerator(x, y, z, a, switch_type)
-    #     if len(gcode) > 0:
-    #         self.controller.executeCommand(gcode + "\n")

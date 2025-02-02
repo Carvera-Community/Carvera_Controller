@@ -1,3 +1,6 @@
+from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
+
+
 class ProbeGcodeGenerator():
     @staticmethod
     def get_straight_probe(x, y, z, a, switch_type):

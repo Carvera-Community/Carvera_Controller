@@ -19,8 +19,7 @@ import datetime
 import threading
 import logging
 
-from carveracontroller.addons.probing.ProbingPopup import ProbingPopup, ProbeGcodeGenerator
-from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
+from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
 
 
 class Lang(Observable):
@@ -3929,11 +3928,6 @@ class Makera(RelativeLayout):
     def stop_run(self):
         self.stop.set()
         self.controller.stop.set()
-
-    def start_probing(self, x, y, z, a, switch_type):
-        gcode = ProbeGcodeGenerator(x, y, z, a, switch_type)
-        if len(gcode) > 0:
-            self.controller.executeCommand(gcode + "\n")
 
 
 class MakeraApp(App):

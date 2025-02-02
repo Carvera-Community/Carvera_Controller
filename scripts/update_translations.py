@@ -13,7 +13,7 @@ from pathlib import Path
 
 # Source files with UI text. This is analysed to create the .pot file
 PY_FILES = ["main.py", "Controller.py", "GcodeViewer.py"]  # Python source files
-KV_FILES = ["makera.kv","screens/ProbingPopup.kv"]  # .kv files
+KV_FILES = ["makera.kv","addons/probing/ProbingPopup.kv","addons/probing/preview/ProbingPreviewPopup.kv"]  # .kv files
 
 POT_FILE = "locales/messages.pot"
 LANGUAGES = ["en","zh-CN"]  # Supported Languages
