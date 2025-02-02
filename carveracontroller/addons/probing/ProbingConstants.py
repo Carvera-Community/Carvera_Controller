@@ -7,5 +7,5 @@ class ProbingConstants:
     z_axis:str = "z_axis"
     a_axis:str = "a_axis"
 
-    switch_type_no: int = 1
-    switch_type_nc: int = 2
+    switch_type_no: int = 0
+    switch_type_nc: int = 1

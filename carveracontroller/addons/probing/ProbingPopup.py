@@ -1,8 +1,7 @@
 from kivy.uix.modalview import ModalView
-
+from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeOperation
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
 from carveracontroller.addons.probing.preview.ProbingPreviewPopup import ProbingPreviewPopup
-
 
 class ProbingPopup(ModalView):
 
@@ -18,9 +17,8 @@ class ProbingPopup(ModalView):
             return ProbingConstants.switch_type_no
         return 0
 
-    def on_probing_pressed(self, probe_type):
-        print("Probing pressed: " + probe_type)
-        self.preview_popup.title = "pt " + probe_type
+    def on_probing_pressed(self, operation: ProbeOperation):
+        self.preview_popup.operation = operation
         self.preview_popup.open()
 
     # nicked from CoordPopup
@@ -41,3 +39,4 @@ class ProbingPopup(ModalView):
             self.config[ProbingConstants.config_section][ProbingConstants.z_axis])
         self.probing_popup.txt_a_offset.text = str(
             self.config[ProbingConstants.config_section][ProbingConstants.a_axis])
+
