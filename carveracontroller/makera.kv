@@ -992,7 +992,7 @@
             root.select('')
             app.root.send_bug_report()
     IconButton:
-        icon: 'data/probe.png'
+        icon: 'addons/probing/data/probe.png'
         icon_size: 24
         small_icon: True
         size_hint_y: None
@@ -1000,7 +1000,7 @@
         height: '50dp'
         on_release:
             root.select('')
-            app.root.coord_popup.probing_popup.open()
+            app.root.probing_popup.open()
 
 <StatusDropDown>:
     btn_connect_usb: btn_connect_usb
@@ -3315,6 +3315,7 @@
                                     GridLayout:
                                         cols: 3
                                         rows: 3
+                                        spacing: dp(2)
                                         GridBoxLayout:
                                             SmallRoundButton:
                                                 text: tr._('Unlock')

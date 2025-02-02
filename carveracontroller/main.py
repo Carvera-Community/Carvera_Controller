@@ -19,7 +19,7 @@ import datetime
 import threading
 import logging
 
-from carveracontroller.addons.probing.Probing import ProbingPopup, ProbeGcodeGenerator
+from carveracontroller.addons.probing.ProbingPopup import ProbingPopup, ProbeGcodeGenerator
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
 
 
@@ -432,7 +432,6 @@ class CoordPopup(ModalView):
     mode = StringProperty()
     vacuummode = ObjectProperty()
     origin_popup = ObjectProperty()
-    probing_popup = ObjectProperty()
     zprobe_popup = ObjectProperty()
     auto_level_popup = ObjectProperty()
     setx_popup = ObjectProperty()
@@ -444,7 +443,6 @@ class CoordPopup(ModalView):
     def __init__(self, config, **kwargs):
         self.config = config
         self.origin_popup = OriginPopup(self)
-        self.probing_popup = ProbingPopup(self)
         self.zprobe_popup = ZProbePopup(self)
         self.auto_level_popup = AutoLevelPopup(self)
         self.setx_popup = SetXPopup(self)
@@ -497,18 +495,6 @@ class CoordPopup(ModalView):
         self.auto_level_popup.sp_y_points.text = str(self.config['leveling']['y_points'])
         self.auto_level_popup.sp_height.text = str(self.config['leveling']['height'])
         self.load_leveling_label()
-
-        # init probing options
-        self.probing_popup.cb_probe_normally_open.active = self.config[ProbingConstants.config_section][
-                                                               ProbingConstants.probe_switch_type] == 1
-        self.probing_popup.txt_x_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.x_axis])
-        self.probing_popup.txt_y_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.y_axis])
-        self.probing_popup.txt_z_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.z_axis])
-        self.probing_popup.txt_a_offset.text = str(
-            self.config[ProbingConstants.config_section][ProbingConstants.a_axis])
 
     def load_origin_label(self):
         app = App.get_running_app()
@@ -1298,6 +1284,8 @@ class Makera(RelativeLayout):
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
 
+    probing_popup = ObjectProperty()
+
     coord_config = {}
 
     progress_info = StringProperty()
@@ -1397,14 +1385,17 @@ class Makera(RelativeLayout):
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
 
-        self.coord_config = {
+        self.probing_config = {
             'probing': {
-                'invert_probe': 0,
+                'use_switch_type_nc': 0,
                 'x': 0.0,
                 'y': 0.0,
                 'z': 0.0,
                 'a': 0.0
             },
+        }
+
+        self.coord_config = {
             'origin': {
                 'anchor': 1,
                 'x_offset': 0.0,
@@ -1428,6 +1419,7 @@ class Makera(RelativeLayout):
         }
         self.update_coord_config()
         self.coord_popup = CoordPopup(self.coord_config)
+        self.probing_popup = ProbingPopup(self.probing_config)
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
