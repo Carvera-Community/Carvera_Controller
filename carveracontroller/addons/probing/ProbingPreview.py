@@ -1,14 +1,16 @@
+from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
 
 from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeGcodeGenerator
-# from carveracontroller.Controller import Controller
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
 
-class ProbingPreviewAndRunPopup(ModalView):
-    def __init__(self, config, **kwargs):
+class ProbingPreviewPopup(ModalView):
+    title = StringProperty('Probing Preview')
+
+    def __init__(self, config, controller, **kwargs):
         self.config = config
-        # self.controller = controller
-        super(ProbingPreviewAndRunPopup, self).__init__(**kwargs)
+        self.controller = controller
+        super(ProbingPreviewPopup, self).__init__(**kwargs)
 
     def get_probe_switch_type(self):
         if self.cb_probe_normally_closed.active:

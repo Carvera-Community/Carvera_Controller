@@ -1418,7 +1418,6 @@ class Makera(RelativeLayout):
         }
         self.update_coord_config()
         self.coord_popup = CoordPopup(self.coord_config)
-        self.probing_popup = ProbingPopup(self.probing_config)
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
@@ -1449,6 +1448,8 @@ class Makera(RelativeLayout):
         self.message_popup = MessagePopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
+
+        self.probing_popup = ProbingPopup(self.probing_config, self.controller)
 
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
         self.wifi_conn_drop_down = DropDown(auto_width=False, width='250dp')
