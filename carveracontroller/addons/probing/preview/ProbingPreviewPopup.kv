@@ -19,10 +19,8 @@
                 text: tr._('Cancel')
                 on_release:
                     root.dismiss()
-                    if root.cancel:\
-                    root.cancel()
             Button:
                 text: tr._('Start')
                 on_release:
-                    root.dismiss()
-                    root.confirm()
+                    root.start_probing()
+#                    root.dismiss()

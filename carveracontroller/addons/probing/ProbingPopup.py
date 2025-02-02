@@ -1,5 +1,5 @@
 from kivy.uix.modalview import ModalView
-from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeOperation
+from carveracontroller.addons.probing.ProbeGcodeGenerator import ProbeOperation, M464Params
 from carveracontroller.addons.probing.ProbingConstants import ProbingConstants
 from carveracontroller.addons.probing.preview.ProbingPreviewPopup import ProbingPreviewPopup
 
@@ -10,15 +10,14 @@ class ProbingPopup(ModalView):
         self.preview_popup = ProbingPreviewPopup(config, controller)
         super(ProbingPopup, self).__init__(**kwargs)
 
-    def get_probe_switch_type(self):
-        if self.cb_probe_normally_closed.active:
-            return ProbingConstants.switch_type_nc
-        if self.cb_probe_normally_open.active:
-            return ProbingConstants.switch_type_no
-        return 0
-
     def on_probing_pressed(self, operation: ProbeOperation):
-        self.preview_popup.operation = operation
+
+        cfg = {
+            M464Params.XAxisDistance: 1.2,
+            M464Params.YAxisDistance: 2.5
+        }
+
+        self.preview_popup.update_operation(operation, cfg)
         self.preview_popup.open()
 
     # nicked from CoordPopup
