@@ -2,8 +2,7 @@
 #:include addons/probing/preview/ProbingPreviewPopup.kv
 #:include addons/probing/ProbingControls.kv
 #:include addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv
-
-#:import OutsideCornerOperationType carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOperationType
+#:include addons/probing/operations/InsideCorner/InsideCornerSettings.kv
 
 <ProbingPopup>:
     title:"Probing"
@@ -32,14 +31,15 @@
                 do_default_tab: False
                 tab_width: dp(111)
                 TabbedPanelItem:
-                    text: tr._('Corners')
+                    text: tr._('Outside Corners')
                     GridLayout:
                         cols:2
                         rows:1
+                        size_hint:1, 1
                         spacing:dp(10)
                         padding:dp(10)
                         GridLayout:
-                            size_hint_min_x: (root.width * .65)
+                            size_hint_x: .5
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -49,20 +49,50 @@
                                 on_press: root.on_outside_corner_probing_pressed("TopLeft")
                                 image: 'addons/probing/data/icons_1024x768/X+Y-.png'
                             ProbeButton:
-#                                on_press: root.on_outside_corner_probing_pressed("TopRight")
+                                on_press: root.on_outside_corner_probing_pressed("TopRight")
                                 image: 'addons/probing/data/icons_1024x768/X-Y-.png'
                             ProbeButton:
-#                                on_press: root.on_outside_corner_probing_pressed("BottomLeft")
+                                on_press: root.on_outside_corner_probing_pressed("BottomLeft")
                                 image: 'addons/probing/data/icons_1024x768/X+Y+.png'
                             ProbeButton:
-#                                on_press: root.on_outside_corner_probing_pressed("BottomRight")
+                                on_press: root.on_outside_corner_probing_pressed("BottomRight")
                                 image: 'addons/probing/data/icons_1024x768/X-Y+.png'
 
                         BoxLayout:
-                            size_hint_min_x: (root.width * .3) + dp(10)
+                            size_hint_x: .5
                             OutsideCornerSettings:
                                 id: settings
+                TabbedPanelItem:
+                    text: tr._('Inside Corners')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        size_hint:1, 1
+                        spacing:dp(10)
+                        padding:dp(10)
+                        GridLayout:
+                            size_hint_x: .5
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
 
+                            ProbeButton:
+                                on_press: root.on_inside_corner_probing_pressed("TopLeft")
+                                image: 'addons/probing/data/icons_1024x768/inX+Y-.png'
+                            ProbeButton:
+                                on_press: root.on_inside_corner_probing_pressed("TopRight")
+                                image: 'addons/probing/data/icons_1024x768/inX-Y-.png'
+                            ProbeButton:
+                                on_press: root.on_inside_corner_probing_pressed("BottomLeft")
+                                image: 'addons/probing/data/icons_1024x768/inX+Y+.png'
+                            ProbeButton:
+                                on_press: root.on_inside_corner_probing_pressed("BottomRight")
+                                image: 'addons/probing/data/icons_1024x768/inX-Y+.png'
+
+                        BoxLayout:
+                            size_hint_x: .5
+                            InsideCornerSettings:
         BoxLayout:
             spacing: '5dp'
             size_hint_y: None

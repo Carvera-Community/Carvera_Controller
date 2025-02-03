@@ -2,7 +2,7 @@
 from carveracontroller.addons.probing.operations.OperationsBase import ProbeSettingDefinition
 
 
-class OutsideCornerParameterDefinitions:
+class InsideCornerParameterDefinitions:
     XAxisDistance = ProbeSettingDefinition("X", "X Dis", "X distance along the particular axis to probe.")
 
     YAxisDistance = ProbeSettingDefinition("Y", "X Dis", "Y distance along the particular axis to probe.")

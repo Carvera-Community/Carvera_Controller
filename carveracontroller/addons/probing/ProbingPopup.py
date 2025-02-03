@@ -5,24 +5,34 @@ from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOper
 from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerSettings import OutsideCornerSettings
 from carveracontroller.addons.probing.preview.ProbingPreviewPopup import ProbingPreviewPopup
 
+from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerOperationType import InsideCornerOperationType
+from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerSettings import InsideCornerSettings
+
+
 class ProbingPopup(ModalView):
     outside_corner_settings = ObjectProperty()
+    inside_corner_settings= ObjectProperty()
 
     def __init__(self, controller, **kwargs):
         self.preview_popup = ProbingPreviewPopup(controller)
 
         self.outside_corner_settings = OutsideCornerSettings()
+        self.inside_corner_settings = InsideCornerSettings()
         super(ProbingPopup, self).__init__(**kwargs)
 
-    # def on_single_axis_probing_pressed(self, operation: SingleAxisOperation):
-    # def on_inside_corner_probing_pressed(self, operation: CornerProbeOperation):
-    # def on_bore_boss_corner_probing_pressed(self, operation: BoreBossOperationType):
+    # def on_single_axis_probing_pressed(self, operation_key: str):
+    # def on_bore_boss_corner_probing_pressed(self, operation_key: str):
+
+    def on_inside_corner_probing_pressed(self, operation_key: str):
+        cfg = self.outside_corner_settings.get_config()
+        the_op = OperationsBase(InsideCornerOperationType[operation_key].value) # down cast
+        self.preview_popup.update_operation(the_op, cfg)
+        self.preview_popup.open()
+
 
     def on_outside_corner_probing_pressed(self, operation_key: str):
-
         cfg = self.outside_corner_settings.get_config()
         the_op = OperationsBase(OutsideCornerOperationType[operation_key].value) # down cast
-
         self.preview_popup.update_operation(the_op, cfg)
         self.preview_popup.open()
 

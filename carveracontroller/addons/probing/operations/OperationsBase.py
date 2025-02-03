@@ -16,7 +16,8 @@ class ProbeSettingDefinition:
     GCodeParam:str
     Description:str
 
-    def __init__(self, g_code_param:str, description:str):
+    def __init__(self, g_code_param:str, label:str, description:str):
+        self.label = label
         self.GCodeParam = g_code_param
         self.Description = description
 
