@@ -1,7 +1,11 @@
 from abc import abstractmethod
 
+
 class OperationsBase():
+    title: str = ""
+
     def __init__(self, value):
+        self.title = value.title
         self.value = value
 
     @abstractmethod
@@ -13,16 +17,15 @@ class OperationsBase():
 
 
 class ProbeSettingDefinition:
-    GCodeParam:str
-    Description:str
+    GCodeParam: str
+    Description: str
 
-    def __init__(self, g_code_param:str, label:str, description:str):
+    def __init__(self, g_code_param: str, label: str, description: str):
         self.label = label
         self.GCodeParam = g_code_param
         self.Description = description
 
 
 class ProbingOptions:
-
     # Specify 1 for a Probe that is normally closed, otherwise
     UseProbeNormallyClosed = 'I'

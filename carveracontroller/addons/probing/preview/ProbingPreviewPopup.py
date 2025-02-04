@@ -5,9 +5,10 @@ from carveracontroller.addons.probing.operations.OperationsBase import Operation
 
 
 class ProbingPreviewPopup(ModalView):
-    title = StringProperty('Probing Preview')
+    title = StringProperty('Confirm')
     probe_preview_label = StringProperty('N/A')
     operation: OperationsBase
+    config: dict[str, float]
     gcode: str
 
     def __init__(self, controller, **kwargs):
@@ -27,12 +28,14 @@ class ProbingPreviewPopup(ModalView):
     def start_probing(self):
         if self.operation is None:
             return
-
-        # if len(gcode) > 0:
-        #     self.controller.executeCommand(gcode + "\n")
+        gcode = self.get_gcode(self.config)
+        if len(gcode) > 0:
+            self.controller.executeCommand(gcode + "\n")
 
     def update_operation(self, operation: OperationsBase, config):
         self.operation = operation
+        self.config = config
+        self.title = operation.title
         gcode = self.get_gcode(config)
         if len(gcode) > 0:
             self.probe_preview_label = gcode

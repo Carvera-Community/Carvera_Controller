@@ -3,11 +3,14 @@ from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerPara
 
 
 class OutsideCornerOperation(OperationsBase):
+    title:str
+    image_path:str
+    description:str
     imagePath: str
 
     def __init__(self, title, from_right, from_bottom, image_path, **kwargs):
         self.title = title
-        self.imagePath = image_path
+        self.image_path = image_path
         self.from_right = from_right
         self.from_bottom = from_bottom
 
