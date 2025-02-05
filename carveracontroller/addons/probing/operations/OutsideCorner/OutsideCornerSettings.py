@@ -14,7 +14,13 @@ class OutsideCornerSettings(BoxLayout):
         if param is None:
             raise KeyError(f"Invalid key '{key}'")
 
-        self.config[param.GCodeParam] = value
+        self.config[param.code] = value
+
+    def get_setting(self, key:str):
+        param = getattr(OutsideCornerParameterDefinitions, key, None)
+        if key not in self.config:
+            return None
+        return self.config[param.code]
 
     def get_config(self):
         return self.config;

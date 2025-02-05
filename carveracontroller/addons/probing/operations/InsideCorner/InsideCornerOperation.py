@@ -1,6 +1,6 @@
 from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerParameterDefinitions import \
     InsideCornerParameterDefinitions
-from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase
+from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase, ProbeSettingDefinition
 
 
 class InsideCornerOperation(OperationsBase):
@@ -14,10 +14,17 @@ class InsideCornerOperation(OperationsBase):
 
     def generate(self, config: dict[str, float]):
 
-        if InsideCornerParameterDefinitions.XAxisDistance.GCodeParam in config and self.from_right:
-            config[InsideCornerParameterDefinitions.XAxisDistance.GCodeParam] = config[InsideCornerParameterDefinitions.XAxisDistance.GCodeParam] * -1
+        if InsideCornerParameterDefinitions.XAxisDistance.code in config and self.from_right:
+            config[InsideCornerParameterDefinitions.XAxisDistance.code] = config[InsideCornerParameterDefinitions.XAxisDistance.code] * -1
 
-        if InsideCornerParameterDefinitions.YAxisDistance.GCodeParam in config and self.from_bottom:
-            config[InsideCornerParameterDefinitions.YAxisDistance.GCodeParam] = config[InsideCornerParameterDefinitions.YAxisDistance.GCodeParam] * -1
+        if InsideCornerParameterDefinitions.YAxisDistance.code in config and self.from_bottom:
+            config[InsideCornerParameterDefinitions.YAxisDistance.code] = config[InsideCornerParameterDefinitions.YAxisDistance.code] * -1
 
         return "M463 " + self.config_to_gcode(config)
+
+    def get_missing_config(self, config: dict[str, float]) -> ProbeSettingDefinition | None:
+
+        required_definitions = {name: value for name, value in InsideCornerParameterDefinitions.__dict__.items()
+                                if isinstance(value, ProbeSettingDefinition) and value.is_required}
+
+        return super().validate_required(required_definitions, config)

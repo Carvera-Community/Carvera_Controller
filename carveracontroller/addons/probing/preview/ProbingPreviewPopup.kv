@@ -28,6 +28,7 @@
                     root.dismiss()
             Button:
                 text: tr._('Start')
+                disabled: not root.gcode
                 on_release:
                     root.start_probing()
 #                    root.dismiss()

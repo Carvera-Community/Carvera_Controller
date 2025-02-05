@@ -1,7 +1,7 @@
 <OutsideCornerSettings>:
     GridLayout:
         cols:1
-        rows:10
+        rows:11
         spacing:dp(3)
         padding:dp(1)
 
@@ -99,12 +99,26 @@
             label_text: 'ZeroXY:'
             hint_text: 'ZeroXY Position'
             Switch:
-                id: vacuum_switch_play
+                id: zero_xy
                 canvas.before:
                     Color:
                         rgba: 50/255, 50/255, 50/255, 1
                     Rectangle:
                         pos: self.pos
                         size: self.size
-                active: True
+                active: False
                 on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")
+
+        ProbeSettingLabel:
+            label_text: 'Normally Closed:'
+            hint_text: ''
+            Switch:
+                id: probe_is_nc
+                canvas.before:
+                    Color:
+                        rgba: 50/255, 50/255, 50/255, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                active: False
+                on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")

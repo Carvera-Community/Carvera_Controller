@@ -1,15 +1,14 @@
 from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
 
-from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase, ProbingOptions
-
+from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase
 
 class ProbingPreviewPopup(ModalView):
     title = StringProperty('Confirm')
     probe_preview_label = StringProperty('N/A')
     operation: OperationsBase
     config: dict[str, float]
-    gcode: str
+    gcode = StringProperty("")
 
     def __init__(self, controller, **kwargs):
         self.operation = None
@@ -28,21 +27,5 @@ class ProbingPreviewPopup(ModalView):
     def start_probing(self):
         if self.operation is None:
             return
-        gcode = self.get_gcode(self.config)
-        if len(gcode) > 0:
-            self.controller.executeCommand(gcode + "\n")
-
-    def update_operation(self, operation: OperationsBase, config):
-        self.operation = operation
-        self.config = config
-        self.title = operation.title
-        gcode = self.get_gcode(config)
-        if len(gcode) > 0:
-            self.probe_preview_label = gcode
-        else:
-            self.probe_preview_label = "N/A"
-
-    def get_gcode(self, config):
-        config[ProbingOptions.UseProbeNormallyClosed] = self.get_probe_switch_type()
-        gcode = self.operation.value.generate(config)
-        return gcode
+        if len(self.gcode) > 0:
+            self.controller.executeCommand(self.gcode + "\n")

@@ -1,28 +1,30 @@
 <InsideCornerSettings>:
     GridLayout:
         cols:1
-        rows:10
+        rows:11
         spacing:dp(3)
         padding:dp(1)
 
         ProbeSettingLabel:
             label_text: 'X:'
-            hint_text: 'X Dis'
+            hint_text: 'X Distance'
             TextInput:
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('XAxisDistance')
                 on_text: root.setting_changed('XAxisDistance', self.text)
 
         ProbeSettingLabel:
             label_text: 'Y:'
-            hint_text: 'Y Dist'
+            hint_text: 'Y Distance'
             TextInput:
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('YAxisDistance')
                 on_text: root.setting_changed('YAxisDistance', self.text)
 
         ProbeSettingLabel:
@@ -33,6 +35,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('ProbeTipDiameter')
                 on_text: root.setting_changed('ProbeTipDiameter', self.text)
 
         ProbeSettingLabel:
@@ -43,6 +46,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('PocketProbeDepth')
                 on_text: root.setting_changed('PocketProbeDepth', self.text)
 
         ProbeSettingLabel:
@@ -53,6 +57,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('FastFeedRate')
                 on_text: root.setting_changed('FastFeedRate', self.text)
 
         ProbeSettingLabel:
@@ -63,6 +68,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('RapidFeedRate')
                 on_text: root.setting_changed('RapidFeedRate', self.text)
 
         ProbeSettingLabel:
@@ -73,6 +79,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('RepeatOperationCount')
                 on_text: root.setting_changed('RepeatOperationCount', self.text)
 
         ProbeSettingLabel:
@@ -83,6 +90,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('EdgeRetractDistance')
                 on_text: root.setting_changed('EdgeRetractDistance', self.text)
 
         ProbeSettingLabel:
@@ -93,6 +101,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
+                text: root.get_setting('BottomSurfaceRetract')
                 on_text: root.setting_changed('BottomSurfaceRetract', self.text)
 
         ProbeSettingLabel:
@@ -106,5 +115,19 @@
                     Rectangle:
                         pos: self.pos
                         size: self.size
-                active: True
+                active: True if root.get_setting('ZeroXYPosition') == 1 else False
                 on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")
+
+        ProbeSettingLabel:
+            label_text: 'Normally Closed:'
+            hint_text: ''
+            Switch:
+                id: probe_is_nc
+                canvas.before:
+                    Color:
+                        rgba: 50/255, 50/255, 50/255, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                active: True if root.get_setting('UseProbeNormallyClosed') == 1 else False
+                on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")

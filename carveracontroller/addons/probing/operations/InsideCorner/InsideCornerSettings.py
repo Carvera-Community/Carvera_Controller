@@ -5,8 +5,8 @@ from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerParame
 
 
 class InsideCornerSettings(BoxLayout):
-
     config = {}
+
     def __init__(self, **kwargs):
         super(InsideCornerSettings, self).__init__(**kwargs)
 
@@ -15,7 +15,13 @@ class InsideCornerSettings(BoxLayout):
         if param is None:
             raise KeyError(f"Invalid key '{key}'")
 
-        self.config[param.GCodeParam] = value
+        self.config[param.code] = value
+
+    def get_setting(self, key: str) -> str:
+        param = getattr(InsideCornerParameterDefinitions, key, None)
+        if key not in self.config:
+            return ""
+        return str(self.config[param.code])
 
     def get_config(self):
         return self.config;
