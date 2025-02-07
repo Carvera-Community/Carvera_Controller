@@ -24,11 +24,9 @@
             size_hint_y: 0.4
             Button:
                 text: tr._('Cancel')
-                on_release:
-                    root.dismiss()
+                on_release: root.dismiss()
             Button:
                 text: tr._('Start')
                 disabled: not root.gcode
-                on_release:
-                    root.start_probing()
+                on_release: root.start_probing()
 #                    root.dismiss()

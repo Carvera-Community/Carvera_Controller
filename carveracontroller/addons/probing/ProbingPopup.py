@@ -47,8 +47,10 @@ class ProbingPopup(ModalView):
         the_op = OutsideCornerOperationType[operation_key].value
         missing_definition = the_op.get_missing_config(cfg)
         if missing_definition is None:
-            self.preview_popup.gcode = the_op.generate(cfg)
-            self.preview_popup.probe_preview_label = self.preview_popup.gcode
+            gcode = the_op.generate(cfg)
+            self.preview_popup.gcode = gcode
+            self.preview_popup.probe_preview_label = gcode
+            print("setting gcode to " + gcode)
         else:
             self.preview_popup.gcode = ""
             self.preview_popup.probe_preview_label = "Missing required parameter " + missing_definition.label
