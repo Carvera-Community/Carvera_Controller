@@ -12,8 +12,14 @@ class OperationsBase():
     def generate(self, config: dict[str, float]) -> str:
         pass
 
-    def config_to_gcode(self, config: dict[str, float]) -> str:
-        return " " + ' '.join([f'{key}{value} ' for key, value in config.items()])
+    # def config_to_gcode(self, config: dict[str, float]) -> str:
+    #     return " " + ' '.join([f'{key}{value} ' for key, value in config.items()])
+
+    # def config_to_gcode(self, config: dict[str, float]) -> str:
+    #     return " " + ' '.join([f'{key}{value}' for key, value in config.items() if value not in (None, "", 0)])
+
+    def config_to_gcode(self, config: dict[str, str]) -> str:
+        return " " + ' '.join([f'{key}{value}' for key, value in config.items() if value.strip() != ""])
 
     def validate_required(self, required_definitions, config: dict[str, float]):
         print(config)
@@ -26,7 +32,7 @@ class OperationsBase():
 
     def apply_direction(self, key, config: dict[str, float], is_opposite: bool):
         if key in config and is_opposite:
-            print(key + "in config and is_opposite " + str(is_opposite))
+            # print(key + " in config and is_opposite " + str(is_opposite))
             config[key]= str(float(config[key]) * -1)
 
 

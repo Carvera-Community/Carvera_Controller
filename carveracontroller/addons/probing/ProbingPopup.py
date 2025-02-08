@@ -18,9 +18,12 @@ class ProbingPopup(ModalView):
 
         self.outside_corner_settings = OutsideCornerSettings()
         self.inside_corner_settings = InsideCornerSettings()
+
         super(ProbingPopup, self).__init__(**kwargs)
 
     # def on_single_axis_probing_pressed(self, operation_key: str):
+    #     self.preview_popup.open()
+
     # def on_bore_boss_corner_probing_pressed(self, operation_key: str):
 
     def on_inside_corner_probing_pressed(self, operation_key: str):
@@ -39,7 +42,6 @@ class ProbingPopup(ModalView):
 
     def on_outside_corner_probing_pressed(self, operation_key: str):
 
-        print(operation_key)
         cfg = self.outside_corner_settings.get_config()
         the_op = OutsideCornerOperationType[operation_key].value
         missing_definition = the_op.get_missing_config(cfg)
@@ -54,10 +56,6 @@ class ProbingPopup(ModalView):
             self.preview_popup.probe_preview_label = "Missing required parameter " + missing_definition.label
 
         self.preview_popup.open()
-
-    # def set_config(self, key1, key2, value):
-    #     self.config[key1][key2] = value
-    #     # self.cnc_workspace.draw()
 
     def load_config(self):
         # todo

@@ -7,24 +7,24 @@
 
         ProbeSettingLabel:
             label_text: 'X:'
-            hint_text: 'X Distance'
+            hint_text: 'X Dis'
             TextInput:
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('XAxisDistance')
+                text: root.get_setting('XAxisDistance', "10")
                 on_text: root.setting_changed('XAxisDistance', self.text)
 
         ProbeSettingLabel:
             label_text: 'Y:'
-            hint_text: 'Y Distance'
+            hint_text: 'Y Dist'
             TextInput:
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('YAxisDistance')
+                text: root.get_setting('YAxisDistance', "10")
                 on_text: root.setting_changed('YAxisDistance', self.text)
 
         ProbeSettingLabel:
@@ -35,7 +35,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('ProbeTipDiameter')
+                text: root.get_setting('ProbeTipDiameter', "3")
                 on_text: root.setting_changed('ProbeTipDiameter', self.text)
 
         ProbeSettingLabel:
@@ -46,7 +46,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('PocketProbeDepth')
+                text: root.get_setting('PocketProbeDepth',"5")
                 on_text: root.setting_changed('PocketProbeDepth', self.text)
 
         ProbeSettingLabel:
@@ -57,7 +57,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('FastFeedRate')
+                text: root.get_setting('FastFeedRate', "20")
                 on_text: root.setting_changed('FastFeedRate', self.text)
 
         ProbeSettingLabel:
@@ -68,7 +68,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('RapidFeedRate')
+                text: root.get_setting('RapidFeedRate', "50")
                 on_text: root.setting_changed('RapidFeedRate', self.text)
 
         ProbeSettingLabel:
@@ -79,7 +79,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('RepeatOperationCount')
+                text: root.get_setting('RepeatOperationCount', "1")
                 on_text: root.setting_changed('RepeatOperationCount', self.text)
 
         ProbeSettingLabel:
@@ -90,7 +90,7 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('EdgeRetractDistance')
+                text: root.get_setting('EdgeRetractDistance', "5")
                 on_text: root.setting_changed('EdgeRetractDistance', self.text)
 
         ProbeSettingLabel:
@@ -101,21 +101,21 @@
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('BottomSurfaceRetract')
+                text: root.get_setting('BottomSurfaceRetract', "2")
                 on_text: root.setting_changed('BottomSurfaceRetract', self.text)
 
         ProbeSettingLabel:
             label_text: 'ZeroXY:'
             hint_text: 'ZeroXY Position'
             Switch:
-                id: vacuum_switch_play
+                id: zero_xy
                 canvas.before:
                     Color:
                         rgba: 50/255, 50/255, 50/255, 1
                     Rectangle:
                         pos: self.pos
                         size: self.size
-                active: True if root.get_setting('ZeroXYPosition') == 1 else False
+                active: root.get_setting('ZeroXYPosition') == "1"
                 on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")
 
         ProbeSettingLabel:
@@ -129,5 +129,5 @@
                     Rectangle:
                         pos: self.pos
                         size: self.size
-                active: True if root.get_setting('UseProbeNormallyClosed') == 1 else False
+                active: root.get_setting('UseProbeNormallyClosed') == "1"
                 on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")

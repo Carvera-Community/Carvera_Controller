@@ -14,9 +14,9 @@ class InsideCornerOperation(OperationsBase):
         self.x_is_negative_move = x_is_negative_move
         self.y_is_negative_move = y_is_negative_move
 
-    def generate(self, input: dict[str, float]):
+    def generate(self, input_config: dict[str, float]):
 
-        config = copy.deepcopy(input)
+        config = copy.deepcopy(input_config)
 
         super().apply_direction(InsideCornerParameterDefinitions.XAxisDistance.code,
                                 config,
