@@ -1,25 +1,26 @@
-from kivy.properties import ObjectProperty
+from kivy.clock import Clock
 from kivy.uix.modalview import ModalView
-from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOperationType import \
-    OutsideCornerOperationType
+from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOperationType import OutsideCornerOperationType
 from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerSettings import OutsideCornerSettings
+from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerSettings import InsideCornerSettings
 from carveracontroller.addons.probing.preview.ProbingPreviewPopup import ProbingPreviewPopup
 
 from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerOperationType import InsideCornerOperationType
-from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerSettings import InsideCornerSettings
 
 
 class ProbingPopup(ModalView):
-    outside_corner_settings = ObjectProperty()
-    inside_corner_settings = ObjectProperty()
 
     def __init__(self, controller, **kwargs):
+        self.outside_corner_settings = None
+        self.inside_corner_settings = None
         self.preview_popup = ProbingPreviewPopup(controller)
 
-        self.outside_corner_settings = OutsideCornerSettings()
-        self.inside_corner_settings = InsideCornerSettings()
-
+        Clock.schedule_once(self.delayed_bind, 0.1)
         super(ProbingPopup, self).__init__(**kwargs)
+
+    def delayed_bind(self, dt):
+        self.outside_corner_settings = self.ids.outside_corner_settings
+        self.inside_corner_settings = self.ids.inside_corner_settings
 
     # def on_single_axis_probing_pressed(self, operation_key: str):
     #     self.preview_popup.open()

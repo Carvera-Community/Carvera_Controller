@@ -1,3 +1,4 @@
+from kivy.properties import ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
@@ -5,13 +6,14 @@ from kivy.uix.textinput import TextInput
 from carveracontroller.addons.probing.operations.ConfigUtils import ConfigUtils
 from carveracontroller.addons.probing.operations.OperationsBase import ProbeSettingDefinition
 from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerParameterDefinitions import OutsideCornerParameterDefinitions
+from kivy.clock import Clock
 
 class OutsideCornerSettings(BoxLayout):
-
     config_filename = "outside-corner-settings.json"
     config = {}
 
     def __init__(self, **kwargs):
+        print('init outside corner settings')
         super(OutsideCornerSettings, self).__init__(**kwargs)
         self.config = ConfigUtils.load_config(self.config_filename)
 
@@ -22,17 +24,27 @@ class OutsideCornerSettings(BoxLayout):
 
         self.config[param.code] = value
         print("setting changed " + key)
-        print(self.config)
         ConfigUtils.save_config(self.config, self.config_filename)
+        print('latest config')
+
+        print(self.config)
+
 
     def get_setting(self, key: str, default: str = "") -> str:
         param = getattr(OutsideCornerParameterDefinitions, key, None)
         return str(self.config[param.code] if param.code in self.config else default)
 
     def get_config(self):
-
         print("getting config")
-        # read the control values
+
+        print("\n\n --")
+
+
+        print("\n\nconfig before read\n\n")
+        print(self.config)
+
+        print("\n\nconfig after read")
+
         required_parameters = {name: value for name, value in OutsideCornerParameterDefinitions.__dict__.items()
                                 if isinstance(value, ProbeSettingDefinition)}
 
@@ -46,5 +58,10 @@ class OutsideCornerSettings(BoxLayout):
                     self.config[param.code] = "1" if control.active else ""
             else:
                 print("no control with name: " + name)
+
+
+        print(self.config)
+
+        print("\n\n --")
 
         return self.config;
