@@ -12,12 +12,6 @@ class OperationsBase():
     def generate(self, config: dict[str, float]) -> str:
         pass
 
-    # def config_to_gcode(self, config: dict[str, float]) -> str:
-    #     return " " + ' '.join([f'{key}{value} ' for key, value in config.items()])
-
-    # def config_to_gcode(self, config: dict[str, float]) -> str:
-    #     return " " + ' '.join([f'{key}{value}' for key, value in config.items() if value not in (None, "", 0)])
-
     def config_to_gcode(self, config: dict[str, str]) -> str:
         return " " + ' '.join([f'{key}{value}' for key, value in config.items() if value.strip() != ""])
 
@@ -35,6 +29,9 @@ class OperationsBase():
             # print(key + " in config and is_opposite " + str(is_opposite))
             config[key]= str(float(config[key]) * -1)
 
+    @abstractmethod
+    def get_missing_config(self, config: dict[str, float]):
+       pass
 
 class ProbeSettingDefinition:
     code: str
