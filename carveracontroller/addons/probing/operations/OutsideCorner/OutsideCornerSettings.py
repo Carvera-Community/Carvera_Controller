@@ -23,28 +23,14 @@ class OutsideCornerSettings(BoxLayout):
             raise KeyError(f"Invalid key '{key}'")
 
         self.config[param.code] = value
-        print("setting changed " + key)
         ConfigUtils.save_config(self.config, self.config_filename)
-        print('latest config')
-
-        print(self.config)
 
 
-    def get_setting(self, key: str, default: str = "") -> str:
+    def get_setting(self, key: str) -> str:
         param = getattr(OutsideCornerParameterDefinitions, key, None)
-        return str(self.config[param.code] if param.code in self.config else default)
+        return str(self.config[param.code] if param.code in self.config else "")
 
     def get_config(self):
-        print("getting config")
-
-        print("\n\n --")
-
-
-        print("\n\nconfig before read\n\n")
-        print(self.config)
-
-        print("\n\nconfig after read")
-
         required_parameters = {name: value for name, value in OutsideCornerParameterDefinitions.__dict__.items()
                                 if isinstance(value, ProbeSettingDefinition)}
 
@@ -58,10 +44,5 @@ class OutsideCornerSettings(BoxLayout):
                     self.config[param.code] = "1" if control.active else ""
             else:
                 print("no control with name: " + name)
-
-
-        print(self.config)
-
-        print("\n\n --")
 
         return self.config;

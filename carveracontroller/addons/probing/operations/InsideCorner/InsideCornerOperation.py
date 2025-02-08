@@ -3,6 +3,8 @@ import copy
 from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerParameterDefinitions import \
     InsideCornerParameterDefinitions
 from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase, ProbeSettingDefinition
+from carveracontroller.addons.probing.operations.SingleAxis.SingleAxisProbeParameterDefinitions import \
+    SingleAxisProbeParameterDefinitions
 
 
 class InsideCornerOperation(OperationsBase):
@@ -18,11 +20,11 @@ class InsideCornerOperation(OperationsBase):
 
         config = copy.deepcopy(input_config)
 
-        super().apply_direction(InsideCornerParameterDefinitions.XAxisDistance.code,
+        super().apply_direction(SingleAxisProbeParameterDefinitions.XAxisDistance.code,
                                 config,
                                 self.x_is_negative_move)
 
-        super().apply_direction(InsideCornerParameterDefinitions.YAxisDistance.code,
+        super().apply_direction(SingleAxisProbeParameterDefinitions.YAxisDistance.code,
                                 config,
                                 self.y_is_negative_move)
 

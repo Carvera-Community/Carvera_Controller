@@ -16,7 +16,6 @@ class OperationsBase():
         return " " + ' '.join([f'{key}{value}' for key, value in config.items() if value.strip() != ""])
 
     def validate_required(self, required_definitions, config: dict[str, float]):
-        print(config)
         for name, definition in required_definitions.items():
             if not definition.code in config:
                 return definition

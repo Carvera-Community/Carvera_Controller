@@ -1,114 +1,125 @@
 <InsideCornerSettings>:
     GridLayout:
         cols:1
-        rows:11
+        rows:12
         spacing:dp(3)
         padding:dp(1)
 
         ProbeSettingLabel:
             label_text: 'X:'
-            hint_text: 'X Dis'
             TextInput:
+                id: XAxisDistance
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('XAxisDistance', "10")
+                text: root.get_setting('XAxisDistance')
                 on_text: root.setting_changed('XAxisDistance', self.text)
 
         ProbeSettingLabel:
             label_text: 'Y:'
-            hint_text: 'Y Dist'
             TextInput:
+                id: YAxisDistance
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('YAxisDistance', "10")
+                text: root.get_setting('YAxisDistance')
                 on_text: root.setting_changed('YAxisDistance', self.text)
 
         ProbeSettingLabel:
             label_text: 'Tip Dia:'
-            hint_text: 'tip diameter'
             TextInput:
+                id: ProbeTipDiameter
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('ProbeTipDiameter', "3")
+                text: root.get_setting('ProbeTipDiameter')
                 on_text: root.setting_changed('ProbeTipDiameter', self.text)
 
         ProbeSettingLabel:
             label_text: 'Pocket Depth:'
-            hint_text: 'PocketProbeDepth'
             TextInput:
+                id: PocketProbeDepth
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('PocketProbeDepth',"5")
+                text: root.get_setting('PocketProbeDepth')
                 on_text: root.setting_changed('PocketProbeDepth', self.text)
 
         ProbeSettingLabel:
             label_text: 'FF Rate:'
-            hint_text: 'FastFeedRate'
             TextInput:
+                id: FastFeedRate
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('FastFeedRate', "20")
+                text: root.get_setting('FastFeedRate')
                 on_text: root.setting_changed('FastFeedRate', self.text)
 
         ProbeSettingLabel:
             label_text: 'Rapid:'
-            hint_text: 'RapidFeedRate'
             TextInput:
+                id: RapidFeedRate
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('RapidFeedRate', "50")
+                text: root.get_setting('RapidFeedRate')
                 on_text: root.setting_changed('RapidFeedRate', self.text)
 
         ProbeSettingLabel:
             label_text: 'Repeat:'
-            hint_text: 'RepeatOperationCount'
             TextInput:
+                id: RepeatOperationCount
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('RepeatOperationCount', "1")
+                text: root.get_setting('RepeatOperationCount')
                 on_text: root.setting_changed('RepeatOperationCount', self.text)
 
         ProbeSettingLabel:
             label_text: 'Edge Retract:'
-            hint_text: 'EdgeRetractDistance'
             TextInput:
+                id: EdgeRetractDistance
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('EdgeRetractDistance', "5")
+                text: root.get_setting('EdgeRetractDistance')
                 on_text: root.setting_changed('EdgeRetractDistance', self.text)
 
         ProbeSettingLabel:
             label_text: 'Btm Retract:'
-            hint_text: 'BottomSurfaceRetract'
             TextInput:
+                id: BottomSurfaceRetract
                 multiline: False
                 halign:'left'
                 input_type: 'number'
                 input_filter: 'float'
-                text: root.get_setting('BottomSurfaceRetract', "2")
+                text: root.get_setting('BottomSurfaceRetract')
                 on_text: root.setting_changed('BottomSurfaceRetract', self.text)
+
+        ProbeSettingLabel:
+            label_text: 'ProbeDepth:'
+            TextInput:
+                id: ProbeDepth
+                multiline: False
+                halign:'left'
+                input_type: 'number'
+                input_filter: 'float'
+                text: root.get_setting('ProbeDepth')
+                on_text: root.setting_changed('ProbeDepth', self.text)
 
         ProbeSettingLabel:
             label_text: 'ZeroXY:'
             hint_text: 'ZeroXY Position'
             Switch:
-                id: zero_xy
+                id: ZeroXYPosition
                 canvas.before:
                     Color:
                         rgba: 50/255, 50/255, 50/255, 1
@@ -122,7 +133,7 @@
             label_text: 'Normally Closed:'
             hint_text: ''
             Switch:
-                id: probe_is_nc
+                id: UseProbeNormallyClosed
                 canvas.before:
                     Color:
                         rgba: 50/255, 50/255, 50/255, 1

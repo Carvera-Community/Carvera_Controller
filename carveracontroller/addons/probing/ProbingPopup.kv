@@ -2,6 +2,8 @@
 #:include addons/probing/ProbingControls.kv
 #:include addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv
 #:include addons/probing/operations/InsideCorner/InsideCornerSettings.kv
+#:include addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv
+
 
 <ProbingPopup>:
     title:"Probing"
@@ -39,16 +41,16 @@
 
                             ProbeButton:
                                 on_press: root.on_outside_corner_probing_pressed("TopLeft")
-                                image: 'addons/probing/data/icons_1024x768/X+Y-.png'
+                                image: 'addons/probing/data/icons_1024x768/outside_corner/X+Y-.png'
                             ProbeButton:
                                 on_press: root.on_outside_corner_probing_pressed("TopRight")
-                                image: 'addons/probing/data/icons_1024x768/X-Y-.png'
+                                image: 'addons/probing/data/icons_1024x768/outside_corner/X-Y-.png'
                             ProbeButton:
                                 on_press: root.on_outside_corner_probing_pressed("BottomLeft")
-                                image: 'addons/probing/data/icons_1024x768/X+Y+.png'
+                                image: 'addons/probing/data/icons_1024x768/outside_corner/X+Y+.png'
                             ProbeButton:
                                 on_press: root.on_outside_corner_probing_pressed("BottomRight")
-                                image: 'addons/probing/data/icons_1024x768/X-Y+.png'
+                                image: 'addons/probing/data/icons_1024x768/outside_corner/X-Y+.png'
 
                         BoxLayout:
                             size_hint_x: .5
@@ -72,21 +74,73 @@
 
                             ProbeButton:
                                 on_press: root.on_inside_corner_probing_pressed("TopLeft")
-                                image: 'addons/probing/data/icons_1024x768/inX+Y-.png'
+                                image: 'addons/probing/data/icons_1024x768/inside_corner/inX+Y-.png'
                             ProbeButton:
                                 on_press: root.on_inside_corner_probing_pressed("TopRight")
-                                image: 'addons/probing/data/icons_1024x768/inX-Y-.png'
+                                image: 'addons/probing/data/icons_1024x768/inside_corner/inX-Y-.png'
                             ProbeButton:
                                 on_press: root.on_inside_corner_probing_pressed("BottomLeft")
-                                image: 'addons/probing/data/icons_1024x768/inX+Y+.png'
+                                image: 'addons/probing/data/icons_1024x768/inside_corner/inX+Y+.png'
                             ProbeButton:
                                 on_press: root.on_inside_corner_probing_pressed("BottomRight")
-                                image: 'addons/probing/data/icons_1024x768/inX-Y+.png'
+                                image: 'addons/probing/data/icons_1024x768/inside_corner/inX-Y+.png'
 
                         BoxLayout:
                             size_hint_x: .5
                             InsideCornerSettings:
                                 id: inside_corner_settings
+
+                TabbedPanelItem:
+                    text: tr._('Single Axis')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        size_hint:1, 1
+                        spacing:dp(10)
+                        padding:dp(10)
+                        GridLayout:
+                            size_hint_x: .5
+                            cols: 3
+                            rows: 3
+                            spacing: dp(8)
+                            padding: 10
+
+                            EmptySpace:
+                                #nothing
+
+                            ProbeButton:
+                                on_press: root.on_single_axis_probing_pressed("Top")
+                                image: 'addons/probing/data/icons_1024x768/single_axis/Y-.png'
+
+                            EmptySpace:
+                                #nothing
+
+                            ProbeButton:
+                                on_press: root.on_single_axis_probing_pressed("Left")
+                                image: 'addons/probing/data/icons_1024x768/single_axis/X+.png'
+
+                            ProbeButton:
+                                on_press: root.on_single_axis_probing_pressed("WorkpieceTop")
+                                image: 'addons/probing/data/icons_1024x768/single_axis/Z-.png'
+
+                            ProbeButton:
+                                on_press: root.on_single_axis_probing_pressed("Right")
+                                image: 'addons/probing/data/icons_1024x768/single_axis/X-.png'
+
+                            EmptySpace:
+                                #nothing
+
+                            ProbeButton:
+                                on_press: root.on_single_axis_probing_pressed("Bottom")
+                                image: 'addons/probing/data/icons_1024x768/single_axis/Y+.png'
+
+                            EmptySpace:
+                                #nothing
+
+                        BoxLayout:
+                            size_hint_x: .5
+                            SingleAxisProbeSettings:
+                                id: single_axis_settings
         BoxLayout:
             spacing: '5dp'
             size_hint_y: None

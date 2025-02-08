@@ -21,9 +21,9 @@ class InsideCornerSettings(BoxLayout):
         self.config[param.code] = value
         ConfigUtils.save_config(self.config, self.config_filename)
 
-    def get_setting(self, key: str, default: str = "") -> str:
+    def get_setting(self, key: str) -> str:
         param = getattr(InsideCornerParameterDefinitions, key, None)
-        return str(self.config[param.code] if param.code in self.config else default)
+        return str(self.config[param.code] if param.code in self.config else "")
 
     def get_config(self):
         return self.config;
