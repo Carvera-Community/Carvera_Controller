@@ -77,3 +77,7 @@ AppDir/
 appimage-build/
 AppDir.squashfs
 AppImageBuilder.yml
+
+single-axis-probe-settings.json
+outside-corner-settings.json
+inside-corner-settings.json
