@@ -19,4 +19,4 @@ class ConfigUtils:
                     return json.load(f)
             except Exception as e:
                 print(f"Error loading configuration from {filename}: {e}")
-        return default_config  # Return an empty dictionary if loading fails or file doesn't exist
+        return {}  # Return an empty dictionary if loading fails or file doesn't exist
