@@ -22,8 +22,12 @@ class OperationsBase():
                 return definition
             elif len(config[definition.code]) == 0:
                 return definition
-
         return None
+
+    def apply_direction(self, key, config: dict[str, float], is_opposite: bool):
+        if key in config and is_opposite:
+            print(key + "in config and is_opposite " + str(is_opposite))
+            config[key]= str(float(config[key]) * -1)
 
 
 class ProbeSettingDefinition:

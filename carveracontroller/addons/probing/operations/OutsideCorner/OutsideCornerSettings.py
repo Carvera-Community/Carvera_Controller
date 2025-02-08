@@ -14,6 +14,8 @@ class OutsideCornerSettings(BoxLayout):
         if param is None:
             raise KeyError(f"Invalid key '{key}'")
 
+        print("setting " + param.code + "=" + str(value))
+
         self.config[param.code] = value
 
     def get_setting(self, key:str):

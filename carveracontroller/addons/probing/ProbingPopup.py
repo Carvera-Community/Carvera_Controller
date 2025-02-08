@@ -25,11 +25,9 @@ class ProbingPopup(ModalView):
 
     def on_inside_corner_probing_pressed(self, operation_key: str):
         cfg = self.inside_corner_settings.get_config()
-        # the_op = OperationsBase(InsideCornerOperationType[operation_key].value) # down cast
-        # self.preview_popup.update_operation(the_op, cfg)
-
         the_op = InsideCornerOperationType[operation_key].value
         missing_definition = the_op.get_missing_config(cfg)
+
         if missing_definition is None:
             self.preview_popup.gcode = the_op.generate(cfg)
             self.preview_popup.probe_preview_label = self.preview_popup.gcode
@@ -40,12 +38,12 @@ class ProbingPopup(ModalView):
         self.preview_popup.open()
 
     def on_outside_corner_probing_pressed(self, operation_key: str):
-        cfg = self.outside_corner_settings.get_config()
-        # the_op = OperationsBase(InsideCornerOperationType[operation_key].value) # down cast
-        # self.preview_popup.update_operation(the_op, cfg)
 
+        print(operation_key)
+        cfg = self.outside_corner_settings.get_config()
         the_op = OutsideCornerOperationType[operation_key].value
         missing_definition = the_op.get_missing_config(cfg)
+
         if missing_definition is None:
             gcode = the_op.generate(cfg)
             self.preview_popup.gcode = gcode
