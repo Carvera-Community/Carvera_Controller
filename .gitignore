@@ -81,3 +81,4 @@ AppImageBuilder.yml
 single-axis-probe-settings.json
 outside-corner-settings.json
 inside-corner-settings.json
+.DS_Store
