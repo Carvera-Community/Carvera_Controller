@@ -27,6 +27,6 @@
                 on_release: root.dismiss()
             Button:
                 text: tr._('Start')
-                disabled: not root.gcode
+                disabled: (not root.gcode) or (app.state != 'Idle')
                 on_release: root.start_probing()
 #                    root.dismiss()

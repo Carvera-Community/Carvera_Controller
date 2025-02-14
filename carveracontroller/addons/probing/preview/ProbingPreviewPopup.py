@@ -9,6 +9,7 @@ class ProbingPreviewPopup(ModalView):
     config: dict[str, float]
     gcode = StringProperty("")
 
+
     def __init__(self, controller, **kwargs):
         self.controller = controller
         super(ProbingPreviewPopup, self).__init__(**kwargs)
