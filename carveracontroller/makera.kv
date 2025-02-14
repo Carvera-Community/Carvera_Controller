@@ -1,6 +1,7 @@
 #:kivy 1.11.1
 #:import Factory kivy.factory.Factory
 #:import tr __main__.tr
+#:include addons/tooltips/tooltips.kv
 
 <Label>:
     font_name: 'ARIALUNI'
@@ -449,8 +450,9 @@
             title: tr._('max:')
             value: '0.000'
             color: (231/255, 76/255, 60/255, 1) if self.value != '0.000' else self.default_color
-    Button:
+    ToolTipButton:
         text: tr._('Clear')
+        tooltip_txt: tr._('Clear any existing autolevel offsets. When autolevel offsets are enabled the Z axis dropdown will be blue')
         size_hint_y: None
         height: '48dp'
         font_size: '20sp'
@@ -486,8 +488,9 @@
         on_release:
             root.select('Third Item')
             app.root.coord_popup.seta_popup.open()
-    Button:
+    ToolTipButton:
         text: tr._('Shrink')
+        tooltip_txt: tr._('Reset A Axis value to 0-360 while keeping the offset. 374 becomes 14')
         size_hint_y: None
         height: '48dp'
         font_size: '20sp'
@@ -908,6 +911,7 @@
         small_icon: True
         size_hint_y: None
         height: '40dp'
+        tooltip_txt: tr._('Run File View')
         on_release:
             app.root.content.transition.direction = 'right'
             app.root.content.current = 'File'
@@ -917,6 +921,7 @@
         icon_size: 24
         small_icon: True
         size_hint_y: None
+        tooltip_txt: tr._('Manual Move View')
         height: '50dp'
         on_release:
             app.root.content.transition.direction = 'left'
@@ -929,6 +934,7 @@
         size_hint_y: None
         disabled: app.state == 'N/A'
         height: '50dp'
+        tooltip_txt: tr._('Diagnostics Menu')
         on_release:
             root.select('')
             app.root.diagnose_popup.open()
@@ -939,6 +945,7 @@
         size_hint_y: None
         height: '50dp'
         disabled: app.state != 'Idle'
+        tooltip_txt: tr._('Wifi Setup')
         on_release:
             app.root.startLoadWiFi(self)
     IconButton:
@@ -949,6 +956,7 @@
         height: '50dp' if app.model != 'CA1' else '0dp'
         opacity: 1 if app.model != 'CA1' else 0
         disabled: app.state != 'Idle'
+        tooltip_txt: tr._('Pair Probe')
         on_release:
             app.root.pairing_popup.pairing_note = ''
             app.root.pairing_popup.open()
@@ -957,6 +965,7 @@
         icon_size: 24
         small_icon: True
         size_hint_y: None
+        tooltip_txt: tr._('Update Firmware/Controller')
         notify: (app.fw_has_update or app.ctl_has_update) and app.state != 'N/A'
         disabled: app.state != 'Idle'
         height: '50dp'
@@ -969,6 +978,7 @@
         small_icon: True
         size_hint_y: None
         height: '50dp'
+        tooltip_txt: tr._('Language Selection')
         on_release:
             root.select('')
             app.root.language_popup.open()
@@ -978,12 +988,16 @@
         small_icon: True
         size_hint_y: None
         height: '50dp'
+        tooltip_txt: tr._('Settings')
         on_release:
             root.select('')
             app.root.config_popup.open()
     IconButton:
         icon: 'data/open_iconic_UI/oi--bug.png'
         icon_size: 24
+        tooltip_image: 'data/open_iconic_UI/oi--bug.png'
+        tooltip_image_size: [100,100]
+        tooltip_txt: tr._('Send Bug Report')
         small_icon: True
         size_hint_y: None
         height: '50dp'
@@ -3253,6 +3267,7 @@
             TopDataView:
                 id: feed_data_view
                 data_icon: 'data/feed.png'
+                tooltip_txt: tr._('Feed Rate Override')
                 main_text: "1000"
                 minr_text: "100%"
                 disabled: app.state == 'N/A'
@@ -3263,6 +3278,7 @@
             TopDataView:
                 id: spindle_data_view
                 data_icon: 'data/spindle.png'
+                tooltip_txt: tr._('Spindle and Vacuum Overrides')
                 main_text: "10000"
                 minr_text: "0.0 C"
                 disabled: app.state == 'N/A'
@@ -3273,6 +3289,7 @@
             TopDataView:
                 id: tool_data_view
                 data_icon: 'data/tool.png'
+                tooltip_txt: tr._('Tool Settings')
                 main_text: "6"
                 minr_text: "0.000"
                 disabled: app.state == 'N/A'
@@ -3283,6 +3300,7 @@
             TopDataView:
                 id: laser_data_view
                 data_icon: 'data/laser.png'
+                tooltip_txt: tr._('Laser Settings')
                 main_text: "10000"
                 minr_text: "100%"
                 disabled: app.state == 'N/A'
@@ -3592,10 +3610,11 @@
                                                 orientation: 'horizontal'
                                                 size_hint_y: None
                                                 height: '33dp'
-                                                Button:
+                                                ToolTipButton:
                                                     id: toggle_mdi
                                                     width: '40dp'
                                                     size_hint_x: None
+                                                    tooltip_txt: tr._('Press to switch to MDI console to see console messages and send individual gcodes')
                                                     text: 'MDI'
                                                     on_release:
                                                         cmd_manager.transition.direction = 'left'
@@ -3608,6 +3627,7 @@
                                                     TransparentButton:
                                                         height: '0dp'
                                                         icon: 'data/to_start.png'
+                                                        tooltip_txt: tr._('Jump to first page in file')
                                                         icon_size: 18
                                                         disabled: app.loading_page or app.curr_page == 1 or (app.state != 'Idle' and app.state != 'N/A')
                                                         on_release:
@@ -3615,6 +3635,7 @@
                                                     TransparentButton:
                                                         height: '0dp'
                                                         icon: 'data/previous.png'
+                                                        tooltip_txt: tr._('Go to last page in file')
                                                         icon_size: 13
                                                         disabled: app.loading_page or app.curr_page == 1 or (app.state != 'Idle' and app.state != 'N/A')
                                                         on_release:
@@ -3622,6 +3643,7 @@
                                                     TransparentButton:
                                                         height: '0dp'
                                                         icon: 'data/start.png'
+                                                        tooltip_txt: tr._('Go to next page in file')
                                                         icon_size: 13
                                                         disabled: app.loading_page or app.curr_page == app.total_pages or (app.state != 'Idle' and app.state != 'N/A')
                                                         on_release:
@@ -3629,6 +3651,7 @@
                                                     TransparentButton:
                                                         height: '0dp'
                                                         icon: 'data/to_end.png'
+                                                        tooltip_txt: tr._('Jump to last page in file')
                                                         icon_size: 18
                                                         disabled: app.loading_page or app.curr_page == app.total_pages or (app.state != 'Idle' and app.state != 'N/A')
                                                         on_release:
@@ -3660,11 +3683,12 @@
                                                 orientation: 'horizontal'
                                                 size_hint_y: None
                                                 height: '33dp'
-                                                Button:
+                                                ToolTipButton:
                                                     id: toggle_file
                                                     width: '40dp'
                                                     size_hint_x: None
                                                     text: tr._('FILE')
+                                                    tooltip_txt: tr._('Retun to file view')
                                                     on_release:
                                                         cmd_manager.transition.direction = 'right'
                                                         cmd_manager.current = 'gcode_cmd_page'
@@ -3675,11 +3699,12 @@
                                                     # disabled: app.state != 'Idle'
                                                     on_text_validate:
                                                         if app.state == 'Idle' or app.state == 'Pause' : root.send_cmd()
-                                                Button:
+                                                ToolTipButton:
                                                     id: send_cmd
                                                     width: '40dp'
                                                     size_hint_x: None
                                                     text: tr._('send')
+                                                    tooltip_txt: tr._('The MDI is a console that allows you to send individual gcodes as well as change config values on the machine')
                                                     disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running == '0')
                                                     on_release:
                                                         root.send_cmd()
@@ -3935,6 +3960,7 @@
                         size: self.size
                 IconButton:
                     icon: 'data/file.png'
+                    tooltip_txt: tr._('Select File')
                     icon_size: 21
                     disabled: app.state != 'Idle' and app.state != 'N/A' and not app.playing
                     on_release:
@@ -3950,6 +3976,7 @@
                 IconButton:
                     icon: 'data/start.png' if app.state == 'Pause' else 'data/config_start.png'
                     icon_size: 25
+                    tooltip_txt: tr._('Start File')
                     disabled: (app.state != 'Idle' or app.selected_remote_filename == '' or app.playing) and app.state != 'Pause'
                     on_release:
                         if app.state == 'Pause':\
@@ -3961,11 +3988,13 @@
                 IconButton:
                     icon: 'data/suspend.png'
                     disabled: app.state != 'Run' or not app.playing
+                    tooltip_txt: tr._('Pause File at Next Safe Opportunity and Enable MDI Control')
                     on_release:
                         app.root.controller.suspendCommand()
                 IconButton:
                     icon: 'data/abort.png'
                     icon_size: 24
+                    tooltip_txt: tr._('Abort File Now')
                     disabled: (app.state != 'Run' and app.state != 'Pause') or not app.playing
                     on_release:
                         app.root.controller.abortCommand()
@@ -3975,6 +4004,7 @@
                 IconButton:
                     icon: 'data/feedhold2.png' if app.state == 'Hold' else 'data/feedhold1.png'
                     icon_size: 24
+                    tooltip_txt: tr._('Pause File Without MDI')
                     disabled: app.state != 'Run' and app.state != 'Idle' and app.state != 'Hold'
                     on_release:
                         self.disabled = True
@@ -4014,6 +4044,7 @@
 
                 IconButton:
                     icon: 'data/stop.png'
+                    tooltip_txt: tr._('E-Stop')
                     icon_size: 40
                     disabled: app.state == 'N/A'
                     on_release:

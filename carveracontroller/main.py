@@ -115,6 +115,10 @@ from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
     LOAD_DIR, LOAD_MV, LOAD_RM, LOAD_MKDIR, LOAD_WIFI, LOAD_CONN_WIFI, CONN_USB, CONN_WIFI, SEND_FILE
 from .__version__ import __version__
 
+from kivy.lang import Builder
+from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown 
+
+
 
 def load_halt_translations(tr: Lang):
     """Loads the appropriate language translation"""
@@ -568,76 +572,76 @@ class MakeraConfigPanel(SettingsWithSidebar):
             elif key == 'default' and value == 'DEFAULT':
                 app.root.open_setting_default_confirm_popup()
 
-class JogSpeedDropDown(DropDown):
+class JogSpeedDropDown(ToolTipDropDown):
     pass
 
-class XDropDown(DropDown):
+class XDropDown(ToolTipDropDown):
     pass
 
-class YDropDown(DropDown):
+class YDropDown(ToolTipDropDown):
     pass
 
-class ZDropDown(DropDown):
+class ZDropDown(ToolTipDropDown):
     pass
 
-class ADropDown(DropDown):
+class ADropDown(ToolTipDropDown):
     pass
 
-class FeedDropDown(DropDown):
+class FeedDropDown(ToolTipDropDown):
     opened = False
 
     def on_dismiss(self):
         self.opened = False
 
-class SpindleDropDown(DropDown):
+class SpindleDropDown(ToolTipDropDown):
     opened = False
 
     def on_dismiss(self):
         self.opened = False
 
-class ToolDropDown(DropDown):
+class ToolDropDown(ToolTipDropDown):
     opened = False
 
     def on_dismiss(self):
         self.opened = False
 
-class LaserDropDown(DropDown):
+class LaserDropDown(ToolTipDropDown):
     opened = False
 
     def on_dismiss(self):
         self.opened = False
 
 
-class FuncDropDown(DropDown):
+class FuncDropDown(ToolTipDropDown):
     pass
 
-class StatusDropDown(DropDown):
+class StatusDropDown(ToolTipDropDown):
     def __init__(self, **kwargs):
         super(StatusDropDown, self).__init__(**kwargs)
 
-class ComPortsDropDown(DropDown):
+class ComPortsDropDown(ToolTipDropDown):
     def __init__(self, **kwargs):
         super(DropDown, self).__init__(**kwargs)
 
 
-class OperationDropDown(DropDown):
+class OperationDropDown(ToolTipDropDown):
     pass
 
-class MachineButton(Button):
+class MachineButton(ToolTipButton):
     ip = StringProperty("")
     port = NumericProperty(2222)
     busy = BooleanProperty(False)
 
-class IconButton(BoxLayout, Button):
+class IconButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
 
-class TransparentButton(BoxLayout, Button):
+class TransparentButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
 
-class TransparentGrayButton(BoxLayout, Button):
+class TransparentGrayButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
 
-class WiFiButton(BoxLayout, Button):
+class WiFiButton(BoxLayout, ToolTipButton):
     ssid = StringProperty("")
     encrypted = BooleanProperty(False)
     strength = NumericProperty(1000)
@@ -761,10 +765,10 @@ class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
                                  RecycleBoxLayout):
     ''' Adds selection and focus behaviour to the view. '''
 
-class TopDataView(BoxLayout, Button):
+class TopDataView(BoxLayout, ToolTipButton):
     pass
 
-class DirectoryView(BoxLayout, Button):
+class DirectoryView(BoxLayout, ToolTipButton):
     pass
 
 class DropDownHint(Label):
