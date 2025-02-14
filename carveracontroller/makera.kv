@@ -3305,17 +3305,19 @@
                                 padding: '10dp'
                                 BoxLayout:
                                     padding: '10dp'
+                                    spacing: dp(10)
+                                    size_hint_min_y: dp(188)
                                     canvas.before:
                                         Color:
                                             rgba: 50/255, 50/255, 50/255, 1
                                         RoundedRectangle:
                                             pos: self.pos
                                             size: self.size
-                                            radius: [dp(12),]
+                                            radius: [dp(3),]
                                     GridLayout:
                                         cols: 3
-                                        rows: 3
-                                        spacing: dp(2)
+                                        rows: 4
+                                        spacing: dp(3)
                                         GridBoxLayout:
                                             SmallRoundButton:
                                                 text: tr._('Unlock')
@@ -3381,6 +3383,21 @@
                                                 size_hint_y: None
                                                 height: '35dp'
                                                 on_release: app.root.toggle_jog_control_ui()
+
+                                        # 4th row
+                                        GridBoxLayout:
+                                            ToggleButton:
+                                                text: tr._('Probing...')
+                                                size_hint_y: None
+                                                height: '35dp'
+                                                on_release: app.root.probing_popup.open()
+
+                                        GridBoxLayout:
+                                            # Empty for now
+
+                                        GridBoxLayout:
+                                            # Empty for now
+
                             BoxLayout:
                                 BoxLayout:
                                     disabled: app.state != 'Idle'
