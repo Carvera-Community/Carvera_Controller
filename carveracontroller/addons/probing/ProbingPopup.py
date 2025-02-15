@@ -1,6 +1,7 @@
 from kivy.clock import Clock
 from kivy.uix.modalview import ModalView
 
+from carveracontroller.Controller import Controller
 from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase
 from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerOperationType import OutsideCornerOperationType
 from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerSettings import OutsideCornerSettings
@@ -15,10 +16,13 @@ from carveracontroller.addons.probing.operations.InsideCorner.InsideCornerOperat
 
 class ProbingPopup(ModalView):
 
+    controller: Controller
+
     def __init__(self, controller, **kwargs):
         self.outside_corner_settings = None
         self.inside_corner_settings = None
         self.single_axis_settings = None
+        self.controller = controller;
 
         self.preview_popup = ProbingPreviewPopup(controller)
 

@@ -7,17 +7,21 @@
 
 <ProbingPopup>:
     title:"Probing"
-    size_hint: 0.618, 0.8
+    size_hint: 0.8, 0.8
     pos_hint: {"center_x": 0.5, "center_y": 0.5}
     auto_dismiss: False
+    step_xy: step_xy
+    step_z: step_z
+    step_a: step_a
+
     GridLayout:
         cols:1
-        rows:2
+        rows:3
         spacing: dp(10)
         padding: dp(3)
         GridLayout:
             cols:2
-            rows:1
+            rows:2
             spacing: dp(10)
             padding: dp(3)
 
@@ -98,6 +102,7 @@
                         size_hint:1, 1
                         spacing:dp(10)
                         padding:dp(10)
+
                         GridLayout:
                             size_hint_x: .5
                             cols: 3
@@ -141,6 +146,129 @@
                             size_hint_x: .5
                             SingleAxisProbeSettings:
                                 id: single_axis_settings
+
+
+        #jogging controls
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '100dp'
+            GridLayout:
+                cols:3
+                rows:1
+                size_hint:1, 1
+                spacing:dp(10)
+                padding:dp(10)
+
+                #first column xy jogging
+                GridLayout:
+                    size_hint_x: .5
+                    cols: 3
+                    rows: 3
+                    spacing: dp(8)
+                    padding: 10
+
+                    EmptySpace:
+                        #nothing
+
+                    JogButton:
+                        text: "Y-"
+                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), app.root.jog_speed)
+
+                    EmptySpace:
+                        #nothing
+
+                    JogButton:
+                        text: "X-"
+                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), app.root.jog_speed)
+
+
+                    #center
+                    GridBoxLayout:
+                        Label:
+                        Spinner:
+                            id: step_xy
+                            center: 0.5, 0.5
+                            size: dp(33), dp(33)
+                            size_hint: None, None
+                            text: '10'
+                            values: '10', '1', '0.1', '0.01', '0.005'
+                        Label:
+
+                    JogButton:
+                        text: "X+"
+                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), app.root.jog_speed)
+
+                    EmptySpace:
+                        #nothing
+
+                    JogButton:
+                        text: "Y+"
+                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), app.root.jog_speed)
+
+                    EmptySpace:
+                        #nothing
+
+                #second column column A jogging
+                GridLayout:
+                    size_hint_x: .25
+                    cols: 1
+                    rows: 3
+                    spacing: dp(8)
+                    padding: 10
+
+
+                    JogButton:
+                        text: "A+"
+                        on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), app.root.jog_speed)
+
+                    #center
+                    GridBoxLayout:
+                        Label:
+                        Spinner:
+                            id: step_a
+                            center: 0.5, 0.5
+                            size: dp(33), dp(33)
+                            size_hint: None, None
+                            text: '10'
+                            values: '10', '1', '0.1', '0.01', '0.005'
+                        Label:
+
+                    JogButton:
+                        text: "A-"
+                        on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), app.root.jog_speed)
+
+
+                #third column column Z jogging
+                GridLayout:
+                    size_hint_x: .25
+                    cols: 1
+                    rows: 3
+                    spacing: dp(8)
+                    padding: 10
+
+
+                    JogButton:
+                        text: "Z+"
+                        on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), app.root.jog_speed)
+
+                    #center
+                    GridBoxLayout:
+                        Label:
+                        Spinner:
+                            id: step_z
+                            center: 0.5, 0.5
+                            size: dp(33), dp(33)
+                            size_hint: None, None
+                            text: '10'
+                            values: '10', '1', '0.1', '0.01', '0.005'
+                        Label:
+
+                    JogButton:
+                        text: "Z-"
+                        on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), app.root.jog_speed)
+
+
         BoxLayout:
             spacing: '5dp'
             size_hint_y: None

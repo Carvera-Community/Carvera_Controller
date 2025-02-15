@@ -43,3 +43,18 @@
     input_type: 'number'
     input_filter: 'float'
     padding: [4, 0, 5, 0]
+
+
+<JogButton@Button>:
+    background_color: 0,0,0,0  # the last zero is the critical on, make invisible
+    size: dp(33), dp(33)
+    size_hint: None, None
+    image: ''
+    text:''
+    canvas.before:
+        Color:
+            rgba: (88/255,88/255,88/255,1) if self.state=='normal' else (50/255,164/255,206/255,1)  # visual feedback of press
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(3),]
