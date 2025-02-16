@@ -17,7 +17,7 @@
     GridLayout:
         cols:1
         rows:3
-        spacing: dp(10)
+        spacing: dp(0)
         padding: dp(3)
         GridLayout:
             cols:2
@@ -150,124 +150,136 @@
 
         #jogging controls
         BoxLayout:
-            spacing: '5dp'
+            spacing: '0dp'
             size_hint_y: None
-            height: '100dp'
+            height: '120dp'
             GridLayout:
-                cols:3
+                cols:5
                 rows:1
                 size_hint:1, 1
-                spacing:dp(10)
-                padding:dp(10)
-
-                #first column xy jogging
-                GridLayout:
-                    size_hint_x: .5
-                    cols: 3
-                    rows: 3
-                    spacing: dp(8)
-                    padding: 10
-
-                    EmptySpace:
-                        #nothing
-
-                    JogButton:
-                        text: "Y-"
-                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), app.root.jog_speed)
-
-                    EmptySpace:
-                        #nothing
-
-                    JogButton:
-                        text: "X-"
-                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), app.root.jog_speed)
-
-
-                    #center
-                    GridBoxLayout:
-                        Label:
-                        Spinner:
-                            id: step_xy
-                            center: 0.5, 0.5
-                            size: dp(33), dp(33)
-                            size_hint: None, None
-                            text: '10'
-                            values: '10', '1', '0.1', '0.01', '0.005'
-                        Label:
-
-                    JogButton:
-                        text: "X+"
-                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), app.root.jog_speed)
-
-                    EmptySpace:
-                        #nothing
-
-                    JogButton:
-                        text: "Y+"
-                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), app.root.jog_speed)
-
-                    EmptySpace:
-                        #nothing
-
-                #second column column A jogging
-                GridLayout:
-                    size_hint_x: .25
-                    cols: 1
-                    rows: 3
-                    spacing: dp(8)
-                    padding: 10
-
-
-                    JogButton:
-                        text: "A+"
-                        on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), app.root.jog_speed)
-
-                    #center
-                    GridBoxLayout:
-                        Label:
-                        Spinner:
-                            id: step_a
-                            center: 0.5, 0.5
-                            size: dp(33), dp(33)
-                            size_hint: None, None
-                            text: '10'
-                            values: '10', '1', '0.1', '0.01', '0.005'
-                        Label:
-
-                    JogButton:
-                        text: "A-"
-                        on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), app.root.jog_speed)
-
-
-                #third column column Z jogging
-                GridLayout:
-                    size_hint_x: .25
-                    cols: 1
-                    rows: 3
-                    spacing: dp(8)
-                    padding: 10
-
-
-                    JogButton:
-                        text: "Z+"
-                        on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), app.root.jog_speed)
-
-                    #center
-                    GridBoxLayout:
-                        Label:
-                        Spinner:
-                            id: step_z
-                            center: 0.5, 0.5
-                            size: dp(33), dp(33)
-                            size_hint: None, None
-                            text: '10'
-                            values: '10', '1', '0.1', '0.01', '0.005'
-                        Label:
-
-                    JogButton:
-                        text: "Z-"
-                        on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), app.root.jog_speed)
-
+                spacing:dp(0)
+                padding:dp(0)
+                BoxLayout:
+                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    padding: '25dp'
+                    orientation: 'horizontal'
+                #X and Y controls
+                BoxLayout:
+                    orientation: 'horizontal'
+                    padding: '0dp'
+                    canvas.before:
+                        Color:
+                            rgba: 40/255, 40/255, 40/255, 1
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [self.height / 2,self.height / 2]
+                    BoxLayout:
+                        disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                        padding: '0dp'
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Ellipse:
+                                pos: self.pos
+                                size: self.size
+                        GridLayout:
+                            cols: 3
+                            rows: 3
+                            GridBoxLayout:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'Y-'
+                                    on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed)
+                            GridBoxLayout:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'X-'
+                                    on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed)
+                            GridBoxLayout:
+                                Label:
+                                Spinner:
+                                    id: step_xy
+                                    center: 0.5, 0.5
+                                    size_hint_y: None
+                                    height: '30dp'
+                                    text: '10'
+                                    values: '10', '1', '0.1', '0.01', '0.005'
+                                Label:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'X+'
+                                    on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed)
+                            GridBoxLayout:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'Y+'
+                                    on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed)
+                            GridBoxLayout:
+                BoxLayout:
+                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    padding: '0dp'
+                    orientation: 'horizontal'
+                #A and Z controls
+                BoxLayout:
+                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    padding: '0dp'
+                    orientation: 'horizontal'
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [5,5]
+                    GridLayout:
+                        size_hint_y: 0.9
+                        cols: 2
+                        rows: 3
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'A+'
+                                height: 30
+                                on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), root.jog_speed)
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'Z+'
+                                height: 30
+                                on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), root.jog_speed)
+                        GridBoxLayout:
+                            Label:
+                            Spinner:
+                                id: step_a
+                                center: 0.5, 0.5
+                                size_hint_y: 0.9
+                                height: '30dp'
+                                text: '90'
+                                values: '90', '10', '1', '0.1'
+                            Label:
+                        GridBoxLayout:
+                            Label:
+                            Spinner:
+                                id: step_z
+                                center: 0.5, 0.5
+                                size_hint_y: 0.9
+                                height: '30dp'
+                                text: '1'
+                                values: '10', '1', '0.1', '0.01', '0.005'
+                            Label:
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'A-'
+                                height: 30
+                                on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), root.jog_speed)
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'Z-'
+                                height: 30
+                                on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), root.jog_speed)
+                BoxLayout:
+                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    padding: '25dp'
+                    orientation: 'horizontal'
 
         BoxLayout:
             spacing: '5dp'
