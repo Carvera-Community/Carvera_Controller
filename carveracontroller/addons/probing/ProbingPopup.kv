@@ -190,12 +190,12 @@
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'Y-'
-                                    on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed)
+                                    on_release: app.root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), app.root.jog_speed)
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'X-'
-                                    on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed)
+                                    on_release: app.root.controller.jog_with_speed("X-{}".format(root.step_xy.text), app.root.jog_speed)
                             GridBoxLayout:
                                 Label:
                                 Spinner:
@@ -209,12 +209,12 @@
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'X+'
-                                    on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed)
+                                    on_release: app.root.controller.jog_with_speed("X{}".format(root.step_xy.text), app.root.jog_speed)
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'Y+'
-                                    on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed)
+                                    on_release: app.root.controller.jog_with_speed("Y{}".format(root.step_xy.text), app.root.jog_speed)
                             GridBoxLayout:
                 BoxLayout:
                     disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
@@ -240,12 +240,12 @@
                             SmallRoundButton:
                                 text: 'A+'
                                 height: 30
-                                on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), root.jog_speed)
+                                on_release: app.root.controller.jog_with_speed("A{}".format(root.step_a.text), app.root.jog_speed)
                         GridBoxLayout:
                             SmallRoundButton:
                                 text: 'Z+'
                                 height: 30
-                                on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), root.jog_speed)
+                                on_release: app.root.controller.jog_with_speed("Z{}".format(root.step_z.text), app.root.jog_speed)
                         GridBoxLayout:
                             Label:
                             Spinner:
@@ -270,12 +270,12 @@
                             SmallRoundButton:
                                 text: 'A-'
                                 height: 30
-                                on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), root.jog_speed)
+                                on_release: app.root.controller.jog_with_speed("A-{}".format(root.step_a.text), app.root.jog_speed)
                         GridBoxLayout:
                             SmallRoundButton:
                                 text: 'Z-'
                                 height: 30
-                                on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), root.jog_speed)
+                                on_release: app.root.controller.jog_with_speed("Z-{}".format(root.step_z.text), app.root.jog_speed)
                 BoxLayout:
                     disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
                     padding: '25dp'
