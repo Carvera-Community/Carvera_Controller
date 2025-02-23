@@ -397,7 +397,7 @@ class FilePopup(ModalView):
             if self.local_rv.view_adapter.views[key].selected and not self.local_rv.view_adapter.views[key].selected_dir:
                has_select = True
                break
-        self.btn_view.disabled = (not self.firmware_mode and not has_select) or (self.firmware_mode and app.state != 'Idle')
+        self.btn_open.disabled = (not self.firmware_mode and not has_select) or (self.firmware_mode and app.state != 'Idle')
         self.btn_upload.disabled = not has_select or app.state != 'Idle'
 
     # -----------------------------------------------------------------------
