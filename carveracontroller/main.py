@@ -11,14 +11,16 @@ from kivy.lang import Observable
 from os.path import dirname, join
 # os.environ['KIVY_GL_DEBUG'] = '1'
 
-from kivy.utils import platform
+from kivy.utils import platform as kivy_platform
 
 import sys
 import time
 import datetime
 import threading
 import logging
-
+import base64
+import platform
+import urllib
 class Lang(Observable):
     observers = []
     lang = None
@@ -238,6 +240,18 @@ class FloatBox(FloatLayout):
 
 class BoxStencil(BoxLayout, StencilView):
     pass
+
+class ToolConfirmPopup(ModalView):
+    showing = False
+
+    def __init__(self, **kwargs):
+        super(ToolConfirmPopup, self).__init__(**kwargs)
+
+    def on_open(self):
+        self.showing = True
+
+    def on_dismiss(self):
+        self.showing = False
 
 class ConfirmPopup(ModalView):
     showing = False
@@ -596,6 +610,14 @@ class ToolDropDown(DropDown):
     def on_dismiss(self):
         self.opened = False
 
+class SetToolnumPopup(ModalView):
+    def __init__(self, **kwargs):
+        super(SetToolnumPopup, self).__init__(**kwargs)
+
+class ChangeToolPopup(ModalView):
+    def __init__(self, **kwargs):
+        super(ChangeToolPopup, self).__init__(**kwargs)
+
 class LaserDropDown(DropDown):
     opened = False
 
@@ -730,8 +752,12 @@ class CNCWorkspace(Widget):
                 zprobe_x = self.config['zprobe']['x_offset'] + (origin_x if self.config['zprobe']['origin'] == 1 else origin_x + CNC.vars['xmin'])
                 zprobe_y = self.config['zprobe']['y_offset'] + (origin_y if self.config['zprobe']['origin'] == 1 else origin_y + CNC.vars['ymin'])
                 if app.has_4axis:
-                    zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
-                    zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    if CNC.vars['FuncSetting'] & 1:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 7.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    else:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
                 Ellipse(pos=(self.x + zprobe_x * zoom - 7.5, self.y + zprobe_y * zoom - 7.5), size=(15, 15))
 
 
@@ -1231,6 +1257,12 @@ class Makera(RelativeLayout):
     fw_version_checking = False
     fw_version_checked = False
 
+    update_checked = False
+    echosended = False
+    echosending = False
+    factorycode = ''
+    probeAddr = ''
+
     filetype_support = 'nc'
     filetype = ''
 
@@ -1239,6 +1271,7 @@ class Makera(RelativeLayout):
     decompercentlast = 0  # carvera解压压缩文件的块数
     decompstatus = False
     decomptime = 0
+    lastsec = 0
 
     ctl_upd_text = ''
     ctl_version_new = ''
@@ -1270,11 +1303,14 @@ class Makera(RelativeLayout):
         'tool_sensor_switch': [0.0, 0],
         'air_switch':         [0.0, 0],
         'wp_charge_switch'  : [0.0, 0],
+        'Extend_switch':      [0.0, 0],
+        'ExtOut_slider':      [0.0, 0],
     }
 
     status_index = 0
     past_machine_addr = None
     allow_mdi_while_machine_running = "0"
+    AutoReconnectNum = NumericProperty(0)
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
@@ -1339,13 +1375,18 @@ class Makera(RelativeLayout):
         self.operation_drop_down = OperationDropDown()
         self.jog_speed_drop_down = JogSpeedDropDown()
 
+        self.toolconfirm_popup = ToolConfirmPopup()
         self.confirm_popup = ConfirmPopup()
         self.message_popup = MessagePopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
 
+        self.set_tool_popup = SetToolnumPopup()
+        self.change_tool_popup = ChangeToolPopup()
+
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
         self.wifi_conn_drop_down = DropDown(auto_width=False, width='250dp')
+        self.reconect_drop_down = DropDown(auto_width=False, width='250dp')
 
         self.wifi_ap_drop_down = DropDown(auto_width=False, width='300dp')
         self.wifi_ap_drop_down.bind(on_select=lambda instance, x: self.connWIFI(x))
@@ -1356,6 +1397,10 @@ class Makera(RelativeLayout):
 
         self.remote_dir_drop_down = DropDown(auto_width=False, width='190dp')
         self.remote_dir_drop_down.bind(on_select=lambda instance, x: self.file_popup.remote_rv.list_dir(x))
+
+        self.cmd_manager.transition.direction = 'left'
+        self.cmd_manager.current = 'manual_cmd_page'
+        self.manual_cmd.focus = True
 
         # init gcode viewer
         self.gcode_viewer = GCodeViewer()
@@ -1383,7 +1428,7 @@ class Makera(RelativeLayout):
         self.show_update = (Config.get('carvera', 'show_update') == '1')
         self.upgrade_popup.cbx_check_at_startup.active = self.show_update
         if self.show_update:
-            self.check_for_updates()
+            self.check_for_updates_get()
 
         if Config.has_option('carvera', 'address'):
             self.past_machine_addr = Config.get('carvera', 'address')
@@ -1395,6 +1440,25 @@ class Makera(RelativeLayout):
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
         Clock.schedule_interval(self.switch_status, 8)
+
+        app = App.get_running_app()
+        if Config.has_option('carvera', 'last_connection'):
+            app.machine_info = Config.get('carvera', 'last_connection')
+        else:  # inserted
+            app.machine_info = ''
+        self.status_drop_down.btn_last_connect.disabled = True
+        if app.machine_info!= '':
+            if '+' in app.machine_info:
+                conntype, *strtemp = app.machine_info.split('+')
+                strtemp = '+'.join(strtemp)
+                if '+' in strtemp:
+                    machinename, nothing = strtemp.split('+')
+                    self.status_drop_down.btn_last_connect.text = machinename
+                    self.status_drop_down.btn_last_connect.disabled = False
+        if Config.has_option('carvera', 'machine_model'):
+            app.model = Config.get('carvera', 'machine_model')
+        else:  # inserted
+            app.model = 'C1'
 
         #
         threading.Thread(target=self.monitorSerial).start()
@@ -1456,64 +1520,119 @@ class Makera(RelativeLayout):
             Config.write()
         self.upgrade_popup.dismiss(self)
 
-    def check_for_updates(self):
-        self.fw_upd_text = ''
-        self.fw_version_checked = False
-        self.ctl_upd_text = ''
-        UrlRequest(FW_UPD_ADDRESS, on_success = self.fw_upd_loaded)
-        UrlRequest(CTL_UPD_ADDRESS, on_success = self.ctl_upd_loaded)
+    def check_for_updates_get(self):
+        proxy = self.get_proxy_from_env()
+        if proxy:
+            parsed_proxy = urlparse(proxy)
+            proxy_host = parsed_proxy.hostname
+            proxy_port = parsed_proxy.port
+            UrlRequest(UPDATE_ADDRESS, on_success=self.updates_get_loaded, proxy_host=proxy_host, proxy_port=proxy_port)
+        else:  # inserted
+            UrlRequest(UPDATE_ADDRESS, on_success=self.updates_get_loaded)
 
-    def fw_upd_loaded(self, req, result):
-        # parse result
-        self.fw_upd_text = result
+    def updates_get_loaded(self, req, result):
+        if req.resp_status == 200:
+            data = result.swapcase()
+            data = base64.b64decode(data)
+            data = data.decode('utf-8')
+            data = json.loads(data)
+            self.fw_version_new = data.get('Firmware_Ver', None)
+            self.ctl_version_new = data.get('Controller_Ver', None)
+            if self.ctl_version_new!= None:
+                app = App.get_running_app()
+                if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version_old):
+                    app.ctl_has_update = True
+                    self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
+                else:  # inserted
+                    app.ctl_has_update = False
+                    self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version_old
+                self.ctl_version_checked = True
+        else:  # inserted
+            print('Request succeeded but returned a different status:', req.resp_status)
+
+    def check_for_updates_post(self, dt=0):
+        app = App.get_running_app()
+        if kivy_platform == 'win':
+            os_version = platform.system() + ' ' + platform.version()
+        else:  # inserted
+            if kivy_platform == 'linux':
+                import distro
+                os_version = distro.id() + ' ' + distro.version()
+            else:  # inserted
+                if kivy_platform == 'macosx':
+                    mac_version, _, _ = platform.mac_ver()
+                    os_version = 'Macosx' + mac_version
+                else:  # inserted
+                    if kivy_platform == 'android':
+                        versions = autoclass('android.os.Build$VERSION')
+                        os_version = 'Android' + versions.RELEASE
+                    else:  # inserted
+                        if kivy_platform == 'ios':
+                            os_version = 'ios'
+                        else:  # inserted
+                            os_version = 'Unknown os'
+        data = {'Device_Type': app.model, 'Controller_Ver': self.ctl_version_old, 'Firmware_Ver': self.fw_version_old, 'Device_Configuration': self.factorycode, 'Probe_Address': self.probeAddr, 'OS_Version': os_version, 'Connection_Type': 'WiFi' if self.controller.connection_type == CONN_WIFI else 'USB'}
+        json_str = json.dumps(data)
+        encoded = base64.b64encode(json_str.encode('utf-8')).decode('utf-8')
+        data = encoded.swapcase()
+        json_data = {'AccessLog': data}
+        proxy = self.get_proxy_from_env()
+        if proxy:
+            parsed_proxy = urlparse(proxy)
+            proxy_host = parsed_proxy.hostname
+            proxy_port = parsed_proxy.port
+            url = CHECK_ADDRESS + '?' + 'AccessLog=' + data
+            UrlRequest(url, method='POST', on_success=self.updates_post_loaded, proxy_host=proxy_host, proxy_port=proxy_port)
+        else:  # inserted
+            url = CHECK_ADDRESS + '?' + 'AccessLog=' + data
+            UrlRequest(url, method='POST', on_success=self.updates_post_loaded)
+        self.update_checked = True
+
+    def updates_post_loaded(self, req, result):
+        if req.resp_status == 200:
+            data = result.swapcase()
+            data = base64.b64decode(data)
+            data = data.decode('utf-8')
+            data = json.loads(data)
+            self.upgrade_popup.fw_upd_text.text = ''
+            self.upgrade_popup.ctl_upd_text.text = ''
+            if 'Controller' in data and data['Controller']:
+                for entry in data['Controller']:
+                    self.upgrade_popup.ctl_upd_text.text += f"[ {entry['Version']}]\n"
+                    self.upgrade_popup.ctl_upd_text.text += f"{entry['ReleaseNote']}0{'\n\n'}"
+                self.upgrade_popup.ctl_upd_text.scroll_y = 1
+                self.upgrade_popup.ctl_upd_text.cursor = (0, 0)
+            if 'Firmware' in data and data['Firmware']:
+                for entry in data['Firmware']:
+                    self.upgrade_popup.fw_upd_text.text += f"[{entry['Version']}]\n"
+                    self.upgrade_popup.fw_upd_text.text += f"{entry['ReleaseNote']}0{'\n\n'}"
+                self.upgrade_popup.fw_upd_text.scroll_y = 1
+                self.upgrade_popup.fw_upd_text.cursor = (0, 0)
+        else:  # inserted
+            print('Request succeeded but returned a different status:', req.resp_status)
+
+    def get_proxy_from_env(self):
+        proxy = urllib.request.getproxies().get('https')
+        return proxy
 
     def check_fw_version(self):
-        self.upgrade_popup.fw_upd_text.text = self.fw_upd_text
-        self.upgrade_popup.fw_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
-        if versions != None:
-            self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
-            if self.fw_version_old != '':
-                app = App.get_running_app()
-                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version_old):
-                    app.fw_has_update = True
-                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
-                else:
-                    app.fw_has_update = False
-                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version_old
-        self.fw_version_checked = False
-
-    def ctl_upd_loaded(self, req, result):
-        self.ctl_upd_text = result
-        Clock.schedule_once(self.check_ctl_version, 0)
+        if self.fw_version_new!= '' and self.fw_version_old!= '':
+            app = App.get_running_app()
+            if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version_old):
+                app.fw_has_update = True
+                self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
+            else:  # inserted
+                app.fw_has_update = False
+                self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version_old
+            self.fw_version_checked = True
 
     def change_language(self, lang_desc):
         for lang_key in LANGS.keys():
-            if LANGS[lang_key] == lang_desc:
-                if tr.lang != lang_key:
-                    tr.switch_lang(lang_key)
-                    Config.set('carvera', 'language', lang_key)
-                    Config.write()
+            if LANGS[lang_key] == lang_desc and tr.lang!= lang_key:
+                tr.switch_lang(lang_key)
+                Config.set('carvera', 'language', lang_key)
+                Config.write()
         self.language_popup.dismiss()
-        self.config_popup.btn_apply.disabled = True
-        self.message_popup.lb_content.text = tr._('Language setting applied, restart Controller app to take effect !')
-        self.message_popup.open()
-
-
-    def check_ctl_version(self, *args):
-        self.upgrade_popup.ctl_upd_text.text = self.ctl_upd_text
-        self.upgrade_popup.ctl_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
-        if versions != None:
-            self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
-            app = App.get_running_app()
-            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version_old):
-                app.ctl_has_update = True
-                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
-            else:
-                app.ctl_has_update = False
-                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version_old
-        self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
     def play(self, file_name):
@@ -1636,7 +1755,11 @@ class Makera(RelativeLayout):
 
         if time.time() - self.heartbeat_time > HEARTBEAT_TIMEOUT and self.controller.stream:
             self.controller.close()
-            self.controller.log.put((Controller.MSG_ERROR, 'ALARM: ' + tr._('Timeout, Connection lost!')))
+            app.root.AutoReconnectNum = app.root.AutoReconnectNum + 1
+            if app.root.AutoReconnectNum <= 3:
+                Clock.schedule_once(self.auto_reconnect_machine, 0)
+            else:
+                self.controller.log.put((Controller.MSG_ERROR, 'ALARM: ' + tr._('Timeout, Connection lost!')))
             self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -1669,7 +1792,7 @@ class Makera(RelativeLayout):
             self.common_local_dir_list.append({'name': tr._('Desktop'), 'path': str(home_path.joinpath('Desktop')), 'icon': 'data/folder-desktop.png'})
 
         # android storage
-        if platform == 'android':
+        if kivy_platform == 'android':
             try:
                 import android
                 from android.storage import primary_external_storage_path
@@ -1802,6 +1925,7 @@ class Makera(RelativeLayout):
         Clock.schedule_interval(self.load_machine_list, 0.1)
 
     def load_machine_list(self, *args):
+        self.wifi_conn_drop_down.clear_widgets()
         machines = self.machine_detector.check_for_responses()
         if machines is None:
             # the MachineDetector is still waiting for responses from machines
@@ -1917,7 +2041,11 @@ class Makera(RelativeLayout):
                 self.controller.posUpdate = False
 
             # change diagnose status
-            self.controller.diagnosing = self.diagnose_popup.showing
+            app = App.get_running_app()
+            if app.model!= 'CA1':
+                self.controller.diagnosing = self.diagnose_popup.showing
+            else:  # inserted
+                self.controller.diagnosing = self.diagnose_popup_Air.showing
             # update diagnose if needed
             if self.controller.diagnoseUpdate:
                 Clock.schedule_once(self.updateDiagnose, 0)
@@ -2296,14 +2424,29 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         if model != app.model:
             app.model = model.strip()
+            Config.set('carvera', 'machine_model', app.model)
+            Config.write()
             if app.model == 'CA1':
                 self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                            'Tool: 6', 'Laser']
                 self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
                                                               'Tool: 5', 'Tool: 6', 'Laser']
                 CNC.vars['rotation_base_width'] = 300
-                CNC.vars['rotation_head_width'] = 38
-
+                CNC.vars['rotation_head_width'] = 56.5
+            else:  # inserted
+                if app.model == 'C1':
+                    if CNC.vars['FuncSetting'] & 8 and CNC.vars['FuncSetting']!= 999:
+                        self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Tool: 7', 'Tool: 8']
+                        self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Tool: 7', 'Tool: 8']
+                    else:  # inserted
+                        self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6']
+                        self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6']
+                    if CNC.vars['FuncSetting'] & 1:
+                        CNC.vars['rotation_base_width'] = 330
+                        CNC.vars['rotation_head_width'] = 18.5
+                    else:  # inserted
+                        CNC.vars['rotation_base_width'] = 330
+                        CNC.vars['rotation_head_width'] = 7
 
     # -----------------------------------------------------------------------
     def downloadCallback(self, packet_size, success_count, error_count):
@@ -2778,6 +2921,15 @@ class Makera(RelativeLayout):
             now = time.time()
             self.heartbeat_time = now
             app = App.get_running_app()
+            if app.model!= CNC.vars['MachineModel'] and CNC.vars['MachineModel']!= 999:
+                machinemodel = ''
+                if CNC.vars['MachineModel'] == 1:
+                    machinemodel = 'C1'
+                else:
+                    if CNC.vars['MachineModel'] == 2:
+                        machinemodel = 'CA1'
+                if app.model != machinemodel:
+                    Clock.schedule_once(partial(self.setUIForModel, machinemodel), 0)
             if app.state != CNC.vars["state"]:
                 app.state = CNC.vars["state"]
                 CNC.vars["color"] = STATECOLOR[app.state]
@@ -2796,17 +2948,42 @@ class Makera(RelativeLayout):
                     self.config_loaded = False
                     self.config_loading = False
                     self.fw_version_checked = False
+                    self.update_checked = False
+                    self.echosended = False
+                    self.echosending = False
+                    self.status_drop_down.btn_last_connect.disabled = True
+                    if app.machine_info!= '' and '+' in app.machine_info:
+                        conntype, *strtemp = app.machine_info.split('+')
+                        strtemp = '+'.join(strtemp)
+                        if '+' in strtemp:
+                            machinename, nothing = strtemp.split('+')
+                            self.status_drop_down.btn_last_connect.text = machinename
+                            self.status_drop_down.btn_last_connect.disabled = False
                 else:
                     self.status_data_view.minr_text = 'WiFi' if self.controller.connection_type == CONN_WIFI else 'USB'
                     self.status_drop_down.btn_connect_usb.disabled = True
                     self.status_drop_down.btn_connect_wifi.disabled = True
                     self.status_drop_down.btn_disconnect.disabled = False
+                    if app.machine_info!= '' and '+' in app.machine_info:
+                        conntype, *strtemp = app.machine_info.split('+')
+                        strtemp = '+'.join(strtemp)
+                        if '+' in strtemp:
+                            self.status_drop_down.btn_last_connect.text, strtemp = strtemp.split('+')
+                    self.status_drop_down.btn_last_connect.disabled = True
 
                 self.status_drop_down.btn_unlock.disabled = (app.state != "Alarm" and app.state != "Sleep")
                 if (CNC.vars["halt_reason"] in HALT_REASON and CNC.vars["halt_reason"] > 20) or app.state == "Sleep":
                     self.status_drop_down.btn_unlock.text = 'Reset'
                 else:
                     self.status_drop_down.btn_unlock.text = 'Unlock'
+
+            if not app.playing and app.state == 'Idle' and (not self.echosended) and (not self.echosending):
+                self.echosending = True
+                self.controller.echo(self)
+                self.controller.echo(self)
+                self.controller.echo(self)
+                self.controller.echo(self)
+                Clock.schedule_once(lambda dt: setattr(self, 'echosended', True), 1)
 
             # load config, only one time per connection
             if not app.playing and not self.config_loaded and not self.config_loading and app.state == "Idle":
@@ -2816,6 +2993,10 @@ class Makera(RelativeLayout):
             # show update
             if not app.playing and self.fw_upd_text != '' and not self.fw_version_checked and app.state == "Idle":
                 self.check_fw_version()
+
+            if not app.playing and (not self.update_checked) and (app.state == 'Idle'):
+                self.update_checked = True
+                Clock.schedule_once(self.check_for_updates_post, 5)
 
             # check alarm and sleep status
             if app.state == 'Alarm' or app.state == 'Sleep':
@@ -2832,6 +3013,8 @@ class Makera(RelativeLayout):
             else:
                 if (self.alarm_triggered or self.tool_triggered) and self.confirm_popup.showing:
                     self.confirm_popup.dismiss()
+                if self.tool_triggered and self.toolconfirm_popup.showing:
+                    self.toolconfirm_popup.dismiss()
                 self.tool_triggered = False
                 self.alarm_triggered = False
 
@@ -2849,14 +3032,20 @@ class Makera(RelativeLayout):
             self.z_data_view.scale = 80.0 if app.lasering or CNC.vars["max_delta"] != 0.0 else 100.0
             self.z_drop_down.status_max.value = "{:.3f}".format(CNC.vars["max_delta"])
 
+            digi_len = 7 - len(str(int(CNC.vars['wa'])))
+            if digi_len < 0:
+                digi_len = 0
+            if digi_len > 3:
+                digi_len = 3
+            self.a_data_view.main_text = str('{:.' + str(digi_len) + 'f}').format(CNC.vars['wa'])
+
             # update a data
             digi_len = 7 - len(str(int(CNC.vars["ma"])))
             if digi_len < 0:
                 digi_len = 0
             if digi_len > 3:
                 digi_len = 3
-            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["ma"])
-            self.a_data_view.minr_text = "{:.3f}".format(CNC.vars["ma"])
+            self.a_data_view.minr_text = str('{:.' + str(digi_len) + 'f}').format(CNC.vars['ma'])
 
             #update feed data
             self.feed_data_view.main_text = "{:.0f}".format(CNC.vars["curfeed"])
@@ -3070,132 +3259,261 @@ class Makera(RelativeLayout):
 
             app = App.get_running_app()
             # control spindle
-            self.diagnose_popup.sw_spindle.disabled = CNC.vars['lasermode']
-            self.diagnose_popup.sl_spindle.disabled = CNC.vars['lasermode']
+            if app.model!= 'CA1':
+                self.diagnose_popup.sw_spindle.disabled = CNC.vars['lasermode']
+                self.diagnose_popup.sl_spindle.disabled = CNC.vars['lasermode']
+            else:  # inserted
+                self.diagnose_popup_Air.sw_spindle.disabled = CNC.vars['lasermode']
+                self.diagnose_popup_Air.sl_spindle.disabled = CNC.vars['lasermode']
+
             elapsed = now - self.control_list['spindle_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setSpindleSwitch(self.control_list['spindle_switch'][1], self.diagnose_popup.sl_spindle.slider.value)
+                    if app.model!= 'CA1':
+                        self.controller.setSpindleSwitch(self.control_list['spindle_switch'][1], self.diagnose_popup.sl_spindle.slider.value)
+                    else:  # inserted
+                        self.controller.setSpindleSwitch(self.control_list['spindle_switch'][1], self.diagnose_popup_Air.sl_spindle.slider.value)
                     self.control_list['spindle_switch'][0] = now - 2
             elif elapsed > 3:
-                if self.diagnose_popup.sw_spindle.switch.active != CNC.vars["sw_spindle"]:
-                    self.diagnose_popup.sw_spindle.set_flag = True
-                    self.diagnose_popup.sw_spindle.switch.active = CNC.vars["sw_spindle"]
+                if app.model!= 'CA1':
+                    if self.diagnose_popup.sw_spindle.switch.active!= CNC.vars['sw_spindle']:
+                        self.diagnose_popup.sw_spindle.set_flag = True
+                        self.diagnose_popup.sw_spindle.switch.active = CNC.vars['sw_spindle']
+                else:  # inserted
+                    if self.diagnose_popup_Air.sw_spindle.switch.active!= CNC.vars['sw_spindle']:
+                        self.diagnose_popup_Air.sw_spindle.set_flag = True
+                        self.diagnose_popup_Air.sw_spindle.switch.active = CNC.vars['sw_spindle']
             elapsed = now - self.control_list['spindle_slider'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setSpindleSwitch(self.diagnose_popup.sw_spindle.switch.active, self.control_list['spindle_slider'][1])
+                    if app.model!= 'CA1':
+                        self.controller.setSpindleSwitch(self.diagnose_popup.sw_spindle.switch.active, self.control_list['spindle_slider'][1])
+                    else:  # inserted
+                        self.controller.setSpindleSwitch(self.diagnose_popup_Air.sw_spindle.switch.active, self.control_list['spindle_slider'][1])
                     self.control_list['spindle_slider'][0] = now - 2
             elif elapsed > 3:
-                if self.diagnose_popup.sl_spindle.slider.value != CNC.vars["sl_spindle"]:
-                    self.diagnose_popup.sl_spindle.set_flag = True
-                    self.diagnose_popup.sl_spindle.slider.value = CNC.vars["sl_spindle"]
-
+                if app.model!= 'CA1':
+                    if self.diagnose_popup.sl_spindle.slider.value!= CNC.vars['sl_spindle']:
+                        self.diagnose_popup.sl_spindle.set_flag = True
+                        self.diagnose_popup.sl_spindle.slider.value = CNC.vars['sl_spindle']
+                else:  # inserted
+                    if self.diagnose_popup_Air.sl_spindle.slider.value!= CNC.vars['sl_spindle']:
+                        self.diagnose_popup_Air.sl_spindle.set_flag = True
+                        self.diagnose_popup_Air.sl_spindle.slider.value = CNC.vars['sl_spindle']
+            elapsed = now - self.control_list['spindlefan_switch'][0]
             # control spindle fan
-            self.diagnose_popup.sl_spindlefan.disabled = CNC.vars['lasermode']
+            if elapsed < 2:
+                if elapsed > 0.5:
+                    if app.model!= 'CA1':
+                        self.controller.setSpindlefanSwitch(self.control_list['spindlefan_switch'][1], self.diagnose_popup.sl_spindlefan.slider.value)
+                    else:  # inserted
+                        self.controller.setSpindlefanSwitch(self.control_list['spindlefan_switch'][1], self.diagnose_popup_Air.sl_spindlefan.slider.value)
+                    self.control_list['spindlefan_switch'][0] = now - 2
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sw_spindlefan.switch.active!= CNC.vars['sw_spindlefan']:
+                            self.diagnose_popup.sw_spindlefan.set_flag = True
+                            self.diagnose_popup.sw_spindlefan.switch.active = CNC.vars['sw_spindlefan']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sw_spindlefan.switch.active!= CNC.vars['sw_spindlefan']:
+                            self.diagnose_popup_Air.sw_spindlefan.set_flag = True
+                            self.diagnose_popup_Air.sw_spindlefan.switch.active = CNC.vars['sw_spindlefan']
             elapsed = now - self.control_list['spindlefan_slider'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setSpindlefanPower(self.control_list['spindlefan_slider'][1])
+                    if app.model!= 'CA1':
+                        self.controller.setSpindlefanSwitch(self.diagnose_popup.sw_spindlefan.switch.active, self.control_list['spindlefan_slider'][1])
+                    else:  # inserted
+                        self.controller.setSpindlefanSwitch(self.diagnose_popup_Air.sw_spindlefan.switch.active, self.control_list['spindlefan_slider'][1])
                     self.control_list['spindlefan_slider'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sl_spindlefan.slider.value != CNC.vars["sl_spindlefan"]:
-                    self.diagnose_popup.sl_spindlefan.set_flag = True
-                    self.diagnose_popup.sl_spindlefan.slider.value = CNC.vars["sl_spindlefan"]
-
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sl_spindlefan.slider.value!= CNC.vars['sl_spindlefan']:
+                            self.diagnose_popup.sl_spindlefan.set_flag = True
+                            self.diagnose_popup.sl_spindlefan.slider.value = CNC.vars['sl_spindlefan']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sl_spindlefan.slider.value!= CNC.vars['sl_spindlefan']:
+                            self.diagnose_popup_Air.sl_spindlefan.set_flag = True
+                            self.diagnose_popup_Air.sl_spindlefan.slider.value = CNC.vars['sl_spindlefan']
             # control vacuum
+            elapsed = now - self.control_list['vacuum_switch'][0]
+            if elapsed < 2:
+                if elapsed > 0.5:
+                    if app.model!= 'CA1':
+                        self.controller.setVacuumSwitch(self.control_list['vacuum_switch'][1], self.diagnose_popup.sl_vacuum.slider.value)
+                    else:  # inserted
+                        self.controller.setVacuumSwitch(self.control_list['vacuum_switch'][1], self.diagnose_popup_Air.sl_vacuum.slider.value)
+                    self.control_list['vacuum_switch'][0] = now - 2
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sw_vacuum.switch.active!= CNC.vars['sw_vacuum']:
+                            self.diagnose_popup.sw_vacuum.set_flag = True
+                            self.diagnose_popup.sw_vacuum.switch.active = CNC.vars['sw_vacuum']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sw_vacuum.switch.active!= CNC.vars['sw_vacuum']:
+                            self.diagnose_popup_Air.sw_vacuum.set_flag = True
+                            self.diagnose_popup_Air.sw_vacuum.switch.active = CNC.vars['sw_vacuum']
             elapsed = now - self.control_list['vacuum_slider'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setVacuumPower(self.control_list['vacuum_slider'][1])
+                    if app.model!= 'CA1':
+                        self.controller.setVacuumSwitch(self.diagnose_popup.sw_vacuum.switch.active, self.control_list['vacuum_slider'][1])
+                    else:  # inserted
+                        self.controller.setVacuumSwitch(self.diagnose_popup_Air.sw_vacuum.switch.active, self.control_list['vacuum_slider'][1])
                     self.control_list['vacuum_slider'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sl_vacuum.slider.value != CNC.vars["sl_vacuum"]:
-                    self.diagnose_popup.sl_vacuum.set_flag = True
-                    self.diagnose_popup.sl_vacuum.slider.value = CNC.vars["sl_vacuum"]
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sl_vacuum.slider.value!= CNC.vars['sl_vacuum']:
+                            self.diagnose_popup.sl_vacuum.set_flag = True
+                            self.diagnose_popup.sl_vacuum.slider.value = CNC.vars['sl_vacuum']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sl_vacuum.slider.value!= CNC.vars['sl_vacuum']:
+                            self.diagnose_popup_Air.sl_vacuum.set_flag = True
+                            self.diagnose_popup_Air.sl_vacuum.slider.value = CNC.vars['sl_vacuum']
 
-            # control laser mode
+            if app.model!= 'CA1':
+                self.diagnose_popup.sw_laser.disabled = not CNC.vars['lasermode']
+                self.diagnose_popup.sl_laser.disabled = not CNC.vars['lasermode']
+            else:  # inserted
+                self.diagnose_popup.sw_laser.disabled = not CNC.vars['lasermode']
+                self.diagnose_popup.sl_laser.disabled = not CNC.vars['lasermode']
             elapsed = now - self.control_list['laser_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    if self.diagnose_popup.sw_laser.switch.active:
-                        self.enable_laser_mode_confirm_popup()
-                    else:
-                        self.controller.setLaserMode(False)
+                    if app.model!= 'CA1':
+                        self.controller.setLaserSwitch(self.control_list['laser_switch'][1], self.diagnose_popup.sl_laser.slider.value)
+                    else:  # inserted
+                        self.controller.setLaserSwitch(self.control_list['laser_switch'][1], self.diagnose_popup_Air.sl_laser.slider.value)
                     self.control_list['laser_switch'][0] = now - 2
-            elif elapsed > 3:
-                if self.laser_drop_down.switch.active != CNC.vars["lasermode"]:
-                    self.laser_drop_down.switch.set_flag = True
-                    self.laser_drop_down.switch.active = CNC.vars["lasermode"]
-
-            # control laser slider
-            self.diagnose_popup.sl_laser.disabled = not CNC.vars['lasermode']
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sw_laser.switch.active!= CNC.vars['sw_laser']:
+                            self.diagnose_popup.sw_laser.set_flag = True
+                            self.diagnose_popup.sw_laser.switch.active = CNC.vars['sw_laser']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sw_laser.switch.active!= CNC.vars['sw_laser']:
+                            self.diagnose_popup_Air.sw_laser.set_flag = True
+                            self.diagnose_popup_Air.sw_laser.switch.active = CNC.vars['sw_laser']
             elapsed = now - self.control_list['laser_slider'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setLaserPower(self.control_list['laser_slider'][1])
+                    if app.model!= 'CA1':
+                        self.controller.setLaserSwitch(self.diagnose_popup.sw_laser.switch.active, self.control_list['laser_slider'][1])
+                    else:  # inserted
+                        self.controller.setLaserSwitch(self.diagnose_popup_Air.sw_laser.switch.active, self.control_list['laser_slider'][1])
                     self.control_list['laser_slider'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sl_laser.slider.value != CNC.vars["sl_laser"]:
-                    self.diagnose_popup.sl_laser.set_flag = True
-                    self.diagnose_popup.sl_laser.slider.value = CNC.vars["sl_laser"]
-
-            # control light
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sl_laser.slider.value!= CNC.vars['sl_laser']:
+                            self.diagnose_popup.sl_laser.set_flag = True
+                            self.diagnose_popup.sl_laser.slider.value = CNC.vars['sl_laser']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sl_laser.slider.value!= CNC.vars['sl_laser']:
+                            self.diagnose_popup_Air.sl_laser.set_flag = True
+                            self.diagnose_popup_Air.sl_laser.slider.value = CNC.vars['sl_laser']
             elapsed = now - self.control_list['light_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
                     self.controller.setLightSwitch(self.control_list['light_switch'][1])
                     self.control_list['light_switch'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sw_light.switch.active != CNC.vars["sw_light"]:
-                    self.diagnose_popup.sw_light.set_flag = True
-                    self.diagnose_popup.sw_light.switch.active = CNC.vars["sw_light"]
-
-            # control tool sensor power
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sw_light.switch.active!= CNC.vars['sw_light']:
+                            self.diagnose_popup.sw_light.set_flag = True
+                            self.diagnose_popup.sw_light.switch.active = CNC.vars['sw_light']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sw_light.switch.active!= CNC.vars['sw_light']:
+                            self.diagnose_popup_Air.sw_light.set_flag = True
+                            self.diagnose_popup_Air.sw_light.switch.active = CNC.vars['sw_light']
+            if app.model == 'CA1':
+                elapsed = now - self.control_list['Extend_switch'][0]
+                if elapsed < 2:
+                    if elapsed > 0.5:
+                        self.controller.setExtoutSwitch(self.diagnose_popup_Air.sw_ExtOut.switch.active, self.diagnose_popup_Air.sl_ExtOut.slider.value)
+                        self.control_list['Extend_switch'][0] = now - 2
+                else:  # inserted
+                    if elapsed > 3 and self.diagnose_popup_Air.sw_ExtOut.switch.active!= CNC.vars['sw_ExtOut']:
+                        self.diagnose_popup_Air.sw_ExtOut.set_flag = True
+                        self.diagnose_popup_Air.sw_ExtOut.switch.active = CNC.vars['sw_ExtOut']
+                elapsed = now - self.control_list['ExtOut_slider'][0]
+                if elapsed < 2:
+                    if elapsed > 0.5:
+                        self.controller.setExtoutSwitch(self.diagnose_popup_Air.sw_ExtOut.switch.active, self.control_list['ExtOut_slider'][1])
+                        self.control_list['ExtOut_slider'][0] = now - 2
+                else:  # inserted
+                    if elapsed > 3 and self.diagnose_popup_Air.sl_ExtOut.slider.value!= CNC.vars['sl_ExtOut']:
+                        self.diagnose_popup_Air.sl_ExtOut.set_flag = True
+                        self.diagnose_popup_Air.sl_ExtOut.slider.value = CNC.vars['sl_ExtOut']
             elapsed = now - self.control_list['tool_sensor_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
                     self.controller.setToolSensorSwitch(self.control_list['tool_sensor_switch'][1])
                     self.control_list['tool_sensor_switch'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sw_tool_sensor_pwr.switch.active != CNC.vars["sw_tool_sensor_pwr"]:
-                    self.diagnose_popup.sw_tool_sensor_pwr.set_flag = True
-                    self.diagnose_popup.sw_tool_sensor_pwr.switch.active = CNC.vars["sw_tool_sensor_pwr"]
-
-            # control air
+            else:  # inserted
+                if elapsed > 3:
+                    if app.model!= 'CA1':
+                        if self.diagnose_popup.sw_tool_sensor_pwr.switch.active!= CNC.vars['sw_tool_sensor_pwr']:
+                            self.diagnose_popup.sw_tool_sensor_pwr.set_flag = True
+                            self.diagnose_popup.sw_tool_sensor_pwr.switch.active = CNC.vars['sw_tool_sensor_pwr']
+                    else:  # inserted
+                        if self.diagnose_popup_Air.sw_tool_sensor_pwr.switch.active!= CNC.vars['sw_tool_sensor_pwr']:
+                            self.diagnose_popup_Air.sw_tool_sensor_pwr.set_flag = True
+                            self.diagnose_popup_Air.sw_tool_sensor_pwr.switch.active = CNC.vars['sw_tool_sensor_pwr']
             elapsed = now - self.control_list['air_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
                     self.controller.setAirSwitch(self.control_list['air_switch'][1])
                     self.control_list['air_switch'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sw_air.switch.active != CNC.vars["sw_air"]:
-                    self.diagnose_popup.sw_air.set_flag = True
-                    self.diagnose_popup.sw_air.switch.active = CNC.vars["sw_air"]
-
-            # control pw charge power
+            else:  # inserted
+                if elapsed > 3:
+                    if self.diagnose_popup.sw_air.switch.active!= CNC.vars['sw_air']:
+                        self.diagnose_popup.sw_air.set_flag = True
+                        self.diagnose_popup.sw_air.switch.active = CNC.vars['sw_air']
             elapsed = now - self.control_list['wp_charge_switch'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
                     self.controller.setPWChargeSwitch(self.control_list['wp_charge_switch'][1])
                     self.control_list['wp_charge_switch'][0] = now - 2
-            elif elapsed > 3:
-                if self.diagnose_popup.sw_wp_charge_pwr.switch.active != CNC.vars["sw_wp_charge_pwr"]:
+            else:  # inserted
+                if elapsed > 3 and app.model!= 'CA1' and (self.diagnose_popup.sw_wp_charge_pwr.switch.active!= CNC.vars['sw_wp_charge_pwr']):
                     self.diagnose_popup.sw_wp_charge_pwr.set_flag = True
-                    self.diagnose_popup.sw_wp_charge_pwr.switch.active = CNC.vars["sw_wp_charge_pwr"]
+                    self.diagnose_popup.sw_wp_charge_pwr.switch.active = CNC.vars['sw_wp_charge_pwr']
 
             # update states
-            self.diagnose_popup.st_x_min.state = CNC.vars["st_x_min"]
-            self.diagnose_popup.st_x_max.state = CNC.vars["st_x_max"]
-            self.diagnose_popup.st_y_min.state = CNC.vars["st_y_min"]
-            self.diagnose_popup.st_y_max.state = CNC.vars["st_y_max"]
-            self.diagnose_popup.st_z_max.state = CNC.vars["st_z_max"]
-            self.diagnose_popup.st_cover.state = CNC.vars["st_cover"]
-            self.diagnose_popup.st_probe.state = CNC.vars["st_probe"]
-            self.diagnose_popup.st_calibrate.state = CNC.vars["st_calibrate"]
-            self.diagnose_popup.st_atc_home.state = CNC.vars["st_atc_home"]
-            self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
-            self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
+            if app.model!= 'CA1':
+                self.diagnose_popup.st_x_min.state = CNC.vars["st_x_min"]
+                self.diagnose_popup.st_x_max.state = CNC.vars["st_x_max"]
+                self.diagnose_popup.st_y_min.state = CNC.vars["st_y_min"]
+                self.diagnose_popup.st_y_max.state = CNC.vars["st_y_max"]
+                self.diagnose_popup.st_z_max.state = CNC.vars["st_z_max"]
+                self.diagnose_popup.st_cover.state = CNC.vars["st_cover"]
+                self.diagnose_popup.st_probe.state = CNC.vars["st_probe"]
+                self.diagnose_popup.st_calibrate.state = CNC.vars["st_calibrate"]
+                self.diagnose_popup.st_atc_home.state = CNC.vars["st_atc_home"]
+                self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
+                self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
+            else:  # inserted
+                self.diagnose_popup_Air.st_x_max.state = CNC.vars['st_x_max']
+                temperature = CNC.vars['spindletemp']
+                self.diagnose_popup_Air.st_spindle_temp.label = f'{temperature}0 °C'
+                temperature = CNC.vars['powertemp']
+                self.diagnose_popup_Air.st_power_temp.label = f'{temperature}0 °C'
+                self.diagnose_popup_Air.st_y_max.state = CNC.vars['st_y_max']
+                self.diagnose_popup_Air.st_z_max.state = CNC.vars['st_z_max']
+                self.diagnose_popup_Air.st_a_max.state = CNC.vars['st_a_max']
+                self.diagnose_popup_Air.st_c_max.state = CNC.vars['st_c_max']
+                self.diagnose_popup_Air.st_cover.state = CNC.vars['st_cover']
+                self.diagnose_popup_Air.st_probe.state = CNC.vars['st_probe']
+                self.diagnose_popup_Air.st_calibrate.state = CNC.vars['st_calibrate']
+                self.diagnose_popup_Air.st_ExtInput.state = CNC.vars['st_ExtInput']
+                self.diagnose_popup_Air.st_e_stop.state = CNC.vars['st_e_stop']
         except:
             print(sys.exc_info()[1])
 
@@ -3217,25 +3535,117 @@ class Makera(RelativeLayout):
         self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
 
     # -----------------------------------------------------------------------
-    def openUSB(self, device):
+    def openUSB(self, device, auto=True):
+        self.heartbeat_time = time.time()
+        app = App.get_running_app()
         try:
-           self.controller.open(CONN_USB, device)
-           self.controller.connection_type = CONN_USB
+            app.machine_info = 'USB+' + device + '+' + device
+            self.controller.open(CONN_USB, device)
+            self.controller.connection_type = CONN_USB
+            if auto:
+                app.root.AutoReconnectNum = 0
         except:
             print(sys.exc_info()[1])
+            return False
         self.updateStatus()
         self.status_drop_down.select('')
+        if app.machine_info!= '':
+            Config.set('carvera', 'last_connection', app.machine_info)
+            Config.write()
+        return True
 
     # -----------------------------------------------------------------------
-    def openWIFI(self, address):
+    def openWIFI(self, address, auto=True):
+        self.heartbeat_time = time.time()
+        app = App.get_running_app()
         try:
-            self.controller.open(CONN_WIFI, address)
+            app.machine_info = 'WIFI+' + address
+            if '+' in address:
+                address = address.split('+', 1)[(-1)]
+            if not self.controller.open(CONN_WIFI, address):
+                return False
             self.controller.connection_type = CONN_WIFI
-            self.store_machine_address(address.split(':')[0])
+            if auto:
+                app.root.AutoReconnectNum = 0
         except:
             print(sys.exc_info()[1])
+            return False
         self.updateStatus()
         self.status_drop_down.select('')
+        if app.machine_info!= '':
+            Config.set('carvera', 'last_connection', app.machine_info)
+            Config.write()
+        return True
+    
+    def RecentConnection(self, button):
+        self.reconect_drop_down.clear_widgets()
+        self.controller.log.put((Controller.MSG_NORMAL, tr._('Reconnect to machines...')))
+        btn = MachineButton(text=tr._('Reconnect to machines...'), size_hint_y=None, height='35dp', color=(0.7058823529411765, 0.7058823529411765, 0.7058823529411765, 1))
+        self.reconect_drop_down.add_widget(btn)
+        self.reconect_drop_down.open(button)
+        Clock.schedule_once(self.check_reconnect_machine, 0)
+
+    def check_reconnect_machine(self, *args):
+        app = App.get_running_app()
+        if app.machine_info!= '' and '+' in app.machine_info:
+            conntype, *strtemp = app.machine_info.split('+')
+            strtemp = '+'.join(strtemp)
+            if '+' in strtemp:
+                machinename, nothing = strtemp.split('+')
+                if conntype == 'WIFI':
+                    s = self.openWIFI(strtemp)
+                    if not s:
+                        machines = self.machine_detector.get_machine_list()
+                        connectok = False
+                        if len(machines)!= 0:
+                            for machine in machines:
+                                if machine['machine'] == machinename:
+                                    strtemp = machine['machine'] + '+' + machine['ip'] + ':' + str(machine['port'])
+                                    connectok = self.openWIFI(strtemp)
+                        if not connectok:
+                            self.reconect_drop_down.clear_widgets()
+                            self.controller.log.put((Controller.MSG_ERROR, tr._('Reconnect failed! Please rescan wifi...')))
+                            btn = MachineButton(text=tr._('Reconnect failed! Please rescan wifi...'), size_hint_y=None, height='35dp', color=(0.7058823529411765, 0.7058823529411765, 0.7058823529411765, 1))
+                            self.reconect_drop_down.add_widget(btn)
+                            self.status_drop_down.btn_last_connect.disabled = True
+                        else:  # inserted
+                            self.reconect_drop_down.clear_widgets()
+                            self.status_drop_down.dismiss()
+                    else:  # inserted
+                        self.reconect_drop_down.clear_widgets()
+                        self.status_drop_down.dismiss()
+                else:  # inserted
+                    s = self.openUSB(machinename)
+                    if not s:
+                        self.reconect_drop_down.clear_widgets()
+                        self.controller.log.put((Controller.MSG_ERROR, tr._('Reconnect failed! Please check USB...')))
+                        btn = MachineButton(text=tr._('Reconnect failed! Please check USB...'), size_hint_y=None, height='35dp', color=(0.7058823529411765, 0.7058823529411765, 0.7058823529411765, 1))
+                        self.reconect_drop_down.add_widget(btn)
+                        self.status_drop_down.btn_last_connect.disabled = True
+                    else:  # inserted
+                        self.reconect_drop_down.clear_widgets()
+
+    def auto_reconnect_machine(self, *args):
+        app = App.get_running_app()
+        if app.machine_info!= '' and '+' in app.machine_info:
+            conntype, *strtemp = app.machine_info.split('+')
+            strtemp = '+'.join(strtemp)
+            if '+' in strtemp:
+                machinename, nothing = strtemp.split('+')
+                if conntype == 'WIFI':
+                    s = self.openWIFI(strtemp, False)
+                    if not s:
+                        self.controller.log.put((Controller.MSG_ERROR, tr._('auto reconnect failed!')))
+                    else:  # inserted
+                        self.controller.log.put((Controller.MSG_ERROR, tr._('auto reconnect success!')))
+                        self.AutoReconnectNum = 0
+                else:  # inserted
+                    s = self.openUSB(machinename, False)
+                    if not s:
+                        self.controller.log.put((Controller.MSG_ERROR, tr._('auto reconnect failed!')))
+                    else:  # inserted
+                        self.controller.log.put((Controller.MSG_ERROR, tr._('auto reconnect success!')))
+                        self.AutoReconnectNum = 0
 
     # -----------------------------------------------------------------------
     def connWIFI(self, ssid):
@@ -3361,9 +3771,9 @@ class Makera(RelativeLayout):
                         advanced.pop('section')
                     elif 'default' in advanced:
                         advanced.pop('default')
-                self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
-                self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
-                self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
+                self.config_popup.settings_panel.add_json_panel('Basic', self.config, data=json.dumps(basic_config))
+                self.config_popup.settings_panel.add_json_panel('Advanced', self.config, data=json.dumps(advanced_config))
+                self.config_popup.settings_panel.add_json_panel('Restore', self.config, data=json.dumps(restore_config))
         return True
 
     # -----------------------------------------------------------------------
@@ -3778,6 +4188,7 @@ class MakeraApp(App):
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
     model = StringProperty('C1')
+    machine_info = StringProperty('')
 
     def on_stop(self):
         self.root.stop_run()
@@ -3843,6 +4254,8 @@ def set_config_defaults(default_lang):
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width', '1440')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '900')
+    if not is_android():
+        Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
     Config.write()
 
 def load_constants():
@@ -3864,12 +4277,17 @@ def load_constants():
     global FW_UPD_ADDRESS
     global CTL_UPD_ADDRESS
     global DOWNLOAD_ADDRESS
+    global UPDATE_ADDRESS
+    global CHECK_ADDRESS
 
     global LANGS
 
     FW_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_community_firmware/master/version.txt'
     CTL_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_controller/main/CHANGELOG.md'
     DOWNLOAD_ADDRESS = 'https://github.com/carvera-community/carvera_controller/releases/latest'
+
+    UPDATE_ADDRESS = 'http://auth.makera.com:8000/device_release_history'
+    CHECK_ADDRESS = 'http://auth.makera.com:8000/ControllerAccess'
 
 
     LANGS = {
@@ -3895,6 +4313,8 @@ def load_constants():
 def main():
     if is_android():
         android_tweaks()
+    else:
+        Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
     # load the global constants
     load_constants()

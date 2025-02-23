@@ -28,13 +28,12 @@ RX_BUFFER_SIZE = 128
 GPAT = re.compile(r"[A-Za-z]\s*[-+]?\d+.*")
 FEEDPAT = re.compile(r"^(.*)[fF](\d+\.?\d+)(.*)$")
 
-STATUSPAT = re.compile(r"^<(\w*?),MPos:([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),WPos:([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),?(.*)>$")
-POSPAT	  = re.compile(r"^\[(...):([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*):?(\d*)\]$")
-TLOPAT	  = re.compile(r"^\[(...):([+\-]?\d*\.\d*)\]$")
+STATUSPAT = re.compile(r"^<(\w*?),MPos:([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),WPos:([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),?(.*)>$")
+POSPAT    = re.compile(r"^\[(...):([+\-]?\d*\.\d*),([+\-]?\d*\.\d*),([+\-]?\d*\.\d*):?(\d*)\]$")
+TLOPAT    = re.compile(r"^\[(...):([+\-]?\d*\.\d*)\]$")
 DOLLARPAT = re.compile(r"^\[G\d* .*\]$")
 SPLITPAT  = re.compile(r"[:,]")
 VARPAT    = re.compile(r"^\$(\d+)=(\d*\.?\d*) *\(?.*")
-
 
 WIKI = "https://github.com/vlachoudis/bCNC/wiki"
 
@@ -166,7 +165,7 @@ class Controller:
     # ----------------------------------------------------------------------
     # Execute a single command
     # ----------------------------------------------------------------------
-    def executeCommand(self, line):
+    def executeCommand(self, line, nodisplay=False):
         #if self.sio_status != False or self.sio_diagnose != False:      #wait for the ? or * command
         #    time.sleep(0.5)
         if self.stream and line:
@@ -182,7 +181,8 @@ class Controller:
                     else:
                         # 如果没有 ".lz" 后缀，直接赋值
                         new_line = line
-                    self.execCallback(new_line)
+                    if not nodisplay:
+                        self.execCallback(new_line)
             except:
                 self.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
 
@@ -217,6 +217,9 @@ class Controller:
 
     def pairWP(self):
         self.executeCommand("M471")
+
+    def echo(self, *args):
+        self.executeCommand('echo', True)
 
     def syncTime(self, *args):
         self.executeCommand("time " + str(int(time.time()) - time.timezone))
@@ -308,6 +311,30 @@ class Controller:
         else:
             self.executeCommand("M812\n")
 
+    def setVacuumSwitch(self, switch, power):
+        if switch:
+            if power < 20:
+                power = 20
+            self.executeCommand('M801 S%d\n' % power)
+        else:
+            self.executeCommand('M802\n')
+
+    def setSpindlefanSwitch(self, switch, power):
+        if switch:
+            if power < 20:
+                power = 20
+            self.executeCommand('M811 S%d\n' % power)
+        else:
+            self.executeCommand('M812\n')
+
+    def setLaserSwitch(self, switch, power):
+        if switch:
+            if power < 5:
+                power = 5
+            self.executeCommand('M3 S%g\n' % (power * 1.0 / 100))
+        else:
+            self.executeCommand('M5\n')
+
     def setLaserPower(self, power=0):
         if power > 0:
             self.executeCommand("M3 S%g\n" % (power * 1.0 / 100))
@@ -337,6 +364,14 @@ class Controller:
             self.executeCommand("M841\n")
         else:
             self.executeCommand("M842\n")
+
+    def setExtoutSwitch(self, switch, power):
+        if switch:
+            if power < 5:
+                power = 5
+            self.executeCommand('M851 S%g\n' % power)
+        else:
+            self.executeCommand('M852\n')
 
     def setVacuumMode(self, mode):
         if mode:
@@ -521,16 +556,29 @@ class Controller:
 
         # strip of rest into a dict of name: [values,...,]
         d = {a: [float(y) for y in b.split(',')] for a, b in [x.split(':') for x in l[1:]]}
-        CNC.vars["mx"] = float(d['MPos'][0])
-        CNC.vars["my"] = float(d['MPos'][1])
-        CNC.vars["mz"] = float(d['MPos'][2])
+        #d = {a: [float(y) for y in [x.split(':') for x in l[1:]]] for a, b in l.split(',')}
+        if 'C' in d:
+            CNC.vars['MachineModel'] = int(d['C'][0])
+            CNC.vars['FuncSetting'] = int(d['C'][1])
+            CNC.vars['inch_mode'] = int(d['C'][2])
+            CNC.vars['absolute_mode'] = int(d['C'][3])
+        if CNC.vars['inch_mode'] != 999:
+            if CNC.vars['inch_mode'] == 1:
+                CNC.UnitScale = 25.4
+            else:
+                CNC.UnitScale = 1
+        else:
+            CNC.UnitScale = 1
+        CNC.vars["mx"] = float(d['MPos'][0]) * CNC.UnitScale
+        CNC.vars["my"] = float(d['MPos'][1]) * CNC.UnitScale
+        CNC.vars["mz"] = float(d['MPos'][2]) * CNC.UnitScale
         if len(d['MPos']) > 3:
             CNC.vars["ma"] = float(d['MPos'][3])
         else:
             CNC.vars["ma"] = 0.0
-        CNC.vars["wx"] = float(d['WPos'][0])
-        CNC.vars["wy"] = float(d['WPos'][1])
-        CNC.vars["wz"] = float(d['WPos'][2])
+        CNC.vars["wx"] = float(d['WPos'][0]) * CNC.UnitScale
+        CNC.vars["wy"] = float(d['WPos'][1]) * CNC.UnitScale
+        CNC.vars["wz"] = float(d['WPos'][2]) * CNC.UnitScale
         CNC.vars["wa"] = 0.0
         CNC.vars["wcox"] = round(CNC.vars["mx"] - CNC.vars["wx"], 3)
         CNC.vars["wcoy"] = round(CNC.vars["my"] - CNC.vars["wy"], 3)
@@ -548,6 +596,8 @@ class Controller:
                 CNC.vars["vacuummode"] = int(d['S'][3])
             if len(d['S']) > 4:
                 CNC.vars["spindletemp"] = float(d['S'][4])
+            if len(d['S']) > 5:
+                CNC.vars['powertemp'] = float(d['S'][5])
         if 'T' in d:
             CNC.vars["tool"] = int(d['T'][0])
             CNC.vars["tlo"] = float(d['T'][1])
@@ -613,6 +663,10 @@ class Controller:
             CNC.vars["sl_vacuum"] = int(d['V'][1])
         if 'G' in d:
             CNC.vars["sw_light"] = int(d['G'][0])
+            if len(d['G']) > 1:
+                CNC.vars['st_ExtInput'] = int(d['G'][2])
+                CNC.vars['sw_ExtOut'] = int(d['G'][3])
+                CNC.vars['sl_ExtOut'] = int(d['G'][4])
         if 'T' in d:
             CNC.vars["sw_tool_sensor_pwr"] = int(d['T'][0])
         if 'R' in d:
@@ -627,6 +681,10 @@ class Controller:
             CNC.vars["st_y_max"] = int(d['E'][3])
             CNC.vars["st_z_max"] = int(d['E'][4])
             CNC.vars["st_cover"] = int(d['E'][5])
+            if len(d['E']) > 6:
+                CNC.vars['st_a_max'] = int(d['E'][6])
+            if len(d['E']) > 7:
+                CNC.vars['st_c_max'] = int(d['E'][7])
         if 'P' in d:
             CNC.vars["st_probe"] = int(d['P'][0])
             CNC.vars["st_calibrate"] = int(d['P'][1])
@@ -780,8 +838,11 @@ class Controller:
         pass
 
     # ----------------------------------------------------------------------
-    def jog(self, _dir):
-        self.executeCommand("G91G0{}".format(_dir))
+    def jog(self, _dir, step, ABAxis=False):
+        if not ABAxis:
+            self.executeCommand('G91G0{}{:.6f}'.format(_dir, float(step) / CNC.UnitScale))
+        else:
+            self.executeCommand('G91G0{}{:.6f}'.format(_dir, float(step)))
     
     def jog_with_speed(self, _dir, speed):
         if speed > 0:
@@ -817,10 +878,10 @@ class Controller:
         cmd = "G10L20P0"
 
         pos = ""
-        if x is not None and abs(x) < 10000.0: pos += "X" + str(round(x, 4))
-        if y is not None and abs(y) < 10000.0: pos += "Y" + str(round(y, 4))
-        if z is not None and abs(z) < 10000.0: pos += "Z" + str(round(z, 4))
-        if a is not None and abs(a) < 3600000.0: pos += "A" + str(round(a, 4))
+        if x is not None and abs(x) < 10000.0: pos += "X" + str(round(x / CNC.UnitScale, 4))
+        if y is not None and abs(y) < 10000.0: pos += "Y" + str(round(y / CNC.UnitScale, 4))
+        if z is not None and abs(z) < 10000.0: pos += "Z" + str(round(z / CNC.UnitScale, 4))
+        if a is not None and abs(a) < 3600000.0: pos += "A" + str(round(a / CNC.UnitScale, 4))
         cmd += pos
 
         self.sendGCode(cmd)
@@ -830,9 +891,9 @@ class Controller:
         cmd = "G10L2P0"
 
         pos = ""
-        if x is not None and abs(x) < 10000.0: pos += "X" + str(round(x, 4))
-        if y is not None and abs(y) < 10000.0: pos += "Y" + str(round(y, 4))
-        if z is not None and abs(z) < 10000.0: pos += "Z" + str(round(z, 4))
+        if x is not None and abs(x) < 10000.0: pos += "X" + str(round(x / CNC.UnitScale, 4))
+        if y is not None and abs(y) < 10000.0: pos += "Y" + str(round(y / CNC.UnitScale, 4))
+        if z is not None and abs(z) < 10000.0: pos += "Z" + str(round(z / CNC.UnitScale, 4))
         if a is not None and abs(a) < 3600000.0: pos += "A" + str(round(a, 4))
         cmd += pos
 

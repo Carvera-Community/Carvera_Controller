@@ -37,6 +37,7 @@ class CNC:
     coord_names = ["anchor1_x", "anchor1_y", "anchor2_offset_x", "anchor2_offset_y",\
                    "anchor_width", "anchor_length", "worksize_x", "worksize_y", "rotation_offset_x",\
                    "rotation_offset_y"]
+    UnitScale = 1
     vars           = {
         "prbx"       : 0.0,
         "prby"       : 0.0,
@@ -161,7 +162,13 @@ class CNC:
         "st_calibrate"      : 0,
         "st_cover"          : 0,
         "st_tool_sensor"    : 0,
-        "st_e_stop"         : 0
+        "st_e_stop"         : 0,
+
+        "MachineModel": 0,
+        "FuncSetting": 0,
+        "inch_mode": 0,
+        "absolute_mode": 0,
+
 
     }
 
@@ -292,7 +299,7 @@ class CNC:
 
             elif c == "A":
                 self.has_4axis = True
-                self.aval = value * self.unit * -1  # Right Hand Rule rotation. A+ movement when looking at rotary jaws is CCW rotation
+                self.aval = value * self.unit  # Right Hand Rule rotation. A+ movement when looking at rotary jaws is CCW rotation
                 if not self.absolute:
                     self.aval += self.a
                 self.da = self.aval - self.a
