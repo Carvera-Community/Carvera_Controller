@@ -10,6 +10,7 @@ import locale
 from kivy.lang import Observable
 from os.path import dirname, join
 # os.environ['KIVY_GL_DEBUG'] = '1'
+from kivy.core.clipboard import Clipboard
 
 from kivy.utils import platform
 
@@ -770,6 +771,14 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
 
+    def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        mod = "ctrl" if sys.platform == "win32" else "meta"
+        if text == 'c' and self.selected and mod in modifiers:
+            if hasattr(self, 'text'):
+                Clipboard.copy(self.text.strip())
+            return True
+        return False
+
     def refresh_view_attrs(self, rv, index, data):
         ''' Catch and handle the view changes '''
         self.index = index
@@ -790,6 +799,11 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
+        if not is_selected:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.bind(on_key_down=self.on_keyboard_down)
+
 
 class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
     ''' Add selection support to the Label '''
