@@ -476,7 +476,7 @@
         disabled: app.state != 'Idle'
         on_release:
             root.select('Third Item')
-            app.root.controller.wcsSetA(0)
+            app.root.controller.wcsSet(None, None, None, 0)
     Button:
         text: tr._('Set A')
         size_hint_y: None
@@ -490,7 +490,7 @@
         text: tr._('Shrink')
         size_hint_y: None
         height: '48dp'
-        font_size: '20sp'
+        font_size: '16sp'
         disabled: app.state != 'Idle'
         on_release:
             root.select('Third Item')
@@ -499,7 +499,7 @@
         text: tr._('Fast Move')
         size_hint_y: None
         height: '48dp'
-        font_size: '20sp'
+        font_size: '16sp'
         disabled: app.state != 'Idle'
         on_release:
             root.select('Third Item')
@@ -555,8 +555,8 @@
                     pos: self.pos
                     size: self.size
             id: scale_slider
-            min: 10
-            max: 300
+            min: 50
+            max: 200
             value: 100
             step: 10
             set_flag: False
@@ -730,7 +730,8 @@
         text: tr._('Change...')
         values: 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6'
         on_text:
-            if self.text != tr._("Change..."): app.root.controller.changeToolCommand(self.text[-1])
+            if self.text != tr._("Change...") and self.text != 'Other Tool': app.root.controller.changeToolCommand(self.text[-1])
+            if self.text == 'Other Tool': app.root.change_tool_popup.open()
             if self.text != tr._("Change..."): self.text = tr._('Change...')
             root.select('Third Item')
     Button:
@@ -755,25 +756,124 @@
         text: tr._('Set...')
         values: 'Empty', 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6'
         on_text:
-            if self.text != tr._("Set..."): app.root.controller.setToolCommand(self.text[-1])
+            if self.text != tr._("Set...") and self.text != 'Other Tool': app.root.controller.setToolCommand(self.text[-1])
+            if self.text == 'Other Tool': app.root.set_tool_popup.open()
             if self.text != tr._("Set..."): self.text = tr._('Set...')
             root.select('Third Item')
-    Button:
-        text: tr._('Clamp')
-        size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
-        on_release:
-            root.select('Third Item')
-            app.root.controller.clampToolCommand()
-    Button:
-        text: tr._('Unclamp')
-        size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
-        on_release:
-            root.select('Third Item')
-            app.root.controller.unclampToolCommand()
+
+
+<ChangeToolPopup>:
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    txt_offset: txt_offset
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            canvas.before:
+                Color:
+                    rgba: 45/255, 45/255, 45/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            id: caption
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('Input Tool Number')
+            halign: 'left'
+            valign: 'middle'
+        BoxLayout:
+            padding: '15dp'
+            orientation: 'vertical'
+        BoxLayout:
+            size_hint_y: None
+            height: '30dp'
+            Label:
+                text: 'Value:'
+                halign: "left"
+                valign: "center"
+                text_size: self.size
+            TextInput:
+                id: txt_offset
+                hint_text: tr._('Input Tool Number')
+                multiline: False
+                text: '1'
+                halign: "left"
+                input_type: 'number'
+                input_filter: 'int'
+        BoxLayout:
+            id: empty
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '40dp'
+            Button:
+                id: btn_cancel
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                id: btn_ok
+                text: tr._('Ok')
+                on_release:
+                    app.root.controller.changeToolCommand(txt_offset.text)
+                    root.dismiss()
+<SetToolnumPopup>:
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    txt_offset: txt_offset
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            canvas.before:
+                Color:
+                    rgba: 45/255, 45/255, 45/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            id: caption
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('Input Tool Number')
+            halign: 'left'
+            valign: 'middle'
+        BoxLayout:
+            padding: '15dp'
+            orientation: 'vertical'
+        BoxLayout:
+            size_hint_y: None
+            height: '30dp'
+            Label:
+                text: 'Value:'
+                halign: "left"
+                valign: "center"
+                text_size: self.size
+            TextInput:
+                id: txt_offset
+                hint_text: tr._('Input Tool Number')
+                multiline: False
+                text: '1'
+                halign: "left"
+                input_type: 'number'
+                input_filter: 'int'
+        BoxLayout:
+            id: empty
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '40dp'
+            Button:
+                id: btn_cancel
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                id: btn_ok
+                text: tr._('Ok')
+                on_release:
+                    app.root.controller.setToolCommand(txt_offset.text)
+                    root.dismiss()
 
 <LaserDropDown>:
     switch: switch
@@ -931,7 +1031,8 @@
         height: '50dp'
         on_release:
             root.select('')
-            app.root.diagnose_popup.open()
+            app.root.diagnose_popup.open() if app.model != 'CA1' else app.root.diagnose_popup_Air.open()
+            #app.root.diagnose_popup.open()
     IconButton:
         icon: 'data/WIFI.png'
         icon_size: 24
@@ -977,6 +1078,7 @@
         icon_size: 24
         small_icon: True
         size_hint_y: None
+        disabled: app.state != 'Idle'
         height: '50dp'
         on_release:
             root.select('')
@@ -996,6 +1098,10 @@
     btn_connect_wifi: btn_connect_wifi
     btn_unlock: btn_unlock
     btn_disconnect: btn_disconnect
+    btn_last_connect: btn_last_connect
+
+    auto_width:False
+    width:'175dp'
     canvas.before:
         Color:
             rgba: 60/255, 60/255, 60/255, 1
@@ -1003,19 +1109,17 @@
             pos: self.pos
             size: self.size
     Button:
-        id: btn_reconnect_wifi
-        text: tr._('Reconnect')
+        id: btn_last_connect
         size_hint_y: None
         height: '40dp'
-        disabled: app.state != 'N/A'
+        text: tr._('Recent Connection')
         on_release:
-            app.root.reconnect_wifi_conn(self)
-
+            app.root.RecentConnection(self)
     Button:
         id: btn_connect_wifi
         size_hint_y: None
         height: '40dp'
-        text: tr._('Scan Wi-Fi...')
+        text: tr._('WIFI...')
         on_release:
             app.root.open_wifi_conn_drop_down(self)
     Button:
@@ -1254,6 +1358,30 @@
                     root.dismiss()
                     if root.cancel:\
                     root.cancel()
+            Button:
+                text: tr._('Confirm')
+                on_release:
+                    root.dismiss()
+                    root.confirm()
+<ToolConfirmPopup>:
+    lb_title: lb_title
+    lb_content: lb_content
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            size_hint_y: 0.4
+            id: lb_title
+            text: tr._('Confirm Box')
+            bold: True
+        Label:
+            id: lb_content
+            text: tr._('Confirm to continue?')
+        BoxLayout:
+            size_hint_y: 0.4
             Button:
                 text: tr._('Confirm')
                 on_release:
@@ -1980,6 +2108,7 @@
                             readonly: True
                             text: ''
                             font_size: '13sp'
+                            focus: False
 
         BoxLayout:
             spacing: '5dp'
@@ -1990,7 +2119,7 @@
                 id: check_button
                 text: tr._("Check for Updates")
                 on_release:
-                    app.root.check_for_updates()
+                    app.root.check_for_updates_post()
                     self.disabled = True
             Button:
                 text: tr._('Close')
@@ -2006,7 +2135,7 @@
 
     remote_rv: remote_rv
     local_rv: local_rv
-    btn_view: btn_view
+    btn_open: btn_open
     btn_rename: btn_rename
     btn_select: btn_select
     btn_delete: btn_delete
@@ -2082,7 +2211,7 @@
                             root.popup_manager.transition.direction = 'left'
                             root.popup_manager.transition.duration = 0.3
                             root.popup_manager.current = 'local_page'
-                            app.root.set_local_folder_to_last_opened()
+                            root.local_rv.child_dir('')
                 BoxLayout:
                     size_hint_y: None
                     height: '5dp'
@@ -2292,13 +2421,6 @@
                                 app.root.open_local_dir_drop_down(self)
                     Label:
                     Button:
-                        id: btn_view
-                        size_hint_x: None
-                        width: '100dp'
-                        text: tr._("Download") if root.firmware_mode else tr._("View")
-                        on_release:
-                            app.root.view_local_file()
-                    Button:
                         id: btn_upload
                         size_hint_x: None
                         width: '100dp'
@@ -2306,14 +2428,12 @@
                         on_release:
                             app.root.check_and_upload()
                     Button:
-                        id: btn_upload_and_select
+                        id: btn_open
                         size_hint_x: None
-                        width: '130dp'
-                        text: tr._("Upload and Select")
-                        disabled: root.firmware_mode
+                        width: '100dp'
+                        text: tr._("Download") if root.firmware_mode else tr._("Open")
                         on_release:
-                            app.root.check_upload_and_select()
-                            root.dismiss()
+                            app.root.open_local_file()
                     Button:
                         size_hint_x: None
                         width: '100dp'
@@ -2875,8 +2995,9 @@
 
     # switch widget variables
     sw_spindle: sw_spindle
+    sw_spindlefan: sw_spindlefan
+    sw_vacuum: sw_vacuum
     sw_laser: sw_laser
-
     sw_light: sw_light
     sw_tool_sensor_pwr: sw_tool_sensor_pwr
     sw_air: sw_air
@@ -2894,6 +3015,7 @@
     st_y_min: st_y_min
     st_y_max: st_y_max
     st_z_max: st_z_max
+    st_a_max: st_a_max
     st_atc_home: st_atc_home
     st_probe: st_probe
     st_calibrate: st_calibrate
@@ -2907,7 +3029,7 @@
             size_hint_y: None
             height: '40dp'
             Label:
-                text: tr._("   Diagnostic Panel")
+                text: tr._(" Diagnose ( Be careful, do not change except diagnosing )")
                 bold: True
                 halign: "left"
                 valign: "middle"
@@ -2919,25 +3041,27 @@
                 size_hint_x: 1.5
                 SwitchBox:
                     id: sw_spindle
-                    label: tr._('Spindle Motor')
+                    label: tr._('Spindle')
                     control_name: 'spindle_switch'
-                Label:
+                SwitchBox:
                     id: sw_spindlefan
-                    text: tr._('Spindle Fan')
-                Label:
+                    label: tr._('SpindleFan')
+                    control_name: 'spindlefan_switch'
+                SwitchBox:
                     id: sw_vacuum
-                    text: tr._('Vacuum') if app.model != 'CA1' else tr._('PowerFan')
+                    label: tr._('Vacuum') if app.model != 'CA1' else tr._('PowerFan')
+                    control_name: 'vacuum_switch'
                 SwitchBox:
                     id: sw_laser
-                    label: tr._('Engraving Laser')
+                    label: tr._('Laser')
                     control_name: 'laser_switch'
                 SwitchBox:
                     id: sw_light
-                    label: tr._('Enclosure Light')
+                    label: tr._('Light')
                     control_name: 'light_switch'
                 SwitchBox:
                     id: sw_air
-                    label: tr._('Air Assist')
+                    label: tr._('Air')
                     control_name: 'air_switch'
                     disabled: app.model == 'CA1'
             BoxLayout:
@@ -2950,16 +3074,15 @@
                     control_name: 'spindle_slider'
                 SliderBox:
                     id: sl_spindlefan
-                    step: 10
+                    step: 5
                     control_name: 'spindlefan_slider'
-                    label: tr._('Spindle Fan')
                 SliderBox:
                     id: sl_vacuum
-                    step: 10
+                    step: 5
                     control_name: 'vacuum_slider'
                 SliderBox:
                     id: sl_laser
-                    step: 10
+                    step: 5
                     control_name: 'laser_slider'
                 SwitchBox:
                     id: sw_tool_sensor_pwr
@@ -3003,20 +3126,15 @@
                     id: st_z_max
                     label: tr._('Z+ Limit')
                 StateBox:
+                    id: st_a_max
+                    label: tr._('A+ Limit')
+                StateBox:
                     id: st_calibrate
-                    label: tr._('Tool Length Setter')
+                    label: tr._('Calibrate')
                 StateBox:
                     id: st_cover
                     label: tr._('Cover Switch')
                 Label:
-        BoxLayout:
-            size_hint_y: None
-            height: '20dp'
-            Label:
-                text: tr._("Changes in values are applied after 2 seconds.")
-                halign: "right"
-                valign: "middle"
-                text_size: self.size
         BoxLayout:
             size_hint_y: None
             height: '50dp'
@@ -3027,6 +3145,170 @@
                 text: tr._("Close")
                 on_release:
                     root.dismiss()
+
+<DiagnosePopupAir>:
+    padding: dp(10)
+    size_hint: 0.8, 0.8
+    pos_hint: {"right": 0.9, "top": 0.9}
+    auto_dismiss: False
+
+    # switch widget variables
+    sw_spindle: sw_spindle
+    sw_spindlefan: sw_spindlefan
+    sw_vacuum: sw_vacuum
+    sw_laser: sw_laser
+    sw_ExtOut: sw_ExtOut
+    sw_light: sw_light
+    sw_tool_sensor_pwr: sw_tool_sensor_pwr
+    #sw_wp_charge_pwr: sw_wp_charge_pwr
+
+    # slider widget variables
+    sl_spindle: sl_spindle
+    sl_spindlefan: sl_spindlefan
+    sl_vacuum: sl_vacuum
+    sl_laser: sl_laser
+    sl_ExtOut:sl_ExtOut
+
+    # state widget variables
+    st_x_max: st_x_max
+    st_y_max: st_y_max
+    st_z_max: st_z_max
+    st_a_max: st_a_max
+    st_c_max: st_c_max
+    st_spindle_temp: st_spindle_temp
+    st_power_temp: st_power_temp
+    st_probe: st_probe
+    st_calibrate: st_calibrate
+    st_cover: st_cover
+    st_e_stop: st_e_stop
+    st_ExtInput:st_ExtInput
+
+
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            size_hint_y: None
+            height: '40dp'
+            Label:
+                text: tr._(" Diagnose ( Be careful, do not change except diagnosing )")
+                bold: True
+                halign: "left"
+                valign: "middle"
+                text_size: self.size
+        BoxLayout:
+            orientation: 'horizontal'
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: 1.5
+                SwitchBox:
+                    id: sw_spindle
+                    label: tr._('Spindle')
+                    control_name: 'spindle_switch'
+                SwitchBox:
+                    id: sw_spindlefan
+                    label: tr._('SpindleFan')
+                    control_name: 'spindlefan_switch'
+                SwitchBox:
+                    id: sw_vacuum
+                    label: tr._('PowerFan')
+                    control_name: 'vacuum_switch'
+                SwitchBox:
+                    id: sw_laser
+                    label: tr._('Laser')
+                    control_name: 'laser_switch'
+                SwitchBox:
+                    id: sw_ExtOut
+                    label: tr._('Extend output')
+                    control_name: 'Extend_switch'
+                SwitchBox:
+                    id: sw_light
+                    label: tr._('Light')
+                    control_name: 'light_switch'
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: 1.5
+                SliderBox:
+                    id: sl_spindle
+                    max: 14000
+                    step: 100
+                    control_name: 'spindle_slider'
+                SliderBox:
+                    id: sl_spindlefan
+                    step: 5
+                    control_name: 'spindlefan_slider'
+                SliderBox:
+                    id: sl_vacuum
+                    step: 5
+                    control_name: 'vacuum_slider'
+                SliderBox:
+                    id: sl_laser
+                    step: 5
+                    control_name: 'laser_slider'
+                SliderBox:
+                    id: sl_ExtOut
+                    step: 5
+                    control_name: 'ExtOut_slider'
+                SwitchBox:
+                    id: sw_tool_sensor_pwr
+                    label: tr._('Probe Laser')
+                    control_name: 'tool_sensor_switch'
+                #SwitchBox:
+                #    id: sw_wp_charge_pwr
+                #    label: tr._('Beep')
+                #    control_name: 'wp_charge_switch'
+            BoxLayout:
+                orientation: 'vertical'
+                StateBox:
+                    id: st_e_stop
+                    label: tr._('E-Stop')
+                StateBox:
+                    id: st_spindle_temp
+                    label: tr._('Spindle Temp')
+                StateBox:
+                    id: st_power_temp
+                    label: tr._('Power Temp')
+                StateBox:
+                    id: st_cover
+                    label: tr._('Cover Switch')
+                StateBox:
+                    id: st_ExtInput
+                    label: tr._('Extend Input')
+                StateBox:
+                    id: st_probe
+                    label: tr._('Probe')
+            BoxLayout:
+                orientation: 'vertical'
+                StateBox:
+                    id: st_x_max
+                    label: tr._('X+ Limit')
+                StateBox:
+                    id: st_y_max
+                    label: tr._('Y+ Limit')
+                StateBox:
+                    id: st_z_max
+                    label: tr._('Z+ Limit')
+                StateBox:
+                    id: st_a_max
+                    label: tr._('A+ Limit')
+                StateBox:
+                    id: st_c_max
+                    label: tr._('C+ Limit')
+                    opacity:0
+                StateBox:
+                    id: st_calibrate
+                    label: tr._('Calibrate')
+        BoxLayout:
+            size_hint_y: None
+            height: '50dp'
+            spacing: '5dp'
+            padding: '5dp'
+            size_hint_y: None
+            Button:
+                text: tr._("Close")
+                on_release:
+                    root.dismiss()
+
+
 
 
 <ConfigPopup>:
@@ -3225,242 +3507,6 @@
 
         Content:
             id: content
-            ControlPage:
-                name: 'Control'
-                BoxLayout:
-                    orientation: 'vertical'
-                    Widget:
-                        size_hint_y: 0.2
-                    BoxLayout:
-                        orientation: 'horizontal'
-                        padding: '10dp'
-                        canvas.before:
-                            Color:
-                                rgba: 40/255, 40/255, 40/255, 1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [self.height / 2,]
-                        BoxLayout:
-                            disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
-                            padding: '25dp'
-                            canvas.before:
-                                Color:
-                                    rgba: 50/255, 50/255, 50/255, 1
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            GridLayout:
-                                cols: 3
-                                rows: 3
-                                GridBoxLayout:
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'Y-'
-                                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed)
-                                GridBoxLayout:
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'X-'
-                                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed)
-                                GridBoxLayout:
-                                    Label:
-                                    Spinner:
-                                        id: step_xy
-                                        center: 0.5, 0.5
-                                        size_hint_y: None
-                                        height: '40dp'
-                                        text: '10'
-                                        values: '10', '1', '0.1', '0.01', '0.005'
-                                    Label:
-
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'X+'
-                                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed)
-                                GridBoxLayout:
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'Y+'
-                                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed)
-                                GridBoxLayout:
-                        BoxLayout:
-                            orientation: 'vertical'
-                            
-                            BoxLayout:
-                            BoxLayout:
-                                disabled: app.state != 'Idle'
-                                orientation: 'vertical'
-                                padding: '10dp'
-                                BoxLayout:
-                                    padding: '10dp'
-                                    canvas.before:
-                                        Color:
-                                            rgba: 50/255, 50/255, 50/255, 1
-                                        RoundedRectangle:
-                                            pos: self.pos
-                                            size: self.size
-                                            radius: [dp(12),]
-                                    GridLayout:
-                                        cols: 3
-                                        rows: 3
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                text: tr._('Unlock')
-                                                on_release: root.controller.unlock()
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                text: tr._('Reset')
-                                                on_release: root.controller.reset()
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                text: tr._('Home')
-                                                on_release: root.controller.home()
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                disabled: app.state != 'Idle' or app.selected_remote_filename == ''
-                                                text: tr._('Margin...')
-                                                on_release:
-                                                    root.coord_popup.mode = 'Margin'
-                                                    root.coord_popup.set_config('margin', 'active', True)
-                                                    root.coord_popup.set_config('zprobe', 'active', False)
-                                                    root.coord_popup.set_config('leveling', 'active', False)
-                                                    root.coord_popup.load_config()
-                                                    root.coord_popup.open()
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                disabled: app.state != 'Idle' or app.selected_remote_filename == ''
-                                                text: tr._('ZProbe...')
-                                                on_release:
-                                                    root.coord_popup.mode = 'ZProbe'
-                                                    root.coord_popup.set_config('margin', 'active', False)
-                                                    root.coord_popup.set_config('zprobe', 'active', True)
-                                                    root.coord_popup.set_config('leveling', 'active', False)
-                                                    root.coord_popup.load_config()
-                                                    root.coord_popup.open()
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                disabled: app.state != 'Idle' or app.selected_remote_filename == '' or app.has_4axis
-                                                text: tr._('AutoLevel...')
-                                                on_release:
-                                                    root.coord_popup.mode = 'Leveling'
-                                                    root.coord_popup.set_config('margin', 'active', False)
-                                                    root.coord_popup.set_config('zprobe', 'active', False)
-                                                    root.coord_popup.set_config('leveling', 'active', True)
-                                                    root.coord_popup.load_config()
-                                                    root.coord_popup.open()
-                                        GridBoxLayout:
-                                            Spinner:
-                                                center: 0.5, 0.5
-                                                size_hint_y: None
-                                                height: '35dp'
-                                                text: tr._('Goto...')
-                                                values: 'Clearance', 'Work Origin', 'Path Origin', 'Anchor1', 'Anchor2'
-                                                on_text:
-                                                    if self.text != tr._("Goto..."): app.root.controller.gotoPosition(self.text)
-                                                    if self.text != tr._("Goto..."): self.text = tr._('Goto...')
-                                        GridBoxLayout:
-                                            SmallRoundButton:
-                                                text: tr._('Set Origin')
-                                                on_release: root.coord_popup.origin_popup.open()
-                                        GridBoxLayout:
-                                            ToggleButton:
-                                                text: tr._('Adv Jog Controls')
-                                                size_hint_y: None
-                                                height: '35dp'
-                                                on_release: app.root.toggle_jog_control_ui()
-                            BoxLayout:
-                                BoxLayout:
-                                    disabled: app.state != 'Idle'
-                                    orientation: 'horizontal'
-                                    size_hint_y: 0.4
-                                    opacity: 1 if root.show_advanced_jog_controls else 0
-                                    GridLayout:
-                                        cols: 3
-                                        rows: 1
-                                        BoxLayout:
-                                            padding: '10dp'
-                                            canvas.before:
-                                                Color:
-                                                    rgba: 50/255, 50/255, 50/255, 1
-                                                RoundedRectangle:
-                                                    pos: self.pos
-                                                    size: self.size
-                                                    radius: [dp(12),]
-                                            GridBoxLayout:
-                                                Button:
-                                                    text: tr._('Jog Speed: Same as Feed')
-                                                    id: jog_speed_btn
-                                                    size_hint_y: None
-                                                    center: 0.5, 0.5
-                                                    height: '35dp'
-                                                    on_release: root.jog_speed_drop_down.open(self)
-                                                
-                                            GridBoxLayout:
-                                                ToggleButton:
-                                                    id: kb_jog_btn
-                                                    text: tr._('Keyboard Jog Mode')
-                                                    height: '35dp'
-                                                    size_hint_y: None
-                                                    on_release: app.root.toggle_keyboard_jog_control()
-
-                        BoxLayout:
-                            disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
-                            padding: '25dp'
-                            orientation: 'horizontal'
-                            canvas.before:
-                                Color:
-                                    rgba: 50/255, 50/255, 50/255, 1
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            Widget:
-                                size_hint_x: 0.2
-                            GridLayout:
-                                cols: 2
-                                rows: 3
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'A+'
-                                        on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), root.jog_speed)
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'Z+'
-                                        on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), root.jog_speed)
-                                GridBoxLayout:
-                                    Label:
-                                    Spinner:
-                                        id: step_a
-                                        center: 0.5, 0.5
-                                        size_hint_y: None
-                                        height: '40dp'
-                                        text: '90'
-                                        values: '90', '10', '1', '0.1'
-                                    Label:
-                                GridBoxLayout:
-                                    Label:
-                                    Spinner:
-                                        id: step_z
-                                        center: 0.5, 0.5
-                                        size_hint_y: None
-                                        height: '40dp'
-                                        text: '1'
-                                        values: '10', '1', '0.1', '0.01', '0.005'
-                                    Label:
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'A-'
-                                        on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), root.jog_speed)
-                                GridBoxLayout:
-                                    RoundButton:
-                                        text: 'Z-'
-                                        on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), root.jog_speed)
-
-                            Widget:
-                                size_hint_x: 0.2
-                    Widget:
-                        size_hint_y: 0.2
-
             FilePage:
                 name: 'File'
                 BoxLayout:
@@ -3602,7 +3648,7 @@
                                                     width: '40dp'
                                                     size_hint_x: None
                                                     text: tr._('send')
-                                                    disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running == '0')
+                                                    disabled: app.state != 'Idle' and app.state != 'Pause'
                                                     on_release:
                                                         root.send_cmd()
                         FloatBox:
@@ -3831,6 +3877,258 @@
                                     value: 1000
                                     disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
 
+            ControlPage:
+                name: 'Control'
+                BoxLayout:
+                    orientation: 'vertical'
+                    Widget:
+                        size_hint_y: 0.2
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        padding: '10dp'
+                        canvas.before:
+                            Color:
+                                rgba: 40/255, 40/255, 40/255, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [self.height / 2,]
+                        BoxLayout:
+                            disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                            padding: '25dp'
+                            canvas.before:
+                                Color:
+                                    rgba: 50/255, 50/255, 50/255, 1
+                                Ellipse:
+                                    pos: self.pos
+                                    size: self.size
+                            GridLayout:
+                                cols: 3
+                                rows: 3
+                                GridBoxLayout:
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'Y-'
+                                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed)
+                                GridBoxLayout:
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'X-'
+                                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed)
+                                GridBoxLayout:
+                                    Label:
+                                    Spinner:
+                                        id: step_xy
+                                        center: 0.5, 0.5
+                                        size_hint_y: None
+                                        height: '40dp'
+                                        text: '10'
+                                        values: '10', '1', '0.1', '0.01', '0.005'
+                                    Label:
+
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'X+'
+                                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed)
+                                GridBoxLayout:
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'Y+'
+                                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed)
+                                GridBoxLayout:
+                        BoxLayout:
+                            disabled: app.state != 'Idle'
+                            orientation: 'vertical'
+                            padding: '10dp'
+                            Widget:
+                                size_hint_y: 0.5
+                            BoxLayout:
+                                padding: '10dp'
+                                canvas.before:
+                                    Color:
+                                        rgba: 50/255, 50/255, 50/255, 1
+                                    RoundedRectangle:
+                                        pos: self.pos
+                                        size: self.size
+                                        radius: [dp(12),]
+                                GridLayout:
+                                    cols: 3
+                                    rows: 3
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            text: tr._('Unlock')
+                                            on_release: root.controller.unlock()
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            text: tr._('Reset')
+                                            on_release: root.controller.reset()
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            text: tr._('Home')
+                                            on_release: root.controller.home()
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            disabled: app.state != 'Idle' or app.selected_remote_filename == ''
+                                            text: tr._('Margin...')
+                                            on_release:
+                                                root.coord_popup.mode = 'Margin'
+                                                root.coord_popup.set_config('margin', 'active', True)
+                                                root.coord_popup.set_config('zprobe', 'active', False)
+                                                root.coord_popup.set_config('leveling', 'active', False)
+                                                root.coord_popup.load_config()
+                                                root.coord_popup.open()
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            disabled: app.state != 'Idle' or app.selected_remote_filename == ''
+                                            text: tr._('ZProbe...')
+                                            on_release:
+                                                root.coord_popup.mode = 'ZProbe'
+                                                root.coord_popup.set_config('margin', 'active', False)
+                                                root.coord_popup.set_config('zprobe', 'active', True)
+                                                root.coord_popup.set_config('leveling', 'active', False)
+                                                root.coord_popup.load_config()
+                                                root.coord_popup.open()
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            disabled: app.state != 'Idle' or app.selected_remote_filename == '' or app.has_4axis
+                                            text: tr._('AutoLevel...')
+                                            on_release:
+                                                root.coord_popup.mode = 'Leveling'
+                                                root.coord_popup.set_config('margin', 'active', False)
+                                                root.coord_popup.set_config('zprobe', 'active', False)
+                                                root.coord_popup.set_config('leveling', 'active', True)
+                                                root.coord_popup.load_config()
+                                                root.coord_popup.open()
+
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        Spinner:
+                                            center: 0.5, 0.5
+                                            size_hint_y: None
+                                            height: '35dp'
+                                            text: tr._('Goto...')
+                                            values: 'Clearance', 'Work Origin', 'Path Origin', 'Anchor1', 'Anchor2'
+                                            on_text:
+                                                if self.text != tr._("Goto..."): app.root.controller.gotoPosition(self.text)
+                                                if self.text != tr._("Goto..."): self.text = tr._('Goto...')
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            text: tr._('Set Origin')
+                                            on_release: root.coord_popup.origin_popup.open()
+                                        Label:
+                                    GridBoxLayout:
+                                        Label:
+                                        SmallRoundButton:
+                                            text: tr._('Adv Jog Controls')
+                                            on_release: app.root.toggle_jog_control_ui()
+                                        Label:
+                            Widget:
+                                size_hint_y: 0.5
+                            BoxLayout:
+                                BoxLayout:
+                                    disabled: app.state != 'Idle'
+                                    orientation: 'horizontal'
+                                    size_hint_y: 0.4
+                                    opacity: 1 if root.show_advanced_jog_controls else 0
+                                    GridLayout:
+                                        cols: 3
+                                        rows: 1
+                                        BoxLayout:
+                                            padding: '10dp'
+                                            canvas.before:
+                                                Color:
+                                                    rgba: 50/255, 50/255, 50/255, 1
+                                                RoundedRectangle:
+                                                    pos: self.pos
+                                                    size: self.size
+                                                    radius: [dp(12),]
+                                            GridBoxLayout:
+                                                Button:
+                                                    text: tr._('Jog Speed: Same as Feed')
+                                                    id: jog_speed_btn
+                                                    size_hint_y: None
+                                                    center: 0.5, 0.5
+                                                    height: '35dp'
+                                                    on_release: root.jog_speed_drop_down.open(self)
+                                                
+                                            GridBoxLayout:
+                                                ToggleButton:
+                                                    id: kb_jog_btn
+                                                    text: tr._('Keyboard Jog Mode')
+                                                    height: '35dp'
+                                                    size_hint_y: None
+                                                    on_release: app.root.toggle_keyboard_jog_control()
+
+                        BoxLayout:
+                            disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                            padding: '25dp'
+                            orientation: 'horizontal'
+                            canvas.before:
+                                Color:
+                                    rgba: 50/255, 50/255, 50/255, 1
+                                Ellipse:
+                                    pos: self.pos
+                                    size: self.size
+                            Widget:
+                                size_hint_x: 0.2
+                            GridLayout:
+                                cols: 2
+                                rows: 3
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'A+'
+                                        on_release: root.controller.jog("A", root.step_a.text, True)
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'Z+'
+                                        on_release: root.controller.jog("Z", root.step_z.text)
+                                GridBoxLayout:
+                                    Label:
+                                    Spinner:
+                                        id: step_a
+                                        center: 0.5, 0.5
+                                        size_hint_y: None
+                                        height: '40dp'
+                                        text: '90'
+                                        values: '90', '10', '1', '0.1'
+                                    Label:
+                                GridBoxLayout:
+                                    Label:
+                                    Spinner:
+                                        id: step_z
+                                        center: 0.5, 0.5
+                                        size_hint_y: None
+                                        height: '40dp'
+                                        text: '1'
+                                        values: '10', '1', '0.1', '0.01', '0.005'
+                                    Label:
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'A-'
+                                        on_release: root.controller.jog("A-", root.step_a.text, True)
+                                GridBoxLayout:
+                                    RoundButton:
+                                        text: 'Z-'
+                                        on_release: root.controller.jog("Z-", root.step_z.text)
+
+                            Widget:
+                                size_hint_x: 0.2
+                    Widget:
+                        size_hint_y: 0.2
             SettingPage:
                 name: 'Setting'
                 Label:
@@ -4180,10 +4478,10 @@
                 id: btn_ok
                 text: tr._('Ok')
                 on_release:
-                    app.root.controller.wcsSetA(float(txt_offset.text))
+                    app.root.controller.wcsSet(None, None, None, float(txt_offset.text))
                     root.dismiss()
 
-<MoveAPopup>:
+<MoveAPopup>
     size_hint: 0.5, 0.4
     pos_hint: {"right": 0.75, "top": 0.7}
     auto_dismiss: False
