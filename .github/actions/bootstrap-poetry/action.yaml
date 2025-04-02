@@ -38,8 +38,12 @@ runs:
       shell: bash
       if: ${{ env.OS_NAME != 'windows' }}
       run: poetry install
+      env:
+        OS_NAME: ${{ inputs.os }}
 
     - name: Install dependencies on Windows
-      shell: pwsh
+      shell: bash
       if: ${{ env.OS_NAME == 'windows' }}
       run: poetry install --without ios-dev
+      env:
+        OS_NAME: ${{ inputs.os }}
