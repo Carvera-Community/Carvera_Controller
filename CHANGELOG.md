@@ -1,6 +1,9 @@
+[0.8.1]
+- Fix: Windows Builds in CI to use pinning packaged manager version
+
 [0.8.0]
 - Enhancement: Added 3 axis probing screens for outside/inside corners, single axis, bore/pocket, boxx/block, and angles. Community Firmware V1.0.1c1.0.4_beta or higher is required to use.
-- Enhancement: Initial iOS platform support
+- Enhancement: Initial iOS platform support.
 - Enhancement: The ability to reduce the size of the autolevel probe area. This enables the ability to avoid probing the stock where there might be obstacles preventing probing.
 - Enhancement: tooltip support. Hover mouse cursor for 0.5s for tool tip to popup. See https://github.com/Carvera-Community/Carvera_Controller/pull/143 for more information
 - Enhancement: Added custom background images in a dropdown for the start file/probe screen to show bolt hole positions. The user can create custom ones, see release for base image files.

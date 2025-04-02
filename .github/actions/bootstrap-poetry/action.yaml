@@ -12,9 +12,9 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install poetry
+    - name: Install poetry 
       shell: bash
-      run: curl -sSL https://install.python-poetry.org | python - -y
+      run: pipx install poetry==2.1.2
 
     - name: Update poetry path
       shell: bash
