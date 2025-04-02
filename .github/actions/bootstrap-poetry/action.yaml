@@ -42,4 +42,4 @@ runs:
     - name: Install dependencies on Windows
       shell: pwsh
       if: ${{ env.OS_NAME == 'windows' }}
-      run: poetry install
+      run: poetry install --without ios-dev

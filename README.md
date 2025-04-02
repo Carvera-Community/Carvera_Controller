@@ -94,6 +94,11 @@ Once you have Poetry installed, setting up the development environment is straig
    poetry install
    ```
 
+   On Windows
+   ```bash
+   poetry install --without ios-dev
+   ```
+
    This command will create a virtual environment (if one doesn't already exist) and install all required dependencies as specified in the `pyproject.toml` file.
 
 3. Activate the virtual environment (optional, but useful for running scripts directly):

@@ -21,6 +21,8 @@ ruamel-yaml = "^0.18.6"
 poetry-dynamic-versioning = "^1.4.1"
 dunamai = "^1.22.0"
 Cython = "^3.0.11"
+
+[tool.poetry.group.ios-dev.dependencies]
 kivy-ios = { git = "https://github.com/zittix/kivy-ios.git", branch = "fix_custom_recipes" }
 
 [tool.poetry-dynamic-versioning]
