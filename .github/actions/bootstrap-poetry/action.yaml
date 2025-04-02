@@ -12,9 +12,9 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install poetry 
+    - name: Install poetry
       shell: bash
-      run: pipx install poetry==2.1.2
+      run: curl -sSL https://install.python-poetry.org | python - -y
 
     - name: Update poetry path
       shell: bash
@@ -33,7 +33,13 @@ runs:
     - name: Configure poetry
       shell: bash
       run: poetry config virtualenvs.in-project true
-
-    - name: Install dependencies
+    
+    - name: Install dependencies on non-Windows OS
       shell: bash
+      if: ${{ env.OS_NAME != 'windows' }}
+      run: poetry install
+
+    - name: Install dependencies on Windows
+      shell: pwsh
+      if: ${{ env.OS_NAME == 'windows' }}
       run: poetry install

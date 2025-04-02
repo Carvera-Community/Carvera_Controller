@@ -1,5 +1,5 @@
 [0.8.1]
-- Fix: Windows Builds in CI to use pinning packaged manager version
+- Fix: Windows Builds in CI
 
 [0.8.0]
 - Enhancement: Added 3 axis probing screens for outside/inside corners, single axis, bore/pocket, boxx/block, and angles. Community Firmware V1.0.1c1.0.4_beta or higher is required to use.
