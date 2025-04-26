@@ -1,6 +1,7 @@
 [unreleased]
 - Fix: Linux ARM64 appimage builds
 - Change: Minimum Linux X64 appimage build requires running a Linux distribution with Glibc 2.35 or above (eg. Ubuntu 22.04 or higher)
+- Fix: Show all .bin files as possible options during firmware upload
 
 [0.8.1]
 - Fix: Windows Builds in CI

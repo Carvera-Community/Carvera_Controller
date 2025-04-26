@@ -1064,7 +1064,7 @@ class DataRV(RecycleView):
         filtered_list = []
         app = App.get_running_app()
         if app.root.file_popup.firmware_mode:
-            filtered_list = filter(lambda x: x['is_dir'] or 'firmware' in x['name'], self.curr_file_list_buff)
+            filtered_list = filter(lambda x: x['is_dir'] or Path(x['name']).suffix == ".bin", self.curr_file_list_buff)
         else:
             if keyword == None or keyword.strip() == '':
                 filtered_list = self.curr_file_list_buff
