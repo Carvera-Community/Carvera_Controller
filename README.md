@@ -2,6 +2,25 @@
 
 Community developed version of the Makera Carvera Controller software.
 
+## Why use the Community Controller?
+
+The Community developed version of the Carvera Controller has a number of benefits and fixes above and beyond the Makera software.
+See the [CHANGELOG](CHANGELOG.md) for the full details.
+* 3-axis and advanced probing UI screens for various geometries (corners, axis, bore/pocket, angles) for use with a [true 3D probe](https://www.instructables.com/Carvera-Touch-Probe-Modifications/) (not the included XYZ probe block)
+* Options to reduce the autolevel probe area to avoid probing obstacles
+* Tooltip support for user guidance with over 110 tips and counting
+* Custom background images for bolt hole positions in probe/start screens; users can add their own too
+* Support for setting/changing to custom tool numbers beyond 1-6
+* Keyboard keys controlled jog movement controls
+* No dial-home back to Makera
+* Various Quality-of-life improvements:
+   * Controller config settings (UI Density, screensaver disable, Allow MDI while machine running)
+   * Enclosure light switch toggle in the center control panel
+   * Machine reconnect functionality with stored last connection and reconnect button
+   * Collet Clamp/Unclamp buttons in Tool Changer menu for the original Carvera
+   * Better file browser upload-and-select workflow
+   * Ability to scale speed/feed down to 10% and up to 300%
+
 ## Supported OS
 
 The Controller software works on the following systems:
