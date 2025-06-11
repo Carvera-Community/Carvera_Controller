@@ -76,6 +76,10 @@ def request_android_permissions():
             print(f"Error requesting permissions: {e}")
 
 from .addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS
+
+
 class Lang(Observable):
     observers = []
     lang = None
@@ -202,7 +206,7 @@ from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
 from .__version__ import __version__
 
 from kivy.lang import Builder
-from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown 
+from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown
 from .addons.probing.ProbingControls import ProbeButton
 
 def load_halt_translations(tr: Lang):
@@ -540,10 +544,10 @@ class CoordPopup(ModalView):
         self.background_image_files = []
 
         default_bkg_images = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds')
-        
+
         if os.path.exists(self.user_play_file_image_dir):
             self.background_image_files = [
-                f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")            
+                f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")
             ]
 
         for f in os.listdir(default_bkg_images):
@@ -572,7 +576,7 @@ class CoordPopup(ModalView):
         else:
             cnc_workspace = self.ids.cnc_workspace
             cnc_workspace.update_background_image("None")
-    
+
     def open_bkg_img_dir(self):
         app = App.get_running_app()
         folder_path = app.ids.coord_popup.user_play_file_image_dir
@@ -589,7 +593,7 @@ class CoordPopup(ModalView):
             subprocess.Popen(["open", folder_path])
         else:  # Linux
             subprocess.Popen(["xdg-open", folder_path])
-        
+
         folder_path = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds')
 
         # Ensure the folder exists
@@ -681,7 +685,7 @@ class CoordPopup(ModalView):
         for offset_type in ['xn_offset', 'xp_offset', 'yn_offset', 'yp_offset']:
             if self.config['leveling'][offset_type] != 0:
                 any_offsets_set = True
-        
+
         if any_offsets_set:
             self.lb_leveling.text += tr._(' Offsets: ') \
                                 + tr._(' -X: ') + '%g ' % (round(self.config['leveling']['xn_offset'],4)) \
@@ -759,7 +763,12 @@ class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+
 class MakeraConfigPanel(SettingsWithSidebar):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.register_type('pendant', SettingPendantSelector)
+
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
         if not app.root.config_loading:
@@ -954,11 +963,11 @@ class CNCWorkspace(Widget):
             Color(0, 0.8, 0, 1)
             PushMatrix()
             Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-            if not app.has_4axis: 
+            if not app.has_4axis:
                 Rotate(angle=CNC.vars['rotation_angle'])  # Use degrees directly
-            Line(width=(2 if self.config['margin']['active'] else 1), 
+            Line(width=(2 if self.config['margin']['active'] else 1),
                  rectangle=(CNC.vars['xmin'] * zoom, CNC.vars['ymin'] * zoom,
-                           (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom, 
+                           (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom,
                            (CNC.vars['ymax'] - CNC.vars['ymin']) * zoom))
             PopMatrix()
 
@@ -1667,6 +1676,10 @@ class Makera(RelativeLayout):
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
+        # Setup pendant
+        self.setup_pendant()
+        self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -1685,14 +1698,19 @@ class Makera(RelativeLayout):
             shutil.rmtree(self.temp_dir)
         except Exception as e:
             print(f"Error cleaning up temporary directory: {e}")
-        
-        # Save the last window size. 
-        # Seems that kivvy uses the window size before dpi scaling in the config, 
+
+        try:
+            self.pendant.close()
+        except Exception as e:
+            print(f"Error closing pendant: {e}")
+
+        # Save the last window size.
+        # Seems that kivvy uses the window size before dpi scaling in the config,
         # but after dp scaling in Window.size
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
-    
+
     def load_controller_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__),'controller_config.json')
         with open(config_def_file) as file:
@@ -1711,7 +1729,7 @@ class Makera(RelativeLayout):
 
     def open_download(self):
         webbrowser.open(DOWNLOAD_ADDRESS, new = 2)
-    
+
     def open_fw_download(self):
         webbrowser.open(FW_DOWNLOAD_ADDRESS, new = 2)
 
@@ -1725,12 +1743,12 @@ class Makera(RelativeLayout):
             self.file_popup.popup_manager.current = 'local_page'
             self.file_popup.open()
             self.file_popup.local_rv.child_dir('')
-    
+
     def send_bug_report(self):
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues')
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues')
         log_dir = Path.home() / ".kivy" / "logs"
-        
+
         # Open the log directory with whatever native file browser is availiable
         if sys.platform == "win32":
             os.startfile(log_dir)
@@ -1853,7 +1871,7 @@ class Makera(RelativeLayout):
         self.controller.autoCommand(apply_margin, apply_zprobe,
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
-                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer, 
+                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer,
                                     [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']])
 
         # change back to last tool if needed
@@ -1974,7 +1992,7 @@ class Makera(RelativeLayout):
             try:
                 # Request permissions first
                 request_android_permissions()
-                
+
                 # Add primary storage path
                 android_storage_path = primary_external_storage_path()
                 if android_storage_path and os.path.exists(android_storage_path):
@@ -2092,7 +2110,7 @@ class Makera(RelativeLayout):
         if self.past_machine_addr:
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
-            else: 
+            else:
                 Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
@@ -2147,7 +2165,7 @@ class Makera(RelativeLayout):
             return False
         self.store_machine_address(ip)
         self.openWIFI(ip)
-    
+
     def store_machine_address(self, address):
         Config.set('carvera', 'address', address)
         Config.write()
@@ -2519,7 +2537,7 @@ class Makera(RelativeLayout):
                         self.setting_list[key.strip()] = value.strip()
                     except AttributeError:
                         Clock.schedule_once(partial(self.load_error, tr._('Error loading machine config setting. Possibly malformed value.\nSkipping setting key: ') + str(key)), 0)
-            
+
             self.load_coordinates()
             self.load_laser_offsets()
             self.setting_change_list = {}
@@ -3606,7 +3624,7 @@ class Makera(RelativeLayout):
         for panel in panels.values():
             if panel.title == 'Controller':
                 controller_config_panels = 1
-        
+
         if len(panels.values()) - controller_config_panels > 0:
             # already have panels, update data
             for panel in panels.values():
@@ -3631,7 +3649,7 @@ class Makera(RelativeLayout):
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
-                            
+
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
                         elif child.section.lower() not in ['restore','default', 'carvera', 'graphics', 'kivy']:
@@ -3658,7 +3676,7 @@ class Makera(RelativeLayout):
             if app.model == 'CA1':
                 # The Carvera Air generally uses the same default values as the original Carvera
                 # However if there are any differences we store them in a seperate config file
-            
+
                 ca1_config_diff_file = os.path.join(os.path.dirname(__file__), "config_ca1_diff.json")
                 with open(ca1_config_diff_file, 'r') as fd:
                     ca1_diff_data = json.loads(fd.read())
@@ -3667,7 +3685,7 @@ class Makera(RelativeLayout):
                     for setting in data:
                         if (ca1_diff_setting.get("key") == setting.get("key")) and (ca1_diff_setting.get("section") == setting.get("section")):
                             setting.update(ca1_diff_setting)
-            
+
             basic_config = []
             advanced_config = []
             restore_config = []
@@ -3737,8 +3755,8 @@ class Makera(RelativeLayout):
         if not app.root.show_advanced_jog_controls:
             app.root.keyboard_jog_control = False
             app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)    
-    
+            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+
     def toggle_keyboard_jog_control(self):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
@@ -3747,7 +3765,24 @@ class Makera(RelativeLayout):
             Window.bind(on_key_down=self._keyboard_jog_keydown)
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown)
-    
+
+    def setup_pendant(self):
+        self.handle_pendant_disconnected()
+
+        type = Config.get('carvera', 'pendant_type')
+        self.pendant = SUPPORTED_PENDANTS[type](self.controller, self.cnc,
+                                self.handle_pendant_connected,
+                                self.handle_pendant_disconnected)
+
+    def handle_pendant_connected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant Jogging')
+        self.ids.pendant_jogging_en_btn.disabled = False
+        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default else 'normal'
+
+    def handle_pendant_disconnected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant Connected')
+        self.ids.pendant_jogging_en_btn.disabled = True
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
@@ -3758,7 +3793,7 @@ class Makera(RelativeLayout):
                            self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
-    
+
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
 
@@ -3794,14 +3829,18 @@ class Makera(RelativeLayout):
         self.message_popup.lb_content.text = tr._('Settings applied, need machine reset to take effect !')
         self.message_popup.open()
 
-    
+
     def apply_controller_setting_changes(self):
         if self.controller_setting_change_list.get("ui_density_override") or self.controller_setting_change_list.get("ui_density"):
             self.message_popup.lb_content.text = tr._('UI Density changed, restart application to apply.')
             self.message_popup.open()
-        
+
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
+
+        if "pendant_type" in self.controller_setting_change_list:
+            self.pendant.close()
+            self.setup_pendant()
 
         self.config_popup.btn_apply.disabled = True
 
@@ -4153,8 +4192,8 @@ class MakeraApp(App):
         self.title = tr._('Carvera Controller Community') + ' v' + __version__
         self.icon = os.path.join(os.path.dirname(__file__), 'icon.png')
 
-        return Makera(ctl_version=__version__) 
-    
+        return Makera(ctl_version=__version__)
+
     def on_start(self):
         Window.update_viewport()
 

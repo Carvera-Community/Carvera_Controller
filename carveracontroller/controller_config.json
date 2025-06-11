@@ -62,6 +62,22 @@
         "section": "kivy",
         "key": "keyboard_mode",
         "default": "",
-        "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"] 
+        "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"]
+    },
+    {
+        "type": "pendant",
+        "title": "Use Hardware Pendant",
+        "desc": "Select a hardware pendant to use with Carvera.",
+        "section": "carvera",
+        "key": "pendant_type",
+        "default": "None"
+    },
+    {
+        "type": "bool",
+        "title": "Jogging Via Pendant Is Default",
+        "desc": "This defines if the pendant jogging is automatically active on the jog screen",
+        "section": "carvera",
+        "key": "pendant_jogging_default",
+        "default": "true"
     }
 ]
