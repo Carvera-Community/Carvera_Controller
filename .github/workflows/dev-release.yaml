@@ -207,7 +207,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: dev # This may also be of the form 'refs/tags/staging'
-          assets: 'carveracontroller-comunity-*'
+          assets: 'carveracontroller-community-*'
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
