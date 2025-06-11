@@ -5,6 +5,9 @@
 - Enhancement: Controller support for updating setting definition if machine model is CA1 (via config_ca1_diff.json)
 - Change: Better wording on the xyz probe screen about block thickness
 - Enhancement: Added Ext Control switch to centre control panel
+- Enhancement: Initial Android builds
+- Fix: Compressed gcode now stored in temp directory if source directory isn't writable
+- Fix: Fix MDI window showing the keyboard for onscreen keyboard devices on iOS
 
 [0.8.2]
 - Fix: Linux ARM64 appimage builds
