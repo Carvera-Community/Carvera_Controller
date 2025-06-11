@@ -12,6 +12,7 @@ python = "<3.14,>=3.8"
 Kivy = "^2.3.0"
 pyserial = "^3.5"
 pyquicklz = "^1.4.1"
+hid = "^1.0.7"
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.11.0"
