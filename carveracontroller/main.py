@@ -21,6 +21,9 @@ import threading
 import logging
 
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS
+
+
 class Lang(Observable):
     observers = []
     lang = None
@@ -677,7 +680,12 @@ class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+
 class MakeraConfigPanel(SettingsWithSidebar):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.register_type('pendant', SettingPendantSelector)
+
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
         if not app.root.config_loading:
@@ -1563,6 +1571,10 @@ class Makera(RelativeLayout):
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
+        # Setup pendant
+        self.setup_pendant()
+        self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -1577,9 +1589,14 @@ class Makera(RelativeLayout):
             shutil.rmtree(self.temp_dir)
         except Exception as e:
             print(f"Error cleaning up temporary directory: {e}")
-        
-        # Save the last window size. 
-        # Seems that kivvy uses the window size before dpi scaling in the config, 
+
+        try:
+            self.pendant.close()
+        except Exception as e:
+            print(f"Error closing pendant: {e}")
+
+        # Save the last window size.
+        # Seems that kivvy uses the window size before dpi scaling in the config,
         # but after dp scaling in Window.size
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
@@ -3576,7 +3593,24 @@ class Makera(RelativeLayout):
             Window.bind(on_key_down=self._keyboard_jog_keydown)
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown)
-    
+
+    def setup_pendant(self):
+        self.handle_pendant_disconnected()
+
+        type = Config.get('carvera', 'pendant_type')
+        self.pendant = SUPPORTED_PENDANTS[type](self.controller, self.cnc,
+                                self.handle_pendant_connected,
+                                self.handle_pendant_disconnected)
+
+    def handle_pendant_connected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant Jogging')
+        self.ids.pendant_jogging_en_btn.disabled = False
+        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default else 'normal'
+
+    def handle_pendant_disconnected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant Connected')
+        self.ids.pendant_jogging_en_btn.disabled = True
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
@@ -3631,6 +3665,10 @@ class Makera(RelativeLayout):
         
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
+
+        if "pendant_type" in self.controller_setting_change_list:
+            self.pendant.close()
+            self.setup_pendant()
 
         self.config_popup.btn_apply.disabled = True
 
