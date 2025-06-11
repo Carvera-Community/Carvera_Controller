@@ -296,9 +296,12 @@ class Controller:
     def clearAutoLeveling(self):
         self.executeCommand("M370\n")
 
-    def setSpindleSwitch(self, switch, rpm):
+    def setSpindleSwitch(self, switch, rpm=None):
         if switch:
-            self.executeCommand("M3 S%d\n" % (rpm))
+            if rpm is None:
+                self.executeCommand("M3\n")
+            else:
+                self.executeCommand("M3 S%d\n" % (rpm))
         else:
             self.executeCommand("M5\n")
 
