@@ -3776,8 +3776,10 @@ class Makera(RelativeLayout):
     def setup_pendant(self):
         self.handle_pendant_disconnected()
 
-        type = Config.get('carvera', 'pendant_type')
-        self.pendant = SUPPORTED_PENDANTS[type](self.controller, self.cnc,
+        type_name = Config.get('carvera', 'pendant_type')
+        pendant_type = SUPPORTED_PENDANTS.get(type_name, SUPPORTED_PENDANTS["None"])
+
+        self.pendant = pendant_type(self.controller, self.cnc,
                                 self.is_jogging_enabled,
                                 self.handle_pendant_connected,
                                 self.handle_pendant_disconnected)
