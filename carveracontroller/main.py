@@ -3757,6 +3757,13 @@ class Makera(RelativeLayout):
             app.root.ids.kb_jog_btn.state = 'normal'
             Window.unbind(on_key_down=self._keyboard_jog_keydown)
 
+    def is_jogging_enabled(self):
+        app = App.get_running_app()
+        return (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open()
+
+    def is_pendant_jogging_enabled(self):
+        return self.pendant_jogging_en_bt.state == 'down' and self.is_jogging_enabled()
+
     def toggle_keyboard_jog_control(self):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
@@ -3771,6 +3778,7 @@ class Makera(RelativeLayout):
 
         type = Config.get('carvera', 'pendant_type')
         self.pendant = SUPPORTED_PENDANTS[type](self.controller, self.cnc,
+                                self.is_jogging_enabled,
                                 self.handle_pendant_connected,
                                 self.handle_pendant_disconnected)
 
@@ -3798,7 +3806,7 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open():
+        if self.is_jogging_enabled():
             key = args[1]  # keycode
             if key == 274:  # down button
                 app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
