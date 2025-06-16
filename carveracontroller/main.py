@@ -733,7 +733,7 @@ class MakeraConfigPanel(SettingsWithSidebar):
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
         if not app.root.config_loading:
-            if section in ['carvera', 'graphics']:
+            if section in ['carvera', 'graphics', 'kivy']:
                 app.root.controller_setting_change_list[key] = value
                 app.root.config_popup.btn_apply.disabled = False
             elif section != 'Restore':

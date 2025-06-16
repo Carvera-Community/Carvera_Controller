@@ -6,5 +6,53 @@
         "section": "Advanced",
         "key": "delta_steps_per_mm",
         "default": "888.888889"
+    },
+        {
+        "type": "numeric",
+        "title": "Max Rotation Speed",
+        "desc": "Max rotation speed rate for A axis (degree/min)",
+        "section": "Advanced",
+        "key": "delta_max_rate",
+        "default": "2400"
+    },
+    {
+        "type": "bool",
+        "title": "Beeper on",
+        "desc": "Whether the beeper is enabled",
+        "section": "Basic",
+        "key": "switch.beep.enable",
+        "default": "true"
+    },
+    {
+        "type": "numeric",
+        "title": "X Min Coordinate",
+        "desc": "Minimum X axis coordinate",
+        "section": "Advanced",
+        "key": "soft_endstop.x_min",
+        "default": "-302.0"
+    },
+    {
+        "type": "numeric",
+        "title": "Y Min Coordinate",
+        "desc": "Minimum Y axis coordinate",
+        "section": "Advanced",
+        "key": "soft_endstop.y_min",
+        "default": "-212.0"
+    },
+    {
+        "type": "numeric",
+        "title": "Z Min Coordinate",
+        "desc": "Minimum Z axis coordinate",
+        "section": "Advanced",
+        "key": "soft_endstop.z_min",
+        "default": "-121.0"
+    },
+    {
+        "type": "bool",
+        "title": "Soft Limits",
+        "desc": "Enabled to precheck if gCode commands will exceed the travel limits",
+        "section": "Advanced",
+        "key": "soft_endstop.enable",
+        "default": "false"
     }
 ]
