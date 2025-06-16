@@ -11,14 +11,15 @@ from kivy.uix.togglebutton import ToggleButton
 
 class Pendant:
     def __init__(self, controller: Controller, cnc: CNC,
+                 is_jogging_enabled: Callable[[], None],
                  report_connection: Callable[[], None],
                  report_disconnection: Callable[[], None]) -> None:
         self._controller = controller
         self._cnc = cnc
+
+        self._is_jogging_enabled = is_jogging_enabled
         self._report_connection = report_connection
         self._report_disconnection = report_disconnection
-
-        self.is_jogging_enabled = False
 
     def close(self) -> None:
         pass
@@ -61,7 +62,7 @@ class WHB04(Pendant):
         daemon.set_display_position(whb04.Axis.A, self._cnc.vars["wa"])
 
     def _handle_jogging(self, daemon: whb04.Daemon, steps: int) -> None:
-        if not self.is_jogging_enabled:
+        if not self._is_jogging_enabled():
             return
 
         distance = steps * daemon.step_size_value
