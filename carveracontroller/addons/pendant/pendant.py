@@ -1,7 +1,10 @@
 from typing import Callable
+
+import logging
+logger = logging.getLogger(__name__)
+
 from ...CNC import CNC
 from ...Controller import Controller
-from . import whb04
 
 from kivy.clock import Clock
 from kivy.uix.settings import SettingItem
@@ -32,60 +35,70 @@ class NonePendant(Pendant):
         super().__init__(*args, **kwargs)
 
 
-class WHB04(Pendant):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+try:
+    from . import whb04
+    WHB04_SUPPORTED = True
+except Exception as e:
+    logger.warn(f"WHB04 pendant not supported: {e}")
+    WHB04_SUPPORTED = False
 
-        self._is_spindle_running = False
+if WHB04_SUPPORTED:
+    class WHB04(Pendant):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
 
-        self._daemon = whb04.Daemon(self.executor)
+            self._is_spindle_running = False
 
-        self._daemon.on_connect = self._handle_connect
-        self._daemon.on_disconnect = self._handle_disconnect
-        self._daemon.on_update = self._handle_display_update
-        self._daemon.on_jog = self._handle_jogging
-        self._daemon.on_button_press = self._handle_button_press
+            self._daemon = whb04.Daemon(self.executor)
 
-        self._daemon.start()
+            self._daemon.on_connect = self._handle_connect
+            self._daemon.on_disconnect = self._handle_disconnect
+            self._daemon.on_update = self._handle_display_update
+            self._daemon.on_jog = self._handle_jogging
+            self._daemon.on_button_press = self._handle_button_press
 
-    def _handle_connect(self, daemon: whb04.Daemon) -> None:
-        daemon.set_display_step_indicator(whb04.StepIndicator.STEP)
-        self._report_connection()
+            self._daemon.start()
 
-    def _handle_disconnect(self, daemon: whb04.Daemon) -> None:
-        self._report_disconnection()
+        def _handle_connect(self, daemon: whb04.Daemon) -> None:
+            daemon.set_display_step_indicator(whb04.StepIndicator.STEP)
+            self._report_connection()
 
-    def _handle_display_update(self, daemon: whb04.Daemon) -> None:
-        daemon.set_display_position(whb04.Axis.X, self._cnc.vars["wx"])
-        daemon.set_display_position(whb04.Axis.Y, self._cnc.vars["wy"])
-        daemon.set_display_position(whb04.Axis.Z, self._cnc.vars["wz"])
-        daemon.set_display_position(whb04.Axis.A, self._cnc.vars["wa"])
+        def _handle_disconnect(self, daemon: whb04.Daemon) -> None:
+            self._report_disconnection()
 
-    def _handle_jogging(self, daemon: whb04.Daemon, steps: int) -> None:
-        if not self._is_jogging_enabled():
-            return
+        def _handle_display_update(self, daemon: whb04.Daemon) -> None:
+            daemon.set_display_position(whb04.Axis.X, self._cnc.vars["wx"])
+            daemon.set_display_position(whb04.Axis.Y, self._cnc.vars["wy"])
+            daemon.set_display_position(whb04.Axis.Z, self._cnc.vars["wz"])
+            daemon.set_display_position(whb04.Axis.A, self._cnc.vars["wa"])
 
-        distance = steps * daemon.step_size_value
-        axis = daemon.active_axis_name
+        def _handle_jogging(self, daemon: whb04.Daemon, steps: int) -> None:
+            if not self._is_jogging_enabled():
+                return
 
-        if axis not in "XYZA":
-            return
+            distance = steps * daemon.step_size_value
+            axis = daemon.active_axis_name
 
-        self._controller.jog(f"{axis}{distance}")
+            if axis not in "XYZA":
+                return
 
-    def _handle_button_press(self, daemon: whb04.Daemon, button: whb04.Button) -> None:
-        if button == whb04.Button.S_ON_OFF:
-            self._is_spindle_running = not self._is_spindle_running
-            self._controller.setSpindleSwitch(self._is_spindle_running)
+            self._controller.jog(f"{axis}{distance}")
 
-        if button == whb04.Button.RESET:
-            self._controller.estopCommand()
+        def _handle_button_press(self, daemon: whb04.Daemon, button: whb04.Button) -> None:
+            if button == whb04.Button.S_ON_OFF:
+                self._is_spindle_running = not self._is_spindle_running
+                self._controller.setSpindleSwitch(self._is_spindle_running)
 
+            if button == whb04.Button.RESET:
+                self._controller.estopCommand()
+                
 
 SUPPORTED_PENDANTS = {
-    "None": NonePendant,
-    "WHB04": WHB04
+    "None": NonePendant
 }
+
+if WHB04_SUPPORTED:
+    SUPPORTED_PENDANTS["WHB04"] = WHB04
 
 
 class SettingPendantSelector(SettingItem):
