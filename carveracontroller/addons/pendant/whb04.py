@@ -4,8 +4,57 @@ from enum import Enum
 import struct
 import threading
 import time
-from typing import Callable, Optional
+from typing import Callable, List, Optional
+import platform
+
 import hid
+
+# On Windows, the pendant is represented by two devices, meanwhile on Linux
+# the pendant is a single device. Let's abstract this away into the PendantHid class:
+if platform.system() == "Windows":
+    class PendantHid:
+        def __init__(self, devices: List[hid.DeviceInfo]) -> None:
+            assert len(devices) == 2, "Two devices are expected"
+
+            read_path, write_path = None, None
+            for dev in devices:
+                path_str = dev["path"].decode() if isinstance(dev["path"], bytes) else dev["path"]
+                if "col01" in path_str.lower():
+                    read_path = dev["path"]
+                elif "col02" in path_str.lower():
+                    write_path = dev["path"]
+
+            if read_path and write_path:
+                self.read_dev = hid.Device(path=read_path)
+                self.write_dev = hid.Device(path=write_path)
+            else:
+                raise RuntimeError("Cannot open pendant HIDs")
+
+        def read(self, *args, **kwargs):
+            return self.read_dev.read(*args, **kwargs)
+
+        def send_feature_report(self, data):
+            return self.write_dev.send_feature_report(data)
+
+        def close(self):
+            self.read_dev.close()
+            self.write_dev.close()
+
+        def __enter__(self):
+            self.read_dev.__enter__()
+            self.write_dev.__enter__()
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.read_dev.__exit__(exc_type, exc_val, exc_tb)
+            self.write_dev.__exit__(exc_type, exc_val, exc_tb)
+else:
+    class PendantHid(hid.Device):
+        def __init__(self, devices: List[hid.DeviceInfo]) -> None:
+            unique_paths = {dev["path"] for dev in devices}
+            assert len(unique_paths) == 1, "Only one device is expected"
+            super().__init__(path=devices[0]["path"])
+
 
 class Button(Enum):
     RESET = 0x01
@@ -231,15 +280,16 @@ class Daemon:
                 if self.on_disconnect is not None:
                         self.callback_executor(lambda: self.on_disconnect(self))
 
-    def _connect(self, poll_interval: float = 0.1) -> Optional[hid.Device]:
+    def _connect(self, poll_interval: float = 0.1) -> Optional[PendantHid]:
         while self._is_running:
-            for dev_info in hid.enumerate():
-                if (dev_info["vendor_id"], dev_info["product_id"]) in self.DEVICE_IDS:
-                    return hid.Device(path=dev_info["path"])
+            devices = [d for d in hid.enumerate() if (d["vendor_id"], d["product_id"]) in self.DEVICE_IDS]
+            if len(devices) > 0:
+                return PendantHid(devices)
             time.sleep(poll_interval)
+
         return None
 
-    def _device_loop(self, device: hid.Device) -> None:
+    def _device_loop(self, device: PendantHid) -> None:
         while self._is_running:
             data = device.read(8, timeout=100)
             if len(data) > 0:
@@ -312,7 +362,7 @@ class Daemon:
             if self.on_jog is not None:
                 self.callback_executor(lambda d=jog_delta: self.on_jog(self, d))
 
-    def _refresh_display(self, device: hid.Device) -> None:
+    def _refresh_display(self, device: PendantHid) -> None:
         """
         Refreshes the display of the pedant.
         This method should be overridden to implement specific display logic.
