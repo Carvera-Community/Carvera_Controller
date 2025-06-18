@@ -5,6 +5,7 @@ from kivy.uix.textinput import TextInput
 from carveracontroller.addons.probing.operations.ConfigUtils import ConfigUtils
 from carveracontroller.addons.probing.operations.OperationsBase import ProbeSettingDefinition
 from carveracontroller.addons.probing.operations.OutsideCorner.OutsideCornerParameterDefinitions import OutsideCornerParameterDefinitions
+from carveracontroller.addons.probing.ProbingControls import ProbeZeroXYZDropDown
 
 class OutsideCornerSettings(BoxLayout):
     config_filename = "outside-corner-settings.json"
@@ -13,6 +14,7 @@ class OutsideCornerSettings(BoxLayout):
     def __init__(self, **kwargs):
         super(OutsideCornerSettings, self).__init__(**kwargs)
         self.config = ConfigUtils.load_config(self.config_filename)
+        self.probe_xyz_drop_down = ProbeZeroXYZDropDown()
 
     def setting_changed(self, key: str, value: float):
         param = getattr(OutsideCornerParameterDefinitions, key, None)
@@ -42,4 +44,4 @@ class OutsideCornerSettings(BoxLayout):
             else:
                 print("no control with name: " + name)
 
-        return self.config;
+        return self.config

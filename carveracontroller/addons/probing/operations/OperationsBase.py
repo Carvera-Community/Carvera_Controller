@@ -42,5 +42,3 @@ class ProbeSettingDefinition:
         self.code = g_code_param
         self.description = description
         self.is_required = is_required
-
-

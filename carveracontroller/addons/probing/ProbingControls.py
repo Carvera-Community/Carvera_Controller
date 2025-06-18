@@ -1,6 +1,6 @@
 from kivy.uix.gridlayout import GridLayout
 from kivy.properties import StringProperty
-from ...addons.tooltips.Tooltips import ToolTipButton
+from ...addons.tooltips.Tooltips import ToolTipButton, ToolTipDropDown
 
 
 class ProbeButton(ToolTipButton):
@@ -12,3 +12,6 @@ class ProbeButton(ToolTipButton):
     def on_size(self, *args):
         pass
         #at some point add code to respect halign and valign in img
+
+class ProbeZeroXYZDropDown(ToolTipDropDown):
+    pass

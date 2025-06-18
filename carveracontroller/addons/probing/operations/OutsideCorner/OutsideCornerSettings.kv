@@ -148,9 +148,11 @@
                 hint_text: 'Zero X/Y/Z Position'
                 Button:
                     text: tr._('Disabled')
+                    id: ZeroXYPosition
                     center: 0.5, 0.5
                     height: '35dp'
-                    on_release: app.root.probe_xyz_drop_down.open(self)
+                    on_release: root.probe_xyz_drop_down.open(self)
+                    
 
             ProbeSettingLabel:
                 label_text: 'I Normally Closed:'
@@ -168,12 +170,27 @@
                     on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")
 
 <ProbeZeroXYZDropDown>:
+    on_select: app.root.probing_popup.outside_corner_settings.ids["ZeroXYPosition"].text = args[1]
+    Button:
+        text: tr._('Disabled')
+        size_hint_y: None
+        height: '40dp'
+        on_release:
+            app.root.probing_popup.outside_corner_settings.setting_changed('ZeroXYPosition', "0")
+            root.select(self.text)
+
     Button:
         text: tr._('X/Y')
         size_hint_y: None
         height: '40dp'
+        on_release:
+            app.root.probing_popup.outside_corner_settings.setting_changed('ZeroXYPosition', "1")
+            root.select(self.text)
 
     Button:
         text: tr._('X/Y/Z')
         size_hint_y: None
         height: '40dp'
+        on_release:
+            app.root.probing_popup.outside_corner_settings.setting_changed('ZeroXYPosition', "2")
+            root.select(self.text)

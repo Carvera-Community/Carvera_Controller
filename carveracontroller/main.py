@@ -747,9 +747,6 @@ class MakeraConfigPanel(SettingsWithSidebar):
 class JogSpeedDropDown(ToolTipDropDown):
     pass
 
-class ProbeZeroXYZDropDown(ToolTipDropDown):
-    pass
-
 class XDropDown(ToolTipDropDown):
     pass
 
@@ -1579,7 +1576,6 @@ class Makera(RelativeLayout):
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
         self.jog_speed_drop_down = JogSpeedDropDown()
-        self.probe_xyz_drop_down = ProbeZeroXYZDropDown()
 
         self.confirm_popup = ConfirmPopup()
         self.message_popup = MessagePopup()
