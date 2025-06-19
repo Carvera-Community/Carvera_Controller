@@ -11,6 +11,7 @@
 - Fix: Fix MDI window showing the keyboard for onscreen keyboard devices on iOS
 - Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual
 - Enhancement: Default the values in the Set Origin screen to the current origin offsets
+- Enhancement: Switch to File view after starting gcode playback
 
 [0.8.2]
 - Fix: Linux ARM64 appimage builds

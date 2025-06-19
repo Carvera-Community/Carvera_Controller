@@ -2904,10 +2904,14 @@
                     root.dismiss()
             Button:
                 text: tr._('Run') if root.mode == 'Run' else tr._('Do ') + root.mode
-                on_release:
+                on_release: 
                     root.dismiss()
                     if root.mode == 'Run': app.root.play(app.selected_remote_filename)
                     else: app.root.apply()
+                    app.root.content.transition.direction = 'right'
+                    app.root.content.current = 'File'
+                    app.root.cmd_manager.transition.direction = 'right'
+                    app.root.cmd_manager.current = 'gcode_cmd_page'
 
 <SwitchBox@BoxLayout>:
     label: ''
