@@ -361,6 +361,25 @@ class OriginPopup(ModalView):
         self.coord_popup = coord_popup
         super(OriginPopup, self).__init__(**kwargs)
 
+    def on_open(self):
+        super().on_open()
+        # Use the same logic as CoordPopup.load_origin_label to set offsets
+        app = App.get_running_app()
+        if app.has_4axis:
+            x = round(CNC.vars["wcox"] - CNC.vars['anchor1_x'] - CNC.vars['rotation_offset_x'], 4)
+            y = round(CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['rotation_offset_y'], 4)
+        else:
+            laser_x = CNC.vars['laser_module_offset_x'] if CNC.vars['lasermode'] else 0.0
+            laser_y = CNC.vars['laser_module_offset_y'] if CNC.vars['lasermode'] else 0.0
+            if self.coord_popup.config['origin']['anchor'] == 2:
+                x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
+                y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
+            else:
+                x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4)
+                y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)
+        self.txt_x_offset.text = str(x)
+        self.txt_y_offset.text = str(y)
+
     def selected_anchor(self):
         if self.cbx_anchor2.active:
             return 2
@@ -2937,7 +2956,7 @@ class Makera(RelativeLayout):
             if not self.file_popup.firmware_mode:
                 self.update_recent_local_dir_list(os.path.dirname(self.uploading_file))
 
-            # If it is a compressed ‘.lz’ file, wait for the decompression to complete.
+            # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith('.lz'):
                 self.log = logging.getLogger('File.Decompress')
                 self.decompstatus = True
