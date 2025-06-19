@@ -163,7 +163,8 @@
 
                 ToolTipButton:
                     id: ZeroXYPosition
-                    text:  ["Disabled", "X/Y", "X/Y/Z"][int(root.get_setting('ZeroXYPosition'))]  # get_setting() returns an int, so doing an inline mapping to the display text here
+                    # In the below get_setting() returns an int, so doing an inline mapping to the display text here
+                    text: ["Disabled", "X/Y", "X/Y/Z"][int(root.get_setting('ZeroXYPosition') or '0')]
                     tooltip_txt: tr._('This switch will set your current WCS to the center of the bore/pocket you are probing')
                     canvas.before:
                         Color:
