@@ -11,6 +11,7 @@
 - Fix: Fix MDI window showing the keyboard for onscreen keyboard devices on iOS
 - Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual.
 - Fix: Invisible jog control panel buttons clickable when panel disabled.
+- Change: Add UI to select X/Y or X/Y/Z WCS zeroing during 3D probing of corners and boss
 
 [0.8.2]
 - Fix: Linux ARM64 appimage builds
