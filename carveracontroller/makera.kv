@@ -3513,7 +3513,7 @@
 
                             BoxLayout:
                                 BoxLayout:
-                                    disabled: app.state != 'Idle'
+                                    disabled: not root.show_advanced_jog_controls or app.state != 'Idle'
                                     orientation: 'horizontal'
                                     size_hint_y: 0.4
                                     opacity: 1 if root.show_advanced_jog_controls else 0

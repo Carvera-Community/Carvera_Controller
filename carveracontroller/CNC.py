@@ -452,16 +452,21 @@ class CNC:
         xyz = []
 
         # Execute g-code
-        if self.gcode in (0, 1):	# fast move or line
-            if self.dx != 0.0 or \
-                    self.dy != 0.0 or \
-                    self.dz != 0.0 or \
-                    self.da != 0.0:
-                # xyz.append((self.x, self.y, self.z, self.a))
-                xyz.append((self.xval, self.yval, self.zval, self.aval))
+        if self.gcode in (0, 1):    # fast move or line
+            # If any axis is moving, interpolate all axes including A
+            if self.dx != 0.0 or self.dy != 0.0 or self.dz != 0.0 or self.da != 0.0:
+                # Determine the number of interpolation steps based on the largest movement
+                max_delta = max(abs(self.dx), abs(self.dy), abs(self.dz), abs(self.da))
+                steps = max(int(max_delta / 0.5), 1)  # 0.5 is an arbitrary resolution, adjust as needed
+                for i in range(1, steps + 1):
+                    t = i / steps
+                    x = self.x + t * self.dx
+                    y = self.y + t * self.dy
+                    z = self.z + t * self.dz
+                    a = self.a + t * self.da
+                    xyz.append((x, y, z, a))
 
-        elif self.gcode in (2, 3):	# CW = 2, CCW = 3 circle
-            # xyz.append((self.x, self.y, self.z, self.a))
+        elif self.gcode in (2, 3):    # CW = 2, CCW = 3 circle
             uc, vc = self.motionCenter()
 
             gcode = self.gcode
@@ -469,24 +474,30 @@ class CNC:
                 u0 = self.x
                 v0 = self.y
                 w0 = self.z
+                a0 = self.a
                 u1 = self.xval
                 v1 = self.yval
                 w1 = self.zval
+                a1 = self.aval
             elif self.plane == XZ:
                 u0 = self.x
                 v0 = self.z
                 w0 = self.y
+                a0 = self.a
                 u1 = self.xval
                 v1 = self.zval
                 w1 = self.yval
-                gcode = 5 - gcode	# flip 2-3 when XZ plane is used
+                a1 = self.aval
+                gcode = 5 - gcode    # flip 2-3 when XZ plane is used
             else:
                 u0 = self.y
                 v0 = self.z
                 w0 = self.x
+                a0 = self.a
                 u1 = self.yval
                 v1 = self.zval
                 w1 = self.xval
+                a1 = self.aval
             phi0 = math.atan2(v0-vc, u0-uc)
             phi1 = math.atan2(v1-vc, u1-uc)
             try:
@@ -499,40 +510,48 @@ class CNC:
             else:
                 df = math.pi / 4.0
 
+            # Interpolate A axis
+            da = a1 - a0
+            dphi = phi1 - phi0 if (phi1 - phi0) != 0 else 1e-9  # avoid division by zero
+
             if gcode == 2:
                 if phi1 >= phi0 - 1e-10: phi1 -= 2.0 * math.pi
                 ws  = (w1 - w0) / (phi1 - phi0)
+                as_ = da / (phi1 - phi0)
                 phi = phi0 - df
                 while phi > phi1:
                     u = uc + self.rval * math.cos(phi)
                     v = vc + self.rval * math.sin(phi)
                     w = w0 + (phi - phi0) * ws
-                    phi -= df
+                    a = a0 + (phi - phi0) * as_
                     if self.plane == XY:
-                        xyz.append((u, v, w, self.a))
+                        xyz.append((u, v, w, a))
                     elif self.plane == XZ:
-                        xyz.append((u, w, v, self.a))
+                        xyz.append((u, w, v, a))
                     else:
-                        xyz.append((w, u, v, self.a))
+                        xyz.append((w, u, v, a))
+                    phi -= df
             else:
                 if phi1 <= phi0 + 1e-10: phi1 += 2.0 * math.pi
                 ws  = (w1 - w0) / (phi1 - phi0)
+                as_ = da / (phi1 - phi0)
                 phi = phi0 + df
                 while phi < phi1:
                     u = uc + self.rval * math.cos(phi)
                     v = vc + self.rval * math.sin(phi)
                     w = w0 + (phi - phi0) * ws
-                    phi += df
+                    a = a0 + (phi - phi0) * as_
                     if self.plane == XY:
-                        xyz.append((u, v, w, self.a))
+                        xyz.append((u, v, w, a))
                     elif self.plane == XZ:
-                        xyz.append((u, w, v, self.a))
+                        xyz.append((u, w, v, a))
                     else:
-                        xyz.append((w, u, v, self.a))
+                        xyz.append((w, u, v, a))
+                    phi += df
 
             xyz.append((self.xval, self.yval, self.zval, self.aval))
 
-        elif self.gcode == 4:		# Dwell
+        elif self.gcode == 4:        # Dwell
             pass
             # self.totalTime += self.pval
 
@@ -570,7 +589,7 @@ class CNC:
 
                 # Move to original position
                 z = clearz
-                xyz.append((x, y, z, a))	# ???
+                xyz.append((x, y, z, a))    # ???
         return xyz
 
     #----------------------------------------------------------------------

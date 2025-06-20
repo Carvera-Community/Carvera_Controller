@@ -42,4 +42,4 @@ class OutsideCornerSettings(BoxLayout):
             else:
                 print("no control with name: " + name)
 
-        return self.config;
+        return self.config

@@ -45,5 +45,5 @@ void main (void){
     float dot_val = dot(normal_vec.xyz,vec3(1.0,1.0,1.0));
     vec3 color= vec3(0.3,0.3,1.0)*abs(dot_val);
     
-    gl_FragColor = vec4( color,1.0);
+    gl_FragColor = vec4( color,0.3);
 }

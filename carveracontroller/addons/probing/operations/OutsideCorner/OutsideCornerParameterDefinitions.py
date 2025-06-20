@@ -25,7 +25,7 @@ class OutsideCornerParameterDefinitions:
     BottomSurfaceRetract = ProbeSettingDefinition('C', "Btm Retract", False,
                                                   "optional parameter, if H is enabled and the probe happens, this is how far to retract off the bottom surface of the part. Defaults to 2mm")
 
-    ZeroXYPosition = ProbeSettingDefinition('S', "ZeroXY", False, "save corner position as new WCS Zero in X and Y")
+    ZeroXYPosition = ProbeSettingDefinition('S', "ZeroXY", False, "save corner position as new WCS Zero in X and Y if 1, X/Y and Z if 2. Do nothing if 0.")
 
     ProbeTipDiameter = ProbeSettingDefinition('D', "Tip Dia", False, "Probe Tip Diameter, stored in config")
 

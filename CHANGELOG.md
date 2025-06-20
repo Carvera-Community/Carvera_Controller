@@ -1,7 +1,7 @@
 [unreleased]
 - Enhancement: Initial support for rotated WCS in visualizations
 - Change: Minimum Python version increased to 3.9
-- Change: Controller no longer warnings about missing config key values in MDI because it's assumed that firmware defaults are used instead
+- Change: Controller no longer warns about missing config key values in MDI because it's assumed that firmware defaults are used instead
 - Enhancement: Controller support for updating setting definition if machine model is CA1 (via config_ca1_diff.json)
 - Enhancement: Support for controller Carvera Air beeper through controller settings
 - Change: Better wording on the xyz probe screen about block thickness
@@ -9,9 +9,13 @@
 - Enhancement: Initial Android builds
 - Fix: Compressed gcode now stored in temp directory if source directory isn't writable
 - Fix: Fix MDI window showing the keyboard for onscreen keyboard devices on iOS
+- Fix: Invisible jog control panel buttons clickable when panel disabled.
+- Change: Add UI to select X/Y or X/Y/Z WCS zeroing during 3D probing of corners and boss
 - Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual
 - Enhancement: Default the values in the Set Origin screen to the current origin offsets
 - Enhancement: Switch to File view after starting gcode playback
+- Enhancement: 3D visualisation for endmill now is transparent and conical to improve visability
+- Fix: Movements around the A axis were incorrectly visualised as straight lines between points instead of arcs around the rotational axis
 
 [0.8.2]
 - Fix: Linux ARM64 appimage builds

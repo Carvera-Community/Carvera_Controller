@@ -10,6 +10,7 @@
             spacing:dp(3)
             padding:dp(1)
             halign:'right'
+            wcs_drop_content: wcs_drop_content.__self__  # hack to prevent gc from removing object per https://kivy.org/doc/stable/guide/lang.html#referencing-widgets
 
             ProbeSettingLabel:
                 label_text: 'X:'
@@ -131,19 +132,53 @@
                     on_text: root.setting_changed('BottomSurfaceRetract', self.text)
 
             ProbeSettingLabel:
-                label_text: 'S ZeroXY:'
-                hint_text: 'ZeroXY Position'
-                ToolTipSwitch:
+                label_text: 'S Zero WCS Axis:'
+                hint_text: 'Zero X/Y/Z Position'
+
+                ToolTipButton:
                     id: ZeroXYPosition
-                    tooltip_txt: tr._('This switch will set your current WCS to the corner that you are probing')
+                    # In the below get_setting() returns an int, so doing an inline mapping to the display text here
+                    text: ["Disabled", "X/Y", "X/Y/Z"][int(root.get_setting('ZeroXYPosition') or '0')]
+                    tooltip_txt: tr._('This switch will set your current WCS to the corner you are probing')
                     canvas.before:
                         Color:
                             rgba: 50/255, 50/255, 50/255, 1
                         Rectangle:
                             pos: self.pos
                             size: self.size
-                    active: root.get_setting('ZeroXYPosition') == "1"
-                    on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")
+                    on_parent: wcs_drop_content.dismiss()
+                    on_release: wcs_drop_content.open(self)
+                
+                    DropDown:
+                        id: wcs_drop_content
+                        on_select: ZeroXYPosition.text = f'{args[1]}'
+
+                        Button:
+                            id: wcs_btn1
+                            text: tr._('Disabled')
+                            size_hint_y: None
+                            height: '40dp'
+                            on_release:
+                                root.setting_changed('ZeroXYPosition', "0")
+                                wcs_drop_content.select(self.text)
+                        
+                        Button:
+                            id: wcs_btn2
+                            text: tr._('X/Y')
+                            size_hint_y: None
+                            height: '40dp'
+                            on_release:
+                                root.setting_changed('ZeroXYPosition', "1")
+                                wcs_drop_content.select(self.text)
+                        
+                        Button:
+                            id: wcs_btn3
+                            text: tr._('X/Y/Z')
+                            size_hint_y: None
+                            height: '40dp'
+                            on_release:
+                                root.setting_changed('ZeroXYPosition', "2")
+                                wcs_drop_content.select(self.text)
 
             ProbeSettingLabel:
                 label_text: 'I Normally Closed:'
