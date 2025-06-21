@@ -2591,6 +2591,8 @@
     cbx_margin: cbx_margin
     cbx_zprobe: cbx_zprobe
     cbx_leveling: cbx_leveling
+    cbx_startline: cbx_startline
+    txt_startline: txt_startline
 
     BoxLayout:
         orientation: 'vertical'
@@ -2861,38 +2863,32 @@
                         disabled:  (root.mode != 'Run' and root.mode != 'Leveling') or app.has_4axis
                         on_release: root.auto_level_popup.init_and_open(False)
 
-#                BoxLayout:
-#                    size_hint_y: None
-#                    height: '25dp'
-#                    disabled: app.model == 'CA1'
-#                    canvas.before:
-#                        Color:
-#                            rgba: 65/255, 65/255, 65/255, 1
-#                        Rectangle:
-#                            pos: self.pos
-#                            size: self.size
-#                    MCQCheckBox:
-#                        id: cbx_vacuum
-#                        active: False
-#                        on_active:
-#                            #root.set_config('margin', 'active', self.active)
-#                            #root.toggle_config()
-#                            #app.root.update_control('vacuum_mode', self.active)
-#                    MCQLabel:
-#                        on_press: cbx_vacuum._do_press()
-#                        text: tr._('Auto Vacuum')
-#                    Widget:
-#                        size_hint_x: None
-#                        width: '25dp'
-#                        canvas.before:
-#                            Color:
-#                                rgba: 255/255,255/255, 255/255, 1
-#                            Ellipse:
-#                                pos: self.center_x - dp(2.5), self.center_y - dp(5)
-#                                size: dp(10), dp(10)
-
-
-                Label:
+                BoxLayout:
+                    size_hint_y: None
+                    height: '25dp'
+                    padding: '5dp', 0, 0, 0
+                    disabled: root.mode != 'Run'
+                    canvas.before:
+                        Color:
+                            rgba: 65/255, 65/255, 65/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    MCQCheckBox:
+                        id: cbx_startline
+                    MCQLabel:
+                        on_press: cbx_startline._do_press()
+                        text: tr._('  Resume at line:')
+                    TextInput:
+                        id: txt_startline
+                        hint_text: tr._('Number')
+                        multiline: False
+                        size_hint_x: None
+                        width: '80dp'  # 10 chars should be enough for anybody :)
+                        text: ''
+                        halign: "right"
+                        input_type: 'number'
+                        input_filter: 'int'
 
         BoxLayout:
             spacing: '5dp'
@@ -2907,7 +2903,7 @@
                 text: tr._('Run') if root.mode == 'Run' else tr._('Do ') + root.mode
                 on_release: 
                     root.dismiss()
-                    if root.mode == 'Run': app.root.play(app.selected_remote_filename)
+                    if root.mode == 'Run': app.root.play(app.selected_remote_filename, txt_startline.text if cbx_startline.active else None)
                     else: app.root.apply()
                     app.root.content.transition.direction = 'right'
                     app.root.content.current = 'File'
