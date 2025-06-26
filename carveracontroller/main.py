@@ -964,15 +964,19 @@ class CNCWorkspace(Widget):
             # z probe
             if self.config['zprobe']['active']:
                 Color(231 / 255, 76 / 255, 60 / 255, 1)
+                PushMatrix()
                 if app.has_4axis:
-                    zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
-                    zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    Translate(self.x, self.y)
+                    if CNC.vars['FuncSetting'] & 1:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 7.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    else:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
                 else:
+                    Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
                     zprobe_x = self.config['zprobe']['x_offset'] + (0 if self.config['zprobe']['origin'] == 1 else CNC.vars['xmin'])
                     zprobe_y = self.config['zprobe']['y_offset'] + (0 if self.config['zprobe']['origin'] == 1 else CNC.vars['ymin'])
-                
-                PushMatrix()
-                Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
                 Rotate(angle=CNC.vars['rotation_angle'])
                 Ellipse(pos=(zprobe_x * zoom - 7.5, zprobe_y * zoom - 7.5), size=(15, 15))
                 PopMatrix()
@@ -2605,13 +2609,20 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         if model != app.model:
             app.model = model.strip()
-            if app.model == 'CA1':
-                self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                           'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                              'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
-                CNC.vars['rotation_base_width'] = 300
-                CNC.vars['rotation_head_width'] = 38
+        if app.model == 'CA1':
+            self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                        'Tool: 6', 'Laser', 'Custom']
+            self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                            'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+            CNC.vars['rotation_base_width'] = 300
+            CNC.vars['rotation_head_width'] = 56.5
+        else:
+            if CNC.vars['FuncSetting'] & 1:
+                CNC.vars['rotation_base_width'] = 330
+                CNC.vars['rotation_head_width'] = 18.5
+            else:
+                CNC.vars['rotation_base_width'] = 330
+                CNC.vars['rotation_head_width'] = 7
 
 
     # -----------------------------------------------------------------------
