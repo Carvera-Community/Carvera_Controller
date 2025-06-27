@@ -2612,7 +2612,7 @@ class Makera(RelativeLayout):
         if app.model == 'CA1':
             self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                         'Tool: 6', 'Laser', 'Custom']
-            self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+            self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
                                                             'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             CNC.vars['rotation_base_width'] = 300
             CNC.vars['rotation_head_width'] = 56.5
