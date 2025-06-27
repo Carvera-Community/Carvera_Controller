@@ -2610,7 +2610,7 @@ class Makera(RelativeLayout):
         if model != app.model:
             app.model = model.strip()
         if app.model == 'CA1':
-            self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+            self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                         'Tool: 6', 'Laser', 'Custom']
             self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
                                                             'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
