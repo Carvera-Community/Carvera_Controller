@@ -152,6 +152,7 @@ import string
 import subprocess
 
 from . import Utils
+from . import ui
 from kivy.config import ConfigParser
 from .CNC import CNC
 from .GcodeViewer import GCodeViewer
@@ -704,6 +705,7 @@ class MakeraConfigPanel(SettingsWithSidebar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.register_type('pendant', SettingPendantSelector)
+        self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
 
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
