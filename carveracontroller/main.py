@@ -27,10 +27,9 @@ if is_android():
     except ImportError:
         print("Pyjnius Import Fail.")
 
-import gettext
-import locale
-from kivy.lang import Observable
-from os.path import dirname, join
+from . import translation
+from .translation import tr
+
 # os.environ['KIVY_GL_DEBUG'] = '1'
 from kivy.core.clipboard import Clipboard
 
@@ -78,51 +77,6 @@ def request_android_permissions():
 from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS
-
-
-class Lang(Observable):
-    observers = []
-    lang = None
-
-    def __init__(self, defaultlang):
-        super(Lang, self).__init__()
-        self.ugettext = None
-        self.lang = defaultlang
-        self.switch_lang(self.lang)
-
-    def _(self, text):
-        return self.ugettext(text)
-
-    def fbind(self, name, func, args, **kwargs):
-        if name == "_":
-            self.observers.append((func, args, kwargs))
-        else:
-            return super(Lang, self).fbind(name, func, *args, **kwargs)
-
-    def funbind(self, name, func, args, **kwargs):
-        if name == "_":
-            key = (func, args, kwargs)
-            if key in self.observers:
-                self.observers.remove(key)
-        else:
-            return super(Lang, self).funbind(name, func, *args, **kwargs)
-
-    def switch_lang(self, lang):
-        # get the right locales directory, and instanciate a gettext
-        locale_dir = join(dirname(__file__), 'locales')
-        locales = None
-        try:
-            locales = gettext.translation(lang, locale_dir, languages=[lang])
-        except:
-            pass
-        if locales == None:
-            locales = gettext.NullTranslations()
-        self.ugettext = locales.gettext
-        self.lang = lang
-
-        # update all the kv rules attached to this text
-        for func, largs, kwargs in self.observers:
-            func(largs, None, None)
 
 import json
 import re
@@ -209,7 +163,7 @@ from kivy.lang import Builder
 from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown
 from .addons.probing.ProbingControls import ProbeButton
 
-def load_halt_translations(tr: Lang):
+def load_halt_translations(tr: translation.Lang):
     """Loads the appropriate language translation"""
     HALT_REASON = {
         # Just need to unlock the mahchine
@@ -237,24 +191,6 @@ def load_halt_translations(tr: Lang):
         41: tr._("Spindle Alarm, power off/on needed"),
     }
     return HALT_REASON
-
-def init_lang():
-    # init language
-    default_lang = 'en'
-    if Config.has_option('carvera', 'language'):
-        default_lang = Config.get('carvera', 'language')
-    else:
-        try:
-            default_locale = locale.getdefaultlocale()
-            if default_locale != None:
-                for lang_key in LANGS.keys():
-                    if default_locale[0][0:2] in lang_key:
-                        default_lang = lang_key
-                        break
-        except:
-            pass
-
-    return default_lang
 
 def app_base_path():
     """
@@ -1601,11 +1537,11 @@ class Makera(RelativeLayout):
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
         self.language_popup = LanguagePopup()
-        self.language_popup.sp_language.values = LANGS.values()
+        self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
-        for lang_key in LANGS.keys():
-            if lang_key == default_lang:
-                self.language_popup.sp_language.text = LANGS[lang_key]
+        for lang_key in translation.LANGS.keys():
+            if lang_key == translation.tr.lang:
+                self.language_popup.sp_language.text = translation.LANGS[lang_key]
                 break
 
         self.diagnose_popup = DiagnosePopup()
@@ -1801,8 +1737,8 @@ class Makera(RelativeLayout):
         Clock.schedule_once(self.check_ctl_version, 0)
 
     def change_language(self, lang_desc):
-        for lang_key in LANGS.keys():
-            if LANGS[lang_key] == lang_desc:
+        for lang_key in translation.LANGS.keys():
+            if translation.LANGS[lang_key] == lang_desc:
                 if tr.lang != lang_key:
                     tr.switch_lang(lang_key)
                     Config.set('carvera', 'language', lang_key)
@@ -4268,18 +4204,10 @@ def load_constants():
     global DOWNLOAD_ADDRESS
     global FW_DOWNLOAD_ADDRESS
 
-    global LANGS
-
     FW_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_community_firmware/master/version.txt'
     CTL_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_controller/main/CHANGELOG.md'
     DOWNLOAD_ADDRESS = 'https://github.com/carvera-community/carvera_controller/releases/latest'
     FW_DOWNLOAD_ADDRESS = 'https://github.com/Carvera-Community/Carvera_Community_Firmware/releases/latest'
-
-
-    LANGS = {
-        'en':  'English',
-        'zh-CN': '中文简体(Simplified Chinese)',
-    }
 
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30 # s
@@ -4296,17 +4224,18 @@ def load_constants():
 
 
 def main():
+    langname = None
+    if Config.has_option('carvera', 'language'):
+        langname = Config.get('carvera', 'language')
+    translation.init(langname)
 
     # load the global constants
     load_constants()
 
     # Language translation needs to be globally accessiable
-    global default_lang
-    global tr
     global HALT_REASON
-    default_lang = init_lang()
-    tr = Lang(default_lang)
-    set_config_defaults(default_lang)
+
+    set_config_defaults(tr.lang)
     load_app_configs()
     HALT_REASON = load_halt_translations(tr)
 
