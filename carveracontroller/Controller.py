@@ -888,6 +888,11 @@ class Controller:
         cmd = "G10L2R0P0"
         self.sendGCode(cmd)
 
+    def setRotation(self, rotation):
+        """Set the rotation angle for the current coordinate system"""
+        cmd = f"G10L2R{rotation:.1f}P0"
+        self.sendGCode(cmd)
+
     def feedHold(self, event=None):
         if event is not None and not self.acceptKey(True): return
         if self.stream is None: return
@@ -923,6 +928,11 @@ class Controller:
             else:
                 self.parseBigParentheses(line)
                 self.sio_diagnose = False
+        elif line[0] == "[" in line:
+            # Log raw WCS parameters before parsing
+            self.log.put((self.MSG_NORMAL, line))
+            # Parse WCS parameters: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+            self.parseWCSParameters(line)
         elif line[0] == "#":
             self.log.put((self.MSG_INTERIOR, line))
         elif "error" in line.lower() or "alarm" in line.lower():
@@ -1032,3 +1042,31 @@ class Controller:
 
             if dynamic_delay > 0:
                 time.sleep(dynamic_delay)
+
+    def parseWCSParameters(self, line):
+        """Parse WCS parameters from machine response"""
+        # Parse format: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+        # Extract all WCS entries from the line
+        wcs_pattern = r'\[(G5[4-9]):([^]]+)\]'
+        matches = re.findall(wcs_pattern, line)
+        
+        wcs_data = {}
+        for wcs_code, values_str in matches:
+            # Split the values by comma
+            values = values_str.split(',')
+            if len(values) >= 6:  # X, Y, Z, A, B, Rotation
+                try:
+                    x = float(values[0])
+                    y = float(values[1])
+                    z = float(values[2])
+                    a = float(values[3])
+                    b = float(values[4])  # B is always 0
+                    rotation = float(values[5])
+                    wcs_data[wcs_code] = [x, y, z, a, b, rotation]  # Store only X, Y, Z, A, B, Rotation
+                    
+                except (ValueError, IndexError):
+                    print(f"Error parsing WCS values for {wcs_code}: {values_str}")
+        
+        # Send the parsed data to the WCS Settings popup if it's open
+        if hasattr(self, 'wcs_popup_callback') and self.wcs_popup_callback:
+            self.wcs_popup_callback(wcs_data)

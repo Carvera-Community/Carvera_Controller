@@ -508,6 +508,42 @@
             root.select('Third Item')
             app.root.coord_popup.MoveA_popup.open()
 
+<CoordinateSystemDropDown>:
+    set_wcs_dropdown: set_wcs_dropdown
+    canvas.before:
+        Color:
+            rgba: 60/255, 60/255, 60/255, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    disabled: app.state != 'Idle'
+    
+    Button:
+        text: tr._('Set Rotation')
+        size_hint_y: None
+        height: '40dp'
+        on_release:
+            root.select('Third Item')
+            app.root.set_rotation_popup.open()
+    
+    Spinner:
+        size_hint_y: None
+        height: '40dp'
+        id: set_wcs_dropdown
+        text: tr._('Activate WCS')
+        values: 'G54', 'G55', 'G56', 'G57', 'G58', 'G59'
+        on_text:
+            if self.text != tr._("Activate WCS"): app.root.controller.executeCommand(self.text)
+            if self.text != tr._("Activate WCS"): self.text = tr._('Activate WCS')
+            root.select('Third Item')
+    
+    Button:
+        text: tr._('WCS Settings')
+        size_hint_y: None
+        height: '40dp'
+        on_release:
+            root.select('Third Item')
+            app.root.wcs_settings_popup.open()
 
 <FeedDropDown>:
     scale_slider: scale_slider
@@ -734,7 +770,8 @@
         values: 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Custom'
         on_text:
             if self.text == 'Custom': app.root.coord_popup.change_tool_popup.open()
-            if self.text != tr._("Change..."): app.root.controller.changeToolCommand(self.text[-1])
+            if self.text == '3D Probe': app.root.controller.changeToolCommand(999990)
+            elif self.text != tr._("Change..."): app.root.controller.changeToolCommand(self.text[-1])
             if self.text != tr._("Change..."): self.text = tr._('Change...')
             root.select('Third Item')
     Button:
@@ -3196,6 +3233,7 @@
     spindle_data_view: spindle_data_view
     tool_data_view: tool_data_view
     laser_data_view: laser_data_view
+    coord_system_data_view: coord_system_data_view
     float_layout: float_layout
     step_a: step_a
     step_z: step_z
@@ -3282,7 +3320,15 @@
                 minr_text: "{:.3f}".format(2.0)
                 disabled: app.state == 'N/A'
                 on_release: root.a_drop_down.open(self)
-
+            TopDataView:
+                id: coord_system_data_view
+                tooltip_txt: tr._('Coordinate System')
+                main_text: "G54"
+                minr_text: "0.0°"
+                disabled: app.state == 'N/A' or app.is_community_firmware == False
+                on_release:
+                    root.coordinate_system_drop_down.open(self)
+                    root.coordinate_system_drop_down.opened = True
             Label:
                 size_hint_x: None
                 width: dp(0)
@@ -3330,6 +3376,8 @@
                 on_release:
                     root.laser_drop_down.open(self)
                     root.laser_drop_down.opened = True
+
+            
 
             Label:
                 text: ''
@@ -3493,6 +3541,7 @@
 
                                         # 4th row
                                         GridBoxLayout:
+                                            disabled: app.is_community_firmware == False
                                             SmallRoundButton:
                                                 text: tr._('Probing...')
                                                 on_release: app.root.probing_popup.open()
@@ -4505,4 +4554,588 @@
                 text: tr._('Ok')
                 on_release:
                     app.root.controller.RapMoveA(float(txt_offset.text))
+                    root.dismiss()
+
+<WCSSettingsPopup>:
+    size_hint: 0.8, 0.8
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+    
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        
+        Label:
+            canvas.before:
+                Color:
+                    rgba: 45/255, 45/255, 45/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            id: caption
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('WCS Settings')
+            halign: 'left'
+            valign: 'middle'
+        
+        ScrollView:
+            GridLayout:
+                id: wcs_grid
+                cols: 9
+                spacing: '5dp'
+                size_hint_y: None
+                height: self.minimum_height
+                
+                # Header row
+                Label:
+                    text: 'WCS'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'X Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Y Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Z Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'A Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Rotation'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Clear Offsets'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Clear Rotation'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                
+                # G54 row
+                Label:
+                    text: 'G54'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g54_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g54_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g54_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g54_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g54_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G54')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G54')
+                Button:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.controller.executeCommand('G54')
+                        root.dismiss()
+                
+                # G55 row
+                Label:
+                    text: 'G55'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g55_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g55_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g55_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g55_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g55_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G55')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G55')
+                Button:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.controller.executeCommand('G55')
+                        root.dismiss()
+                
+                # G56 row
+                Label:
+                    text: 'G56'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g56_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g56_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g56_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g56_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g56_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G56')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G56')
+                Button:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.controller.executeCommand('G56')
+                        root.dismiss()
+                
+                # G57 row
+                Label:
+                    text: 'G57'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g57_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g57_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g57_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g57_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g57_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G57')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G57')
+                Button:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.controller.executeCommand('G57')
+                        root.dismiss()
+                
+                # G58 row
+                Label:
+                    text: 'G58'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g58_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g58_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g58_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g58_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g58_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G58')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G58')
+                Button:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.controller.executeCommand('G58')
+                        root.dismiss()
+                
+                # G59 row
+                Label:
+                    text: 'G59'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g59_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g59_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g59_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g59_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                TextInput:
+                    id: g59_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G59')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G59')
+                Button:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.controller.executeCommand('G59')
+                        root.dismiss()
+        
+        BoxLayout:
+            size_hint_y: None
+            height: '40dp'
+            spacing: '5dp'
+            
+            Button:
+                id: btn_cancel
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                id: btn_clear_all
+                text: tr._('Clear All')
+                on_release: root.clear_all_wcs()
+            Button:
+                id: btn_ok
+                text: tr._('Ok')
+                on_release:
+                    root.apply_changes()
+                    root.dismiss()
+
+<SetRotationPopup>:
+    size_hint: 0.5, 0.4
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+    txt_rotation: txt_rotation
+    
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        
+        Label:
+            canvas.before:
+                Color:
+                    rgba: 45/255, 45/255, 45/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            id: caption
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('Set Rotation')
+            halign: 'left'
+            valign: 'middle'
+        
+        BoxLayout:
+            padding: '15dp'
+            orientation: 'vertical'
+        
+        BoxLayout:
+            size_hint_y: None
+            height: '30dp'
+            Label:
+                text: 'Rotation:'
+                halign: "left"
+                valign: "center"
+                text_size: self.size
+            TextInput:
+                id: txt_rotation
+                hint_text: tr._('Enter rotation angle in degrees')
+                multiline: False
+                text: '0.0'
+                halign: "left"
+                input_type: 'number'
+                input_filter: 'float'
+        
+        BoxLayout:
+            id: empty
+        
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '40dp'
+            Button:
+                id: btn_cancel
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                id: btn_ok
+                text: tr._('Ok')
+                on_release:
+                    app.root.controller.setRotation(float(txt_rotation.text))
                     root.dismiss()

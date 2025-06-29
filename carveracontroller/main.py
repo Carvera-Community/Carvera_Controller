@@ -759,6 +759,137 @@ class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+
+class WCSSettingsPopup(ModalView):
+    def __init__(self, controller, coord_names, **kwargs):
+        super(WCSSettingsPopup, self).__init__(**kwargs)
+        self.controller = controller
+        self.original_values = {}  # Store original values for comparison
+        self.coord_names = coord_names
+    
+    def on_open(self):
+        """Parse WCS values from machine and populate fields when popup opens"""
+        if self.controller:
+            # Register callback for WCS data
+            self.controller.wcs_popup_callback = self.populate_wcs_values
+            # Request parameters from machine
+            self.controller.viewParameters()
+    
+    def on_dismiss(self):
+        """Clean up callback when popup is dismissed"""
+        if self.controller and hasattr(self.controller, 'wcs_popup_callback'):
+            self.controller.wcs_popup_callback = None
+    
+    def populate_wcs_values(self, wcs_data):
+        """Populate the WCS fields with parsed data from machine"""
+        
+        def update_ui(dt):
+            # wcs_data format: {'G54': [x, y, z, a, rotation], 'G55': [...], ...}
+            
+            for wcs, values in wcs_data.items():
+                if len(values) >= 6:  # Ensure we have X, Y, Z, A, rotation
+                    x, y, z, a, b, rotation = values
+                    
+                    # Store original values for comparison
+                    self.original_values[wcs] = {
+                        'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'R': rotation
+                    }
+                    
+                    # Update the corresponding text input fields
+                    if hasattr(self.ids, f'{wcs.lower()}_x'):
+                        self.ids[f'{wcs.lower()}_x'].text = f"{x:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_y'):
+                        self.ids[f'{wcs.lower()}_y'].text = f"{y:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_z'):
+                        self.ids[f'{wcs.lower()}_z'].text = f"{z:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_a'):
+                        self.ids[f'{wcs.lower()}_a'].text = f"{a:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_r'):
+                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.3f}"
+        
+        Clock.schedule_once(update_ui, 0)
+    
+    def apply_changes(self):
+        """Apply all changed values when OK is pressed"""
+        if not self.controller:
+            return
+            
+        # Get coordinate system index mapping
+        for wcs in self.coord_names:
+            if wcs not in self.original_values:
+                continue
+                
+            original = self.original_values[wcs]
+            changed_values = {}
+            
+            # Check each axis for changes
+            for axis in ['X', 'Y', 'Z', 'A']:
+                try:
+                    current_value = float(getattr(self.ids, f'{wcs.lower()}_{axis.lower()}').text)
+                    if abs(current_value - original[axis]) > 0.001:  # Allow small floating point differences
+                        changed_values[axis] = current_value
+                except (ValueError, AttributeError):
+                    continue
+
+            # Check rotation for changes
+            try:
+                current_rotation = float(getattr(self.ids, f'{wcs.lower()}_r').text)
+                if abs(current_rotation - original['R']) > 0.001:
+                    changed_values['R'] = current_rotation
+            except (ValueError, AttributeError):
+                pass
+            
+            # Send commands for changed values
+            if changed_values:
+                coord_index = self.coord_names.index(wcs) + 1  # G54=1, G55=2, etc.
+                cmd = f"G10L2P{coord_index}"
+                # Build offset command if any offsets changed
+                offset_changes = {k: v for k, v in changed_values.items() if k in ['X', 'Y', 'Z', 'A']}
+                if offset_changes:
+                    for axis, value in offset_changes.items():
+                        cmd += f"{axis}{value:.3f}"
+                # Send rotation command if rotation changed
+                if 'R' in changed_values:
+                    cmd += f"R{changed_values['R']:.1f}"
+                self.controller.executeCommand(cmd)
+                
+                
+    
+    def clear_wcs_offsets(self, wcs):
+        """Clear all offsets (X, Y, Z, A) for the specified WCS"""
+        # Set all offset fields to 0.000
+        if hasattr(self.ids, f'{wcs.lower()}_x'):
+            self.ids[f'{wcs.lower()}_x'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_y'):
+            self.ids[f'{wcs.lower()}_y'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_z'):
+            self.ids[f'{wcs.lower()}_z'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_a'):
+            self.ids[f'{wcs.lower()}_a'].text = '0.000'
+    
+    def clear_wcs_rotation(self, wcs):
+        """Clear rotation for the specified WCS"""
+        # Set rotation field to 0.000
+        if hasattr(self.ids, f'{wcs.lower()}_r'):
+            self.ids[f'{wcs.lower()}_r'].text = '0.000'
+    
+    def clear_all_wcs(self):
+        """Clear all offsets and rotations for all WCS systems"""
+        for wcs in self.coord_names:
+            self.clear_wcs_offsets(wcs)
+            self.clear_wcs_rotation(wcs)
+
+class SetRotationPopup(ModalView):
+    def __init__(self, controller, cnc, **kwargs):
+        super(SetRotationPopup, self).__init__(**kwargs)
+        self.controller = controller
+        self.cnc = cnc
+    
+    def on_open(self):
+        """Set the default rotation value when popup opens"""
+        rotation_angle = self.cnc.vars.get("rotation_angle", 0.0)
+        self.ids.txt_rotation.text = f"{rotation_angle:.1f}"
+
 class MakeraConfigPanel(SettingsWithSidebar):
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
@@ -813,6 +944,11 @@ class LaserDropDown(ToolTipDropDown):
     def on_dismiss(self):
         self.opened = False
 
+class CoordinateSystemDropDown(ToolTipDropDown):
+    opened = False
+
+    def on_dismiss(self):
+        self.opened = False
 
 class FuncDropDown(ToolTipDropDown):
     pass
@@ -1438,6 +1574,7 @@ class Makera(RelativeLayout):
     y_drop_down = ObjectProperty()
     z_drop_down = ObjectProperty()
     a_drop_down = ObjectProperty()
+    coordinate_system_drop_down = ObjectProperty()
 
     feed_drop_down = ObjectProperty()
     spindle_drop_down = ObjectProperty()
@@ -1586,6 +1723,8 @@ class Makera(RelativeLayout):
                 'yp_offset':0.0,
             }
         }
+
+        self.coord_names = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59']
         self.update_coord_config()
         self.coord_popup = CoordPopup(self.coord_config)
         self.xyz_probe_popup = XYZProbePopup()
@@ -1605,6 +1744,7 @@ class Makera(RelativeLayout):
         self.y_drop_down = YDropDown()
         self.z_drop_down = ZDropDown()
         self.a_drop_down = ADropDown()
+        self.coordinate_system_drop_down = CoordinateSystemDropDown()
         self.feed_drop_down = FeedDropDown()
         self.spindle_drop_down = SpindleDropDown()
         self.tool_drop_down = ToolDropDown()
@@ -1620,6 +1760,8 @@ class Makera(RelativeLayout):
         self.input_popup = InputPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
+        self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.coord_names)
+        self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
         self.wifi_conn_drop_down = DropDown(auto_width=False, width='250dp')
 
@@ -2176,13 +2318,20 @@ class Makera(RelativeLayout):
                     if remote_time != None:
                         if abs(int(time.time()) - time.timezone - int(remote_time[0].split('=')[1])) > 10:
                             self.controller.syncTime()
-
-                    remote_version = re.search('version = [0-9]+\.[0-9]+\.[0-9]+', line)
+                
+                    remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-_]*', line)
+                    app = App.get_running_app()
+                    if remote_version != None:
+                        if 'c' in remote_version[0]:
+                            app.is_community_firmware = True
+                        else:
+                            app.is_community_firmware = False
+                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]', remote_version[0])
                     if remote_version != None:
                         self.fw_version_old = remote_version[0].split('=')[1]
                         if self.fw_version_new != '':
                             self.check_fw_version()
-
+                    
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
                         Clock.schedule_once(partial(self.setUIForModel, remote_model[0].split('=')[1]), 0)
@@ -2616,10 +2765,11 @@ class Makera(RelativeLayout):
         if model != app.model:
             app.model = model.strip()
         if app.model == 'CA1':
-            self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                        'Tool: 6', 'Laser', 'Custom']
-            self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                            'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+            if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             CNC.vars['rotation_base_width'] = 300
             CNC.vars['rotation_head_width'] = 56.5
         else:
@@ -3308,6 +3458,13 @@ class Makera(RelativeLayout):
             self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
+            # update coordinate system data
+            coord_system_index = CNC.vars["active_coord_system"]
+            coord_system_name = self.coord_names[coord_system_index]
+            rotation_angle = CNC.vars["rotation_angle"]
+            self.coord_system_data_view.main_text = coord_system_name
+            self.coord_system_data_view.minr_text = "{:.1f}°".format(rotation_angle)
+            self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
 
             elapsed = now - self.control_list['laser_mode'][0]
             if elapsed < 2:
@@ -4143,6 +4300,7 @@ class MakeraApp(App):
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
     model = StringProperty('C1')
+    is_community_firmware = BooleanProperty(False)
 
     def on_stop(self):
         self.root.stop_run()
