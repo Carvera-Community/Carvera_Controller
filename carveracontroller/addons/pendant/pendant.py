@@ -9,7 +9,7 @@ from ...Controller import Controller
 from kivy.clock import Clock
 from kivy.uix.settings import SettingItem
 from kivy.uix.spinner import Spinner
-from kivy.uix.togglebutton import ToggleButton
+from kivy.uix.anchorlayout import AnchorLayout
 
 
 class Pendant:
@@ -91,7 +91,7 @@ if WHB04_SUPPORTED:
 
             if button == whb04.Button.RESET:
                 self._controller.estopCommand()
-                
+
 
 SUPPORTED_PENDANTS = {
     "None": NonePendant
@@ -103,10 +103,14 @@ if WHB04_SUPPORTED:
 
 class SettingPendantSelector(SettingItem):
     def __init__(self, **kwargs):
+        # Wrapper to ensure the content is centered vertically
+        wrapper = AnchorLayout(anchor_y='center', anchor_x='left')
+
         self.spinner = Spinner(text="None", values=list(SUPPORTED_PENDANTS.keys()), size_hint=(1, None), height='36dp')
         super().__init__(**kwargs)
         self.spinner.bind(text=self.on_spinner_select)
-        self.add_widget(self.spinner)
+        wrapper.add_widget(self.spinner)
+        self.add_widget(wrapper)
 
     def on_spinner_select(self, spinner, text):
         self.panel.set_value(self.section, self.key, text)
