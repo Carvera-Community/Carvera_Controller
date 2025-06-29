@@ -90,7 +90,7 @@ class StepSize(Enum):
     STEP_1 = 0x10
     PERCENT_60 = 0x1a
     PERCENT_100 = 0x1b
-    LEAD = 0x1c
+    LEAD = 0x9b
 
 class StepIndicator(Enum):
     CONTINUOUS = 0x00
@@ -223,7 +223,7 @@ class Daemon:
         """
         if feedrate < 0 or feedrate > 65535:
             raise ValueError("Feedrate outside range")
-        self._display_feedrate = feedrate
+        self._display_feedrate = int(feedrate)
 
     def set_display_spindle_speed(self, speed: int) -> None:
         """
@@ -231,7 +231,7 @@ class Daemon:
         """
         if speed < 0 or speed > 65535:
             raise ValueError("Spindle speed outside range")
-        self._display_spindle_speed = speed
+        self._display_spindle_speed = int(speed)
 
     def set_display_step_indicator(self, indicator: StepIndicator) -> None:
         """

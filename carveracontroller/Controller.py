@@ -200,11 +200,11 @@ class Controller:
                 cmd = "buffer " + cmd
             self.executeCommand(cmd) #run margin command. Has to be two seperate commands to offset the start of the autolevel process
         cmd = "M495 X%gY%g" % (CNC.vars['xmin'] + auto_level_offsets[0], CNC.vars['ymin'] + auto_level_offsets[2]) #reinitialize command with any autolevel offsets
-        if zprobe: 
-            if zprobe_abs: 
+        if zprobe:
+            if zprobe_abs:
                 cmd = "M495 X%gY%g" % (CNC.vars['xmin'], CNC.vars['ymin']) #reset command for 4th axis
                 cmd = cmd + "O0"
-            else: 
+            else:
                 cmd = cmd + "O%gF%g" % (z_probe_offset_x, z_probe_offset_y)
         if leveling:
             cmd = cmd + "A%gB%gI%dJ%dH%d" % (CNC.vars['xmax'] - (CNC.vars['xmin']+auto_level_offsets[1]+ auto_level_offsets[0]) , CNC.vars['ymax'] - (CNC.vars['ymin']+auto_level_offsets[3] + auto_level_offsets[2]), i, j, h)
@@ -384,7 +384,7 @@ class Controller:
 
     def clampToolCommand(self):
         self.executeCommand("M490.1\n")
-    
+
     def unclampToolCommand(self):
         self.executeCommand("M490.2\n")
 
@@ -829,8 +829,8 @@ class Controller:
 
     # ----------------------------------------------------------------------
     def jog(self, _dir):
-        self.executeCommand("G91G0{}".format(_dir))
-    
+        self.executeCommand("G91G0{}F5000".format(_dir))
+
     def jog_with_speed(self, _dir, speed):
         if speed > 0:
             self.executeCommand(f"G91G0{_dir} F{speed}")
@@ -845,6 +845,17 @@ class Controller:
         if y is not None: cmd += "Y%g" % (y)
         if z is not None: cmd += "Z%g" % (z)
         self.sendGCode("%s" % (cmd))
+
+    def gotoSafeZ(self):
+        self.sendGCode("G53 G0 Z0")
+
+    def gotoMachineHome(self):
+        self.gotoSafeZ()
+        self.sendGCode("G53 G0 X0 Y0")
+
+    def gotoWCSHome(self):
+        self.gotoSafeZ()
+        self.sendGCode("G53 G0 X%g Y%g" % (CNC.vars['wcox'], CNC.vars['wcoy']))
 
     def wcsSetA(self, a = None):
         cmd = "G92.4"
@@ -886,7 +897,7 @@ class Controller:
         cmd += pos
 
         self.sendGCode(cmd)
-    
+
     def wcsClearRotation(self):
         cmd = "G10L2R0P0"
         self.sendGCode(cmd)

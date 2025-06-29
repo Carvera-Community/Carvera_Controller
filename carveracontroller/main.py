@@ -76,7 +76,7 @@ def request_android_permissions():
 
 from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
-from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS
+from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController
 
 import json
 import re
@@ -1596,6 +1596,7 @@ class Makera(RelativeLayout):
         self.setting_default_list = {}
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_pendant_config()
 
         self.usb_event = lambda instance, x: self.openUSB(x)
         self.wifi_event = lambda instance, x: self.openWIFI(x)
@@ -1650,7 +1651,7 @@ class Makera(RelativeLayout):
         Config.write()
 
     def load_controller_config(self):
-        config_def_file = os.path.join(os.path.dirname(__file__),'controller_config.json')
+        config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
         with open(config_def_file) as file:
             controller_config_definition = json.load(file)
         controller_config = []
@@ -1662,7 +1663,22 @@ class Makera(RelativeLayout):
                 setting.pop('default', None)
             controller_config.append(setting)
 
-        self.config_popup.settings_panel.add_json_panel('Controller', Config, data=json.dumps(controller_config))
+        self.config_popup.settings_panel.add_json_panel(tr._('Controller'), Config, data=json.dumps(controller_config))
+
+    def load_pendant_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), 'pendant_config.json')
+        with open(config_def_file) as file:
+            pendant_config_definition = json.load(file)
+        pendant_config = []
+
+        # Set default pendant config values
+        for setting in pendant_config_definition:
+            if 'default' in setting:
+                Config.setdefault(setting['section'], setting['key'], setting['default'])
+                setting.pop('default', None)
+            pendant_config.append(setting)
+
+        self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
 
 
     def open_download(self):
@@ -3700,7 +3716,13 @@ class Makera(RelativeLayout):
         return (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open()
 
     def is_pendant_jogging_enabled(self):
-        return self.pendant_jogging_en_bt.state == 'down' and self.is_jogging_enabled()
+        # If the user disabled pendant, respect it.
+        if self.ids.pendant_jogging_en_btn.state != 'down':
+            return False
+        # ...otherwise behave as any other jogging except when probing screen is
+        # open. We want to use the pendant as a convenient way to get to the
+        # initial probing location
+        return self.is_jogging_enabled() or self.probing_popup._is_open
 
     def toggle_keyboard_jog_control(self):
         app = App.get_running_app()
@@ -3717,8 +3739,32 @@ class Makera(RelativeLayout):
         type_name = Config.get('carvera', 'pendant_type')
         pendant_type = SUPPORTED_PENDANTS.get(type_name, SUPPORTED_PENDANTS["None"])
 
+        def get_feed():
+            return self.feed_drop_down.scale_slider.value
+
+        def set_feed(val):
+            self.feed_drop_down.scale_slider.value = val
+
+        feed_override = OverrideController(
+            get_feed, set_feed,
+            min_limit = 10, max_limit = 300, step = 10
+        )
+
+        def get_spindle():
+            return self.spindle_drop_down.scale_slider.value
+
+        def set_spindle(val):
+            self.spindle_drop_down.scale_slider.value = val
+
+        spindle_override = OverrideController(
+            get_spindle, set_spindle,
+            min_limit = 10, max_limit = 300, step = 10)
+
         self.pendant = pendant_type(self.controller, self.cnc,
-                                self.is_jogging_enabled,
+                                feed_override, spindle_override,
+                                self.is_pendant_jogging_enabled,
+                                self.handle_pendat_run_pause_resume,
+                                self.handle_pendant_open_probing_popup,
                                 self.handle_pendant_connected,
                                 self.handle_pendant_disconnected)
 
@@ -3730,6 +3776,13 @@ class Makera(RelativeLayout):
     def handle_pendant_disconnected(self):
         self.ids.pendant_jogging_en_btn.text = tr._('No Pendant Connected')
         self.ids.pendant_jogging_en_btn.disabled = True
+
+    def handle_pendat_run_pause_resume(self):
+        # TBA
+        pass
+
+    def handle_pendant_open_probing_popup(self):
+        self.probing_popup.open()
 
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
