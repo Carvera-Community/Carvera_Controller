@@ -3713,7 +3713,10 @@ class Makera(RelativeLayout):
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
-        return (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open()
+        return \
+            not app.playing and \
+            (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
+            not self._is_popup_open()
 
     def is_pendant_jogging_enabled(self):
         # If the user disabled pendant, respect it.
@@ -3778,8 +3781,11 @@ class Makera(RelativeLayout):
         self.ids.pendant_jogging_en_btn.disabled = True
 
     def handle_pendat_run_pause_resume(self):
-        # TBA
-        pass
+        app = App.get_running_app()
+        if app.state == 'Pause':
+            self.controller.resumeCommand()
+        else:
+            self.controller.suspendCommand()
 
     def handle_pendant_open_probing_popup(self):
         self.probing_popup.open()
