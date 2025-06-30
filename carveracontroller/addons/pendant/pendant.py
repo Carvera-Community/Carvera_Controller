@@ -4,8 +4,8 @@ from typing import Callable
 import logging
 logger = logging.getLogger(__name__)
 
-from ...CNC import CNC
-from ...Controller import Controller
+from carveracontroller.CNC import CNC
+from carveracontroller.Controller import Controller
 
 from kivy.clock import Clock
 from kivy.uix.settings import SettingItem
