@@ -133,7 +133,10 @@ if WHB04_SUPPORTED:
             if axis not in "XYZA":
                 return
 
-            self._controller.jog(f"{axis}{distance}")
+            # Jog as fast as you can as the machine should follow the pendant as
+            # closely as possible. We choose some reasonably high speed here,
+            # the machine will limit itself to the maximum speed it can handle.
+            self._controller.jog_with_speed(f"{axis}{distance}", 10000)
 
         def _handle_button_press(self, daemon: whb04.Daemon, button: whb04.Button) -> None:
             is_fn_pressed = whb04.Button.FN in daemon.pressed_buttons

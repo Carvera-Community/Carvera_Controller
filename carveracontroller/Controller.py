@@ -829,7 +829,7 @@ class Controller:
 
     # ----------------------------------------------------------------------
     def jog(self, _dir):
-        self.executeCommand("G91G0{}F5000".format(_dir))
+        self.executeCommand("G91G0{}".format(_dir))
 
     def jog_with_speed(self, _dir, speed):
         if speed > 0:
