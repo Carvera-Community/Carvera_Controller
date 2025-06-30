@@ -559,6 +559,23 @@ url = "https://pypi.org/simple"
 reference = "pypi-public"
 
 [[package]]
+name = "hid"
+version = "1.0.7"
+description = "ctypes bindings for hidapi"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "hid-1.0.7-py3-none-any.whl", hash = "sha256:8a4f1b081202599018564c4fbc4805d9b97b9c2495f2be177a1ed9600940436d"},
+    {file = "hid-1.0.7.tar.gz", hash = "sha256:3f809e292ab52c4435ad1442c8ef205be4c9ca4eeb80fb47c7d98e0c75527b2a"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.org/simple"
+reference = "pypi-public"
+
+[[package]]
 name = "idna"
 version = "3.10"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -2109,4 +2126,4 @@ reference = "pypi-public"
 [metadata]
 lock-version = "2.1"
 python-versions = "<3.14,>=3.9"
-content-hash = "a4e4a2205efc7c91cee111368c6962a97082fdc5dca1355e936600a4e1b9b5ef"
+content-hash = "62ade5a098603345750be56a8416476528fcc856ea130c5c6417fceea79a0938"
