@@ -3774,12 +3774,12 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_disconnected)
 
     def handle_pendant_connected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant Jogging')
+        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant')
         self.ids.pendant_jogging_en_btn.disabled = False
         self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default else 'normal'
 
     def handle_pendant_disconnected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant Connected')
+        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
         self.ids.pendant_jogging_en_btn.disabled = True
 
     def handle_pendat_run_pause_resume(self):
