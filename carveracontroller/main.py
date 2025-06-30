@@ -3577,7 +3577,9 @@ class Makera(RelativeLayout):
         controller_config_panels = 0
         for panel in panels.values():
             if panel.title == 'Controller':
-                controller_config_panels = 1
+                controller_config_panels += 1
+            if panel.title == 'Pendant':
+                controller_config_panels += 1
 
         if len(panels.values()) - controller_config_panels > 0:
             # already have panels, update data
