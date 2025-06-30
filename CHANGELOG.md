@@ -1,5 +1,10 @@
 [unreleased]
-- Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently.
+- Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently
+- Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
+- Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
+- Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
+- Fix: Resolve the keysboard_mode config load error that occurs when reconnecting the Controller after it loses connection
+- Fix: Red origin dot in preview visualisation on config-and-run screen returned
 
 [0.9.1]
 - Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990
