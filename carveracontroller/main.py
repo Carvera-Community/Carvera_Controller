@@ -2422,7 +2422,7 @@ class Makera(RelativeLayout):
             if self.file_popup.firmware_mode:
                 # show message popup
                 self.confirm_popup.lb_title.text = tr._('Updating Firmware')
-                self.confirm_popup.lb_content.text = tr._('Reset the machine when uploading is complete.')
+                self.confirm_popup.lb_content.text = tr._('Are you sure you want to update the firmware? A machine reset will be required to apply the new firmware.')
                 self.confirm_popup.cancel = None
                 self.confirm_popup.confirm = partial(self.uploadLocalFile, filepath)
                 self.confirm_popup.open(self)
