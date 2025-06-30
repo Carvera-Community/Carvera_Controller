@@ -297,13 +297,13 @@ class Controller:
         self.executeCommand("M370\n")
 
     def setSpindleSwitch(self, switch, rpm=None):
-        if switch:
-            if rpm is None:
-                self.executeCommand("M3\n")
-            else:
-                self.executeCommand("M3 S%d\n" % (rpm))
+        if switch and rpm is not None:
+            cmd = f"M3 S{int(rpm)}\n"
+        elif switch and rpm is None:
+            cmd = "M3\n"
         else:
-            self.executeCommand("M5\n")
+           cmd = "M5\n"
+        self.executeCommand(cmd)
 
     def setVacuumPower(self, power=0):
         if power > 0:
