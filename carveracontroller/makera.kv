@@ -794,7 +794,7 @@
         height: '40dp'
         id: set_dropdown
         text: tr._('Set...')
-        values: 'Empty', 'Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Custom'
+        values: 'Empty', 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Custom'
         on_text:
             if self.text == 'Custom': app.root.coord_popup.settool_popup.open()
             if self.text == '3D Probe': app.root.controller.setToolCommand(999990)
@@ -3322,6 +3322,7 @@
                 on_release: root.a_drop_down.open(self)
             TopDataView:
                 id: coord_system_data_view
+                data_icon: 'data/axis-arrow.png'
                 tooltip_txt: tr._('Coordinate System')
                 main_text: "G54"
                 minr_text: "0.0°"

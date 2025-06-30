@@ -2772,7 +2772,10 @@ class Makera(RelativeLayout):
                                                                 'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             CNC.vars['rotation_base_width'] = 300
             CNC.vars['rotation_head_width'] = 56.5
-        else:
+        elif app.model == 'C1':
+            if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 18.5
