@@ -1883,13 +1883,13 @@
             Label:
                 size_hint_x: 0.2
             Label:
-                
+
             Label:
-                
+
             Label:
-                
+
             Label:
-                
+
 
             # row5 new section
             Label:
@@ -3475,7 +3475,7 @@
                                     GridLayout:
                                         padding: '10dp'
                                         cols: 3
-                                        rows: 4
+                                        rows: 5
                                         spacing: dp(3)
                                         GridBoxLayout:
                                             SmallRoundButton:
@@ -3561,7 +3561,10 @@
                                                 on_release: app.root.controller.setExternalControl(100 if self.state=="down" else 0)
 
                                         GridBoxLayout:
-                                            # Empty for now
+                                            ToggleButton:
+                                                id: pendant_jogging_en_btn
+                                                text: tr._('No Pendant')
+                                                height: '35dp'
 
                             BoxLayout:
                                 BoxLayout:
@@ -3588,7 +3591,7 @@
                                                     center: 0.5, 0.5
                                                     height: '35dp'
                                                     on_release: root.jog_speed_drop_down.open(self)
-                                                
+
                                             GridBoxLayout:
                                                 ToggleButton:
                                                     id: kb_jog_btn

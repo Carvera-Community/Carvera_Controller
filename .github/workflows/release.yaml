@@ -324,14 +324,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Delete old release assets (dev builds only)
+      # Deleting the old dev release means that on the Publish release step a new dev release is created putting it in the right chronological order
+      - name: Delete old dev release (dev builds only)  
         if: startsWith(github.ref, 'refs/heads/develop')
-        uses: mknejp/delete-release-assets@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: dev
-          assets: 'carveracontroller-community-*'
-          fail-if-no-assets: false
+        run: |
+          # Check if dev release exists and delete it
+          if gh release view dev --repo ${{ github.repository }} 2>/dev/null; then
+            gh release delete dev --repo ${{ github.repository }} --yes
+          fi
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
