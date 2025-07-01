@@ -2739,7 +2739,7 @@
                 Label:
                     id: lb_origin
                     size_hint_y: None
-                    height: '25dp'
+                    height: '40dp'
                     text: tr._(" (0, 0) from Anchor1")
                     halign: "left"
                     valign: "middle"
@@ -3326,7 +3326,7 @@
                 data_icon: 'data/axis-arrow.png'
                 tooltip_txt: tr._('Coordinate System')
                 main_text: "G54"
-                minr_text: "0.0°"
+                minr_text: "0.000°"
                 disabled: app.state == 'N/A'
                 on_release:
                     root.coordinate_system_drop_down.open(self)

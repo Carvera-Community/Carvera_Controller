@@ -663,6 +663,7 @@ class CoordPopup(ModalView):
                                                                  round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)) + tr._('from Anchor2')
             else:
                 self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4), round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)) + tr._('from Anchor1')
+        self.lb_origin.text = CNC.wcs_names[CNC.vars["active_coord_system"]] + ': ' + self.lb_origin.text
 
     def load_zprobe_label(self):
         app = App.get_running_app()
@@ -3586,7 +3587,7 @@ class Makera(RelativeLayout):
             coord_system_name = self.wcs_names[coord_system_index]
             rotation_angle = CNC.vars["rotation_angle"]
             self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = "{:.2f}°".format(rotation_angle)
+            self.coord_system_data_view.minr_text = "{:.3f}°".format(rotation_angle)
             self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
             
             # Update WCS Settings popup if it's open
