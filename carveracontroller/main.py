@@ -1737,7 +1737,7 @@ class Makera(RelativeLayout):
     def check_fw_version(self):
         self.upgrade_popup.fw_upd_text.text = self.fw_upd_text
         self.upgrade_popup.fw_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
+        versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
         if versions != None:
             self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
             if self.fw_version_old != '':
@@ -1770,7 +1770,7 @@ class Makera(RelativeLayout):
     def check_ctl_version(self, *args):
         self.upgrade_popup.ctl_upd_text.text = self.ctl_upd_text
         self.upgrade_popup.ctl_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
+        versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
         if versions != None:
             self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
             app = App.get_running_app()
@@ -2149,7 +2149,7 @@ class Makera(RelativeLayout):
                         if abs(int(time.time()) - time.timezone - int(remote_time[0].split('=')[1])) > 10:
                             self.controller.syncTime()
 
-                    remote_version = re.search('version = [0-9]+\.[0-9]+\.[0-9]+', line)
+                    remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+', line)
                     if remote_version != None:
                         self.fw_version_old = remote_version[0].split('=')[1]
                         if self.fw_version_new != '':
