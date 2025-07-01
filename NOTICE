@@ -34,7 +34,12 @@ This product includes the following third-party libraries:
    - Author: windreamer
    - URL: https://github.com/douban/pyquicklz
 
-===============================================================================
+6. libusb/hidapi
+   - Author: Alan Ott, hidapi contributors
+   - License: GPL 3.0
+   - URL: https://github.com/libusb/hidapi
+
+
 Notices for files provided by third-party libraries are included below. These
 notices are provided for informational purposes only. The licenses and details
 of these libraries apply to their respective source code.
@@ -43,6 +48,7 @@ of these libraries apply to their respective source code.
 - XMODEM is distributed under the terms of the MIT License.
 - Kivy is distributed under the terms of the MIT License.
 - pyserial is distributed under the terms of the BSD License.
+- libusb/hidapi is distributed under the terms of the GPL 3.0.
 
 ===============================================================================
 Please see the respective license files for detailed information.
