@@ -140,6 +140,8 @@ class Controller:
 
         self.diagnosing = False
 
+        self.is_community_firmware = False
+
     # ----------------------------------------------------------------------
     def quit(self, event=None):
         pass
@@ -542,13 +544,11 @@ class Controller:
         d = {a: [float(y) for y in b.split(',')] for a, b in [x.split(':') for x in l[1:]]}
         if 'R' in d:
             CNC.vars["rotation_angle"] = float(d['R'][0])
+            CNC.can_rotate_wcs = True
         else:
             CNC.vars["rotation_angle"] = 0.0
         if 'G' in d:
             CNC.vars["active_coord_system"] = int(d['G'][0])
-        else:
-            CNC.vars["active_coord_system"] = 0
-
         if 'C' in d:
             CNC.vars['MachineModel'] = int(d['C'][0])
             CNC.vars['FuncSetting'] = int(d['C'][1])
@@ -799,6 +799,9 @@ class Controller:
     def viewParameters(self):
         self.sendGCode("$#")
 
+    def viewWCS(self):
+        self.sendGCode("get wcs")
+
     def viewState(self):
         self.sendGCode("$G")
 
@@ -1047,21 +1050,35 @@ class Controller:
         """Parse WCS parameters from machine response"""
         # Parse format: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
         # Extract all WCS entries from the line
-        wcs_pattern = r'\[(G5[4-9]):([^]]+)\]'
-        matches = re.findall(wcs_pattern, line)
+
+        # parse the current WCS from the "get wcs" command
+        get_wcs_pattern = r'\[current WCS: (G5[4-9][.1-3]*)\]'
+        current_wcs_matches = re.findall(get_wcs_pattern, line)
         
+        if current_wcs_matches:
+            # if not on community firmware or rotation angle is not set,
+            # the active coordinate system is tracked through the "get wcs" command
+            if not self.is_community_firmware and not CNC.can_rotate_wcs:
+                CNC.vars["active_coord_system"] = CNC.wcs_names.index(current_wcs_matches[0])
+            return
+
+        wcs_pattern = r'\[(G5[4-9][.1-3]*):([^]]+)\]'
+        matches = re.findall(wcs_pattern, line)
         wcs_data = {}
         for wcs_code, values_str in matches:
             # Split the values by comma
             values = values_str.split(',')
-            if len(values) >= 6:  # X, Y, Z, A, B, Rotation
+            if len(values) >= 5:  # X, Y, Z, A, B, Rotation
                 try:
                     x = float(values[0])
                     y = float(values[1])
                     z = float(values[2])
                     a = float(values[3])
                     b = float(values[4])  # B is always 0
-                    rotation = float(values[5])
+                    if self.is_community_firmware:
+                        rotation = float(values[5])
+                    else:
+                        rotation = 0.0
                     wcs_data[wcs_code] = [x, y, z, a, b, rotation]  # Store only X, Y, Z, A, B, Rotation
                     
                 except (ValueError, IndexError):
