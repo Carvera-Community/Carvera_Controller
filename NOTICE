@@ -45,4 +45,13 @@ of these libraries apply to their respective source code.
 - pyserial is distributed under the terms of the BSD License.
 
 ===============================================================================
+This product includes the following third-party icons:
+
+1. axis-arrow.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/axis-arrow/
+   - Used in: carveracontroller/data/axis-arrow.png
+
+===============================================================================
 Please see the respective license files for detailed information.
