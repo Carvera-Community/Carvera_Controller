@@ -77,7 +77,12 @@ Its also possible to run the controller under Docker, which is then access via a
 
 The docker image expects a volume `/config` which is used to store the configuration and log files.  If not provided, the application will run, but will not persist any configuration or log files.
 
-The docker image is available on [GitHub Container Registry](https://ghcr.io/carvera-community/carvera-controller) and can be pulled with the following command:
+The docker image is available on [GitHub Container Registry](https://ghcr.io/carvera-community/carvera-controller) with the following tag patterns:
+- latest - The latest tagged release version
+- dev - The latest development build
+- x.y.z - A specific tagged version
+
+The latest reeleased version can be pulled with the following command:
 
 ``` bash
 docker pull ghcr.io/carvera-community/carvera-controller-<arch>:latest
