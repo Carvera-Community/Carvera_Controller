@@ -1,6 +1,9 @@
 [unreleased]
 - Enhancement: Support for controlling the machine via WHB04 pendant devices
+- Enhancement: Added WCS Management functionality. WCS workspace is displayed in top status bar, and can be used to change between different workspaces (G54-G59 etc). Note: Community firmware v1.0.3c1.0.7 is required. Makera firmware will not persist non-G54 offsets across machine resets.
+- Enhancement: Ability to rotate the WCS workspace. This is done via the WCS Management options. WCS rotation requires Community firmware to function
 - Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently
+- Change: Functionality that requires community firmware will be disabled in the Controller if using Makera firmware. Previously it would just not work.
 - Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
 - Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
 - Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1

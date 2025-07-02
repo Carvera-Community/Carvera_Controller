@@ -327,6 +327,8 @@ jobs:
       # Deleting the old dev release means that on the Publish release step a new dev release is created putting it in the right chronological order
       - name: Delete old dev release (dev builds only)  
         if: startsWith(github.ref, 'refs/heads/develop')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Check if dev release exists and delete it
           if gh release view dev --repo ${{ github.repository }} 2>/dev/null; then
