@@ -7,6 +7,7 @@ Community developed version of the Makera Carvera Controller software.
 The Community developed version of the Carvera Controller has a number of benefits and fixes above and beyond the Makera software.
 See the [CHANGELOG](CHANGELOG.md) and [screenshots](docs/screenshots/) for more details.
 * **3-axis** and advanced **probing** UI screens for various geometries (**corners**, **axis**, **bore/pocket**, **angles**) for use with a [true 3D touch probe](https://www.instructables.com/Carvera-Touch-Probe-Modifications/) (not the included XYZ probe block)
+* **Pendant** device support, via **WHB04** family of **MPG devices**. Such devices can be used to jog, run macros, and perform feed/speed overrides.
 * Options to **reduce** the **autolevel** probe **area** to avoid probing obstacles
 * **Tooltip support** for user guidance with over 110 tips and counting
 * **Background images** for bolt hole positions in probe/start screens; users can add their own too
@@ -108,6 +109,27 @@ Once installed it can be run via the module
 
 ``` bash
 python3 -m carveracontroller
+```
+
+## Pendant Support
+
+The Community controller supports the WBH04 family of pendants to control the machine. They can be purchased from [AliExpress](https://www.aliexpress.com/item/1005006270475983.html) or from other online retailers.
+
+### Linux device permissions
+
+To use the pendant in Linux, you need to grant your user access to the USB device. Most Linux distributions (Ubuntu/Debian/Fedora) automatically add users to the `plugdev` group, so the easiest and most secure approach is to create a udev rule that grants this group access to the device.
+
+Run this command to create the udev rule:
+
+```bash
+sudo sh -c 'echo "SUBSYSTEM==\"hidraw\", ATTRS{idVendor}==\"10ce\", ATTRS{idProduct}==\"eb93\", GROUP=\"plugdev\", MODE=\"0660\"" > /etc/udev/rules.d/90-xhc.rules'
+```
+
+After creating the rule, you may need to reload the udev rules:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 ```
 
 ## Contributing
