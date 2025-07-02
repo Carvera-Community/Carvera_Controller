@@ -16,6 +16,7 @@ YZ   = 2
 #===============================================================================
 class CNC:
     has_4axis      = False
+    can_rotate_wcs = False
     inch           = False
     travel_x       = 340
     travel_y       = 240
@@ -37,6 +38,7 @@ class CNC:
     coord_names = ["anchor1_x", "anchor1_y", "anchor2_offset_x", "anchor2_offset_y",\
                    "anchor_width", "anchor_length", "worksize_x", "worksize_y", "rotation_offset_x",\
                    "rotation_offset_y"]
+    wcs_names = ["G54", "G55", "G56", "G57", "G58", "G59", "G59.1", "G59.2", "G59.3"]
     vars           = {
         "prbx"       : 0.0,
         "prby"       : 0.0,
@@ -55,6 +57,8 @@ class CNC:
         "wcox"       : 0.0,
         "wcoy"       : 0.0,
         "wcoz"       : 0.0,
+        "active_coord_system" : 0,
+        "rotation_angle" : 0,
         "curfeed"    : 0.0,
         "curspindle" : 0.0,
         "spindletemp": 0.0,
@@ -672,6 +676,12 @@ class CNC:
                 minx2,miny2,maxx2,maxy2 = path.bbox()
                 minx,miny,maxx,maxy = min(minx,minx2), min(miny,miny2), max(maxx,maxx2), max(maxy,maxy2)
         return minx,miny,maxx,maxy
+    
+    #----------------------------------------------------------------------
+    # get wcs names
+    #----------------------------------------------------------------------
+    def getWCSNames(self):
+        return self.wcs_names
 
     #----------------------------------------------------------------------
     def fmt(self, c, v, d=None): return self.cnc.fmt(c,v,d)
