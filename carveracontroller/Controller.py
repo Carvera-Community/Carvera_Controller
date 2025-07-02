@@ -261,24 +261,51 @@ class Controller:
     #         cmd = "buffer " + cmd
     #     self.executeCommand(cmd)
 
-    def gotoPosition(self, position, buffer=False):
-        if position is None:
-            return
-        cmd = ""
-        if position == "Clearance":
-            cmd = "M496.1\n"
-        elif position == "Work Origin":
-            cmd = "M496.2\n"
-        elif position == "Anchor1":
-            cmd = "M496.3\n"
-        elif position == "Anchor2":
-            cmd = "M496.4\n"
-        elif position == "Path Origin":
-            if abs(CNC.vars['xmin']) <= CNC.vars['worksize_x'] and abs(CNC.vars['ymin']) <= CNC.vars['worksize_y']:
-                cmd = "M496.5 X%gY%g\n" % (CNC.vars['xmin'], CNC.vars['ymin'])
+    def gotoClearance(self, buffer=False):
+        cmd = "M496.1\n"
         if buffer:
             cmd = "buffer " + cmd
         self.executeCommand(cmd)
+
+    def gotoWorkOrigin(self, buffer=False):
+        cmd = "M496.2\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoAnchor1(self, buffer=False):
+        cmd = "M496.3\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoAnchor2(self, buffer=False):
+        cmd = "M496.4\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoPathOrigin(self, buffer=False):
+        if abs(CNC.vars['xmin']) <= CNC.vars['worksize_x'] and abs(CNC.vars['ymin']) <= CNC.vars['worksize_y']:
+            cmd = "M496.5 X%gY%g\n" % (CNC.vars['xmin'], CNC.vars['ymin'])
+            if buffer:
+                cmd = "buffer " + cmd
+            self.executeCommand(cmd)
+
+    def gotoPosition(self, position, buffer=False):
+        """Legacy method to route to appropriate goto method based on position string"""
+        if position is None:
+            return
+        if position == "Clearance":
+            self.gotoClearance(buffer)
+        elif position == "Work Origin":
+            self.gotoWorkOrigin(buffer)
+        elif position == "Anchor1":
+            self.gotoAnchor1(buffer)
+        elif position == "Anchor2":
+            self.gotoAnchor2(buffer)
+        elif position == "Path Origin":
+            self.gotoPathOrigin(buffer)
 
     def reset(self):
         self.executeCommand("reset\n")
