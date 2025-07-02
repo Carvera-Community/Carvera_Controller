@@ -2858,7 +2858,7 @@ class Makera(RelativeLayout):
             app.model = model.strip()
         if app.model == 'CA1':
             if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                             'Tool: 6', 'Laser', 'Custom']
                 self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
                                                                 'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
@@ -2866,7 +2866,7 @@ class Makera(RelativeLayout):
             CNC.vars['rotation_head_width'] = 56.5
         elif app.model == 'C1':
             if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                             'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
