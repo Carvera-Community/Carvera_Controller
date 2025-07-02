@@ -864,7 +864,7 @@ class WCSSettingsPopup(ModalView):
             self.controller.executeCommand(wcs)
             
             # done if community firmware
-            if self.controller.is_community_firmware:
+            if self.controller.is_community_firmware and CNC.can_rotate_wcs:
                 return
             
             # Update the active coordinate system index
@@ -890,7 +890,10 @@ class WCSSettingsPopup(ModalView):
                     input_id = f'{wcs_txt.lower()}_{axis}'
                     if hasattr(self.ids, input_id):
                         text_input = getattr(self.ids, input_id)
-                        text_input.disabled = not is_community
+                        if axis == 'r':
+                            text_input.disabled = not is_community or not CNC.can_rotate_wcs
+                        else:
+                            text_input.disabled = not is_community
             
             # Update clear all button
             if hasattr(self.ids, 'btn_clear_all'):
@@ -1013,6 +1016,10 @@ class CoordinateSystemDropDown(ToolTipDropDown):
 
     def on_dismiss(self):
         self.opened = False
+        
+    def update_ui(self):
+        if not CNC.can_rotate_wcs:
+            self.ids.set_rotation_popup_button.disabled = True
 
 class FuncDropDown(ToolTipDropDown):
     pass
