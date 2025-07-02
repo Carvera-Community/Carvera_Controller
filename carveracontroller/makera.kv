@@ -519,6 +519,7 @@
     disabled: app.state != 'Idle'
     
     Button:
+        id: set_rotation_popup_button
         text: tr._('Set Rotation')
         size_hint_y: None
         height: '40dp'
@@ -3329,6 +3330,7 @@
                 minr_text: "0.000°"
                 disabled: app.state == 'N/A'
                 on_release:
+                    root.coordinate_system_drop_down.update_ui()
                     root.coordinate_system_drop_down.open(self)
                     root.coordinate_system_drop_down.opened = True
             Label:
@@ -5440,7 +5442,6 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                disabled: app.is_community_firmware == True
                 on_release:
                     app.root.controller.setRotation(float(txt_rotation.text))
                     root.dismiss()

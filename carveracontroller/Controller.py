@@ -1072,7 +1072,7 @@ class Controller:
         if current_wcs_matches:
             # if not on community firmware or rotation angle is not set,
             # the active coordinate system is tracked through the "get wcs" command
-            if not self.is_community_firmware and not CNC.can_rotate_wcs:
+            if not self.is_community_firmware or not CNC.can_rotate_wcs:
                 CNC.vars["active_coord_system"] = CNC.wcs_names.index(current_wcs_matches[0])
             return
 
@@ -1089,7 +1089,7 @@ class Controller:
                     z = float(values[2])
                     a = float(values[3])
                     b = float(values[4])  # B is always 0
-                    if self.is_community_firmware:
+                    if self.is_community_firmware and CNC.can_rotate_wcs:
                         rotation = float(values[5])
                     else:
                         rotation = 0.0
