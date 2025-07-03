@@ -288,7 +288,7 @@ android.logcat_filters = *:S python:D
 
 # (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
 # In past, was `android.arch` as we weren't supporting builds for multiple archs at the same time.
-android.archs = armeabi-v7a
+android.archs = armeabi-v7a, arm64-v8a
 		 
 
 # (int) overrides automatic versionCode computation (used in build.gradle)
@@ -336,7 +336,7 @@ p4a.commit = HEAD
 #p4a.source_dir =
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
-#p4a.local_recipes =
+p4a.local_recipes = ./packaging_assets/android/recipes
 
 # (str) Filename to the hook for p4a
 #p4a.hook =

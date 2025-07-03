@@ -3,6 +3,7 @@
 - Enhancement: Added WCS Management functionality. WCS workspace is displayed in top status bar, and can be used to change between different workspaces (G54-G59.3 etc). Note: Community firmware v1.0.3c1.0.7 is required for full functionality. Community firmware v1.0.3c1.0.6 does support editing the offsets but doesn't track manual G5* commands in the MDI. Makera firmware will not persist non-G54 offsets across machine resets.
 - Enhancement: Ability to rotate the WCS workspace. This is done via the WCS Management options. WCS rotation requires Community firmware 1.0.3c.1.0.7 or higher to function
 - Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently
+- Enhancement: Android apk now supports both armv7 (32-bit) and armv8 (64-bit) processors
 - Change: Functionality that requires community firmware will be disabled in the Controller if using Makera firmware. Previously it would just not work.
 - Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
 - Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version

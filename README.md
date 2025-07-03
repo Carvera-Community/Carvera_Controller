@@ -39,7 +39,7 @@ The Controller software works on the following systems:
 - Linux using x64 CPUs running a Linux distribution with Glibc 2.35 or above (eg. Ubuntu 22.04 or higher)
 - Linux using aarch64 CPUs (eg Raspberyy Pi 3+) running a Linux distribution with Glibc 2.39 or above (eg. Ubuntu 24.04 or higher)
 - Apple iPad with iOS 17.6 or higher
-- Android devices with Android 11 or higher running ARM 32-bit processors (ARMv7a)
+- Android devices with Android 11 or higher running ARM 32 and 64-bit processors (ARMv7a and ARMv8a)
 - Other systems might be work via the Python Package, see below for more details.
 
 ## Installation
@@ -51,7 +51,7 @@ See the assets section of [latest release](https://github.com/carvera-community/
 - carveracontroller-community-\<version\>-AppleSilicon.dmg - MacOS with Apple CPU (M1 etc)
 - carveracontroller-community-\<version\>-x86_64.appimage - Linux AppImage for x64 systems
 - carveracontroller-community-\<version\>-arm664.appimage - Linux AppImage for aarch64/arm64 systems
-- carveracontroller-community-\<version\>-android-armeabi-v7a.apk - Android installable package
+- carveracontroller-community-\<version\>-armeabi-v7a_arm64-v8a.apk - Android installable package
 - carvera_controller_community-\<version\>-py3-none-any.whl  - Python wheel package
 
 ### Usage: Android
