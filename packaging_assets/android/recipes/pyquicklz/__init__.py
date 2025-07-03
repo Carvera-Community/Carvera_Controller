@@ -21,6 +21,10 @@ class PyQuickLZRecipe(CythonRecipe):
             env['CFLAGS'] += ' -fPIC -march=armv7-a -mfpu=neon -mfloat-abi=softfp'
             env['LDFLAGS'] += ' -fPIC'
             print(f"[PyQuickLZ] Building for armeabi-v7a with CFLAGS: {env['CFLAGS']}")
+        elif arch.arch == 'x86_64':
+            env['CFLAGS'] += ' -fPIC -march=x86-64'
+            env['LDFLAGS'] += ' -fPIC'
+            print(f"[PyQuickLZ] Building for x86_64 with CFLAGS: {env['CFLAGS']}")
         else:
             print(f"[PyQuickLZ] Unknown architecture: {arch.arch}")
         
