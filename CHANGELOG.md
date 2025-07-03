@@ -9,6 +9,7 @@
 - Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
 - Fix: Resolve the keysboard_mode config load error that occurs when reconnecting the Controller after it loses connection
 - Fix: Red origin dot in preview visualisation on config-and-run screen returned
+- Fix: Last open folder was using temp directory instead of actual user selected location
 
 [0.9.1]
 - Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990

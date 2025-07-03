@@ -1,9 +1,8 @@
-from carveracontroller.main import main, init_lang, Lang
+from carveracontroller.main import main
+from carveracontroller.translation import tr
 
-# tr is used throughout the kivvy .kv definition files
-# thus kivy expects it be availiable from the caller
-default_lang = init_lang()
-tr = Lang(default_lang)
+# tr is used throughout the kivy .kv definition files
+# thus kivy expects it be available from the caller
 
 if __name__ == "__main__":
     main()

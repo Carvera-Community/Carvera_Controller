@@ -2612,12 +2612,14 @@ class Makera(RelativeLayout):
     def set_local_folder_to_last_opened(self):
         self.fetch_recent_local_dir_list()
 
-        local_path = ''
-        # Find more recent directory that is still present
+        # Find the most recent directory that is still present
+        local_path = None
         for dir in self.recent_local_dir_list:
             if os.path.isdir(dir):
+                local_path = dir
                 break
-        self.file_popup.local_rv.child_dir(dir)
+        
+        self.file_popup.local_rv.child_dir(local_path)
 
     def open_rename_input_popup(self):
         self.input_popup.lb_title.text = tr._('Change name') +'\'%s\' to:' % (self.file_popup.remote_rv.curr_selected_file)
@@ -2865,7 +2867,7 @@ class Makera(RelativeLayout):
             app.model = model.strip()
         if app.model == 'CA1':
             if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                             'Tool: 6', 'Laser', 'Custom']
                 self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
                                                                 'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
@@ -2873,7 +2875,7 @@ class Makera(RelativeLayout):
             CNC.vars['rotation_head_width'] = 56.5
         elif app.model == 'C1':
             if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                             'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
@@ -3154,6 +3156,7 @@ class Makera(RelativeLayout):
     def uploadLocalFile(self, filepath, callback=None):
         self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
+        self.original_upload_filepath = filepath  # Store original path for recent directory tracking
         if 'lz' in self.filetype:               #如果固件支持的上传文件类型为.lz，则进行压缩
             qlzfilename = self.compress_file(filepath)
             if qlzfilename:
@@ -3234,7 +3237,7 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.confirm_reset, 0)
             # update recent folder
             if not self.file_popup.firmware_mode:
-                self.update_recent_local_dir_list(os.path.dirname(self.uploading_file))
+                self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
 
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith('.lz'):
