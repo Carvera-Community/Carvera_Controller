@@ -1402,36 +1402,48 @@
                         id: cbx_anchor1
                         group: 'anchor'
                         active: True
+                        on_press: root.update_offsets()
                         disabled: app.has_4axis
                     MCQLabel:
-                        on_press: cbx_anchor1._do_press()
+                        on_press: 
+                            cbx_anchor1._do_press()
+                            root.update_offsets()
                         text: tr._('Anchor1')
                         disabled: app.has_4axis
                     MCQCheckBox:
                         id: cbx_anchor2
                         group: 'anchor'
                         active: False
+                        on_press: root.update_offsets()
                         disabled: app.has_4axis
                     MCQLabel:
-                        on_press: cbx_anchor2._do_press()
+                        on_press: 
+                            cbx_anchor2._do_press()
+                            root.update_offsets()
                         text: tr._('Anchor2')
                         disabled: app.has_4axis
                     MCQCheckBox:
                         id: cbx_4axis_origin
                         group: 'anchor'
                         active: False
+                        on_press: root.update_offsets()
                         disabled: not app.has_4axis
                     MCQLabel:
-                        on_press: cbx_4axis_origin._do_press()
+                        on_press: 
+                            cbx_4axis_origin._do_press()
+                            root.update_offsets()
                         text: tr._('4Axis Origin')
                         disabled: not app.has_4axis
                     MCQCheckBox:
                         id: cbx_current_position
                         group: 'anchor'
                         active: False
+                        on_press: root.update_offsets()
                         disabled: app.has_4axis
                     MCQLabel:
-                        on_press: cbx_current_position._do_press()
+                        on_press: 
+                            cbx_current_position._do_press()
+                            root.update_offsets()
                         text: tr._('Current Pos')
                         disabled: app.has_4axis
                     # Label:
