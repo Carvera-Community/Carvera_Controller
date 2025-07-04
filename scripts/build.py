@@ -71,6 +71,8 @@ def build_pyinstaller_args(
         build_args += ["--onefile"]
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.ico')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.ico')}"]
+        logger.info(f"Add hidapi.dll binary: {ROOT_ASSETS_PATH.joinpath('hidapi.dll')}")
+        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi.dll')}:."]
     else:
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
@@ -243,10 +245,14 @@ def rename_release_file(os_name, package_version):
         src = "./dist/carveracontroller-community.AppImage"
         dst = f"./dist/{file_name}"
     elif os_name == "android":
-        arch_name = "armeabi-v7a"
-        file_name = f"carveracontroller-community-{package_version}-android-{arch_name}.apk"
+        arch_name = "armeabi-v7a_arm64-v8a_x86_64"
+        file_name = f"carveracontroller-community-{package_version}.apk"
         src = f"./dist/carveracontrollercommunity-{package_version}-{arch_name}-debug.apk"
         dst = f"./dist/{file_name}"
+    else:
+        # For any other OS (and pypi build), don't attempt to rename
+        return
+    
     shutil.move(src, dst)
 
 

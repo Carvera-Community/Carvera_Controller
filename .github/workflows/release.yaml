@@ -1,14 +1,22 @@
-name: release
+name: Build and Release
 on:
   push:
+    branches:
+      - develop
     tags:
       - "v*.*.*"
+
 jobs:
   build-windows-artifacts:
-    name: build-windows-x64
+    name: build-windows-${{ matrix.platform }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
+      matrix:
+        platform: [win64]
+        include:
+          - platform: win64
+            arch: x64
     defaults:
       run:
         shell: bash
@@ -25,11 +33,11 @@ jobs:
       uses: ./.github/actions/bootstrap-poetry
       with:
         os: windows
-    
+
     - uses: git-for-windows/setup-git-for-windows-sdk@v1
       with:
         flavor: minimal
-      # We install the SDK so as to have access to the msgfmt.exe binary
+      # We install git-for-windows so as to have access to the msgfmt.exe binary
       # from the GNU gettext package.
 
     - name: "Install Windows-Mesa OpenGL DLL"
@@ -37,9 +45,19 @@ jobs:
         curl -L --output mesa.7z --url https://github.com/pal1000/mesa-dist-win/releases/download/24.2.5/mesa3d-24.2.5-release-msvc.7z
         7z x mesa.7z -o*
         powershell.exe mesa\\systemwidedeploy.cmd 1
+    # PyInstaller needs to be able to run the python app to determine the dependencies
+    # This can't be done without a graphics renderer, so we install the Windows-Mesa OpenGL DLL
+    # to proviode that.
 
     - name: Build release
-      run: poetry run python scripts/build.py --os windows --version ${{ github.ref_name }}
+      shell: pwsh
+      run: |
+        if ($env:GITHUB_REF.StartsWith('refs/tags/')) {
+          $version = $env:GITHUB_REF_NAME
+        } else {
+          $version = Get-Date -Format "yyyy.M.d"
+        }
+        poetry run python scripts/build.py --os windows --version $version
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -75,12 +93,18 @@ jobs:
       uses: ./.github/actions/bootstrap-poetry
       with:
         os: macos
-    
+
     - name: Install create-dmg
       run: brew install create-dmg
 
     - name: Build release
-      run: poetry run python scripts/build.py --os macos --version ${{ github.ref_name }}
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=$GITHUB_REF_NAME
+        else
+          VERSION=$(date +'%Y.%m.%d')
+        fi
+        poetry run python scripts/build.py --os macos --version "$VERSION"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -95,47 +119,50 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ x64, aarch64 ]
+        platform: [x64,arm64]
         include:
           - platform: x64
             image: ubuntu-22.04
-          - platform: aarch64
-            image: ubuntu-24.04-arm
+          - platform: arm64
+            image: ubuntu-22.04-arm
     defaults:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.12
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
 
-    - name: Install poetry and dependencies
-      uses: ./.github/actions/bootstrap-poetry
-      with:
-        os: linux
-    
-    - name: Install MTDev
-      run: sudo apt-get install -y mtdev-tools gettext
+      - name: Install poetry and dependencies
+        uses: ./.github/actions/bootstrap-poetry
+        with:
+          os: linux
 
-    - name: Build release
-      run: xvfb-run poetry run python scripts/build.py --os linux --version ${{ github.ref_name }}
+      - name: Install MTDev
+        run: sudo apt-get install -y mtdev-tools gettext
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-assets-${{ matrix.platform }}
-        path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
-        retention-days: 2
+      - name: Build release
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=$GITHUB_REF_NAME
+          else
+            VERSION=$(date +'%Y.%m.%d')
+          fi
+          xvfb-run poetry run python scripts/build.py --os linux --version "$VERSION"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-assets-${{ matrix.platform }}
+          path: ${{ github.workspace }}/dist/carveracontroller-community-*.appimage
+          retention-days: 2
 
   build-pypi-artifacts:
     name: build-python
     runs-on: ubuntu-24.04
-    permissions:
-      id-token: write
-
     defaults:
       run:
         shell: bash
@@ -154,22 +181,61 @@ jobs:
       with:
         os: linux
 
+    - name: Install gettext
+      run: sudo apt-get install -y gettext
+
     - name: Build release
-      run: poetry run python scripts/build.py --os pypi --version ${{ github.ref_name }}
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=$GITHUB_REF_NAME
+        else
+          VERSION=$(date +'%Y.%m.%d')
+        fi
+        poetry run python scripts/build.py --os pypi --version "$VERSION"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pypi-assets
+        path: ${{ github.workspace }}/dist/*.whl
+        retention-days: 2
 
     - name: Publish package to PyPI
+      if: startsWith(github.ref, 'refs/tags/')
       uses: pypa/gh-action-pypi-publish@release/v1
 
   build-android-artifacts:
-    name: build-android-armeabi-v7a
+    name: build-android
     runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
     defaults:
       run:
         shell: bash
     steps:
     - uses: actions/checkout@v4
+
+    - name: Cache Buildozer global directory
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer
+        key: ${{ runner.os }}-buildozer-global
+        restore-keys: |
+          ${{ runner.os }}-buildozer-global
+
+    - name: Cache Buildozer directory in app
+      uses: actions/cache@v4
+      with:
+        path: .buildozer
+        key: ${{ runner.os }}-buildozer-app
+        restore-keys: |
+          ${{ runner.os }}-buildozer-app
+
+    - name: Cache Android SDK
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer/android/platform/android-sdk
+        key: ${{ runner.os }}-android-sdk
+        restore-keys: |
+          ${{ runner.os }}-android-sdk
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
@@ -180,10 +246,10 @@ jobs:
       uses: ./.github/actions/bootstrap-poetry
       with:
         os: linux
-    
+
     - name: Install MTDev
       run: sudo apt-get install -y mtdev-tools gettext
-    
+
     # Set up Java 17 required by Gradle
     - name: Setup Java 17 required by Gradle
       uses: actions/setup-java@v3
@@ -194,29 +260,119 @@ jobs:
     - name: Install prereqs
       run: |
         poetry run ./scripts/install_android_prereqs.sh
-        
+
     - name: Build release
       run: |
-        DATE=$(date +'%Y.%m.%d')
-        xvfb-run poetry run python scripts/build.py --os android --version ${{ github.ref_name }} --automation
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=$GITHUB_REF_NAME
+        else
+          VERSION=$(date +'%Y.%m.%d')
+        fi
+        xvfb-run poetry run python scripts/build.py --os android --version "$VERSION" --automation
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-assets-${{ matrix.platform }}
+        name: android-assets
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.apk
         retention-days: 2
 
+  build-docker-images:
+    name: build-docker-images
+    needs: [build-linux-artifacts]
+    runs-on: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x64
+            image: ubuntu-24.04
+          - platform: arm64
+            image: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Linux AppImage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-assets-${{ matrix.platform }}
+          path: ./artifacts/
+
+      - name: Copy AppImage to Docker build context
+        run: |
+          mkdir -p packaging_assets/Docker/artifacts/
+          cp ./artifacts/*.appimage packaging_assets/Docker/artifacts/
+
+      # TODO: Add support for more platforms with QEMU
+      # https://github.com/docker/setup-qemu-action
+      #- name: Set up QEMU
+      #  uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/carvera-controller-${{ matrix.platform }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=dev,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: packaging_assets/Docker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/${{ matrix.platform == 'x64' && 'amd64' || matrix.platform }}
+
   publish-release:
-    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-android-artifacts ]
+    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-android-artifacts, build-pypi-artifacts ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
+      # Deleting the old dev release means that on the Publish release step a new dev release is created putting it in the right chronological order
+      - name: Delete old dev release (dev builds only)  
+        if: startsWith(github.ref, 'refs/heads/develop')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if dev release exists and delete it
+          if gh release view dev --repo ${{ github.repository }} 2>/dev/null; then
+            gh release delete dev --repo ${{ github.repository }} --yes
+          fi
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:  # Skip downloading docker images
+          pattern: '*-assets*'
+
+      - name: Generate dev release notes (dev builds only)
+        if: startsWith(github.ref, 'refs/heads/develop')
+        run: python3 ./scripts/dev_release_notes.py
+
+      - name: Force move 'dev' tag to latest commit on develop (dev builds only)
+        if: startsWith(github.ref, 'refs/heads/develop')
+        run: |
+          git tag -f dev
+          git push origin dev --force
 
       - name: Publish release
         uses: softprops/action-gh-release@v2.2.2
@@ -225,4 +381,8 @@ jobs:
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
             linux-assets-*/carveracontroller-community-*.appimage
-            android-assets-*/carveracontroller-community-*.apk
+            android-assets/carveracontroller-community-*.apk
+            pypi-assets/*.whl
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
+          body_path: ${{ startsWith(github.ref, 'refs/tags/') && 'CHANGELOG.md' || 'dev-CHANGELOG.md' }} 
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/') && 'false' || 'true' }} 

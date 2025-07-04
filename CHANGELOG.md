@@ -1,23 +1,41 @@
 [unreleased]
+- Enhancement: Support for controlling the machine via WHB04 pendant devices
+- Enhancement: Added WCS Management functionality. WCS workspace is displayed in top status bar, and can be used to change between different workspaces (G54-G59.3 etc). Note: Community firmware v1.0.3c1.0.7 is required for full functionality. Community firmware v1.0.3c1.0.6 does support editing the offsets but doesn't track manual G5* commands in the MDI. Makera firmware will not persist non-G54 offsets across machine resets.
+- Enhancement: Ability to rotate the WCS workspace. This is done via the WCS Management options. WCS rotation requires Community firmware 1.0.3c.1.0.7 or higher to function
+- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
+- Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently
+- Enhancement: Android apk now supports armv7 (32-bit), armv8 (64-bit), and x86_64 processors
+- Change: Functionality that requires community firmware will be disabled in the Controller if using Makera firmware. Previously it would just not work.
+- Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
+- Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
+- Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
+- Fix: Resolve the keysboard_mode config load error that occurs when reconnecting the Controller after it loses connection
+- Fix: Red origin dot in preview visualisation on config-and-run screen returned
+- Fix: Last open folder was using temp directory instead of actual user selected location
+
+[0.9.1]
+- Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990
+- Fix: Python package builds missing a dep
+
+[0.9.0]
 - Enhancement: Initial support for rotated WCS in visualizations
-- Change: Minimum Python version increased to 3.9
-- Change: Controller no longer warns about missing config key values in MDI because it's assumed that firmware defaults are used instead
-- Enhancement: Controller support for updating setting definition if machine model is CA1 (via config_ca1_diff.json)
-- Enhancement: Support for controller Carvera Air beeper through controller settings
-- Change: Better wording on the xyz probe screen about block thickness
+- Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual
+- Enhancement: Default values on the Set Origin screen uses the current origin offsets
+- Enhancement: Switch to File view after starting gcode playback
+- Enhancement: 3D visualisation for endmill now is transparent and conical to improve visability
 - Enhancement: Added Ext Control switch to centre control panel
 - Enhancement: Initial Android builds
+- Enhancement: Support for Carvera Air specific settings
+- Enhancement: Support for the Carvera Air beeper through controller settings
+- Change: Minimum Python version increased to 3.9
+- Change: Controller no longer warns about missing config key values in MDI because it's assumed that firmware defaults are used instead
+- Change: Better wording on the xyz probe screen about block thickness
+- Change: Add UI to select X/Y or X/Y/Z WCS zeroing during 3D probing of corners and boss
+- Change: 3D Probe is an option in the "Set" Tool menu. This sets the tool to number 99990
 - Fix: Compressed gcode now stored in temp directory if source directory isn't writable
 - Fix: Fix MDI window showing the keyboard for onscreen keyboard devices on iOS
 - Fix: Invisible jog control panel buttons clickable when panel disabled.
-- Change: Add UI to select X/Y or X/Y/Z WCS zeroing during 3D probing of corners and boss
-- Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual
-- Enhancement: Default the values in the Set Origin screen to the current origin offsets
-- Enhancement: Switch to File view after starting gcode playback
-- Enhancement: 3D visualisation for endmill now is transparent and conical to improve visability
 - Fix: Movements around the A axis were incorrectly visualised as straight lines between points instead of arcs around the rotational axis
-- Change: 3D Probe is an option in the "Set" Tool menu. This sets the tool to number 99990
-- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
 
 [0.8.2]
 - Fix: Linux ARM64 appimage builds

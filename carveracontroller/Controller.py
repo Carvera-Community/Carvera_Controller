@@ -140,6 +140,8 @@ class Controller:
 
         self.diagnosing = False
 
+        self.is_community_firmware = False
+
     # ----------------------------------------------------------------------
     def quit(self, event=None):
         pass
@@ -200,11 +202,11 @@ class Controller:
                 cmd = "buffer " + cmd
             self.executeCommand(cmd) #run margin command. Has to be two seperate commands to offset the start of the autolevel process
         cmd = "M495 X%gY%g" % (CNC.vars['xmin'] + auto_level_offsets[0], CNC.vars['ymin'] + auto_level_offsets[2]) #reinitialize command with any autolevel offsets
-        if zprobe: 
-            if zprobe_abs: 
+        if zprobe:
+            if zprobe_abs:
                 cmd = "M495 X%gY%g" % (CNC.vars['xmin'], CNC.vars['ymin']) #reset command for 4th axis
                 cmd = cmd + "O0"
-            else: 
+            else:
                 cmd = cmd + "O%gF%g" % (z_probe_offset_x, z_probe_offset_y)
         if leveling:
             cmd = cmd + "A%gB%gI%dJ%dH%d" % (CNC.vars['xmax'] - (CNC.vars['xmin']+auto_level_offsets[1]+ auto_level_offsets[0]) , CNC.vars['ymax'] - (CNC.vars['ymin']+auto_level_offsets[3] + auto_level_offsets[2]), i, j, h)
@@ -259,24 +261,51 @@ class Controller:
     #         cmd = "buffer " + cmd
     #     self.executeCommand(cmd)
 
-    def gotoPosition(self, position, buffer=False):
-        if position is None:
-            return
-        cmd = ""
-        if position == "Clearance":
-            cmd = "M496.1\n"
-        elif position == "Work Origin":
-            cmd = "M496.2\n"
-        elif position == "Anchor1":
-            cmd = "M496.3\n"
-        elif position == "Anchor2":
-            cmd = "M496.4\n"
-        elif position == "Path Origin":
-            if abs(CNC.vars['xmin']) <= CNC.vars['worksize_x'] and abs(CNC.vars['ymin']) <= CNC.vars['worksize_y']:
-                cmd = "M496.5 X%gY%g\n" % (CNC.vars['xmin'], CNC.vars['ymin'])
+    def gotoClearance(self, buffer=False):
+        cmd = "M496.1\n"
         if buffer:
             cmd = "buffer " + cmd
         self.executeCommand(cmd)
+
+    def gotoWorkOrigin(self, buffer=False):
+        cmd = "M496.2\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoAnchor1(self, buffer=False):
+        cmd = "M496.3\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoAnchor2(self, buffer=False):
+        cmd = "M496.4\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoPathOrigin(self, buffer=False):
+        if abs(CNC.vars['xmin']) <= CNC.vars['worksize_x'] and abs(CNC.vars['ymin']) <= CNC.vars['worksize_y']:
+            cmd = "M496.5 X%gY%g\n" % (CNC.vars['xmin'], CNC.vars['ymin'])
+            if buffer:
+                cmd = "buffer " + cmd
+            self.executeCommand(cmd)
+
+    def gotoPosition(self, position, buffer=False):
+        """Legacy method to route to appropriate goto method based on position string"""
+        if position is None:
+            return
+        if position == "Clearance":
+            self.gotoClearance(buffer)
+        elif position == "Work Origin":
+            self.gotoWorkOrigin(buffer)
+        elif position == "Anchor1":
+            self.gotoAnchor1(buffer)
+        elif position == "Anchor2":
+            self.gotoAnchor2(buffer)
+        elif position == "Path Origin":
+            self.gotoPathOrigin(buffer)
 
     def reset(self):
         self.executeCommand("reset\n")
@@ -296,11 +325,14 @@ class Controller:
     def clearAutoLeveling(self):
         self.executeCommand("M370\n")
 
-    def setSpindleSwitch(self, switch, rpm):
-        if switch:
-            self.executeCommand("M3 S%d\n" % (rpm))
+    def setSpindleSwitch(self, switch, rpm=None):
+        if switch and rpm is not None:
+            cmd = f"M3 S{int(rpm)}\n"
+        elif switch and rpm is None:
+            cmd = "M3\n"
         else:
-            self.executeCommand("M5\n")
+           cmd = "M5\n"
+        self.executeCommand(cmd)
 
     def setVacuumPower(self, power=0):
         if power > 0:
@@ -381,7 +413,7 @@ class Controller:
 
     def clampToolCommand(self):
         self.executeCommand("M490.1\n")
-    
+
     def unclampToolCommand(self):
         self.executeCommand("M490.2\n")
 
@@ -552,12 +584,28 @@ class Controller:
         d = {a: [float(y) for y in b.split(',')] for a, b in [x.split(':') for x in l[1:]]}
         if 'R' in d:
             CNC.vars["rotation_angle"] = float(d['R'][0])
+            CNC.can_rotate_wcs = True
         else:
             CNC.vars["rotation_angle"] = 0.0
         if 'G' in d:
             CNC.vars["active_coord_system"] = int(d['G'][0])
+        if 'C' in d:
+            CNC.vars['MachineModel'] = int(d['C'][0])
+            CNC.vars['FuncSetting'] = int(d['C'][1])
+            CNC.vars['inch_mode'] = int(d['C'][2])
+            CNC.vars['absolute_mode'] = int(d['C'][3])
         else:
-            CNC.vars["active_coord_system"] = 0
+            CNC.vars['MachineModel'] = 1
+            CNC.vars['FuncSetting'] = 0
+            CNC.vars['inch_mode'] = 0
+            CNC.vars['absolute_mode'] = 0
+        if CNC.vars['inch_mode'] != 999:
+            if CNC.vars['inch_mode'] == 1:
+                CNC.UnitScale = 25.4
+            else:
+                CNC.UnitScale = 1
+        else:
+            CNC.UnitScale = 1
         CNC.vars["mx"] = float(d['MPos'][0])
         CNC.vars["my"] = float(d['MPos'][1])
         CNC.vars["mz"] = float(d['MPos'][2])
@@ -791,6 +839,9 @@ class Controller:
     def viewParameters(self):
         self.sendGCode("$#")
 
+    def viewWCS(self):
+        self.sendGCode("get wcs")
+
     def viewState(self):
         self.sendGCode("$G")
 
@@ -819,7 +870,7 @@ class Controller:
     # ----------------------------------------------------------------------
     def jog(self, _dir):
         self.executeCommand("G91G0{}".format(_dir))
-    
+
     def jog_with_speed(self, _dir, speed):
         if speed > 0:
             self.executeCommand(f"G91G0{_dir} F{speed}")
@@ -834,6 +885,17 @@ class Controller:
         if y is not None: cmd += "Y%g" % (y)
         if z is not None: cmd += "Z%g" % (z)
         self.sendGCode("%s" % (cmd))
+
+    def gotoSafeZ(self):
+        self.sendGCode("G53 G0 Z0")
+
+    def gotoMachineHome(self):
+        self.gotoSafeZ()
+        self.sendGCode("G53 G0 X0 Y0")
+
+    def gotoWCSHome(self):
+        self.gotoSafeZ()
+        self.sendGCode("G53 G0 X%g Y%g" % (CNC.vars['wcox'], CNC.vars['wcoy']))
 
     def wcsSetA(self, a = None):
         cmd = "G92.4"
@@ -876,6 +938,15 @@ class Controller:
 
         self.sendGCode(cmd)
 
+    def wcsClearRotation(self):
+        cmd = "G10L2R0P0"
+        self.sendGCode(cmd)
+
+    def setRotation(self, rotation):
+        """Set the rotation angle for the current coordinate system"""
+        cmd = f"G10L2R{rotation:.1f}P0"
+        self.sendGCode(cmd)
+
     def feedHold(self, event=None):
         if event is not None and not self.acceptKey(True): return
         if self.stream is None: return
@@ -911,6 +982,11 @@ class Controller:
             else:
                 self.parseBigParentheses(line)
                 self.sio_diagnose = False
+        elif line[0] == "[" in line:
+            # Log raw WCS parameters before parsing
+            self.log.put((self.MSG_NORMAL, line))
+            # Parse WCS parameters: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+            self.parseWCSParameters(line)
         elif line[0] == "#":
             self.log.put((self.MSG_INTERIOR, line))
         elif "error" in line.lower() or "alarm" in line.lower():
@@ -1020,3 +1096,45 @@ class Controller:
 
             if dynamic_delay > 0:
                 time.sleep(dynamic_delay)
+
+    def parseWCSParameters(self, line):
+        """Parse WCS parameters from machine response"""
+        # Parse format: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+        # Extract all WCS entries from the line
+
+        # parse the current WCS from the "get wcs" command
+        get_wcs_pattern = r'\[current WCS: (G5[4-9][.1-3]*)\]'
+        current_wcs_matches = re.findall(get_wcs_pattern, line)
+        
+        if current_wcs_matches:
+            # if not on community firmware or rotation angle is not set,
+            # the active coordinate system is tracked through the "get wcs" command
+            if not self.is_community_firmware or not CNC.can_rotate_wcs:
+                CNC.vars["active_coord_system"] = CNC.wcs_names.index(current_wcs_matches[0])
+            return
+
+        wcs_pattern = r'\[(G5[4-9][.1-3]*):([^]]+)\]'
+        matches = re.findall(wcs_pattern, line)
+        wcs_data = {}
+        for wcs_code, values_str in matches:
+            # Split the values by comma
+            values = values_str.split(',')
+            if len(values) >= 5:  # X, Y, Z, A, B, Rotation
+                try:
+                    x = float(values[0])
+                    y = float(values[1])
+                    z = float(values[2])
+                    a = float(values[3])
+                    b = float(values[4])  # B is always 0
+                    if self.is_community_firmware and CNC.can_rotate_wcs:
+                        rotation = float(values[5])
+                    else:
+                        rotation = 0.0
+                    wcs_data[wcs_code] = [x, y, z, a, b, rotation]  # Store only X, Y, Z, A, B, Rotation
+                    
+                except (ValueError, IndexError):
+                    print(f"Error parsing WCS values for {wcs_code}: {values_str}")
+        
+        # Send the parsed data to the WCS Settings popup if it's open
+        if hasattr(self, 'wcs_popup_callback') and self.wcs_popup_callback:
+            self.wcs_popup_callback(wcs_data)
