@@ -338,6 +338,8 @@ class OriginPopup(ModalView):
     def update_offsets(self):
         # Use the same logic as CoordPopup.load_origin_label to set offsets
         app = App.get_running_app()
+        x = 0
+        y = 0
         if app.has_4axis:
             x = round(CNC.vars["wcox"] - CNC.vars['anchor1_x'] - CNC.vars['rotation_offset_x'], 4)
             y = round(CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['rotation_offset_y'], 4)
