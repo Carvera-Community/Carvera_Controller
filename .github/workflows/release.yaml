@@ -205,13 +205,37 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
 
   build-android-artifacts:
-    name: build-android-armeabi-v7a
+    name: build-android
     runs-on: ubuntu-22.04
     defaults:
       run:
         shell: bash
     steps:
     - uses: actions/checkout@v4
+
+    - name: Cache Buildozer global directory
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer
+        key: ${{ runner.os }}-buildozer-global
+        restore-keys: |
+          ${{ runner.os }}-buildozer-global
+
+    - name: Cache Buildozer directory in app
+      uses: actions/cache@v4
+      with:
+        path: .buildozer
+        key: ${{ runner.os }}-buildozer-app
+        restore-keys: |
+          ${{ runner.os }}-buildozer-app
+
+    - name: Cache Android SDK
+      uses: actions/cache@v4
+      with:
+        path: ~/.buildozer/android/platform/android-sdk
+        key: ${{ runner.os }}-android-sdk
+        restore-keys: |
+          ${{ runner.os }}-android-sdk
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
