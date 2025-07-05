@@ -227,6 +227,8 @@ class GcodePlaySlider(Slider):
         if released and self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
+            # Add line highlighting when slider is moved
+            self._update_line_highlighting()
             return True
         return released
 
@@ -237,10 +239,24 @@ class GcodePlaySlider(Slider):
         if self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
+            # Add line highlighting when slider is moved
+            self._update_line_highlighting()
             # float_number = self.value * app.root.selected_file_line_count / 1000
             # app.root.gcode_viewer.set_distance_by_lineidx(int(float_number), float_number - int(float_number))
             return True
         return released
+
+    def _update_line_highlighting(self):
+        """Update line highlighting in the file viewer based on current slider position"""
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Get current position and line number from gcode viewer
+            current_pos = app.root.gcode_viewer.get_cur_pos_index()
+            if current_pos and len(current_pos) > 1:
+                line_number = current_pos[1]
+                if line_number > 0 and hasattr(app.root, 'gcode_rv'):
+                    # Update the line highlighting in the file viewer
+                    app.root.gcode_rv.set_selected_line(line_number)
 
 class FloatBox(FloatLayout):
     touch_interval = 0
@@ -4192,6 +4208,9 @@ class Makera(RelativeLayout):
     def gcode_play_call_back(self, distance, line_number):
         if not self.loading_file:
             self.gcode_play_slider.value = distance * 1000.0 / self.gcode_viewer_distance
+            # Update line highlighting in file viewer during playback
+            if line_number > 0 and hasattr(self, 'gcode_rv'):
+                self.gcode_rv.set_selected_line(line_number)
 
     # -----------------------------------------------------------------------
     def gcode_play_over_call_back(self):
@@ -4253,6 +4272,8 @@ class Makera(RelativeLayout):
         self.gcode_viewer.set_move_speed(GCODE_VIEW_SPEED)
         self.gcode_playing = False
         self.gcode_viewer.dynamic_display = False
+        # Set up frame callback for line highlighting
+        self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
 
     # ------------------------------------------------------------------------
     def load_page(self, page_no, *args):

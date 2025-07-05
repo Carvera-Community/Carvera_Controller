@@ -1794,6 +1794,10 @@ class GCodeViewer(Widget):
             print("distance is out of bounds")
             return
         self.display_count = float(distance)
+        # Trigger frame callback to update line highlighting
+        if hasattr(self, 'frame_callback') and self.frame_callback is not None:
+            [cur_distance, linenumber] = self.get_cur_pos_index()
+            self.frame_callback(cur_distance, linenumber)
 
     #根据line number 返回实际距离
     #TODO:need test
