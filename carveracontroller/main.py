@@ -220,6 +220,10 @@ def register_images(base_path):
 
 
 class GcodePlaySlider(Slider):
+    def __init__(self, **kwargs):
+        super(GcodePlaySlider, self).__init__(**kwargs)
+        self.programmatic_update = False  # Flag to prevent infinite loops
+
     def on_touch_down(self, touch):
         if self.disabled:
             return
@@ -227,8 +231,8 @@ class GcodePlaySlider(Slider):
         if released and self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
-            # Add line highlighting when slider is moved
-            self._update_line_highlighting()
+            
+            self._update_line_highlighting() # Add line highlighting when slider is moved
             return True
         return released
 
@@ -239,10 +243,8 @@ class GcodePlaySlider(Slider):
         if self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
-            # Add line highlighting when slider is moved
-            self._update_line_highlighting()
-            # float_number = self.value * app.root.selected_file_line_count / 1000
-            # app.root.gcode_viewer.set_distance_by_lineidx(int(float_number), float_number - int(float_number))
+            
+            self._update_line_highlighting() # Add line highlighting when slider is moved
             return True
         return released
 
@@ -255,8 +257,13 @@ class GcodePlaySlider(Slider):
             if current_pos and len(current_pos) > 1:
                 line_number = current_pos[1]
                 if line_number > 0 and hasattr(app.root, 'gcode_rv'):
-                    # Update the line highlighting in the file viewer
                     app.root.gcode_rv.set_selected_line(line_number)
+        
+    def on_value(self, instance, value):
+        """Called when the slider value changes (both programmatically and manually)"""
+        # Disable this callback to prevent conflicts with programmatic updates
+        # Line highlighting will only be updated through touch methods
+        pass
 
 class FloatBox(FloatLayout):
     touch_interval = 0
@@ -1277,7 +1284,51 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
             Window.unbind(on_key_down=self.on_keyboard_down)
         else:
             Window.bind(on_key_down=self.on_keyboard_down)
+            # When a line is selected in the file viewer, update the 3D viewer and progress slider
+            # Only if this is not a programmatic selection to prevent infinite loops
+            if hasattr(rv, 'programmatic_selection') and not rv.programmatic_selection:
+                # Clear all other selections first (manual selection)
+                for i in range(len(rv.view_adapter.views)):
+                    if i != index:
+                        other_view = rv.view_adapter.get_visible_view(i)
+                        if other_view and hasattr(other_view, 'selected'):
+                            other_view.selected = False
+                self._update_3d_viewer_and_slider()
 
+    def _update_3d_viewer_and_slider(self):
+        """Update the 3D viewer and progress slider when a line is selected in the file viewer"""
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Calculate the actual line number based on current page and index
+            current_page = app.curr_page
+            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+            
+            # Set the programmatic flag to prevent infinite loops
+            if hasattr(app.root, 'gcode_rv'):
+                app.root.gcode_rv.programmatic_selection = True
+            
+            # Update the 3D viewer to show the selected line
+            app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            
+            # Reset the file viewer flag BEFORE setting the slider value to prevent the callback from being blocked
+            self._reset_file_viewer_flag()
+            
+            # Update the progress slider
+            if hasattr(app.root, 'gcode_play_slider') and app.root.gcode_play_slider:
+                # Set programmatic flag to prevent infinite loops
+                app.root.gcode_play_slider.programmatic_update = True
+                # Calculate the distance for this line and convert to slider value
+                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
+                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                app.root.gcode_play_slider.value = slider_value
+                # Reset the slider flag immediately after setting the value
+                app.root.gcode_play_slider.programmatic_update = False
+            
+    def _reset_file_viewer_flag(self):
+        """Reset the file viewer programmatic flag after updates are complete"""
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_rv'):
+            app.root.gcode_rv.programmatic_selection = False
 
 class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
     ''' Add selection support to the Label '''
@@ -1562,19 +1613,13 @@ class GCodeRV(RecycleView):
 
     def __init__(self, **kwargs):
         super(GCodeRV, self).__init__(**kwargs)
+        self.programmatic_selection = False  # Flag to prevent infinite loops
 
     def on_scroll_stop(self, touch):
         super(GCodeRV, self).on_scroll_stop(touch)
         self.scroll_time = time.time()
 
-    def select_line(self, *args):
-        old_line = self.view_adapter.get_visible_view(self.old_selected_line)
-        new_line = self.view_adapter.get_visible_view(self.new_selected_line)
-        if old_line:
-            old_line.selected = False
-        if new_line:
-            new_line.selected = True
-            self.old_selected_line = self.new_selected_line
+
 
     def set_selected_line(self, line):
         app = App.get_running_app()
@@ -1582,18 +1627,33 @@ class GCodeRV(RecycleView):
         if aiming_page != app.curr_page:
             app.root.load_page(aiming_page)
         line = line % MAX_LOAD_LINES
-        if line != self.old_selected_line:
-            if self.data_length > 0 and line < self.data_length:
-                page_lines = len(self.view_adapter.views)
-                self.new_selected_line = line - 1
-                Clock.schedule_once(self.select_line, 0)
-                if time.time() - self.scroll_time > 3:
-                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length -  page_lines / 2 + 1, 1.0, 0.0)
-                    if scroll_value < 0:
-                        scroll_value = 0
-                    if scroll_value > 1:
-                        scroll_value = 1
-                    self.scroll_y = scroll_value
+        if self.data_length > 0 and line < self.data_length:
+            page_lines = len(self.view_adapter.views)
+            self.new_selected_line = line - 1
+            # Set flag to prevent infinite loops
+            self.programmatic_selection = True
+            
+            # Clear all previous selections immediately to prevent multiple selections
+            for i in range(len(self.view_adapter.views)):
+                view = self.view_adapter.get_visible_view(i)
+                if view and hasattr(view, 'selected'):
+                    view.selected = False
+            
+            # Set the new selection immediately instead of scheduling
+            new_line = self.view_adapter.get_visible_view(self.new_selected_line)
+            if new_line:
+                new_line.selected = True
+                self.old_selected_line = self.new_selected_line
+            # Reset the programmatic flag immediately
+            self.programmatic_selection = False
+            
+            if time.time() - self.scroll_time > 3:
+                scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length -  page_lines / 2 + 1, 1.0, 0.0)
+                if scroll_value < 0:
+                    scroll_value = 0
+                if scroll_value > 1:
+                    scroll_value = 1
+                self.scroll_y = scroll_value
 
 # -----------------------------------------------------------------------
 # Manual Recycle View
@@ -4209,7 +4269,8 @@ class Makera(RelativeLayout):
         if not self.loading_file:
             self.gcode_play_slider.value = distance * 1000.0 / self.gcode_viewer_distance
             # Update line highlighting in file viewer during playback
-            if line_number > 0 and hasattr(self, 'gcode_rv'):
+            # Only if this is not a programmatic selection to prevent infinite loops
+            if line_number > 0 and hasattr(self, 'gcode_rv') and not self.gcode_rv.programmatic_selection:
                 self.gcode_rv.set_selected_line(line_number)
 
     # -----------------------------------------------------------------------

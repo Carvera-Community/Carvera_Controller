@@ -26,7 +26,7 @@ See the [CHANGELOG](CHANGELOG.md) and [screenshots](docs/screenshots/) for more 
    * Better file browser **upload-and-select** workflow
    * **Previous** file browsing location is **reopened** and **previously** used locations stored to **quick access list**
    * **Greater speed/feed** override scaling range from **10%** and up to **300%**
-   * **Improved** 3D gcode visualisations, including **correct rendering** of movements around the **A axis**
+   * **Improved** 3D gcode visualisations, including **correct rendering** of movements around the **A axis**, and synchronized line selection with preview progress slider
 
 
 ## Supported OS

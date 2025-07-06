@@ -1811,6 +1811,17 @@ class GCodeViewer(Widget):
             right_pos = right_pos + 1
         #skip to next pos(lineidx+1)
         right_pos = right_pos + 1
+        
+        # Ensure bounds are valid since not all lines are movements
+        if left_pos >= len(self.lengths):
+            left_pos = len(self.lengths) - 1
+        if right_pos >= len(self.lengths):
+            right_pos = len(self.lengths) - 1
+        if left_pos < 0:
+            left_pos = 0
+        if right_pos < 0:
+            right_pos = 0
+            
         #start point
         start_distance = self.lengths[left_pos]
         end_distance = self.lengths[right_pos]
@@ -1828,6 +1839,17 @@ class GCodeViewer(Widget):
             right_pos = right_pos + 1
         #skip to next pos(lineidx+1)
         right_pos = right_pos + 1
+        
+        # Ensure bounds are valid since not all lines are movements
+        if left_pos >= len(self.lengths):
+            left_pos = len(self.lengths) - 1
+        if right_pos >= len(self.lengths):
+            right_pos = len(self.lengths) - 1
+        if left_pos < 0:
+            left_pos = 0
+        if right_pos < 0:
+            right_pos = 0
+            
         #start point
         start_distance = self.lengths[left_pos]
         end_distance = self.lengths[right_pos]
@@ -1920,8 +1942,8 @@ class GCodeViewer(Widget):
 
         self.cur_line_index = line_index_withratio
 
-        #逐帧回调
-        if(hasattr(self,'frame_callback') and self.frame_callback is not None):
+        #逐帧回调 - only when in dynamic display mode (playing)
+        if(hasattr(self,'frame_callback') and self.frame_callback is not None and self.dynamic_display):
             [cur_distance,linenumber]= self.get_cur_pos_index()
             self.frame_callback(cur_distance,linenumber)
             #debug
