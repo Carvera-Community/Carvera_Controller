@@ -5441,3 +5441,68 @@
                 on_release:
                     app.root.controller.setRotation(float(txt_rotation.text))
                     root.dismiss()
+
+<GCodeLineContextMenu>:
+    size_hint: None, None
+    size: dp(200), dp(90)
+    
+    canvas.before:
+        Color:
+            rgb: (0.15, 0.15, 0.15)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgb: (0.25, 0.25, 0.25)
+        Line:
+            rectangle: (self.x, self.y, self.width, self.height)
+            width: dp(1)
+    
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 0
+        spacing: 0
+        
+        # Line number header
+        Label:
+            id: line_header
+            text: f'Line {root.line_number}'
+            color: (1, 1, 1, 1)
+            font_size: '15sp'
+            size_hint_y: None
+            height: dp(26)
+            padding: dp(10), 0
+            halign: 'left'
+            valign: 'middle'
+        
+        # Resume playback option
+        Button:
+            id: resume_option
+            text: 'Resume playback at this line'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: 0, 0, 0, 0
+            color: (1, 1, 1, 1)
+            canvas.before:
+                Color:
+                    rgb: (0.15, 0.15, 0.15)
+                Rectangle:
+                    size: self.size
+            on_press: root.resume_at_line()
+        
+        # Cancel option
+        Button:
+            id: cancel_option
+            text: 'Cancel'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: 0, 0, 0, 0
+            color: (1, 1, 1, 1)
+            canvas.before:
+                Color:
+                    rgb: (0.15, 0.15, 0.15)
+                Rectangle:
+                    size: self.size
+            on_press: root.dismiss() 

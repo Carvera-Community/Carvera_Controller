@@ -320,6 +320,40 @@ class ProgressPopup(ModalView):
     def __init__(self, **kwargs):
         super(ProgressPopup, self).__init__(**kwargs)
 
+class GCodeLineContextMenu(Widget):
+    """Context menu for GCode file viewer lines"""
+    line_number = NumericProperty(0)
+    
+    def __init__(self, line_number, **kwargs):
+        super(GCodeLineContextMenu, self).__init__(**kwargs)
+        self.line_number = line_number
+        
+    def on_touch_down(self, touch):
+        """Handle touch events - dismiss menu if touch is outside"""
+        if not self.collide_point(*touch.pos):
+            # Touch outside the menu - dismiss it
+            self.dismiss()
+            return False
+        
+        # Prevent right-click from opening another context menu
+        if hasattr(touch, 'button') and touch.button == 'right':
+            return True
+        
+        return super(GCodeLineContextMenu, self).on_touch_down(touch)
+        
+    def resume_at_line(self):
+        """Enable resume at line checkbox and set the line number"""
+        app = App.get_running_app()
+
+        app.root.coord_popup.cbx_startline.active = True
+        app.root.coord_popup.txt_startline.text = str(self.line_number)
+        self.parent.remove_widget(self)
+    
+    def dismiss(self):
+        """Close the context menu"""
+        if self.parent:
+            self.parent.remove_widget(self)
+
 class OriginPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
@@ -1251,6 +1285,8 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
+    touch_start_time = 0
+    touch_start_pos = None
 
     def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
         mod = "ctrl" if sys.platform == "win32" else "meta"
@@ -1271,11 +1307,70 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         if super(SelectableLabel, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos) and self.selectable:
-            if touch.is_double_tap:
+            # Store touch start time and position for long press detection
+            self.touch_start_time = time.time()
+            self.touch_start_pos = touch.pos
+            
+            # Check for right click (button == 'right') or long press
+            if hasattr(touch, 'button') and touch.button == 'right':
+                self._show_context_menu(touch.pos)
+                return True
+            elif touch.is_double_tap:
                 app = App.get_running_app()
                 app.root.manual_cmd.text = self.text.strip()
                 Clock.schedule_once(app.root.refocus_cmd)
             return self.parent.select_with_touch(self.index, touch)
+
+    def on_touch_up(self, touch):
+        ''' Handle touch up for long press detection '''
+        if self.collide_point(*touch.pos) and self.selectable:
+            # Check if this was a long press
+            if (self.touch_start_pos and 
+                time.time() - self.touch_start_time >= 0.5 and  # 0.5 seconds for long press
+                self._is_same_position(touch.pos, self.touch_start_pos)):
+                self._show_context_menu(touch.pos)
+                return True
+        return super(SelectableLabel, self).on_touch_up(touch)
+
+    def _is_same_position(self, pos1, pos2, tolerance=10):
+        """Check if two positions are within tolerance of each other"""
+        return abs(pos1[0] - pos2[0]) <= tolerance and abs(pos1[1] - pos2[1]) <= tolerance
+
+    def _show_context_menu(self, pos):
+        """Show the context menu for this line"""
+        app = App.get_running_app()
+        
+        # Check if a context menu is already open and dismiss it
+        for child in app.root.children:
+            if isinstance(child, GCodeLineContextMenu):
+                child.dismiss()
+        
+        current_page = app.curr_page
+        actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+        
+        # Create and show the context menu
+        context_menu = GCodeLineContextMenu(actual_line_number)
+        
+        # Add to the main window first so it gets properly sized
+        app.root.add_widget(context_menu)
+        
+        window_width = Window.width
+        window_height = Window.height
+        
+        # Get the actual size of the context menu after layout
+        menu_width = context_menu.width
+        menu_height = context_menu.height
+        
+        # For right-click (desktop): position at mouse pointer
+        # Convert touch position to window coordinates
+        window_pos = self.to_window(pos[0], pos[1])
+        
+        # Position the menu slightly offset from the mouse pointer (typical context menu behavior)
+        # Try to position below and to the right of the cursor, but keep it on screen
+        x = min(max(window_pos[0] + 5, 10), window_width - menu_width - 10)
+        y = min(max(window_pos[1] - menu_height - 5, 10), window_height - menu_height - 10)
+        
+        context_menu.pos = (x, y)
 
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
@@ -4591,6 +4686,9 @@ class MakeraApp(App):
         return True
 
 def load_app_configs():
+    # Disable multitouch simulation (red dots) for right-click
+    Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+    
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
 
