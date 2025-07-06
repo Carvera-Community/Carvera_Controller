@@ -320,7 +320,7 @@ class ProgressPopup(ModalView):
     def __init__(self, **kwargs):
         super(ProgressPopup, self).__init__(**kwargs)
 
-class GCodeLineContextMenu(Widget):
+class GCodeLineContextMenu(FloatLayout):
     """Context menu for GCode file viewer lines"""
     line_number = NumericProperty(0)
     
@@ -1353,6 +1353,12 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         
         # Add to the main window first so it gets properly sized
         app.root.add_widget(context_menu)
+        
+        self._position_context_menu(context_menu, pos)
+    
+    def _position_context_menu(self, context_menu, pos):
+        """Position the context menu after layout is complete"""
+        app = App.get_running_app()
         
         window_width = Window.width
         window_height = Window.height
