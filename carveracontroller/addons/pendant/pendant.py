@@ -119,7 +119,9 @@ if WHB04_SUPPORTED:
             daemon.set_display_position(whb04.Axis.X, self._cnc.vars["wx"])
             daemon.set_display_position(whb04.Axis.Y, self._cnc.vars["wy"])
             daemon.set_display_position(whb04.Axis.Z, self._cnc.vars["wz"])
-            daemon.set_display_position(whb04.Axis.A, self._cnc.vars["wa"])
+            # There are no absolute positions for the rotational axis, hence ma
+            # instead of wa is used.
+            daemon.set_display_position(whb04.Axis.A, self._cnc.vars["ma"])
             daemon.set_display_feedrate(self._cnc.vars["curfeed"])
             daemon.set_display_spindle_speed(self._cnc.vars["curspindle"])
 
