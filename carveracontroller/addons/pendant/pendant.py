@@ -38,6 +38,7 @@ class Pendant:
                  spindle_override: OverrideController,
                  is_jogging_enabled: Callable[[], None],
                  handle_run_pause_resume: Callable[[], None],
+                 handle_probe_z: Callable[[], None],
                  open_probing_popup: Callable[[], None],
                  report_connection: Callable[[], None],
                  report_disconnection: Callable[[], None]) -> None:
@@ -48,6 +49,7 @@ class Pendant:
 
         self._is_jogging_enabled = is_jogging_enabled
         self._handle_run_pause_resume = handle_run_pause_resume
+        self._handle_probe_z = handle_probe_z
         self._open_probing_popup = open_probing_popup
         self._report_connection = report_connection
         self._report_disconnection = report_disconnection
@@ -174,7 +176,7 @@ if WHB04_SUPPORTED:
                     self._is_spindle_running = not self._is_spindle_running
                     self._controller.setSpindleSwitch(self._is_spindle_running)
                 if button == whb04.Button.PROBE_Z:
-                    self._open_probing_popup()
+                    self._handle_probe_z()
             else:
                 MACROS = [
                     whb04.Button.FEED_PLUS,

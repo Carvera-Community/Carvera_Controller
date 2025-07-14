@@ -4089,6 +4089,7 @@ class Makera(RelativeLayout):
                                 feed_override, spindle_override,
                                 self.is_pendant_jogging_enabled,
                                 self.handle_pendat_run_pause_resume,
+                                self.handle_pendant_probe_z,
                                 self.handle_pendant_open_probing_popup,
                                 self.handle_pendant_connected,
                                 self.handle_pendant_disconnected)
@@ -4106,11 +4107,19 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         if app.state == 'Pause':
             self.controller.resumeCommand()
+        elif app.state == 'Alarm':
+            self.unlockMachine()
         else:
             self.controller.suspendCommand()
 
     def handle_pendant_open_probing_popup(self):
         self.probing_popup.open()
+
+    def handle_pendant_probe_z(self):
+        if self.controller.is_community_firmware:
+            self.controller.executeCommand("M466 Z-200 S2")
+        else:
+            self.controller.executeCommand("G38.2 Z-200")
 
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
