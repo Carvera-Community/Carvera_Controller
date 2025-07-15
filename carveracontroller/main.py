@@ -1908,8 +1908,8 @@ class Makera(RelativeLayout):
 
         # Setup pendant
         self.setup_pendant()
-        self.pendant_jogging_default = int(Config.get('carvera', 'pendant_jogging_default'))
-        self.pendant_probe_z_alt_cmd = int(Config.get('carvera', 'pendant_probe_z_alt_cmd'))
+        self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
+        self.pendant_probe_z_alt_cmd = Config.get('carvera', 'pendant_probe_z_alt_cmd')
 
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
@@ -4098,7 +4098,7 @@ class Makera(RelativeLayout):
     def handle_pendant_connected(self):
         self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant')
         self.ids.pendant_jogging_en_btn.disabled = False
-        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default else 'normal'
+        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
 
     def handle_pendant_disconnected(self):
         self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
@@ -4117,7 +4117,7 @@ class Makera(RelativeLayout):
         self.probing_popup.open()
 
     def handle_pendant_probe_z(self):
-        if self.pendant_probe_z_alt_cmd == 1:
+        if self.pendant_probe_z_alt_cmd == "1":
             if self.controller.is_community_firmware:
                 self.controller.executeCommand("M466 Z-200 S2")
             else:
