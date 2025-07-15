@@ -16,6 +16,14 @@
         "default": "true"
     },
     {
+        "type": "bool",
+        "title": "Change the \"Probe Z\" button to directly probe Z",
+        "desc": "Directly probe Z instead of opening the probing screen",
+        "section": "carvera",
+        "key": "pendant_probe_z_alt_cmd",
+        "default": "false"
+    },
+    {
         "type": "options",
         "title": "Primary button action is",
         "desc": "Buttons on pendant have a secondary action when combined with Fn key. You can either set the primary button action to be a user macro or a key-specific action",
