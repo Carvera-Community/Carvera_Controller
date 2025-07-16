@@ -115,6 +115,10 @@ python3 -m carveracontroller
 
 The Community controller supports the WBH04 family of pendants to control the machine. They can be purchased from [AliExpress](https://www.aliexpress.com/item/1005006270475983.html) or from other online retailers.
 
+### Linux package dependency
+
+To use the pedant in Linux your system needs the `libhidapi-hidraw0` package.
+
 ### Linux device permissions
 
 To use the pendant in Linux, you need to grant your user access to the USB device. Most Linux distributions (Ubuntu/Debian/Fedora) automatically add users to the `plugdev` group, so the easiest and most secure approach is to create a udev rule that grants this group access to the device.

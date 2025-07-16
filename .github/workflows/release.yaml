@@ -141,8 +141,8 @@ jobs:
         with:
           os: linux
 
-      - name: Install MTDev
-        run: sudo apt-get install -y mtdev-tools gettext
+      - name: Install Linux prerequisites
+        run: poetry run ./scripts/install_linux_prereqs.sh
 
       - name: Build release
         run: |
@@ -247,8 +247,8 @@ jobs:
       with:
         os: linux
 
-    - name: Install MTDev
-      run: sudo apt-get install -y mtdev-tools gettext
+    - name: Install Linux prerequisites
+      run: poetry run ./scripts/install_linux_prereqs.sh
 
     # Set up Java 17 required by Gradle
     - name: Setup Java 17 required by Gradle
