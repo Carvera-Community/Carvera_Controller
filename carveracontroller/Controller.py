@@ -877,11 +877,11 @@ class Controller:
         self.sendGCode("%s" % (cmd))
 
     def gotoSafeZ(self):
-        self.sendGCode("G53 G0 Z0")
+        self.sendGCode("G53 G0 Z-1")
 
     def gotoMachineHome(self):
         self.gotoSafeZ()
-        self.sendGCode("G53 G0 X0 Y0")
+        self.sendGCode("G53 G0 X-1 Y-1")
 
     def gotoWCSHome(self):
         self.gotoSafeZ()

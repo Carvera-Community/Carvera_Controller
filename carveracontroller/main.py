@@ -1909,6 +1909,7 @@ class Makera(RelativeLayout):
         # Setup pendant
         self.setup_pendant()
         self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
+        self.pendant_probe_z_alt_cmd = Config.get('carvera', 'pendant_probe_z_alt_cmd')
 
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
@@ -4089,6 +4090,7 @@ class Makera(RelativeLayout):
                                 feed_override, spindle_override,
                                 self.is_pendant_jogging_enabled,
                                 self.handle_pendat_run_pause_resume,
+                                self.handle_pendant_probe_z,
                                 self.handle_pendant_open_probing_popup,
                                 self.handle_pendant_connected,
                                 self.handle_pendant_disconnected)
@@ -4096,7 +4098,7 @@ class Makera(RelativeLayout):
     def handle_pendant_connected(self):
         self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant')
         self.ids.pendant_jogging_en_btn.disabled = False
-        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default else 'normal'
+        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
 
     def handle_pendant_disconnected(self):
         self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
@@ -4106,11 +4108,22 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         if app.state == 'Pause':
             self.controller.resumeCommand()
+        elif app.state == 'Alarm':
+            self.unlockMachine()
         else:
             self.controller.suspendCommand()
 
     def handle_pendant_open_probing_popup(self):
         self.probing_popup.open()
+
+    def handle_pendant_probe_z(self):
+        if self.pendant_probe_z_alt_cmd == "1":
+            if self.controller.is_community_firmware:
+                self.controller.executeCommand("M466 Z-200 S2")
+            else:
+                self.controller.executeCommand("G38.2 Z-200")
+        else:
+            self.probing_popup.open()
 
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
