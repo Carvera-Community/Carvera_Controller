@@ -28,10 +28,15 @@ sudo apt install -y \
 
 
 print_status "Installing linuxdeploy (AppImage)"
-LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+ARCH=$(uname -m)
+LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${ARCH}.AppImage"
 LINUXDEPLOY_BIN="linuxdeploy"
-TMP_LINUXDEPLOY="/tmp/linuxdeploy-x86_64.AppImage"
-curl -L "$LINUXDEPLOY_URL" -o "$TMP_LINUXDEPLOY"
+echo "Detected architecture: $ARCH. Attempting to download linuxdeploy-${ARCH}.AppImage."
+TMP_LINUXDEPLOY="/tmp/${LINUXDEPLOY_BIN}.AppImage"
+if ! curl -L "$LINUXDEPLOY_URL" -o "$TMP_LINUXDEPLOY"; then
+    echo "Warning: Failed to download $LINUXDEPLOY_URL. This architecture may not be supported by linuxdeploy."
+    exit 1
+fi
 chmod +x "$TMP_LINUXDEPLOY"
 if [ "$(id -u)" -eq 0 ]; then
     mv "$TMP_LINUXDEPLOY" "/usr/local/bin/$LINUXDEPLOY_BIN"
