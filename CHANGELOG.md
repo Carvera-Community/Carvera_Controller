@@ -7,6 +7,7 @@
 - Change: Functionality that requires community firmware will be disabled in the Controller if using Makera firmware. Previously it would just not work.
 - Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
 - Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
+- Change: Unlocking the machine after a halt gives you the option to move to SafeZ
 - Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
 - Fix: Resolve the keysboard_mode config load error that occurs when reconnecting the Controller after it loses connection
 - Fix: Red origin dot in preview visualisation on config-and-run screen returned

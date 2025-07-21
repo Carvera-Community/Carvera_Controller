@@ -1326,6 +1326,42 @@
                 on_release:
                     root.dismiss()
                     root.confirm()
+
+<UnlockPopup>:
+    lb_title: lb_title
+    lb_content: lb_content
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            size_hint_y: 0.4
+            id: lb_title
+            text: tr._('Machine Is Halted')
+            bold: True
+        Label:
+            id: lb_content
+            text: tr._('Choose unlock option:')
+        BoxLayout:
+            size_hint_y: 0.4
+            Button:
+                text: tr._('Cancel')
+                on_release:
+                    root.dismiss()
+            Button:
+                text: tr._('Unlock and Stay in Position')
+                on_release:
+                    root.dismiss()
+                    if root.unlock_stay:\
+                    root.unlock_stay()
+            Button:
+                text: tr._('Unlock and Move to Safe Z')
+                on_release:
+                    root.dismiss()
+                    if root.unlock_safe_z:\
+                    root.unlock_safe_z()
 <MessagePopup>:
     btn_ok: btn_ok
     lb_content: lb_content

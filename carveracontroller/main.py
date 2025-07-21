@@ -279,6 +279,19 @@ class ConfirmPopup(ModalView):
         self.showing = False
 
 
+class UnlockPopup(ModalView):
+    showing = False
+
+    def __init__(self, **kwargs):
+        super(UnlockPopup, self).__init__(**kwargs)
+
+    def on_open(self):
+        self.showing = True
+
+    def on_dismiss(self):
+        self.showing = False
+
+
 class MessagePopup(ModalView):
     def __init__(self, **kwargs):
         super(MessagePopup, self).__init__(**kwargs)
@@ -1683,6 +1696,7 @@ class Makera(RelativeLayout):
     operation_drop_down = ObjectProperty()
 
     confirm_popup = ObjectProperty()
+    unlock_popup = ObjectProperty()
     message_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
@@ -1851,6 +1865,7 @@ class Makera(RelativeLayout):
         self.jog_speed_drop_down = JogSpeedDropDown()
 
         self.confirm_popup = ConfirmPopup()
+        self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
@@ -2577,14 +2592,32 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def open_halt_confirm_popup(self):
+        app = App.get_running_app()
+
+        # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
+        if CNC.vars["halt_reason"] < 20:
+            if self.unlock_popup.showing:
+                return
+            
+            if CNC.vars["halt_reason"] in HALT_REASON:
+                self.unlock_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
+            else:
+                self.unlock_popup.lb_title.text = tr._('Machine Is Halted!')
+            
+            self.unlock_popup.unlock_stay = partial(self.unlockMachine)
+            self.unlock_popup.unlock_safe_z = partial(self.unlockMachineAndMoveToSafeZ)
+            self.unlock_popup.open(self)
+            return
+
+        # Use ConfirmPopup for halt_reason >= 20 (machine requires reset)
         if self.confirm_popup.showing:
             return
-        app = App.get_running_app()
 
         if CNC.vars["halt_reason"] in HALT_REASON:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
         else:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted!')
+        
         self.confirm_popup.cancel = None
         if CNC.vars["halt_reason"] > 40:
             self.confirm_popup.lb_content.text = tr._('Please manually switch off/on the machine!')
@@ -2634,6 +2667,10 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def unlockMachine(self):
         self.controller.unlock()
+
+    def unlockMachineAndMoveToSafeZ(self):
+        self.controller.unlock()
+        self.controller.gotoSafeZ()
 
     # -----------------------------------------------------------------------
     def set_local_folder_to_last_opened(self):
@@ -3453,8 +3490,11 @@ class Makera(RelativeLayout):
                     self.tool_triggered = True
                     self.open_tool_confirm_popup()
             else:
-                if (self.alarm_triggered or self.tool_triggered) and self.confirm_popup.showing:
-                    self.confirm_popup.dismiss()
+                if (self.alarm_triggered or self.tool_triggered) and (self.confirm_popup.showing or self.unlock_popup.showing):
+                    if self.confirm_popup.showing:
+                        self.confirm_popup.dismiss()
+                    if self.unlock_popup.showing:
+                        self.unlock_popup.dismiss()
                 self.tool_triggered = False
                 self.alarm_triggered = False
 
@@ -4130,7 +4170,7 @@ class Makera(RelativeLayout):
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
                            self.pairing_popup._is_open,
                            self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open,
-                           self.confirm_popup._is_open,
+                           self.confirm_popup._is_open, self.unlock_popup._is_open,
                            self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open,
                            self.config_popup._is_open, self.probing_popup._is_open]
 
