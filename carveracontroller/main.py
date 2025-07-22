@@ -3518,7 +3518,7 @@ class Makera(RelativeLayout):
                 digi_len = 0
             if digi_len > 3:
                 digi_len = 3
-            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["ma"])
+            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["wa"])
             self.a_data_view.minr_text = "{:.3f}".format(CNC.vars["ma"])
 
             #update feed data
