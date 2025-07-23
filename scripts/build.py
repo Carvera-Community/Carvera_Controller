@@ -257,7 +257,7 @@ def rename_release_file(os_name, package_version):
         dst = f"./dist/{file_name}"
     elif os_name == "linux":
         arch_name = platform.machine()
-        file_name = f"carveracontroller-community-{package_version}-{arch_name}.appImage"
+        file_name = f"carveracontroller-community-{package_version}-{arch_name}.appimage"
         src = f"./Carvera_Controller_Community-{package_version}-{arch_name}.AppImage"
         dst = f"./dist/{file_name}"
     elif os_name == "android":
