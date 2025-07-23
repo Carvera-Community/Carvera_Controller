@@ -151,7 +151,7 @@ def run_linuxdeploy_appimage(package_version: str) -> None:
 
     # Run linuxdeploy
     env = os.environ.copy()
-    env["VERSION"] = package_version
+    env["LINUXDEPLOY_OUTPUT_VERSION"] = package_version
     subprocess.run([
         linuxdeploy,
         "--appdir", str(appdir),
@@ -257,7 +257,7 @@ def rename_release_file(os_name, package_version):
         dst = f"./dist/{file_name}"
     elif os_name == "linux":
         arch_name = platform.machine()
-        file_name = f"carveracontroller-community-{package_version}-{arch_name}.AppImage"
+        file_name = f"carveracontroller-community-{package_version}-{arch_name}.appImage"
         src = f"./Carvera_Controller_Community-{package_version}-{arch_name}.AppImage"
         dst = f"./dist/{file_name}"
     elif os_name == "android":
