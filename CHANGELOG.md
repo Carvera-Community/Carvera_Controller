@@ -15,6 +15,7 @@
 - Fix: Set origin popup now properly shows the current offset to the anchors when switching options. When set to 'current pos' the offset default to 0.
 - Fix: A Axis: WCS coordinate display now shows the correct value
 - Fix: A Axis: Set A and A = 0 use the correct commands now (e.g. G10L20A0P0 instead of G92.4 A0)
+- Fix: Increase the number of forced window renderings to workaround the Android blank screen issue
 
 [0.9.1]
 - Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990
