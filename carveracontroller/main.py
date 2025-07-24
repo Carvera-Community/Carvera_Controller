@@ -4586,10 +4586,10 @@ class MakeraApp(App):
             nonlocal viewport_update_count
             Window.update_viewport()
             viewport_update_count += 1
-            if viewport_update_count >= 15:  # Stop after 15 seconds
+            if viewport_update_count >= 20:  # Stop after 5 seconds (5/0.25=20)
                 return False  # This will unschedule the event
         
-        Clock.schedule_interval(update_viewport_with_counter, 1)
+        Clock.schedule_interval(update_viewport_with_counter, 0.25)
 
 
     def on_pause(self):
