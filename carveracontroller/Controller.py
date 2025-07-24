@@ -606,11 +606,14 @@ class Controller:
         CNC.vars["wx"] = float(d['WPos'][0])
         CNC.vars["wy"] = float(d['WPos'][1])
         CNC.vars["wz"] = float(d['WPos'][2])
-        CNC.vars["wa"] = 0.0
+        if len(d['WPos']) > 3:
+            CNC.vars["wa"] = float(d['WPos'][3])
+        else:
+            CNC.vars["wa"] = 0.0
         CNC.vars["wcox"] = round(CNC.vars["mx"] - (math.cos(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wx"] - math.sin(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wy"]), 3)
         CNC.vars["wcoy"] = round(CNC.vars["my"] - (math.sin(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wx"] + math.cos(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wy"]), 3)
         CNC.vars["wcoz"] = round(CNC.vars["mz"] - CNC.vars["wz"], 3)
-        CNC.vars["wcoa"] = round(CNC.vars["mz"] - CNC.vars["wz"], 3)
+        CNC.vars["wcoa"] = round(CNC.vars["ma"] - CNC.vars["wa"], 3)
         if 'F' in d:
            CNC.vars["curfeed"] = float(d['F'][0])
            CNC.vars["tarfeed"] = float(d['F'][1])

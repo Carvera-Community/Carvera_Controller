@@ -478,7 +478,7 @@
         disabled: app.state != 'Idle'
         on_release:
             root.select('Third Item')
-            app.root.controller.wcsSetA(0)
+            app.root.controller.wcsSet(None, None, None, 0)
     Button:
         text: tr._('Set A')
         size_hint_y: None
@@ -4438,7 +4438,7 @@
                 id: btn_ok
                 text: tr._('Ok')
                 on_release:
-                    app.root.controller.wcsSetA(float(txt_offset.text))
+                    app.root.controller.wcsSet(None, None, None, float(txt_offset.text))
                     root.dismiss()
 
 <SetToolPopup>:
