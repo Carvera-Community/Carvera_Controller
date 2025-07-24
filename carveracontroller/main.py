@@ -4578,7 +4578,18 @@ class MakeraApp(App):
         return Makera(ctl_version=__version__)
 
     def on_start(self):
-        Window.update_viewport()
+        # Workaround for Android blank screen issue
+        # https://github.com/kivy/python-for-android/issues/2720
+        viewport_update_count = 0
+        
+        def update_viewport_with_counter(dt):
+            nonlocal viewport_update_count
+            Window.update_viewport()
+            viewport_update_count += 1
+            if viewport_update_count >= 15:  # Stop after 15 seconds
+                return False  # This will unschedule the event
+        
+        Clock.schedule_interval(update_viewport_with_counter, 1)
 
 
     def on_pause(self):

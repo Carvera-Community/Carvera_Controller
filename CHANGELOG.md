@@ -13,6 +13,7 @@
 - Fix: Red origin dot in preview visualisation on config-and-run screen returned
 - Fix: Last open folder was using temp directory instead of actual user selected location
 - Fix: Set origin popup now properly shows the current offset to the anchors when switching options. When set to 'current pos' the offset default to 0.
+- Fix: Increase the number of forced window renderings to workaround the Android blank screen issue.
 
 [0.9.1]
 - Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990
