@@ -17,6 +17,8 @@
 - Fix: A Axis: Set A and A = 0 use the correct commands now (e.g. G10L20A0P0 instead of G92.4 A0)
 - Fix: Increase the number of forced window renderings to workaround the Android blank screen issue
 - Change: Graphics and behavoir of the probe boss command are now updated to use diameter and a J parameter instead of radius.
+- fix: set ordering of parameters in probing screens to use the existing ordering instead of first changed
+- fix: including Q parameter in probe corners
 
 [0.9.1]
 - Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990
