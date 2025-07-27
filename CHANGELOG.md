@@ -8,6 +8,7 @@
 - Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
 - Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
 - Change: Unlocking the machine after a halt gives you the option to move to SafeZ
+- Change: Graphics and behavoir of the probe boss command are now updated to use diameter and a J parameter instead of radius.
 - Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
 - Fix: Resolve the keysboard_mode config load error that occurs when reconnecting the Controller after it loses connection
 - Fix: Red origin dot in preview visualisation on config-and-run screen returned
@@ -16,9 +17,9 @@
 - Fix: A Axis: WCS coordinate display now shows the correct value
 - Fix: A Axis: Set A and A = 0 use the correct commands now (e.g. G10L20A0P0 instead of G92.4 A0)
 - Fix: Increase the number of forced window renderings to workaround the Android blank screen issue
-- Change: Graphics and behavoir of the probe boss command are now updated to use diameter and a J parameter instead of radius.
-- fix: set ordering of parameters in probing screens to use the existing ordering instead of first changed
-- fix: including Q parameter in probe corners
+- Fix: Set ordering of parameters in probing screens to use the existing ordering instead of first changed
+- Fix: Including Q parameter in probe corners
+- Fix: Order of probing parameters is the same on every page (E on angle probing page is special)
 
 [0.9.1]
 - Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990

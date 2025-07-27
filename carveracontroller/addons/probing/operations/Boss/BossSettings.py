@@ -10,6 +10,7 @@ class BossSettings(BoxLayout):
 
     def __init__(self, **kwargs):
         self.config = ConfigUtils.load_config(self.config_filename)
+        self.config = self.order_config(self.config)
         super(BossSettings, self).__init__(**kwargs)
 
     def setting_changed(self, key: str, value: float):

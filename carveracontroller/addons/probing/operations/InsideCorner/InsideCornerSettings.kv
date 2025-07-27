@@ -104,19 +104,6 @@
                     input_filter: 'float'
                     text: root.get_setting('RepeatOperationCount')
                     on_text: root.setting_changed('RepeatOperationCount', self.text)
-
-            ProbeSettingLabel:
-                label_text: 'Q Angle:'
-                ToolTipTextInput:
-                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
-                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
-                    tooltip_image_size: 200,200
-                    multiline: False
-                    halign:'right'
-                    input_type: 'number'
-                    input_filter: 'float'
-                    text: root.get_setting('QAngle')
-                    on_text: root.setting_changed('QAngle', self.text)
                     
             ProbeSettingLabel:
                 label_text: 'R Edge Retract:'
@@ -143,6 +130,19 @@
                     input_filter: 'float'
                     text: root.get_setting('BottomSurfaceRetract')
                     on_text: root.setting_changed('BottomSurfaceRetract', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'Q Angle:'
+                ToolTipTextInput:
+                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
+                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
+                    tooltip_image_size: 200,200
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('QAngle')
+                    on_text: root.setting_changed('QAngle', self.text)
 
             ProbeSettingLabel:
                 label_text: 'S Zero WCS Axis:'

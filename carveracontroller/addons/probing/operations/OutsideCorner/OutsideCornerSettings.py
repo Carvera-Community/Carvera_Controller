@@ -13,7 +13,8 @@ class OutsideCornerSettings(BoxLayout):
     def __init__(self, **kwargs):
         super(OutsideCornerSettings, self).__init__(**kwargs)
         self.config = ConfigUtils.load_config(self.config_filename)
-
+        self.config = self.order_config(self.config)
+        
     def setting_changed(self, key: str, value: float):
         param = getattr(OutsideCornerParameterDefinitions, key, None)
         if param is None:
