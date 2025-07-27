@@ -24,7 +24,7 @@ class SingleAxisProbeOperationZAxis(OperationsBase):
                                 config,
                                 True)
 
-        return "M466 " + self.config_to_gcode(config)
+        return "M466" + self.config_to_gcode(config)
 
     def get_missing_config(self, config: dict[str, float]):
 

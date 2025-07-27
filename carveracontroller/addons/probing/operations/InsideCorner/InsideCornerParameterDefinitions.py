@@ -33,3 +33,5 @@ class InsideCornerParameterDefinitions:
                                         "how far below the top surface of the model to move down in order to probe on each side")
 
     UseProbeNormallyClosed = ProbeSettingDefinition('I', "NC", False, "Probe is normally closed")
+
+    QAngle = ProbeSettingDefinition('Q', "Angle", False, "TODO: need docs")
