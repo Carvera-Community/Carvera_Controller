@@ -34,4 +34,4 @@ class OutsideCornerParameterDefinitions:
 
     UseProbeNormallyClosed = ProbeSettingDefinition('I', "NC", False, "Probe is normally closed")
 
-    QAngleQAngle = ProbeSettingDefinition('Q', "Angle", False, "TODO: need docs")
+    QAngle = ProbeSettingDefinition('Q', "Angle", False, "TODO: need docs")
