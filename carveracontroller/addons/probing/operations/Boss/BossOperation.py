@@ -25,7 +25,7 @@ class BossOperation(OperationsBase):
         if not self.requires_y:
              config[BossParameterDefinitions.YAxisDistance.code] = ''
 
-        return "M462 " + self.config_to_gcode(config)
+        return "M462" + self.config_to_gcode(config)
 
 
     def get_missing_config(self, config: dict[str, float]):

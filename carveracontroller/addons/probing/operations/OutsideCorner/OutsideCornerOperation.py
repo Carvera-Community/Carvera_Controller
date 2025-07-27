@@ -29,7 +29,7 @@ class OutsideCornerOperation(OperationsBase):
                                 config,
                                 self.y_is_negative_move)
 
-        return "M464 " + self.config_to_gcode(config)
+        return "M464" + self.config_to_gcode(config)
 
     def get_missing_config(self, config: dict[str, float]):
 
