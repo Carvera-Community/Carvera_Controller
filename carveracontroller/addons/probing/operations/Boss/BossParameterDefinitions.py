@@ -3,9 +3,9 @@ from carveracontroller.addons.probing.operations.OperationsBase import ProbeSett
 
 
 class BossParameterDefinitions:
-    XAxisDistance = ProbeSettingDefinition("X", "X Distance", False, "X distance along the particular axis to probe.")
+    XAxisDistance = ProbeSettingDefinition("X", "X Distance", False, "Boss Diameter in X.")
 
-    YAxisDistance = ProbeSettingDefinition("Y", "Y Distance", False, "Y distance along the particular axis to probe.")
+    YAxisDistance = ProbeSettingDefinition("Y", "Y Distance", False, "Boss Diameter in Y.")
 
     PocketProbeDepth = ProbeSettingDefinition('H', "Pocket Depth", False,
                                               "Optional parameter, if set the probe will probe down by "
@@ -35,3 +35,5 @@ class BossParameterDefinitions:
                                         "how far below the top surface of the model to move down in order to probe on each side")
 
     UseProbeNormallyClosed = ProbeSettingDefinition('I', "NC", False, "Probe is normally closed")
+    
+    ProbeClearance = ProbeSettingDefinition('J', "Probe Clearance", False, "When Probing a boss, this is added to the X and Y values when moving outside the boss")
