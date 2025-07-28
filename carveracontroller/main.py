@@ -2475,7 +2475,8 @@ class Makera(RelativeLayout):
                     
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
-                        Clock.schedule_once(partial(self.setUIForModel, remote_model[0].split('=')[1]), 0)
+                        detected_model = remote_model[0].split('=')[1]
+                        Clock.schedule_once(partial(self.setUIForModel, detected_model), 0)
 
                     remote_filetype = re.search('ftype = [a-zA-Z0-9]+', line)
                     if remote_filetype != None:
@@ -2927,8 +2928,10 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
         app = App.get_running_app()
+        model_changed = False
         if model != app.model:
             app.model = model.strip()
+            model_changed = True
         if app.model == 'CA1':
             if app.is_community_firmware:
                 self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
@@ -2947,7 +2950,15 @@ class Makera(RelativeLayout):
             else:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 7
-
+        
+        # Load or reload machine config when model is detected/changed
+        if model_changed:
+            if self.config_loaded:
+                # Reload if already loaded
+                Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
+            else:
+                # Load for the first time when model is detected
+                Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
     def downloadCallback(self, packet_size, success_count, error_count):
@@ -3976,32 +3987,25 @@ class Makera(RelativeLayout):
                             self.updateStatus()
                             return False
         else:
-            # no panels, create new
-            config_file = 'config.json'
-            if not os.path.exists(config_file):
-                config_file = os.path.join(os.path.dirname(__file__), config_file)
-            if not os.path.exists(config_file):
-                self.controller.log.put(
-                    (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
-                self.controller.close()
-                self.updateStatus()
-                return False
-            with open(config_file, 'r') as fd:
-                data = json.loads(fd.read())
-
             app = App.get_running_app()
-            if app.model == 'CA1':
-                # The Carvera Air generally uses the same default values as the original Carvera
-                # However if there are any differences we store them in a seperate config file
-
-                ca1_config_diff_file = os.path.join(os.path.dirname(__file__), "config_ca1_diff.json")
-                with open(ca1_config_diff_file, 'r') as fd:
-                    ca1_diff_data = json.loads(fd.read())
-
-                for ca1_diff_setting in ca1_diff_data:
-                    for setting in data:
-                        if (ca1_diff_setting.get("key") == setting.get("key")) and (ca1_diff_setting.get("section") == setting.get("section")):
-                            setting.update(ca1_diff_setting)
+            data = None
+            
+            # If model is not set yet, don't load any config
+            if not app.model or app.model == "":
+                return True
+            
+            if app.model == 'C1':
+                # Load C1 specific config
+                c1_config_file = os.path.join(os.path.dirname(__file__), "config_c1.json")
+                if os.path.exists(c1_config_file):
+                    with open(c1_config_file, 'r') as fd:
+                        data = json.loads(fd.read())
+            elif app.model == 'CA1':
+                # Load CA1 specific config
+                ca1_config_file = os.path.join(os.path.dirname(__file__), "config_ca1.json")
+                if os.path.exists(ca1_config_file):
+                    with open(ca1_config_file, 'r') as fd:
+                        data = json.loads(fd.read())
 
             basic_config = []
             advanced_config = []
@@ -4563,7 +4567,7 @@ class MakeraApp(App):
     curr_page = NumericProperty(1)
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
-    model = StringProperty('C1')
+    model = ""
     is_community_firmware = BooleanProperty(False)
 
     def on_stop(self):

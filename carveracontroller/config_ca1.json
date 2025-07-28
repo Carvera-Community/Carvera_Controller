@@ -1,0 +1,464 @@
+[
+    {
+        "type": "title",
+        "title": "Light",
+        "section": "Basic"
+    },
+    {
+        "type": "bool",
+        "title": "Light on",
+        "desc": "Whether to turn on light by default",
+        "section": "Basic",
+        "key": "switch.light.startup_state"
+    },
+    {
+        "type": "numeric",
+        "title": "Light off minutes",
+        "desc": "Turn off the light when idle for these minutes (0 means never)",
+        "section": "Basic",
+        "key": "light.turn_off_min"
+    },	
+	
+    {
+        "type": "title",
+        "title": "Safety",
+        "section": "Basic"
+    },
+    {
+        "type": "bool",
+        "title": "Stop on open",
+        "desc": "Stop when open the cover during machining",
+        "section": "Basic",
+        "key": "stop_on_cover_open"
+    },
+
+    {
+        "type": "title",
+        "title": "Power management",
+        "section": "Basic"
+    },
+    {
+        "type": "bool",
+        "title": "Auto sleep",
+        "desc": "Allow machine to enter sleep mode automatically",
+        "section": "Basic",
+        "key": "power.auto_sleep"
+    },
+    {
+        "type": "numeric",
+        "title": "Auto sleep minutes",
+        "desc": "Enter sleep mode after these minutes (1 - 30)",
+        "section": "Basic",
+        "key": "power.auto_sleep_min"
+    },
+
+    {
+        "type": "title",
+        "title": "Main button",
+        "section": "Basic"
+    },
+    {
+        "type": "options",
+        "title": "Main button long press function",
+        "desc": "Triggered after 3 seconds when pressing\nNone   ------Do Nothing\nSleep  ------Enter sleep mode\nRepeat------Repeat Last Job\nTool Change------Clamp/Unclamp Collet for Tool Changes (Community Firmware Only)",
+        "section": "Basic",
+        "key": "main_button_long_press_enable",
+        "options": ["None", "Sleep", "Repeat", "ToolChange"],
+        "default": "None"
+    },
+
+    {
+        "type": "bool",
+        "title": "Beeper on",
+        "desc": "Whether the beeper is enabled",
+        "section": "Basic",
+        "key": "switch.beep.enable",
+        "default": "true"
+    },
+
+    {
+        "type": "title",
+        "title": "Coordinates",
+        "section": "Advanced"
+    },
+    {
+        "type": "numeric",
+        "title": "Anchor1 X",
+        "desc": "X Machine coordinates of anchor1",
+        "section": "Advanced",
+        "key": "coordinate.anchor1_x"
+    },	
+    {
+        "type": "numeric",
+        "title": "Anchor1 Y",
+        "desc": "Y Machine coordinates of anchor1",
+        "section": "Advanced",
+        "key": "coordinate.anchor1_y"
+    },	
+    {
+        "type": "numeric",
+        "title": "Anchor2 X Offset",
+        "desc": "Anchor2 X Offset relative to anchor1",
+        "section": "Advanced",
+        "key": "coordinate.anchor2_offset_x"
+    },	
+    {
+        "type": "numeric",
+        "title": "Anchor2 Y Offset",
+        "desc": "Anchor2 Y Offset relative to anchor1",
+        "section": "Advanced",
+        "key": "coordinate.anchor2_offset_y"
+    },
+     {
+        "type": "numeric",
+        "title": "Rotation X Offset",
+        "desc": "Rotation module X Offset relative to anchor1",
+        "section": "Advanced",
+        "key": "coordinate.rotation_offset_x"
+    },
+    {
+        "type": "numeric",
+        "title": "Rotation Y Offset",
+        "desc": "Rotation module Y Offset relative to anchor1",
+        "section": "Advanced",
+        "key": "coordinate.rotation_offset_y"
+    },
+    {
+        "type": "numeric",
+        "title": "Rotation Z Offset",
+        "desc": "Rotation module Z Offset relative to chuck center",
+        "section": "Advanced",
+        "key": "coordinate.rotation_offset_z"
+    },
+    {
+        "type": "numeric",
+        "title": "Anchor width",
+        "desc": "Width of anchors",
+        "section": "Advanced",
+        "key": "coordinate.anchor_width"
+    },	
+    {
+        "type": "numeric",
+        "title": "Anchor length",
+        "desc": "Length of anchors",
+        "section": "Advanced",
+        "key": "coordinate.anchor_length"
+    },	
+    {
+        "type": "numeric",
+        "title": "X Work Size",
+        "desc": "Width of work area",
+        "section": "Advanced",
+        "key": "coordinate.worksize_x"
+    },	
+    {
+        "type": "numeric",
+        "title": "Y Work Size",
+        "desc": "Height of work area",
+        "section": "Advanced",
+        "key": "coordinate.worksize_y"
+    },	
+    {
+        "type": "numeric",
+        "title": "X Clearance",
+        "desc": "X Machine coordinates for clearance",
+        "section": "Advanced",
+        "key": "coordinate.clearance_x"
+    },	
+    {
+        "type": "numeric",
+        "title": "Y Clearance",
+        "desc": "Y Machine coordinates for clearance",
+        "section": "Advanced",
+        "key": "coordinate.clearance_y"
+    },	
+    {
+        "type": "numeric",
+        "title": "Z Clearance",
+        "desc": "Z Machine coordinates for clearance",
+        "section": "Advanced",
+        "key": "coordinate.clearance_z"
+    },
+    {
+        "type": "bool",
+        "title": "Soft Limits",
+        "desc": "Enabled to precheck if gCode commands will exceed the travel limits",
+        "section": "Advanced",
+        "key": "soft_endstop.enable",
+        "default": "false"
+    },
+    {
+        "type": "numeric",
+        "title": "X Min Coordinate",
+        "desc": "Minimum X axis coordinate",
+        "section": "Advanced",
+        "key": "soft_endstop.x_min",
+        "default": "-302.0"
+    },
+    {
+        "type": "numeric",
+        "title": "Y Min Coordinate",
+        "desc": "Minimum Y axis coordinate",
+        "section": "Advanced",
+        "key": "soft_endstop.y_min",
+        "default": "-212.0"
+    },
+    {
+        "type": "numeric",
+        "title": "Z Min Coordinate",
+        "desc": "Minimum Z axis coordinate",
+        "section": "Advanced",
+        "key": "soft_endstop.z_min",
+        "default": "-121.0"
+    },
+    {
+        "type": "numeric",
+        "title": "A Axis Microsteps per degree rotation",
+        "desc": "Changes the number of microsteps between degrees of rotation. Useful if you change the A axis gearing.",
+        "section": "Advanced",
+        "key": "delta_steps_per_mm",
+        "default": "888.888889"
+    },
+    {
+        "type": "title",
+        "title": "Motion",
+        "section": "Advanced"
+    },	
+    {
+        "type": "numeric",
+        "title": "Default Feed Rate",
+        "desc": "Feed rate when F parameter is not set (mm/min)",
+        "section": "Advanced",
+        "key": "default_feed_rate"
+    },																
+    {
+        "type": "numeric",
+        "title": "Default Seek Rate",
+        "desc": "Feed rate for G0 rapid mode (mm/min)",
+        "section": "Advanced",
+        "key": "default_seek_rate"
+    },																
+    {
+        "type": "numeric",
+        "title": "Max X Speed",
+        "desc": "Max feed rate for X axis (mm/min)",
+        "section": "Advanced",
+        "key": "alpha_max_rate"
+    },																
+    {
+        "type": "numeric",
+        "title": "Max Y Speed",
+        "desc": "Max feed rate for Y axis (mm/min)",
+        "section": "Advanced",
+        "key": "beta_max_rate"
+    },																
+    {
+        "type": "numeric",
+        "title": "Max Z Speed",
+        "desc": "Max feed rate for Z axis (mm/min)",
+        "section": "Advanced",
+        "key": "gamma_max_rate"
+    },																
+    {
+        "type": "numeric",
+        "title": "Max Rotation Speed",
+        "desc": "Max rotation speed rate for A axis (degree/min)",
+        "section": "Advanced",
+        "key": "delta_max_rate",
+        "default": "2400"
+    },																
+    {
+        "type": "numeric",
+        "title": "XYZ Acceleration",
+        "desc": "Acceleration for X/Y/Z axis (mm/second/second)",
+        "section": "Advanced",
+        "key": "acceleration"
+    },																
+    {
+        "type": "numeric",
+        "title": "Rotation Acceleration",
+        "desc": "Acceleration for rotation axis (degree/second/second)",
+        "section": "Advanced",
+        "key": "delta_acceleration"
+    },
+    {
+        "type": "title",
+        "title": "WIFI",
+        "section": "Advanced"
+    },	
+    {
+        "type": "string",
+        "title": "Machine WiFi Name",
+        "desc": "Machine name that is shown in the WiFi list",
+        "section": "Advanced",
+        "key": "wifi.machine_name"
+    },		
+		
+    {
+        "type": "title",
+        "title": "Laser",
+        "section": "Advanced"
+    },	
+    {
+        "type": "numeric",
+        "title": "Test Power",
+        "desc": "Laser power when doing test(0 - 1)",
+        "section": "Advanced",
+        "key": "laser_module_test_power"
+    },		
+    {
+        "type": "numeric",
+        "title": "Max Laser Power",
+        "desc": "Max laser power (0 - 1)",
+        "section": "Advanced",
+        "key": "laser_module_maximum_power"
+    },		
+    {
+        "type": "numeric",
+        "title": "Min Laser Power",
+        "desc": "Min laser power (0 - 1)",
+        "section": "Advanced",
+        "key": "laser_module_minimum_power"
+    },		
+    {
+        "type": "numeric",
+        "title": "Offset X",
+        "desc": "Laser module x offset relative to spindle",
+        "section": "Advanced",
+        "key": "laser_module_offset_x"
+    },		
+    {
+        "type": "numeric",
+        "title": "Offset Y",
+        "desc": "Laser module y offset relative to spindle",
+        "section": "Advanced",
+        "key": "laser_module_offset_y"
+    },		
+    {
+        "type": "numeric",
+        "title": "Offset Z",
+        "desc": "Laser module z offset relative to spindle",
+        "section": "Advanced",
+        "key": "laser_module_offset_z"
+    },
+    {
+        "type": "numeric",
+        "title": "Cooldown power",
+        "desc": "Laser module cooldown power",
+        "section": "Advanced",
+        "key": "temperatureswitch.spindle.cooldown_power_laser"
+    },
+    {
+        "type": "bool",
+        "title": "Laser Clustering",
+        "desc": "Turn on to fix random deviation problem during High-Res laser engraving (esp for LightBurn)",
+        "section": "Advanced",
+        "key": "laser_module_clustering",
+        "default": "false"
+    },
+
+    {
+        "type": "title",
+        "title": "Z Probe",
+        "section": "Advanced"
+    },	
+    {
+        "type": "numeric",
+        "title": "Slow Speed",
+        "desc": "Z probe slow speed (mm/s)",
+        "section": "Advanced",
+        "key": "zprobe.slow_feedrate"
+    },		
+    {
+        "type": "numeric",
+        "title": "Fast Speed",
+        "desc": "Z probe fast speed (mm/s)",
+        "section": "Advanced",
+        "key": "zprobe.fast_feedrate"
+    },		
+    {
+        "type": "numeric",
+        "title": "Return Speed",
+        "desc": "Z probe return speed (mm/s)",
+        "section": "Advanced",
+        "key": "zprobe.return_feedrate"
+    },		
+    {
+        "type": "numeric",
+        "title": "Probe Height",
+        "desc": "How much above bed to start probe",
+        "section": "Advanced",
+        "key": "zprobe.probe_height"
+    },		
+    {
+        "type": "numeric",
+        "title": "Max Z",
+        "desc": "Max action distance when doing z probe",
+        "section": "Advanced",
+        "key": "zprobe.max_z"
+    },	
+	
+    {
+        "type": "title",
+        "title": "Spindle",
+        "section": "Advanced"
+    },
+    {
+        "type": "numeric",
+        "title": "Default RPM",
+        "desc": "Default RPM value in case no RPM is provided",
+        "section": "Advanced",
+        "key": "spindle.default_rpm"
+    },
+    {
+        "type": "numeric",
+        "title": "Cooldown Threshold",
+        "desc": "Temperature to turn on or off spindle fan",
+        "section": "Advanced",
+        "key": "temperatureswitch.spindle.threshold_temp"
+    },
+    {
+        "type": "numeric",
+        "title": "Cooldown Fan Start Power",
+        "desc": "Cooldown fan start power percentage (50 - 100)",
+        "section": "Advanced",
+        "key": "temperatureswitch.spindle.cooldown_power_init"
+    },
+    {
+        "type": "numeric",
+        "title": "Cooldown Fan Step",
+        "desc": "Cooldown fan start power increase step per degree",
+        "section": "Advanced",
+        "key": "temperatureswitch.spindle.cooldown_power_step"
+    },	
+    {
+        "type": "numeric",
+        "title": "Cooldown Delay",
+        "desc": "Stop cooldown after these seconds",
+        "section": "Advanced",
+        "key": "temperatureswitch.spindle.cooldown_delay"
+    },				
+	{
+        "type": "numeric",
+        "title": "Temperature Alarm Threshold",
+        "desc": "Alarm and halt machine when overheated",
+        "section": "Advanced",
+        "key": "temperature_control.spindle.max_temp"
+    },
+    
+
+    {
+        "type": "string",
+        "title": "Restore to default settings",
+        "desc": "Enter upper case: 'RESTORE' to confirm restoring",
+        "section": "Restore",
+        "key": "restore"
+    },
+    {
+        "type": "string",
+        "title": "Save current settings as default",
+        "desc": "Enter upper case: 'DEFAULT' to save default",
+        "section": "Restore",
+        "key": "default"
+    }
+]
