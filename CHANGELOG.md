@@ -8,9 +8,10 @@
 - Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
 - Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
 - Change: Unlocking the machine after a halt gives you the option to move to SafeZ
-- Change: Graphics and behavoir of the probe boss command are now updated to use diameter and a J parameter instead of radius.
+- Change: Graphics and behavior of the probe boss command are now updated to use diameter and a J parameter instead of radius.
+- Change: Show machine model based specific config options
 - Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
-- Fix: Resolve the keysboard_mode config load error that occurs when reconnecting the Controller after it loses connection
+- Fix: Resolve the keyboard_mode config load error that occurs when reconnecting the Controller after it loses connection
 - Fix: Red origin dot in preview visualisation on config-and-run screen returned
 - Fix: Last open folder was using temp directory instead of actual user selected location
 - Fix: Set origin popup now properly shows the current offset to the anchors when switching options. When set to 'current pos' the offset default to 0.

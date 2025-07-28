@@ -3976,32 +3976,21 @@ class Makera(RelativeLayout):
                             self.updateStatus()
                             return False
         else:
-            # no panels, create new
-            config_file = 'config.json'
-            if not os.path.exists(config_file):
-                config_file = os.path.join(os.path.dirname(__file__), config_file)
-            if not os.path.exists(config_file):
-                self.controller.log.put(
-                    (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
-                self.controller.close()
-                self.updateStatus()
-                return False
-            with open(config_file, 'r') as fd:
-                data = json.loads(fd.read())
-
             app = App.get_running_app()
-            if app.model == 'CA1':
-                # The Carvera Air generally uses the same default values as the original Carvera
-                # However if there are any differences we store them in a seperate config file
-
-                ca1_config_diff_file = os.path.join(os.path.dirname(__file__), "config_ca1_diff.json")
-                with open(ca1_config_diff_file, 'r') as fd:
-                    ca1_diff_data = json.loads(fd.read())
-
-                for ca1_diff_setting in ca1_diff_data:
-                    for setting in data:
-                        if (ca1_diff_setting.get("key") == setting.get("key")) and (ca1_diff_setting.get("section") == setting.get("section")):
-                            setting.update(ca1_diff_setting)
+            if app.model == 'C1':
+                # Load C1 specific config
+                c1_config_file = os.path.join(os.path.dirname(__file__), "config_c1.json")
+                if os.path.exists(c1_config_file):
+                    with open(c1_config_file, 'r') as fd:
+                        c1_data = json.loads(fd.read())
+                    data = c1_data
+            elif app.model == 'CA1':
+                # Load CA1 specific config
+                ca1_config_file = os.path.join(os.path.dirname(__file__), "config_ca1.json")
+                if os.path.exists(ca1_config_file):
+                    with open(ca1_config_file, 'r') as fd:
+                        ca1_data = json.loads(fd.read())
+                    data = ca1_data
 
             basic_config = []
             advanced_config = []
