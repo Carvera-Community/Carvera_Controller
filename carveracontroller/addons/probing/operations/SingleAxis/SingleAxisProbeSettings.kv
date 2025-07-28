@@ -68,19 +68,6 @@
                     on_text: root.setting_changed('ProbeTipDiameter', self.text)
 
             ProbeSettingLabel:
-                label_text: 'Q Angle:'
-                ToolTipTextInput:
-                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
-                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
-                    tooltip_image_size: 200,200
-                    multiline: False
-                    halign:'right'
-                    input_type: 'number'
-                    input_filter: 'float'
-                    text: root.get_setting('QAngle')
-                    on_text: root.setting_changed('QAngle', self.text)
-
-            ProbeSettingLabel:
                 label_text: 'F Feed Rate:'
                 hint_text: 'FastFeedRate'
                 ToolTipTextInput:
@@ -118,6 +105,19 @@
                     input_filter: 'float'
                     text: root.get_setting('EdgeRetractDistance')
                     on_text: root.setting_changed('EdgeRetractDistance', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'Q Angle:'
+                ToolTipTextInput:
+                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
+                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
+                    tooltip_image_size: 200,200
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('QAngle')
+                    on_text: root.setting_changed('QAngle', self.text)
 
             ProbeSettingLabel:
                 label_text: 'S Zero WCS Axis:'

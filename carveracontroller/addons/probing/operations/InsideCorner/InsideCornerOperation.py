@@ -28,7 +28,7 @@ class InsideCornerOperation(OperationsBase):
                                 config,
                                 self.y_is_negative_move)
 
-        return "M463 " + self.config_to_gcode(config)
+        return "M463" + self.config_to_gcode(config)
 
 
     def get_missing_config(self, config: dict[str, float]):

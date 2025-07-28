@@ -7,6 +7,7 @@ Community developed version of the Makera Carvera Controller software.
 The Community developed version of the Carvera Controller has a number of benefits and fixes above and beyond the Makera software.
 See the [CHANGELOG](CHANGELOG.md) and [screenshots](docs/screenshots/) for more details.
 * **3-axis** and advanced **probing** UI screens for various geometries (**corners**, **axis**, **bore/pocket**, **angles**) for use with a [true 3D touch probe](https://www.instructables.com/Carvera-Touch-Probe-Modifications/) (not the included XYZ probe block)
+* **Pendant** device support, via **WHB04** family of **MPG devices**. Such devices can be used to jog, run macros, and perform feed/speed overrides.
 * Options to **reduce** the **autolevel** probe **area** to avoid probing obstacles
 * **Tooltip support** for user guidance with over 110 tips and counting
 * **Background images** for bolt hole positions in probe/start screens; users can add their own too
@@ -38,7 +39,7 @@ The Controller software works on the following systems:
 - Linux using x64 CPUs running a Linux distribution with Glibc 2.35 or above (eg. Ubuntu 22.04 or higher)
 - Linux using aarch64 CPUs (eg Raspberyy Pi 3+) running a Linux distribution with Glibc 2.39 or above (eg. Ubuntu 24.04 or higher)
 - Apple iPad with iOS 17.6 or higher
-- Android devices with Android 11 or higher running ARM 32-bit processors (ARMv7a)
+- Android devices with Android 11 or higher running ARM 32 and 64-bit processors (ARMv7a and ARMv8a) and x86_64
 - Other systems might be work via the Python Package, see below for more details.
 
 ## Installation
@@ -49,8 +50,9 @@ See the assets section of [latest release](https://github.com/carvera-community/
 - carveracontroller-community-\<version\>-Intel.dmg - MacOS with Intel CPU
 - carveracontroller-community-\<version\>-AppleSilicon.dmg - MacOS with Apple CPU (M1 etc)
 - carveracontroller-community-\<version\>-x86_64.appimage - Linux AppImage for x64 systems
-- carveracontroller-community-\<version\>-aarch64.appimage - Linux AppImage for aarch64 systems
-- carveracontroller-community-\<version\>-android-armeabi-v7a.apk - Android installable package
+- carveracontroller-community-\<version\>-arm664.appimage - Linux AppImage for aarch64/arm64 systems
+- carveracontroller-community-\<version\>.apk - Android installable package
+- carvera_controller_community-\<version\>-py3-none-any.whl  - Python wheel package
 
 ### Usage: Android
 
@@ -68,6 +70,33 @@ Then you will be able to run it.
 
 If you want a shortcut, consider using [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher).
 
+### Alternative Installation: Docker
+
+## Alternative Installation: Docker with noVNC
+
+Its also possible to run the controller under Docker, which is then access via a browser or VNC client. This enables you to run the controller on a remote machine and access it from your local machine, and thus overcome the single-network-connection at a time limitation.
+
+The docker image expects a volume `/config` which is used to store the configuration and log files.  If not provided, the application will run, but will not persist any configuration or log files.
+
+The docker image is available on [GitHub Container Registry](https://ghcr.io/carvera-community/carvera-controller) with the following tag patterns:
+- latest - The latest tagged release version
+- dev - The latest development build
+- x.y.z - A specific tagged version
+
+The latest reeleased version can be pulled with the following command:
+
+``` bash
+docker pull ghcr.io/carvera-community/carvera-controller-<arch>:latest
+```
+Where `<arch>` is `x64` or `arm64` depending on your system architecture.  To run the docker image, use the following command:
+
+``` bash
+docker run -p 5900:5900 -p 8080:8080 -v /path/to/config:/config ghcr.io/carvera-community/carvera-controller-<arch>:latest
+```
+
+The application can then be accessed via a web browser at `http://<host>:8080` or via a VNC client at `<host>:5900`.  The VNC connection does not require a password.
+
+
 ## Alternative Installation: Python Package
 
 It's best to use one of the pre-built packages as they they have frozen versions of tested dependencies and python interpreter, however if you prefer the software can be installed as a Python package. This might allow you to use a unsupported platform (eg raspi 1) provided that the dependencies can be met.
@@ -80,6 +109,31 @@ Once installed it can be run via the module
 
 ``` bash
 python3 -m carveracontroller
+```
+
+## Pendant Support
+
+The Community controller supports the WBH04 family of pendants to control the machine. They can be purchased from [AliExpress](https://www.aliexpress.com/item/1005006270475983.html) or from other online retailers.
+
+### Linux package dependency
+
+To use the pedant in Linux your system needs the `libhidapi-hidraw0` package.
+
+### Linux device permissions
+
+To use the pendant in Linux, you need to grant your user access to the USB device. Most Linux distributions (Ubuntu/Debian/Fedora) automatically add users to the `plugdev` group, so the easiest and most secure approach is to create a udev rule that grants this group access to the device.
+
+Run this command to create the udev rule:
+
+```bash
+sudo sh -c 'echo "SUBSYSTEM==\"hidraw\", ATTRS{idVendor}==\"10ce\", ATTRS{idProduct}==\"eb93\", GROUP=\"plugdev\", MODE=\"0660\"" > /etc/udev/rules.d/90-xhc.rules'
+```
+
+After creating the rule, you may need to reload the udev rules:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 ```
 
 ## Contributing
@@ -96,6 +150,7 @@ To contribute to this project or set up a local development environment, follow 
 - [Poetry](https://python-poetry.org/) is required for dependency management. Poetry simplifies packaging and simplifies the management of Python dependencies.
 - One of the python dependencies [QuickLZ](https://pypi.org/project/pyquicklz/) will be compiled by Poetry when installed. Ensure that you have a compiler that Poetry/Pip can use and the Pythong headers. On a debian based Linux system this can be accomplished with `sudo apt-get install python3-dev build essential`. On Windows installation of (just) the Visual C++ 14.x compiler is required, this can be accomplished with [MSBuild tools package](https://aka.ms/vs/17/release/vs_BuildTools.exe).
 - [Squashfs-tools](https://github.com/plougher/squashfs-tools) is required if building Linux AppImages. On Debian based systems it's provided by the package `squashfs-tools`. This is only required if packaging for linux.
+- [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy) is required for building Linux AppImages. These must be installed and available in your PATH before building. You can install them using `scripts/install_linux_prereqs.sh` or by following the instructions on their GitHub page.
 - [gettext](https://www.gnu.org/software/gettext/) is required for language file generation. [gettext-iconv-windows](https://mlocati.github.io/articles/gettext-iconv-windows.html) project has a version with Windows packages.
 - For building iOS app, you need a working XCode installation as well as the build tool that can be installed with `brew install autoconf automake libtool pkg-config`
 - Building the Android app needs a Linux host. The prerequisites can be found here: [buildozer prerequisites](https://buildozer.readthedocs.io/en/latest/installation.html). A script to install them is provided in `scripts/install_android_prereqs.sh`. Be aware that buildozer downloads/installs multiple GB of Android development tooling.

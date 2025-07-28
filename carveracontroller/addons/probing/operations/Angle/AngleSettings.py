@@ -10,6 +10,7 @@ class AngleSettings(BoxLayout):
 
     def __init__(self, **kwargs):
         self.config = ConfigUtils.load_config(self.config_filename)
+        self.config = self.order_config(self.config)
         super(AngleSettings, self).__init__(**kwargs)
 
     def setting_changed(self, key: str, value: float):
@@ -18,7 +19,16 @@ class AngleSettings(BoxLayout):
             raise KeyError(f"Invalid key '{key}'")
 
         self.config[param.code] = value
+        self.config = self.order_config(self.config)
         ConfigUtils.save_config(self.config, self.config_filename)
+
+    def order_config(self, config: dict[str, float]):
+        order = ["X", "Y", "E", "J", "D", "H", "F", "K", "L", "R", "C", "Q", "V", "S", "I"]
+        temp_config = {}
+        for key in order:
+            if key in config:
+                temp_config[key] = config[key]
+        return temp_config
 
     def get_setting(self, key: str) -> str:
         param = getattr(AngleParameterDefinitions, key, None)

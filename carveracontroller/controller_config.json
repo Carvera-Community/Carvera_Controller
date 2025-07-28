@@ -62,6 +62,6 @@
         "section": "kivy",
         "key": "keyboard_mode",
         "default": "",
-        "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"] 
+        "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"]
     }
 ]

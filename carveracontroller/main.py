@@ -27,10 +27,9 @@ if is_android():
     except ImportError:
         print("Pyjnius Import Fail.")
 
-import gettext
-import locale
-from kivy.lang import Observable
-from os.path import dirname, join
+from . import translation
+from .translation import tr
+
 # os.environ['KIVY_GL_DEBUG'] = '1'
 from kivy.core.clipboard import Clipboard
 
@@ -76,49 +75,8 @@ def request_android_permissions():
             print(f"Error requesting permissions: {e}")
 
 from .addons.probing.ProbingPopup import ProbingPopup
-class Lang(Observable):
-    observers = []
-    lang = None
-
-    def __init__(self, defaultlang):
-        super(Lang, self).__init__()
-        self.ugettext = None
-        self.lang = defaultlang
-        self.switch_lang(self.lang)
-
-    def _(self, text):
-        return self.ugettext(text)
-
-    def fbind(self, name, func, args, **kwargs):
-        if name == "_":
-            self.observers.append((func, args, kwargs))
-        else:
-            return super(Lang, self).fbind(name, func, *args, **kwargs)
-
-    def funbind(self, name, func, args, **kwargs):
-        if name == "_":
-            key = (func, args, kwargs)
-            if key in self.observers:
-                self.observers.remove(key)
-        else:
-            return super(Lang, self).funbind(name, func, *args, **kwargs)
-
-    def switch_lang(self, lang):
-        # get the right locales directory, and instanciate a gettext
-        locale_dir = join(dirname(__file__), 'locales')
-        locales = None
-        try:
-            locales = gettext.translation(lang, locale_dir, languages=[lang])
-        except:
-            pass
-        if locales == None:
-            locales = gettext.NullTranslations()
-        self.ugettext = locales.gettext
-        self.lang = lang
-
-        # update all the kv rules attached to this text
-        for func, largs, kwargs in self.observers:
-            func(largs, None, None)
+from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController
 
 import json
 import re
@@ -194,6 +152,7 @@ import string
 import subprocess
 
 from . import Utils
+from . import ui
 from kivy.config import ConfigParser
 from .CNC import CNC
 from .GcodeViewer import GCodeViewer
@@ -202,10 +161,10 @@ from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
 from .__version__ import __version__
 
 from kivy.lang import Builder
-from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown 
+from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown
 from .addons.probing.ProbingControls import ProbeButton
 
-def load_halt_translations(tr: Lang):
+def load_halt_translations(tr: translation.Lang):
     """Loads the appropriate language translation"""
     HALT_REASON = {
         # Just need to unlock the mahchine
@@ -233,24 +192,6 @@ def load_halt_translations(tr: Lang):
         41: tr._("Spindle Alarm, power off/on needed"),
     }
     return HALT_REASON
-
-def init_lang():
-    # init language
-    default_lang = 'en'
-    if Config.has_option('carvera', 'language'):
-        default_lang = Config.get('carvera', 'language')
-    else:
-        try:
-            default_locale = locale.getdefaultlocale()
-            if default_locale != None:
-                for lang_key in LANGS.keys():
-                    if default_locale[0][0:2] in lang_key:
-                        default_lang = lang_key
-                        break
-        except:
-            pass
-
-    return default_lang
 
 def app_base_path():
     """
@@ -338,6 +279,19 @@ class ConfirmPopup(ModalView):
         self.showing = False
 
 
+class UnlockPopup(ModalView):
+    showing = False
+
+    def __init__(self, **kwargs):
+        super(UnlockPopup, self).__init__(**kwargs)
+
+    def on_open(self):
+        self.showing = True
+
+    def on_dismiss(self):
+        self.showing = False
+
+
 class MessagePopup(ModalView):
     def __init__(self, **kwargs):
         super(MessagePopup, self).__init__(**kwargs)
@@ -374,11 +328,16 @@ class OriginPopup(ModalView):
             if self.coord_popup.config['origin']['anchor'] == 2:
                 x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
                 y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
-            else:
+            elif self.coord_popup.config['origin']['anchor'] == 1:
                 x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4)
                 y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)
+            else:
+                x = 0
+                y = 0
         self.txt_x_offset.text = str(x)
+        Utils.bind_auto_select_to_text_input(self.txt_x_offset)
         self.txt_y_offset.text = str(y)
+        Utils.bind_auto_select_to_text_input(self.txt_y_offset)
 
     def selected_anchor(self):
         if self.cbx_anchor2.active:
@@ -388,6 +347,29 @@ class OriginPopup(ModalView):
         elif self.cbx_current_position.active:
             return 4
         return 1
+    
+    def update_offsets(self):
+        # Use the same logic as CoordPopup.load_origin_label to set offsets
+        app = App.get_running_app()
+        x = 0
+        y = 0
+        if app.has_4axis:
+            x = round(CNC.vars["wcox"] - CNC.vars['anchor1_x'] - CNC.vars['rotation_offset_x'], 4)
+            y = round(CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['rotation_offset_y'], 4)
+        else:
+            laser_x = CNC.vars['laser_module_offset_x'] if CNC.vars['lasermode'] else 0.0
+            laser_y = CNC.vars['laser_module_offset_y'] if CNC.vars['lasermode'] else 0.0
+            if self.cbx_anchor1.active:
+                x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4)
+                y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)
+            elif self.cbx_anchor2.active:
+                x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
+                y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
+            elif self.cbx_current_position.active:
+                x = 0
+                y = 0
+        self.txt_x_offset.text = str(x)
+        self.txt_y_offset.text = str(y)
 
 class ZProbePopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
@@ -538,10 +520,10 @@ class CoordPopup(ModalView):
         self.background_image_files = []
 
         default_bkg_images = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds')
-        
+
         if os.path.exists(self.user_play_file_image_dir):
             self.background_image_files = [
-                f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")            
+                f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")
             ]
 
         for f in os.listdir(default_bkg_images):
@@ -570,7 +552,7 @@ class CoordPopup(ModalView):
         else:
             cnc_workspace = self.ids.cnc_workspace
             cnc_workspace.update_background_image("None")
-    
+
     def open_bkg_img_dir(self):
         app = App.get_running_app()
         folder_path = app.ids.coord_popup.user_play_file_image_dir
@@ -587,7 +569,7 @@ class CoordPopup(ModalView):
             subprocess.Popen(["open", folder_path])
         else:  # Linux
             subprocess.Popen(["xdg-open", folder_path])
-        
+
         folder_path = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds')
 
         # Ensure the folder exists
@@ -661,6 +643,7 @@ class CoordPopup(ModalView):
                                                                  round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)) + tr._('from Anchor2')
             else:
                 self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4), round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)) + tr._('from Anchor1')
+        self.lb_origin.text = CNC.wcs_names[CNC.vars["active_coord_system"]] + ': ' + self.lb_origin.text
 
     def load_zprobe_label(self):
         app = App.get_running_app()
@@ -679,7 +662,7 @@ class CoordPopup(ModalView):
         for offset_type in ['xn_offset', 'xp_offset', 'yn_offset', 'yp_offset']:
             if self.config['leveling'][offset_type] != 0:
                 any_offsets_set = True
-        
+
         if any_offsets_set:
             self.lb_leveling.text += tr._(' Offsets: ') \
                                 + tr._(' -X: ') + '%g ' % (round(self.config['leveling']['xn_offset'],4)) \
@@ -739,16 +722,281 @@ class SetToolPopup(ModalView):
         self.coord_popup = coord_popup
         super(SetToolPopup, self).__init__(**kwargs)
 
+    def on_open(self):
+        super().on_open()
+        Utils.bind_auto_select_to_text_input(self.txt_offset)
+
+
 class ChangeToolPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(ChangeToolPopup, self).__init__(**kwargs)
 
+    def on_open(self):
+        super().on_open()
+        Utils.bind_auto_select_to_text_input(self.txt_offset)
+
 class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+
+class WCSSettingsPopup(ModalView):
+    def __init__(self, controller, wcs_names, **kwargs):
+        super(WCSSettingsPopup, self).__init__(**kwargs)
+        self.controller = controller
+        self.original_values = {}  # Store original values for comparison
+        self.wcs_names = wcs_names
+        self.current_active_wcs = None  # Track current active WCS
+        self.has_changes = False  # Track if any values have changed
+    
+    def on_open(self):
+        """Parse WCS values from machine and populate fields when popup opens"""
+        if self.controller:
+            # Register callback for WCS data
+            self.controller.wcs_popup_callback = self.populate_wcs_values
+            # Request parameters from machine
+            self.controller.viewWCS()
+            # Update UI based on firmware type
+            Clock.schedule_once(lambda dt: self.update_ui_for_firmware_type(), 0.2)
+    
+    def on_dismiss(self):
+        """Clean up callback when popup is dismissed"""
+        if self.controller and hasattr(self.controller, 'wcs_popup_callback'):
+            self.controller.wcs_popup_callback = None
+    
+    def populate_wcs_values(self, wcs_data):
+        """Populate the WCS fields with parsed data from machine"""
+        
+        def update_ui(dt):
+            # wcs_data format: {'G54': [x, y, z, a, rotation], 'G55': [...], ...}
+            
+            for wcs, values in wcs_data.items():
+                if len(values) >= 5:  # Ensure we have X, Y, Z, A, rotation
+                    x, y, z, a, b, rotation = values
+                    
+                    # Store original values for comparison
+                    self.original_values[wcs] = {
+                        'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'R': rotation
+                    }
+                    wcs = wcs.replace('.', '_')
+                    # Update the corresponding text input fields
+                    if hasattr(self.ids, f'{wcs.lower()}_x'):
+                        self.ids[f'{wcs.lower()}_x'].text = f"{x:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_y'):
+                        self.ids[f'{wcs.lower()}_y'].text = f"{y:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_z'):
+                        self.ids[f'{wcs.lower()}_z'].text = f"{z:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_a'):
+                        self.ids[f'{wcs.lower()}_a'].text = f"{a:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_r'):
+                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.2f}"
+        
+        Clock.schedule_once(update_ui, 0)
+        
+        # Update active WCS button after populating values
+        active_coord_system = self.controller.cnc.vars.get("active_coord_system", 0)
+        if active_coord_system < len(self.wcs_names):
+            active_wcs = self.wcs_names[active_coord_system]
+            self.update_active_wcs_button(active_wcs)
+    
+    def apply_changes(self):
+        """Apply all changed values when OK is pressed"""
+        if not self.controller:
+            return
+            
+        # Get coordinate system index mapping
+        for wcs in self.wcs_names:
+            if wcs not in self.original_values:
+                continue
+                
+            original = self.original_values[wcs]
+            changed_values = {}
+            
+            wcs_txt = wcs.replace('.', '_')
+            # Check each axis for changes
+            for axis in ['X', 'Y', 'Z', 'A']:
+                try:
+                    current_value = float(getattr(self.ids, f'{wcs_txt.lower()}_{axis.lower()}').text)
+                    if abs(current_value - original[axis]) > 0.001:  # Allow small floating point differences
+                        changed_values[axis] = current_value
+                except (ValueError, AttributeError):
+                    continue
+
+            # Check rotation for changes
+            try:
+                current_rotation = float(getattr(self.ids, f'{wcs_txt.lower()}_r').text)
+                if abs(current_rotation - original['R']) > 0.001:
+                    changed_values['R'] = current_rotation
+            except (ValueError, AttributeError):
+                pass
+            
+            # Send commands for changed values
+            if changed_values:
+                coord_index = self.wcs_names.index(wcs) + 1  # G54=1, G55=2, etc.
+                cmd = f"G10L2P{coord_index}"
+                # Build offset command if any offsets changed
+                offset_changes = {k: v for k, v in changed_values.items() if k in ['X', 'Y', 'Z', 'A']}
+                if offset_changes:
+                    for axis, value in offset_changes.items():
+                        cmd += f"{axis}{value:.3f}"
+                # Send rotation command if rotation changed
+                if 'R' in changed_values:
+                    cmd += f"R{changed_values['R']:.1f}"
+                self.controller.executeCommand(cmd)
+                
+                
+    
+    def clear_wcs_offsets(self, wcs):
+        """Clear all offsets (X, Y, Z, A) for the specified WCS"""
+        # Set all offset fields to 0.000
+        wcs = wcs.replace('.', '_')
+        if hasattr(self.ids, f'{wcs.lower()}_x'):
+            self.ids[f'{wcs.lower()}_x'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_y'):
+            self.ids[f'{wcs.lower()}_y'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_z'):
+            self.ids[f'{wcs.lower()}_z'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_a'):
+            self.ids[f'{wcs.lower()}_a'].text = '0.000'
+        self.check_for_changes()
+    
+    def clear_wcs_rotation(self, wcs):
+        """Clear rotation for the specified WCS"""
+        # Set rotation field to 0.000
+        wcs = wcs.replace('.', '_')
+        if hasattr(self.ids, f'{wcs.lower()}_r'):
+            self.ids[f'{wcs.lower()}_r'].text = '0.000'
+        self.check_for_changes()
+    
+    def clear_all_wcs(self):
+        """Clear all offsets and rotations for all WCS systems"""
+        for wcs in self.wcs_names:
+            self.clear_wcs_offsets(wcs)
+            self.clear_wcs_rotation(wcs)
+        self.check_for_changes()
+    
+    def update_active_wcs_button(self, active_wcs):
+        """Update the active WCS button to show 'ACTIVE' and blue color"""
+        self.current_active_wcs = active_wcs
+        
+        # Update all activate buttons
+        for wcs in self.wcs_names:
+            wcs_txt = wcs.replace('.', '_')
+            button_id = f'{wcs_txt.lower()}_activate'
+            if hasattr(self.ids, button_id):
+                button = getattr(self.ids, button_id)
+                if wcs == active_wcs:
+                    button.text = 'ACTIVE'
+                    button.color = (0/255, 255/255, 255/255, 1)  # Blue color
+                else:
+                    button.text = 'Activate'
+                    button.color = (1, 1, 1, 1)  # Default color
+    
+    def activate_wcs(self, wcs):
+        """Activate the specified WCS and update the active coordinate system index"""
+        try:
+            if not self.controller:
+                return
+                
+            # Execute the G-code command to activate the WCS
+            self.controller.executeCommand(wcs)
+            
+            # done if community firmware
+            if self.controller.is_community_firmware and CNC.can_rotate_wcs:
+                return
+            
+            # Update the active coordinate system index
+            if wcs in self.wcs_names:
+                coord_index = self.wcs_names.index(wcs)
+                self.controller.cnc.vars["active_coord_system"] = coord_index
+            
+            # Update the button display
+            self.update_active_wcs_button(wcs)
+        except Exception as e:
+            print(f"Error activating WCS {wcs}: {e}")
+    
+    def update_ui_for_firmware_type(self):
+        """Update UI elements based on firmware type"""
+        try:
+            app = App.get_running_app()
+            is_community = app.is_community_firmware
+            
+            # Update all text inputs
+            for wcs in self.wcs_names:
+                wcs_txt = wcs.replace('.', '_')
+                for axis in ['x', 'y', 'z', 'a', 'r']:
+                    input_id = f'{wcs_txt.lower()}_{axis}'
+                    if hasattr(self.ids, input_id):
+                        text_input = getattr(self.ids, input_id)
+                        if axis == 'r':
+                            text_input.disabled = not is_community or not CNC.can_rotate_wcs
+                        else:
+                            text_input.disabled = not is_community
+            
+            # Update clear all button
+            if hasattr(self.ids, 'btn_clear_all'):
+                self.ids.btn_clear_all.disabled = not is_community
+        except Exception as e:
+            print(f"Error updating UI for firmware type: {e}")
+    
+    def check_for_changes(self):
+        """Check if any values have changed and update the OK button text"""
+        if not self.original_values:
+            return
+            
+        has_changes = False
+        for wcs in self.wcs_names:
+            if wcs not in self.original_values:
+                continue
+                
+            original = self.original_values[wcs]
+            wcs_txt = wcs.replace('.', '_')
+            
+            # Check each axis for changes
+            for axis in ['X', 'Y', 'Z', 'A']:
+                try:
+                    current_value = float(getattr(self.ids, f'{wcs_txt.lower()}_{axis.lower()}').text)
+                    if abs(current_value - original[axis]) > 0.001:
+                        has_changes = True
+                        break
+                except (ValueError, AttributeError):
+                    continue
+            
+            if has_changes:
+                break
+                
+            # Check rotation for changes
+            try:
+                current_rotation = float(getattr(self.ids, f'{wcs_txt.lower()}_r').text)
+                if abs(current_rotation - original['R']) > 0.001:
+                    has_changes = True
+            except (ValueError, AttributeError):
+                pass
+        
+        self.has_changes = has_changes
+        if hasattr(self.ids, 'btn_ok'):
+            self.ids.btn_ok.text = tr._('Save Changes') if has_changes else tr._('Ok')
+        if hasattr(self.ids, 'btn_close'):
+            self.ids.btn_close.text = tr._('Close without saving') if has_changes else tr._('Close')
+
+class SetRotationPopup(ModalView):
+    def __init__(self, controller, cnc, **kwargs):
+        super(SetRotationPopup, self).__init__(**kwargs)
+        self.controller = controller
+        self.cnc = cnc
+    
+    def on_open(self):
+        """Set the default rotation value when popup opens"""
+        rotation_angle = self.cnc.vars.get("rotation_angle", 0.0)
+        self.ids.txt_rotation.text = f"{rotation_angle:.1f}"
+
 class MakeraConfigPanel(SettingsWithSidebar):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.register_type('pendant', SettingPendantSelector)
+        self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
+
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
         if not app.root.config_loading:
@@ -802,6 +1050,15 @@ class LaserDropDown(ToolTipDropDown):
     def on_dismiss(self):
         self.opened = False
 
+class CoordinateSystemDropDown(ToolTipDropDown):
+    opened = False
+
+    def on_dismiss(self):
+        self.opened = False
+        
+    def update_ui(self):
+        if not CNC.can_rotate_wcs:
+            self.ids.set_rotation_popup_button.disabled = True
 
 class FuncDropDown(ToolTipDropDown):
     pass
@@ -943,26 +1200,32 @@ class CNCWorkspace(Widget):
             Color(0, 0.8, 0, 1)
             PushMatrix()
             Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-            Rotate(angle=CNC.vars['rotation_angle'])  # Use degrees directly
-            Line(width=(2 if self.config['margin']['active'] else 1), 
+            if not app.has_4axis:
+                Rotate(angle=CNC.vars['rotation_angle'])  # Use degrees directly
+            Line(width=(2 if self.config['margin']['active'] else 1),
                  rectangle=(CNC.vars['xmin'] * zoom, CNC.vars['ymin'] * zoom,
-                           (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom, 
+                           (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom,
                            (CNC.vars['ymax'] - CNC.vars['ymin']) * zoom))
             PopMatrix()
 
             # z probe
             if self.config['zprobe']['active']:
                 Color(231 / 255, 76 / 255, 60 / 255, 1)
+                PushMatrix()
                 if app.has_4axis:
-                    zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
-                    zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    Translate(self.x, self.y)
+                    # a axis home enabled
+                    if CNC.vars['FuncSetting'] & 1:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 7.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    else:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
                 else:
+                    Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
+                    Rotate(angle=CNC.vars['rotation_angle'])
                     zprobe_x = self.config['zprobe']['x_offset'] + (0 if self.config['zprobe']['origin'] == 1 else CNC.vars['xmin'])
                     zprobe_y = self.config['zprobe']['y_offset'] + (0 if self.config['zprobe']['origin'] == 1 else CNC.vars['ymin'])
-                
-                PushMatrix()
-                Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-                Rotate(angle=CNC.vars['rotation_angle'])
                 Ellipse(pos=(zprobe_x * zoom - 7.5, zprobe_y * zoom - 7.5), size=(15, 15))
                 PopMatrix()
 
@@ -971,7 +1234,8 @@ class CNCWorkspace(Widget):
                 Color(244/255, 208/255, 63/255, 1)
                 PushMatrix()
                 Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-                Rotate(angle=CNC.vars['rotation_angle'])
+                if not app.has_4axis:
+                    Rotate(angle=CNC.vars['rotation_angle'])
                 for x in Utils.xfrange(self.config['leveling']['xn_offset'], CNC.vars['xmax'] - CNC.vars['xmin'] - self.config['leveling']['xp_offset'], self.config['leveling']['x_points']):
                     for y in Utils.xfrange(self.config['leveling']['yn_offset'], CNC.vars['ymax'] - CNC.vars['ymin']-self.config['leveling']['yp_offset'], self.config['leveling']['y_points']):
                         Ellipse(pos=((CNC.vars['xmin'] + x) * zoom - 5, (CNC.vars['ymin'] + y) * zoom - 5), size=(10, 10))
@@ -1420,6 +1684,7 @@ class Makera(RelativeLayout):
     y_drop_down = ObjectProperty()
     z_drop_down = ObjectProperty()
     a_drop_down = ObjectProperty()
+    coordinate_system_drop_down = ObjectProperty()
 
     feed_drop_down = ObjectProperty()
     spindle_drop_down = ObjectProperty()
@@ -1431,6 +1696,7 @@ class Makera(RelativeLayout):
     operation_drop_down = ObjectProperty()
 
     confirm_popup = ObjectProperty()
+    unlock_popup = ObjectProperty()
     message_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
@@ -1537,6 +1803,7 @@ class Makera(RelativeLayout):
         self.file_popup = FilePopup()
 
         self.cnc = CNC()
+        self.wcs_names = self.cnc.getWCSNames()
         self.controller = Controller(self.cnc, self.execCallback)
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
@@ -1574,11 +1841,11 @@ class Makera(RelativeLayout):
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
         self.language_popup = LanguagePopup()
-        self.language_popup.sp_language.values = LANGS.values()
+        self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
-        for lang_key in LANGS.keys():
-            if lang_key == default_lang:
-                self.language_popup.sp_language.text = LANGS[lang_key]
+        for lang_key in translation.LANGS.keys():
+            if lang_key == translation.tr.lang:
+                self.language_popup.sp_language.text = translation.LANGS[lang_key]
                 break
 
         self.diagnose_popup = DiagnosePopup()
@@ -1587,6 +1854,7 @@ class Makera(RelativeLayout):
         self.y_drop_down = YDropDown()
         self.z_drop_down = ZDropDown()
         self.a_drop_down = ADropDown()
+        self.coordinate_system_drop_down = CoordinateSystemDropDown()
         self.feed_drop_down = FeedDropDown()
         self.spindle_drop_down = SpindleDropDown()
         self.tool_drop_down = ToolDropDown()
@@ -1597,11 +1865,14 @@ class Makera(RelativeLayout):
         self.jog_speed_drop_down = JogSpeedDropDown()
 
         self.confirm_popup = ConfirmPopup()
+        self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
+        self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
+        self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
         self.wifi_conn_drop_down = DropDown(auto_width=False, width='250dp')
 
@@ -1631,6 +1902,7 @@ class Makera(RelativeLayout):
         self.setting_default_list = {}
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_pendant_config()
 
         self.usb_event = lambda instance, x: self.openUSB(x)
         self.wifi_event = lambda instance, x: self.openWIFI(x)
@@ -1648,6 +1920,11 @@ class Makera(RelativeLayout):
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+
+        # Setup pendant
+        self.setup_pendant()
+        self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
+        self.pendant_probe_z_alt_cmd = Config.get('carvera', 'pendant_probe_z_alt_cmd')
 
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
@@ -1667,16 +1944,21 @@ class Makera(RelativeLayout):
             shutil.rmtree(self.temp_dir)
         except Exception as e:
             print(f"Error cleaning up temporary directory: {e}")
-        
-        # Save the last window size. 
-        # Seems that kivvy uses the window size before dpi scaling in the config, 
+
+        try:
+            self.pendant.close()
+        except Exception as e:
+            print(f"Error closing pendant: {e}")
+
+        # Save the last window size.
+        # Seems that kivvy uses the window size before dpi scaling in the config,
         # but after dp scaling in Window.size
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
-    
+
     def load_controller_config(self):
-        config_def_file = os.path.join(os.path.dirname(__file__),'controller_config.json')
+        config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
         with open(config_def_file) as file:
             controller_config_definition = json.load(file)
         controller_config = []
@@ -1688,12 +1970,27 @@ class Makera(RelativeLayout):
                 setting.pop('default', None)
             controller_config.append(setting)
 
-        self.config_popup.settings_panel.add_json_panel('Controller', Config, data=json.dumps(controller_config))
+        self.config_popup.settings_panel.add_json_panel(tr._('Controller'), Config, data=json.dumps(controller_config))
+
+    def load_pendant_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), 'pendant_config.json')
+        with open(config_def_file) as file:
+            pendant_config_definition = json.load(file)
+        pendant_config = []
+
+        # Set default pendant config values
+        for setting in pendant_config_definition:
+            if 'default' in setting:
+                Config.setdefault(setting['section'], setting['key'], setting['default'])
+                setting.pop('default', None)
+            pendant_config.append(setting)
+
+        self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
 
 
     def open_download(self):
         webbrowser.open(DOWNLOAD_ADDRESS, new = 2)
-    
+
     def open_fw_download(self):
         webbrowser.open(FW_DOWNLOAD_ADDRESS, new = 2)
 
@@ -1707,12 +2004,12 @@ class Makera(RelativeLayout):
             self.file_popup.popup_manager.current = 'local_page'
             self.file_popup.open()
             self.file_popup.local_rv.child_dir('')
-    
+
     def send_bug_report(self):
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues')
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues')
         log_dir = Path.home() / ".kivy" / "logs"
-        
+
         # Open the log directory with whatever native file browser is availiable
         if sys.platform == "win32":
             os.startfile(log_dir)
@@ -1747,7 +2044,7 @@ class Makera(RelativeLayout):
     def check_fw_version(self):
         self.upgrade_popup.fw_upd_text.text = self.fw_upd_text
         self.upgrade_popup.fw_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
+        versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
         if versions != None:
             self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
             if self.fw_version_old != '':
@@ -1765,8 +2062,8 @@ class Makera(RelativeLayout):
         Clock.schedule_once(self.check_ctl_version, 0)
 
     def change_language(self, lang_desc):
-        for lang_key in LANGS.keys():
-            if LANGS[lang_key] == lang_desc:
+        for lang_key in translation.LANGS.keys():
+            if translation.LANGS[lang_key] == lang_desc:
                 if tr.lang != lang_key:
                     tr.switch_lang(lang_key)
                     Config.set('carvera', 'language', lang_key)
@@ -1780,7 +2077,7 @@ class Makera(RelativeLayout):
     def check_ctl_version(self, *args):
         self.upgrade_popup.ctl_upd_text.text = self.ctl_upd_text
         self.upgrade_popup.ctl_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
+        versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
         if versions != None:
             self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
             app = App.get_running_app()
@@ -1807,6 +2104,9 @@ class Makera(RelativeLayout):
     def apply(self, buffer = False):
         app = App.get_running_app()
 
+        if app.has_4axis:
+            self.controller.wcsClearRotation()
+
         goto_origin = False
         apply_margin = self.coord_config['margin']['active']
         apply_zprobe = self.coord_config['zprobe']['active']
@@ -1832,7 +2132,7 @@ class Makera(RelativeLayout):
         self.controller.autoCommand(apply_margin, apply_zprobe,
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
-                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer, 
+                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer,
                                     [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']])
 
         # change back to last tool if needed
@@ -1953,7 +2253,7 @@ class Makera(RelativeLayout):
             try:
                 # Request permissions first
                 request_android_permissions()
-                
+
                 # Add primary storage path
                 android_storage_path = primary_external_storage_path()
                 if android_storage_path and os.path.exists(android_storage_path):
@@ -2071,7 +2371,7 @@ class Makera(RelativeLayout):
         if self.past_machine_addr:
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
-            else: 
+            else:
                 Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
@@ -2126,7 +2426,7 @@ class Makera(RelativeLayout):
             return False
         self.store_machine_address(ip)
         self.openWIFI(ip)
-    
+
     def store_machine_address(self, address):
         Config.set('carvera', 'address', address)
         Config.write()
@@ -2155,16 +2455,28 @@ class Makera(RelativeLayout):
                     if remote_time != None:
                         if abs(int(time.time()) - time.timezone - int(remote_time[0].split('=')[1])) > 10:
                             self.controller.syncTime()
-
-                    remote_version = re.search('version = [0-9]+\.[0-9]+\.[0-9]+', line)
+                
+                    remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-_]*', line)
+                    app = App.get_running_app()
+                    if remote_version != None:
+                        if 'c' in remote_version[0]:
+                            app.is_community_firmware = True
+                            self.controller.is_community_firmware = True
+                        else:
+                            app.is_community_firmware = False
+                            self.controller.is_community_firmware = False
+                        if not app.is_community_firmware or not CNC.can_rotate_wcs:
+                            self.controller.viewWCS()
+                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]', remote_version[0])
                     if remote_version != None:
                         self.fw_version_old = remote_version[0].split('=')[1]
                         if self.fw_version_new != '':
                             self.check_fw_version()
-
+                    
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
-                        Clock.schedule_once(partial(self.setUIForModel, remote_model[0].split('=')[1]), 0)
+                        detected_model = remote_model[0].split('=')[1]
+                        Clock.schedule_once(partial(self.setUIForModel, detected_model), 0)
 
                     remote_filetype = re.search('ftype = [a-zA-Z0-9]+', line)
                     if remote_filetype != None:
@@ -2281,14 +2593,32 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def open_halt_confirm_popup(self):
+        app = App.get_running_app()
+
+        # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
+        if CNC.vars["halt_reason"] < 20:
+            if self.unlock_popup.showing:
+                return
+            
+            if CNC.vars["halt_reason"] in HALT_REASON:
+                self.unlock_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
+            else:
+                self.unlock_popup.lb_title.text = tr._('Machine Is Halted!')
+            
+            self.unlock_popup.unlock_stay = partial(self.unlockMachine)
+            self.unlock_popup.unlock_safe_z = partial(self.unlockMachineAndMoveToSafeZ)
+            self.unlock_popup.open(self)
+            return
+
+        # Use ConfirmPopup for halt_reason >= 20 (machine requires reset)
         if self.confirm_popup.showing:
             return
-        app = App.get_running_app()
 
         if CNC.vars["halt_reason"] in HALT_REASON:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
         else:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted!')
+        
         self.confirm_popup.cancel = None
         if CNC.vars["halt_reason"] > 40:
             self.confirm_popup.lb_content.text = tr._('Please manually switch off/on the machine!')
@@ -2339,16 +2669,22 @@ class Makera(RelativeLayout):
     def unlockMachine(self):
         self.controller.unlock()
 
+    def unlockMachineAndMoveToSafeZ(self):
+        self.controller.unlock()
+        self.controller.gotoSafeZ()
+
     # -----------------------------------------------------------------------
     def set_local_folder_to_last_opened(self):
         self.fetch_recent_local_dir_list()
 
-        local_path = ''
-        # Find more recent directory that is still present
+        # Find the most recent directory that is still present
+        local_path = None
         for dir in self.recent_local_dir_list:
             if os.path.isdir(dir):
+                local_path = dir
                 break
-        self.file_popup.local_rv.child_dir(dir)
+        
+        self.file_popup.local_rv.child_dir(local_path)
 
     def open_rename_input_popup(self):
         self.input_popup.lb_title.text = tr._('Change name') +'\'%s\' to:' % (self.file_popup.remote_rv.curr_selected_file)
@@ -2401,7 +2737,7 @@ class Makera(RelativeLayout):
             if self.file_popup.firmware_mode:
                 # show message popup
                 self.confirm_popup.lb_title.text = tr._('Updating Firmware')
-                self.confirm_popup.lb_content.text = tr._('Reset the machine when uploading is complete.')
+                self.confirm_popup.lb_content.text = tr._('Are you sure you want to update the firmware? A machine reset will be required to apply the new firmware.')
                 self.confirm_popup.cancel = None
                 self.confirm_popup.confirm = partial(self.uploadLocalFile, filepath)
                 self.confirm_popup.open(self)
@@ -2498,7 +2834,7 @@ class Makera(RelativeLayout):
                         self.setting_list[key.strip()] = value.strip()
                     except AttributeError:
                         Clock.schedule_once(partial(self.load_error, tr._('Error loading machine config setting. Possibly malformed value.\nSkipping setting key: ') + str(key)), 0)
-            
+
             self.load_coordinates()
             self.load_laser_offsets()
             self.setting_change_list = {}
@@ -2592,16 +2928,37 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
         app = App.get_running_app()
+        model_changed = False
         if model != app.model:
             app.model = model.strip()
-            if app.model == 'CA1':
-                self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                           'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                              'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
-                CNC.vars['rotation_base_width'] = 300
-                CNC.vars['rotation_head_width'] = 38
-
+            model_changed = True
+        if app.model == 'CA1':
+            if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+            CNC.vars['rotation_base_width'] = 300
+            CNC.vars['rotation_head_width'] = 56.5
+        elif app.model == 'C1':
+            if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+            if CNC.vars['FuncSetting'] & 1:
+                CNC.vars['rotation_base_width'] = 330
+                CNC.vars['rotation_head_width'] = 18.5
+            else:
+                CNC.vars['rotation_base_width'] = 330
+                CNC.vars['rotation_head_width'] = 7
+        
+        # Load or reload machine config when model is detected/changed
+        if model_changed:
+            if self.config_loaded:
+                # Reload if already loaded
+                Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
+            else:
+                # Load for the first time when model is detected
+                Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
     def downloadCallback(self, packet_size, success_count, error_count):
@@ -2874,6 +3231,7 @@ class Makera(RelativeLayout):
     def uploadLocalFile(self, filepath, callback=None):
         self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
+        self.original_upload_filepath = filepath  # Store original path for recent directory tracking
         if 'lz' in self.filetype:               #如果固件支持的上传文件类型为.lz，则进行压缩
             qlzfilename = self.compress_file(filepath)
             if qlzfilename:
@@ -2954,7 +3312,7 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.confirm_reset, 0)
             # update recent folder
             if not self.file_popup.firmware_mode:
-                self.update_recent_local_dir_list(os.path.dirname(self.uploading_file))
+                self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
 
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith('.lz'):
@@ -3143,8 +3501,11 @@ class Makera(RelativeLayout):
                     self.tool_triggered = True
                     self.open_tool_confirm_popup()
             else:
-                if (self.alarm_triggered or self.tool_triggered) and self.confirm_popup.showing:
-                    self.confirm_popup.dismiss()
+                if (self.alarm_triggered or self.tool_triggered) and (self.confirm_popup.showing or self.unlock_popup.showing):
+                    if self.confirm_popup.showing:
+                        self.confirm_popup.dismiss()
+                    if self.unlock_popup.showing:
+                        self.unlock_popup.dismiss()
                 self.tool_triggered = False
                 self.alarm_triggered = False
 
@@ -3168,7 +3529,7 @@ class Makera(RelativeLayout):
                 digi_len = 0
             if digi_len > 3:
                 digi_len = 3
-            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["ma"])
+            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["wa"])
             self.a_data_view.minr_text = "{:.3f}".format(CNC.vars["ma"])
 
             #update feed data
@@ -3280,6 +3641,17 @@ class Makera(RelativeLayout):
             self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
+            # update coordinate system data
+            coord_system_index = CNC.vars["active_coord_system"]
+            coord_system_name = self.wcs_names[coord_system_index]
+            rotation_angle = CNC.vars["rotation_angle"]
+            self.coord_system_data_view.main_text = coord_system_name
+            self.coord_system_data_view.minr_text = "{:.3f}°".format(rotation_angle)
+            self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
+            
+            # Update WCS Settings popup if it's open
+            if hasattr(self, 'wcs_settings_popup') and self.wcs_settings_popup.parent:
+                self.wcs_settings_popup.update_active_wcs_button(coord_system_name)
 
             elapsed = now - self.control_list['laser_mode'][0]
             if elapsed < 2:
@@ -3577,8 +3949,10 @@ class Makera(RelativeLayout):
         controller_config_panels = 0
         for panel in panels.values():
             if panel.title == 'Controller':
-                controller_config_panels = 1
-        
+                controller_config_panels += 1
+            if panel.title == 'Pendant':
+                controller_config_panels += 1
+
         if len(panels.values()) - controller_config_panels > 0:
             # already have panels, update data
             for panel in panels.values():
@@ -3603,43 +3977,36 @@ class Makera(RelativeLayout):
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
-                            
+
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
-                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics']:
+                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
                             self.controller.close()
                             self.updateStatus()
                             return False
         else:
-            # no panels, create new
-            config_file = 'config.json'
-            if not os.path.exists(config_file):
-                config_file = os.path.join(os.path.dirname(__file__), config_file)
-            if not os.path.exists(config_file):
-                self.controller.log.put(
-                    (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
-                self.controller.close()
-                self.updateStatus()
-                return False
-            with open(config_file, 'r') as fd:
-                data = json.loads(fd.read())
-
             app = App.get_running_app()
-            if app.model == 'CA1':
-                # The Carvera Air generally uses the same default values as the original Carvera
-                # However if there are any differences we store them in a seperate config file
+            data = None
             
-                ca1_config_diff_file = os.path.join(os.path.dirname(__file__), "config_ca1_diff.json")
-                with open(ca1_config_diff_file, 'r') as fd:
-                    ca1_diff_data = json.loads(fd.read())
+            # If model is not set yet, don't load any config
+            if not app.model or app.model == "":
+                return True
+            
+            if app.model == 'C1':
+                # Load C1 specific config
+                c1_config_file = os.path.join(os.path.dirname(__file__), "config_c1.json")
+                if os.path.exists(c1_config_file):
+                    with open(c1_config_file, 'r') as fd:
+                        data = json.loads(fd.read())
+            elif app.model == 'CA1':
+                # Load CA1 specific config
+                ca1_config_file = os.path.join(os.path.dirname(__file__), "config_ca1.json")
+                if os.path.exists(ca1_config_file):
+                    with open(ca1_config_file, 'r') as fd:
+                        data = json.loads(fd.read())
 
-                for ca1_diff_setting in ca1_diff_data:
-                    for setting in data:
-                        if (ca1_diff_setting.get("key") == setting.get("key")) and (ca1_diff_setting.get("section") == setting.get("section")):
-                            setting.update(ca1_diff_setting)
-            
             basic_config = []
             advanced_config = []
             restore_config = []
@@ -3709,8 +4076,24 @@ class Makera(RelativeLayout):
         if not app.root.show_advanced_jog_controls:
             app.root.keyboard_jog_control = False
             app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)    
-    
+            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+
+    def is_jogging_enabled(self):
+        app = App.get_running_app()
+        return \
+            not app.playing and \
+            (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
+            not self._is_popup_open()
+
+    def is_pendant_jogging_enabled(self):
+        # If the user disabled pendant, respect it.
+        if self.ids.pendant_jogging_en_btn.state != 'down':
+            return False
+        # ...otherwise behave as any other jogging except when probing screen is
+        # open. We want to use the pendant as a convenient way to get to the
+        # initial probing location
+        return self.is_jogging_enabled() or self.probing_popup._is_open
+
     def toggle_keyboard_jog_control(self):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
@@ -3719,23 +4102,89 @@ class Makera(RelativeLayout):
             Window.bind(on_key_down=self._keyboard_jog_keydown)
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown)
-    
+
+    def setup_pendant(self):
+        self.handle_pendant_disconnected()
+
+        type_name = Config.get('carvera', 'pendant_type')
+        pendant_type = SUPPORTED_PENDANTS.get(type_name, SUPPORTED_PENDANTS["None"])
+
+        def get_feed():
+            return self.feed_drop_down.scale_slider.value
+
+        def set_feed(val):
+            self.feed_drop_down.scale_slider.value = val
+
+        feed_override = OverrideController(
+            get_feed, set_feed,
+            min_limit = 10, max_limit = 300, step = 10
+        )
+
+        def get_spindle():
+            return self.spindle_drop_down.scale_slider.value
+
+        def set_spindle(val):
+            self.spindle_drop_down.scale_slider.value = val
+
+        spindle_override = OverrideController(
+            get_spindle, set_spindle,
+            min_limit = 10, max_limit = 300, step = 10)
+
+        self.pendant = pendant_type(self.controller, self.cnc,
+                                feed_override, spindle_override,
+                                self.is_pendant_jogging_enabled,
+                                self.handle_pendat_run_pause_resume,
+                                self.handle_pendant_probe_z,
+                                self.handle_pendant_open_probing_popup,
+                                self.handle_pendant_connected,
+                                self.handle_pendant_disconnected)
+
+    def handle_pendant_connected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant')
+        self.ids.pendant_jogging_en_btn.disabled = False
+        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
+
+    def handle_pendant_disconnected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
+        self.ids.pendant_jogging_en_btn.disabled = True
+
+    def handle_pendat_run_pause_resume(self):
+        app = App.get_running_app()
+        if app.state == 'Pause':
+            self.controller.resumeCommand()
+        elif app.state == 'Alarm':
+            self.unlockMachine()
+        else:
+            self.controller.suspendCommand()
+
+    def handle_pendant_open_probing_popup(self):
+        self.probing_popup.open()
+
+    def handle_pendant_probe_z(self):
+        if self.pendant_probe_z_alt_cmd == "1":
+            if self.controller.is_community_firmware:
+                self.controller.executeCommand("M466 Z-200 S2")
+            else:
+                self.controller.executeCommand("G38.2 Z-200")
+        else:
+            self.probing_popup.open()
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
                            self.pairing_popup._is_open,
                            self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open,
-                           self.confirm_popup._is_open,
+                           self.confirm_popup._is_open, self.unlock_popup._is_open,
                            self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open,
                            self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
-    
+
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open():
+        if self.is_jogging_enabled():
             key = args[1]  # keycode
             if key == 274:  # down button
                 app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
@@ -3766,14 +4215,18 @@ class Makera(RelativeLayout):
         self.message_popup.lb_content.text = tr._('Settings applied, need machine reset to take effect !')
         self.message_popup.open()
 
-    
+
     def apply_controller_setting_changes(self):
         if self.controller_setting_change_list.get("ui_density_override") or self.controller_setting_change_list.get("ui_density"):
             self.message_popup.lb_content.text = tr._('UI Density changed, restart application to apply.')
             self.message_popup.open()
-        
+
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
+
+        if "pendant_type" in self.controller_setting_change_list:
+            self.pendant.close()
+            self.setup_pendant()
 
         self.config_popup.btn_apply.disabled = True
 
@@ -4114,7 +4567,8 @@ class MakeraApp(App):
     curr_page = NumericProperty(1)
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
-    model = StringProperty('C1')
+    model = ""
+    is_community_firmware = BooleanProperty(False)
 
     def on_stop(self):
         self.root.stop_run()
@@ -4125,10 +4579,21 @@ class MakeraApp(App):
         self.title = tr._('Carvera Controller Community') + ' v' + __version__
         self.icon = os.path.join(os.path.dirname(__file__), 'icon.png')
 
-        return Makera(ctl_version=__version__) 
-    
+        return Makera(ctl_version=__version__)
+
     def on_start(self):
-        Window.update_viewport()
+        # Workaround for Android blank screen issue
+        # https://github.com/kivy/python-for-android/issues/2720
+        viewport_update_count = 0
+        
+        def update_viewport_with_counter(dt):
+            nonlocal viewport_update_count
+            Window.update_viewport()
+            viewport_update_count += 1
+            if viewport_update_count >= 20:  # Stop after 5 seconds (5/0.25=20)
+                return False  # This will unschedule the event
+        
+        Clock.schedule_interval(update_viewport_with_counter, 0.25)
 
 
     def on_pause(self):
@@ -4191,18 +4656,10 @@ def load_constants():
     global DOWNLOAD_ADDRESS
     global FW_DOWNLOAD_ADDRESS
 
-    global LANGS
-
     FW_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_community_firmware/master/version.txt'
     CTL_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_controller/main/CHANGELOG.md'
     DOWNLOAD_ADDRESS = 'https://github.com/carvera-community/carvera_controller/releases/latest'
     FW_DOWNLOAD_ADDRESS = 'https://github.com/Carvera-Community/Carvera_Community_Firmware/releases/latest'
-
-
-    LANGS = {
-        'en':  'English',
-        'zh-CN': '中文简体(Simplified Chinese)',
-    }
 
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30 # s
@@ -4219,17 +4676,18 @@ def load_constants():
 
 
 def main():
+    langname = None
+    if Config.has_option('carvera', 'language'):
+        langname = Config.get('carvera', 'language')
+    translation.init(langname)
 
     # load the global constants
     load_constants()
 
     # Language translation needs to be globally accessiable
-    global default_lang
-    global tr
     global HALT_REASON
-    default_lang = init_lang()
-    tr = Lang(default_lang)
-    set_config_defaults(default_lang)
+
+    set_config_defaults(tr.lang)
     load_app_configs()
     HALT_REASON = load_halt_translations(tr)
 

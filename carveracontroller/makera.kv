@@ -478,7 +478,7 @@
         disabled: app.state != 'Idle'
         on_release:
             root.select('Third Item')
-            app.root.controller.wcsSetA(0)
+            app.root.controller.wcsSet(None, None, None, 0)
     Button:
         text: tr._('Set A')
         size_hint_y: None
@@ -508,6 +508,44 @@
             root.select('Third Item')
             app.root.coord_popup.MoveA_popup.open()
 
+<CoordinateSystemDropDown>:
+    set_wcs_dropdown: set_wcs_dropdown
+    canvas.before:
+        Color:
+            rgba: 60/255, 60/255, 60/255, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    disabled: app.state != 'Idle'
+    
+    Button:
+        id: set_rotation_popup_button
+        text: tr._('Set Rotation')
+        size_hint_y: None
+        height: '40dp'
+        disabled: app.is_community_firmware == False
+        on_release:
+            root.select('Third Item')
+            app.root.set_rotation_popup.open()
+    
+    Spinner:
+        size_hint_y: None
+        height: '40dp'
+        id: set_wcs_dropdown
+        text: tr._('Activate WCS')
+        values: 'G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G59.1', 'G59.2', 'G59.3'
+        on_text:
+            if self.text != tr._("Activate WCS"): app.root.wcs_settings_popup.activate_wcs(self.text)
+            if self.text != tr._("Activate WCS"): self.text = tr._('Activate WCS')
+            root.select('Third Item')
+    
+    Button:
+        text: tr._('WCS Settings')
+        size_hint_y: None
+        height: '40dp'
+        on_release:
+            root.select('Third Item')
+            app.root.wcs_settings_popup.open()
 
 <FeedDropDown>:
     scale_slider: scale_slider
@@ -734,7 +772,8 @@
         values: 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Custom'
         on_text:
             if self.text == 'Custom': app.root.coord_popup.change_tool_popup.open()
-            if self.text != tr._("Change..."): app.root.controller.changeToolCommand(self.text[-1])
+            if self.text == '3D Probe': app.root.controller.changeToolCommand(999990)
+            elif self.text != tr._("Change..."): app.root.controller.changeToolCommand(self.text[-1])
             if self.text != tr._("Change..."): self.text = tr._('Change...')
             root.select('Third Item')
     Button:
@@ -757,7 +796,7 @@
         height: '40dp'
         id: set_dropdown
         text: tr._('Set...')
-        values: 'Empty', 'Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Custom'
+        values: 'Empty', 'Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5', 'Tool: 6', 'Custom'
         on_text:
             if self.text == 'Custom': app.root.coord_popup.settool_popup.open()
             if self.text == '3D Probe': app.root.controller.setToolCommand(999990)
@@ -1105,9 +1144,10 @@
 
 <TopDataView>:
     orientation: 'horizontal'
-    size_hint_x: None
+    size_hint_x: 1
+    size_hint_max_x: '100dp'
+    size_hint_min: '70dp', None
     scale: 100
-    width: '95dp'
     padding: '3dp'
     active: False
     canvas.before:
@@ -1286,6 +1326,42 @@
                 on_release:
                     root.dismiss()
                     root.confirm()
+
+<UnlockPopup>:
+    lb_title: lb_title
+    lb_content: lb_content
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            size_hint_y: 0.4
+            id: lb_title
+            text: tr._('Machine Is Halted')
+            bold: True
+        Label:
+            id: lb_content
+            text: tr._('Choose unlock option:')
+        BoxLayout:
+            size_hint_y: 0.4
+            Button:
+                text: tr._('Cancel')
+                on_release:
+                    root.dismiss()
+            Button:
+                text: tr._('Unlock and Stay in Position')
+                on_release:
+                    root.dismiss()
+                    if root.unlock_stay:\
+                    root.unlock_stay()
+            Button:
+                text: tr._('Unlock and Move to Safe Z')
+                on_release:
+                    root.dismiss()
+                    if root.unlock_safe_z:\
+                    root.unlock_safe_z()
 <MessagePopup>:
     btn_ok: btn_ok
     lb_content: lb_content
@@ -1363,36 +1439,48 @@
                         id: cbx_anchor1
                         group: 'anchor'
                         active: True
+                        on_press: root.update_offsets()
                         disabled: app.has_4axis
                     MCQLabel:
-                        on_press: cbx_anchor1._do_press()
+                        on_press: 
+                            cbx_anchor1._do_press()
+                            root.update_offsets()
                         text: tr._('Anchor1')
                         disabled: app.has_4axis
                     MCQCheckBox:
                         id: cbx_anchor2
                         group: 'anchor'
                         active: False
+                        on_press: root.update_offsets()
                         disabled: app.has_4axis
                     MCQLabel:
-                        on_press: cbx_anchor2._do_press()
+                        on_press: 
+                            cbx_anchor2._do_press()
+                            root.update_offsets()
                         text: tr._('Anchor2')
                         disabled: app.has_4axis
                     MCQCheckBox:
                         id: cbx_4axis_origin
                         group: 'anchor'
                         active: False
+                        on_press: root.update_offsets()
                         disabled: not app.has_4axis
                     MCQLabel:
-                        on_press: cbx_4axis_origin._do_press()
+                        on_press: 
+                            cbx_4axis_origin._do_press()
+                            root.update_offsets()
                         text: tr._('4Axis Origin')
                         disabled: not app.has_4axis
                     MCQCheckBox:
                         id: cbx_current_position
                         group: 'anchor'
                         active: False
+                        on_press: root.update_offsets()
                         disabled: app.has_4axis
                     MCQLabel:
-                        on_press: cbx_current_position._do_press()
+                        on_press: 
+                            cbx_current_position._do_press()
+                            root.update_offsets()
                         text: tr._('Current Pos')
                         disabled: app.has_4axis
                     # Label:
@@ -1845,13 +1933,13 @@
             Label:
                 size_hint_x: 0.2
             Label:
-                
+
             Label:
-                
+
             Label:
-                
+
             Label:
-                
+
 
             # row5 new section
             Label:
@@ -2701,7 +2789,7 @@
                 Label:
                     id: lb_origin
                     size_hint_y: None
-                    height: '25dp'
+                    height: '40dp'
                     text: tr._(" (0, 0) from Anchor1")
                     halign: "left"
                     valign: "middle"
@@ -3196,6 +3284,7 @@
     spindle_data_view: spindle_data_view
     tool_data_view: tool_data_view
     laser_data_view: laser_data_view
+    coord_system_data_view: coord_system_data_view
     float_layout: float_layout
     step_a: step_a
     step_z: step_z
@@ -3275,14 +3364,23 @@
 
             TopDataView:
                 id: a_data_view
-                width: '98dp'
                 color: 247/255, 220/255, 111/255, 1
                 data_text: 'A'
                 main_text: "{:.3f}".format(1.0)
                 minr_text: "{:.3f}".format(2.0)
                 disabled: app.state == 'N/A'
                 on_release: root.a_drop_down.open(self)
-
+            TopDataView:
+                id: coord_system_data_view
+                data_icon: 'data/axis-arrow.png'
+                tooltip_txt: tr._('Coordinate System')
+                main_text: "G54"
+                minr_text: "0.000°"
+                disabled: app.state == 'N/A'
+                on_release:
+                    root.coordinate_system_drop_down.update_ui()
+                    root.coordinate_system_drop_down.open(self)
+                    root.coordinate_system_drop_down.opened = True
             Label:
                 size_hint_x: None
                 width: dp(0)
@@ -3330,6 +3428,8 @@
                 on_release:
                     root.laser_drop_down.open(self)
                     root.laser_drop_down.opened = True
+
+            
 
             Label:
                 text: ''
@@ -3425,7 +3525,7 @@
                                     GridLayout:
                                         padding: '10dp'
                                         cols: 3
-                                        rows: 4
+                                        rows: 5
                                         spacing: dp(3)
                                         GridBoxLayout:
                                             SmallRoundButton:
@@ -3493,6 +3593,7 @@
 
                                         # 4th row
                                         GridBoxLayout:
+                                            disabled: app.is_community_firmware == False
                                             SmallRoundButton:
                                                 text: tr._('Probing...')
                                                 on_release: app.root.probing_popup.open()
@@ -3510,40 +3611,43 @@
                                                 on_release: app.root.controller.setExternalControl(100 if self.state=="down" else 0)
 
                                         GridBoxLayout:
-                                            # Empty for now
+                                            ToggleButton:
+                                                id: pendant_jogging_en_btn
+                                                text: tr._('No Pendant')
+                                                height: '35dp'
 
                             BoxLayout:
-                                BoxLayout:
-                                    disabled: not root.show_advanced_jog_controls or app.state != 'Idle'
-                                    orientation: 'horizontal'
-                                    size_hint_y: 0.4
-                                    opacity: 1 if root.show_advanced_jog_controls else 0
-                                    GridLayout:
-                                        cols: 3
-                                        rows: 1
-                                        BoxLayout:
-                                            padding: '10dp'
-                                            canvas.before:
-                                                Color:
-                                                    rgba: 50/255, 50/255, 50/255, 1
-                                                RoundedRectangle:
-                                                    pos: self.pos
-                                                    size: self.size
-                                                    radius: [dp(12),]
-                                            GridBoxLayout:
-                                                Button:
-                                                    text: tr._('Jog Speed: Match Feed')
-                                                    id: jog_speed_btn
-                                                    center: 0.5, 0.5
-                                                    height: '35dp'
-                                                    on_release: root.jog_speed_drop_down.open(self)
-                                                
-                                            GridBoxLayout:
-                                                ToggleButton:
-                                                    id: kb_jog_btn
-                                                    text: tr._('Keyboard Jog Mode')
-                                                    height: '35dp'
-                                                    on_release: app.root.toggle_keyboard_jog_control()
+                                disabled: not root.show_advanced_jog_controls or app.state != 'Idle'
+                                orientation: 'horizontal'
+                                padding: dp(12)
+                                size_hint_y: 0.4
+                                opacity: 1 if root.show_advanced_jog_controls else 0
+                                GridLayout:
+                                    cols: 3
+                                    rows: 1
+                                    BoxLayout:
+                                        padding: '10dp'
+                                        canvas.before:
+                                            Color:
+                                                rgba: 50/255, 50/255, 50/255, 1
+                                            RoundedRectangle:
+                                                pos: self.pos
+                                                size: self.size
+                                                radius: [dp(12),]
+                                        GridBoxLayout:
+                                            Button:
+                                                text: tr._('Jog Speed: Match Feed')
+                                                id: jog_speed_btn
+                                                center: 0.5, 0.5
+                                                height: '35dp'
+                                                on_release: root.jog_speed_drop_down.open(self)
+
+                                        GridBoxLayout:
+                                            ToggleButton:
+                                                id: kb_jog_btn
+                                                text: tr._('Keyboard Jog Mode')
+                                                height: '35dp'
+                                                on_release: app.root.toggle_keyboard_jog_control()
 
                         BoxLayout:
                             disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
@@ -4334,7 +4438,7 @@
                 id: btn_ok
                 text: tr._('Ok')
                 on_release:
-                    app.root.controller.wcsSetA(float(txt_offset.text))
+                    app.root.controller.wcsSet(None, None, None, float(txt_offset.text))
                     root.dismiss()
 
 <SetToolPopup>:
@@ -4505,4 +4609,887 @@
                 text: tr._('Ok')
                 on_release:
                     app.root.controller.RapMoveA(float(txt_offset.text))
+                    root.dismiss()
+
+<WCSSettingsPopup>:
+    size_hint: 0.8, 0.8
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+    
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        
+        Label:
+            canvas.before:
+                Color:
+                    rgba: 45/255, 45/255, 45/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            id: caption
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('WCS Settings')
+            halign: 'left'
+            valign: 'middle'
+        
+        ScrollView:
+            GridLayout:
+                id: wcs_grid
+                cols: 9
+                spacing: '5dp'
+                size_hint_y: None
+                height: self.minimum_height
+                
+                # Header row
+                Label:
+                    text: 'WCS'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'X Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Y Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Z Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'A Offset'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Rotation'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Clear Offsets'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Clear Rotation'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                Label:
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '30dp'
+                    canvas.before:
+                        Color:
+                            rgba: 60/255, 60/255, 60/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                
+                # G54 row
+                Label:
+                    text: 'G54'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g54_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g54_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g54_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g54_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g54_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_offsets('G54')
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: root.clear_wcs_rotation('G54')
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    id: g54_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G54')
+                
+                # G55 row
+                Label:
+                    text: 'G55'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g55_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g55_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g55_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g55_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g55_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G55')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G55')
+                Button:
+                    id: g55_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G55')
+                
+                # G56 row
+                Label:
+                    text: 'G56'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g56_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g56_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g56_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g56_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g56_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G56')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G56')
+                Button:
+                    id: g56_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G56')
+                
+                # G57 row
+                Label:
+                    text: 'G57'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g57_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g57_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g57_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g57_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g57_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G57')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G57')
+                Button:
+                    id: g57_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G57')
+                
+                # G58 row
+                Label:
+                    text: 'G58'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g58_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g58_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g58_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g58_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g58_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G58')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G58')
+                Button:
+                    id: g58_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G58')
+                
+                # G59 row
+                Label:
+                    text: 'G59'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g59_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G59')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G59')
+                Button:
+                    id: g59_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59')
+                
+                # G59.1 row
+                Label:
+                    text: 'G59.1'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g59_1_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_1_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_1_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_1_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_1_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G59.1')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G59.1')
+                Button:
+                    id: g59_1_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59.1')
+                
+                # G59.2 row
+                Label:
+                    text: 'G59.2'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g59_2_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_2_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_2_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_2_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_2_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G59.2')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G59.2')
+                Button:
+                    id: g59_2_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59.2')
+                
+                # G59.3 row
+                Label:
+                    text: 'G59.3'
+                    size_hint_y: None
+                    height: '40dp'
+                TextInput:
+                    id: g59_3_x
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_3_y
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_3_z
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_3_a
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_3_r
+                    text: '0.000'
+                    size_hint_y: None
+                    height: '40dp'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    multiline: False
+                    disabled: app.is_community_firmware == False
+                    on_text: root.check_for_changes()
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_offsets('G59.3')
+                Button:
+                    text: 'Clear'
+                    size_hint_y: None
+                    height: '40dp'
+                    disabled: app.is_community_firmware == False
+                    on_release: root.clear_wcs_rotation('G59.3')
+                Button:
+                    id: g59_3_activate
+                    text: 'Activate'
+                    size_hint_y: None
+                    height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59.3')
+        
+        BoxLayout:
+            size_hint_y: None
+            height: '40dp'
+            spacing: '5dp'
+            
+            Button:
+                id: btn_close
+                text: tr._('Close')
+                on_release: root.dismiss()
+            Button:
+                id: btn_clear_all
+                text: tr._('Clear All')
+                on_release: root.clear_all_wcs()
+            Button:
+                id: btn_ok
+                text: tr._('Ok')
+                on_release:
+                    root.apply_changes()
+                    root.dismiss()
+
+<SetRotationPopup>:
+    size_hint: 0.5, 0.4
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+    txt_rotation: txt_rotation
+    
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        
+        Label:
+            canvas.before:
+                Color:
+                    rgba: 45/255, 45/255, 45/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            id: caption
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('Set Rotation')
+            halign: 'left'
+            valign: 'middle'
+        
+        BoxLayout:
+            padding: '15dp'
+            orientation: 'vertical'
+        
+        BoxLayout:
+            size_hint_y: None
+            height: '30dp'
+            Label:
+                text: 'Rotation:'
+                halign: "left"
+                valign: "center"
+                text_size: self.size
+            TextInput:
+                id: txt_rotation
+                hint_text: tr._('Enter rotation angle in degrees')
+                multiline: False
+                text: '0.0'
+                halign: "left"
+                input_type: 'number'
+                input_filter: 'float'
+        
+        BoxLayout:
+            id: empty
+        
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '40dp'
+            Button:
+                id: btn_cancel
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                id: btn_ok
+                text: tr._('Ok')
+                on_release:
+                    app.root.controller.setRotation(float(txt_rotation.text))
                     root.dismiss()

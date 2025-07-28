@@ -71,6 +71,8 @@ def build_pyinstaller_args(
         build_args += ["--onefile"]
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.ico')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.ico')}"]
+        logger.info(f"Add hidapi.dll binary: {ROOT_ASSETS_PATH.joinpath('hidapi.dll')}")
+        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi.dll')}:."]
     else:
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
@@ -117,14 +119,46 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     return versionfile_path
 
 
-def run_appimage_builder(package_version: str)-> None:
-    revise_appimage_definition(package_version)
-    command = f"appimage-builder --recipe {ROOT_ASSETS_PATH}/AppImageBuilder.yml"
-    result = subprocess.run(command, shell=True, capture_output=False, text=True)
-    if result.returncode != 0:
-        logger.error(f"Error executing command: {command}")
-        logger.error(f"stderr: {result.stderr}")
-        sys.exit(result.returncode)
+def run_linuxdeploy_appimage(package_version: str) -> None:
+    """Build AppImage using linuxdeploy."""
+    # Prepare AppDir
+    appdir = BUILD_PATH / "AppDir"
+    if appdir.exists():
+        shutil.rmtree(appdir)
+    (appdir / "usr/share/icons").mkdir(parents=True, exist_ok=True)
+
+    # Copy icon
+    shutil.copy2(ROOT_ASSETS_PATH / "icon-src.png", appdir / "usr/share/icons/carveracontroller.png")
+    
+    # Copy built files
+    dist_dir = ROOT_PATH / "dist" / PACKAGE_NAME
+    if not dist_dir.exists():
+        print("Error: The dist/ directory doesn't exist. PyInstaller must have failed to output to it.")
+        sys.exit(1)
+    shutil.copytree(dist_dir, (appdir / "usr/bin"))
+
+    # Create .desktop file
+    desktop_file = appdir / "carveracontroller.desktop"
+    with open(desktop_file, "w") as f:
+        f.write(f"""[Desktop Entry]\nType=Application\nName=Carvera Controller Community\nExec=carveracontroller\nIcon=carveracontroller\nCategories=Utility;\n""")
+    
+    # Check for linuxdeploy in PATH
+    import shutil as sh
+    linuxdeploy = sh.which("linuxdeploy")
+    if not linuxdeploy:
+        print("Error: linuxdeploy not found in PATH. Please install it and try again.")
+        sys.exit(1)
+
+    # Run linuxdeploy
+    env = os.environ.copy()
+    env["LINUXDEPLOY_OUTPUT_VERSION"] = package_version
+    subprocess.run([
+        linuxdeploy,
+        "--appdir", str(appdir),
+        "--desktop-file", str(desktop_file),
+        "--icon-file", str(appdir / "usr/share/icons/carveracontroller.png"),
+        "--output",  'appimage'
+    ], check=True, env=env)
 
 
 def remove_shared_libraries(freeze_dir, *filename_patterns):
@@ -132,22 +166,6 @@ def remove_shared_libraries(freeze_dir, *filename_patterns):
         for file_path in glob(os.path.join(freeze_dir, pattern)):
             logger.info(f"Removing {file_path}")
             os.remove(file_path)
-
-
-def revise_appimage_definition(package_version: str):
-    yaml = YAML()
-    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder-template.yml") as file:
-        appimage_def = yaml.load(file)
-
-    # revise definition to current system arch
-    appimage_def["AppImage"]["arch"] = platform.machine()
-
-    # version
-    appimage_def["AppDir"]["app_info"]["version"] = package_version
-
-    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml", 'wb') as file:
-        yaml.dump(appimage_def, file)
-
 
 def fix_macos_version_string(version)-> None:
     command = f"plutil -replace CFBundleShortVersionString -string {version} dist/*.app/Contents/Info.plist"
@@ -240,13 +258,17 @@ def rename_release_file(os_name, package_version):
     elif os_name == "linux":
         arch_name = platform.machine()
         file_name = f"carveracontroller-community-{package_version}-{arch_name}.appimage"
-        src = "./dist/carveracontroller-community.AppImage"
+        src = f"./Carvera_Controller_Community-{package_version}-{arch_name}.AppImage"
         dst = f"./dist/{file_name}"
     elif os_name == "android":
-        arch_name = "armeabi-v7a"
-        file_name = f"carveracontroller-community-{package_version}-android-{arch_name}.apk"
+        arch_name = "armeabi-v7a_arm64-v8a_x86_64"
+        file_name = f"carveracontroller-community-{package_version}.apk"
         src = f"./dist/carveracontrollercommunity-{package_version}-{arch_name}-debug.apk"
         dst = f"./dist/{file_name}"
+    else:
+        # For any other OS (and pypi build), don't attempt to rename
+        return
+    
     shutil.move(src, dst)
 
 
@@ -440,7 +462,7 @@ def main():
         remove_shared_libraries(frozen_dir, 'libstdc++.so.*', 'libtinfo.so.*', 'libreadline.so.*', 'libdrm.so.*')
 
         if appimage:
-            run_appimage_builder(package_version)
+            run_linuxdeploy_appimage(package_version)
     
     if os_name == "macos":
         # Need to manually revise the version string due to

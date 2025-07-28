@@ -30,7 +30,7 @@ class AngleOperation(OperationsBase):
                         config,
                         self.invert_direction)                    
 
-        return "M465 " + self.config_to_gcode(config)
+        return "M465" + self.config_to_gcode(config)
 
 
     def get_missing_config(self, config: dict[str, float]):

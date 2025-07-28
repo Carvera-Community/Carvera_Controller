@@ -51,19 +51,6 @@
                     on_text: root.setting_changed('ProbeDepth', self.text)
 
             ProbeSettingLabel:
-                label_text: 'Q Angle:'
-                ToolTipTextInput:
-                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
-                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
-                    tooltip_image_size: 200,200
-                    multiline: False
-                    halign:'right'
-                    input_type: 'number'
-                    input_filter: 'float'
-                    text: root.get_setting('QAngle')
-                    on_text: root.setting_changed('QAngle', self.text)
-
-            ProbeSettingLabel:
                 label_text: 'D Tip Dia:'
                 ToolTipTextInput:
                     id: ProbeTipDiameter
@@ -157,6 +144,19 @@
                     on_text: root.setting_changed('BottomSurfaceRetract', self.text)
 
             ProbeSettingLabel:
+                label_text: 'Q Angle:'
+                ToolTipTextInput:
+                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
+                    tooltip_image: 'addons/probing/data/icons_1024x768/angle/probe_angle_arbitrary_negative.png'
+                    tooltip_image_size: 200,200
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('QAngle')
+                    on_text: root.setting_changed('QAngle', self.text)
+
+            ProbeSettingLabel:
                 label_text: 'V Visualize:'
                 ToolTipTextInput:
                     id: VisualizeDistance
@@ -170,11 +170,11 @@
                     on_text: root.setting_changed('VisualizeDistance', self.text)
 
             ProbeSettingLabel:
-                label_text: 'S ZeroXY:'
-                hint_text: 'ZeroXY Position'
+                label_text: 'S Set WCS Rotation:'
+                hint_text: 'Set WCS Rotation'
                 ToolTipSwitch:
                     id: ZeroXYPosition
-                    tooltip_txt: tr._('This switch will set your current WCS to the center of the bore/pocket you are probing')
+                    tooltip_txt: tr._('This switch will set your current WCS rotation to the probed rotation angle')
                     canvas.before:
                         Color:
                             rgba: 50/255, 50/255, 50/255, 1

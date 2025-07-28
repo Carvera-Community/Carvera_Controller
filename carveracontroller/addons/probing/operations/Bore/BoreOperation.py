@@ -25,7 +25,7 @@ class BoreOperation(OperationsBase):
         if not self.requires_y:
              config[BoreParameterDefinitions.YAxisDistance.code] = ''     
 
-        return "M461 " + self.config_to_gcode(config)
+        return "M461" + self.config_to_gcode(config)
 
 
     def get_missing_config(self, config: dict[str, float]):

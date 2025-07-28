@@ -299,7 +299,7 @@
 
                         GridLayout:
                             size_hint_x: 1
-                            cols: 3
+                            cols: 2
                             rows: 2
                             spacing: dp(8)
                             padding: 10
@@ -316,12 +316,7 @@
                                 tooltip_image: ''
                                 on_press: root.on_angle_probing_pressed("YLeft")
                                 image: 'addons/probing/data/icons_1024x768/angle/probe_angle_y_left.png'
-                            ProbeButton:
-                                
-                                tooltip_txt: ''
-                                tooltip_image: ''
-                                on_press: root.on_angle_probing_pressed("ArbitraryNegative")
-                                image: 'addons/probing/data/icons_1024x768/angle/probe_angle_arbitrary_negative.png'
+                            
                             ProbeButton:
                                 
                                 tooltip_txt: ''
@@ -334,12 +329,6 @@
                                 tooltip_image: ''
                                 on_press: root.on_angle_probing_pressed("YRight")
                                 image: 'addons/probing/data/icons_1024x768/angle/probe_angle_y_right.png'
-                            ProbeButton:
-                                
-                                tooltip_txt: ''
-                                tooltip_image: ''
-                                on_press: root.on_angle_probing_pressed("ArbitraryPositive")
-                                image: 'addons/probing/data/icons_1024x768/angle/probe_angle_arbitrary_positive.png'
 
                         BoxLayout:
                             size_hint_x: .5
