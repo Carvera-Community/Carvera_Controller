@@ -1,4 +1,7 @@
 [unreleased]
+
+
+[0.10.0]
 - Enhancement: Support for controlling the machine via WHB04 pendant devices
 - Enhancement: Added WCS Management functionality. WCS workspace is displayed in top status bar, and can be used to change between different workspaces (G54-G59.3 etc). Note: Community firmware v1.0.3c1.0.7 is required for full functionality. Community firmware v1.0.3c1.0.6 does support editing the offsets but doesn't track manual G5* commands in the MDI. Makera firmware will not persist non-G54 offsets across machine resets.
 - Enhancement: Ability to rotate the WCS workspace. This is done via the WCS Management options. WCS rotation requires Community firmware 1.0.3c.1.0.7 or higher to function
