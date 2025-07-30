@@ -1,4 +1,6 @@
 [unreleased]
+- Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined
+- Fix: Fixed single axis z probing.
 
 
 [0.10.0]
