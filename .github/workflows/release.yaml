@@ -163,6 +163,8 @@ jobs:
   build-pypi-artifacts:
     name: build-python
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
     defaults:
       run:
         shell: bash
