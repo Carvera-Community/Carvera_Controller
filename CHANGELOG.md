@@ -1,5 +1,5 @@
 [unreleased]
-- Fix: Sometimes the machine doesn't response to the initial machine "model" query. Attempt to query the model periodically until it's determined
+- Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined
 - Fix: Fixed single axis z probing.
 
 
