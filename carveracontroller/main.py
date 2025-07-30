@@ -1930,6 +1930,8 @@ class Makera(RelativeLayout):
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
         Clock.schedule_interval(self.switch_status, 8)
+        # model check timer
+        Clock.schedule_interval(self.check_model_status, 10)
 
         self.has_onscreen_keyboard = False
         if sys.platform == "ios":
@@ -2222,6 +2224,14 @@ class Makera(RelativeLayout):
         self.status_index = self.status_index + 1
         if self.status_index >= 6:
             self.status_index = 0
+
+    # -----------------------------------------------------------------------
+    def check_model_status(self, *args):
+        app = App.get_running_app()
+        # Check if model has been set and if not, query for it
+        if not app.model or app.model == "":
+            if self.controller.stream is not None:
+                self.controller.queryModel()
 
     # -----------------------------------------------------------------------
     def open_comports_drop_down(self, button):
