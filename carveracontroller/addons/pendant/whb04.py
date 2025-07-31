@@ -120,6 +120,15 @@ class Daemon:
         self._active_axis = Axis.OFF
         self._step_size = StepSize.LEAD
 
+        # Wheel movement tracking for improved stopping detection
+        self._last_step_time = 0.0  # Timestamp of last step
+        self._last_step_delta = 0  # Delta steps from last packet
+        self._wheel_steps_per_second = 0.0  # Current steps per second rate
+        self._wheel_active_threshold = 30.0  # Steps per second threshold for wheel activity
+        self._last_wheel_activity_time = 0.0  # Timestamp of last wheel activity
+        self._wheel_inactivity_timeout = 0.2  # Timeout in seconds before considering wheel inactive
+        self._last_decay_check_time = 0.0  # Timestamp of last decay check
+
         self._display_position = {
             Axis.X: 0.0,
             Axis.Y: 0.0,
@@ -144,6 +153,7 @@ class Daemon:
         self.on_axis_change: Optional[Callable[[Daemon, Axis], None]] = None
         self.on_step_size_change: Optional[Callable[[Daemon, StepSize], None]] = None
         self.on_update: Optional[Callable[[Daemon], None]] = None
+        self.on_stop_jog: Optional[Callable[[Daemon], None]] = None
 
     def start(self) -> None:
         self._daemon_thread = threading.Thread(target=self._thread_loop, daemon=True)
@@ -199,15 +209,53 @@ class Daemon:
         Returns the step size value as a float.
         This is a convenience method to get the step size value.
         """
-        if self._step_size == StepSize.STEP_0_001:
-            return 0.001
-        elif self._step_size == StepSize.STEP_0_01:
-            return 0.01
-        elif self._step_size == StepSize.STEP_0_1:
-            return 0.1
-        elif self._step_size == StepSize.STEP_1:
-            return 1.0
-        return 0
+        if self._display_step_indicator == StepIndicator.STEP:
+            if self._step_size == StepSize.STEP_0_001:
+                return 0.001
+            elif self._step_size == StepSize.STEP_0_01:
+                return 0.01
+            elif self._step_size == StepSize.STEP_0_1:
+                return 0.1
+            elif self._step_size == StepSize.STEP_1:
+                return 1.0
+            return 0
+        elif self._display_step_indicator == StepIndicator.CONTINUOUS:
+            if self._step_size == StepSize.STEP_0_001:
+                return 0.02
+            elif self._step_size == StepSize.STEP_0_01:
+                return 0.05
+            elif self._step_size == StepSize.STEP_0_1:
+                return 0.1
+            elif self._step_size == StepSize.STEP_1:
+                return 0.3
+            elif self._step_size == StepSize.PERCENT_60:
+                return 0.6
+            elif self._step_size == StepSize.PERCENT_100:
+                return 1.0
+            return 0
+
+    @property
+    def wheel_steps_per_second(self) -> float:
+        """
+        Returns the current steps per second rate of the wheel.
+        This can be used for debugging and monitoring wheel activity.
+        """
+        return self._wheel_steps_per_second
+
+    @property
+    def wheel_is_active(self) -> bool:
+        """
+        Returns True if the wheel is actively turning.
+        In step mode, returns True for any non-zero delta.
+        In continuous mode, returns True only if steps per second rate is above threshold.
+        """
+        if self._display_step_indicator == StepIndicator.STEP:
+            # In step mode, we don't use speed-based detection
+            # This property is not really applicable for step mode
+            return True
+        else:
+            # In continuous mode, use speed-based detection
+            return self._wheel_steps_per_second >= self._wheel_active_threshold
 
     def set_display_position(self, axis: Axis, value: float) -> None:
         """
@@ -294,6 +342,20 @@ class Daemon:
             data = device.read(8, timeout=100)
             if len(data) > 0:
                 self._process_input_packet(data)
+            
+            # Check for wheel inactivity and apply decay (runs continuously)
+            current_time = time.time()
+            if current_time - self._last_decay_check_time > 0.05:  # Check every 100ms
+                time_since_last_activity = current_time - self._last_wheel_activity_time
+                if time_since_last_activity > self._wheel_inactivity_timeout:
+                    # Apply decay factor when wheel has been inactive
+                    self._wheel_steps_per_second = 0
+                self._last_decay_check_time = current_time
+            
+            if self._wheel_steps_per_second == 0:
+                if self.on_stop_jog is not None:
+                    self.callback_executor(lambda: self.on_stop_jog(self))
+
             if self.on_update is not None:
                 self.callback_executor(lambda: self.on_update(self))
             self._refresh_display(device)
@@ -346,19 +408,58 @@ class Daemon:
         # We make sure that any callback is executed after fully updating the
         # internal state of the daemon so the callback can use the methods.
         for button in newly_pressed:
+            print(f"WHB04 Daemon: Button pressed - {button.name}")
             if self.on_button_press is not None:
                 self.callback_executor(lambda b=button: self.on_button_press(self, b))
         for button in newly_released:
+            print(f"WHB04 Daemon: Button released - {button.name}")
             if self.on_button_release is not None:
                 self.callback_executor(lambda b=button: self.on_button_release(self, b))
 
         if has_axis_change and self.on_axis_change is not None:
+            print(f"WHB04 Daemon: Axis changed to {self._active_axis.name}")
             self.callback_executor(lambda a=self._active_axis: self.on_axis_change(self, a))
 
         if has_step_size_change and self.on_step_size_change is not None:
+            print(f"WHB04 Daemon: Step size changed to {self._step_size.name}")
             self.callback_executor(lambda s=self._step_size: self.on_step_size_change(self, s))
-
+        
+        # Track wheel movement for improved stopping detection (only in continuous mode)
+        current_time = time.time()
+        
         if jog_delta != 0:
+            # Update last activity time when we see actual movement
+            self._last_wheel_activity_time = current_time
+            
+            # Store current step info for next calculation
+            if self._last_step_time > 0:
+                # Calculate rate based on time between this step and last step
+                time_span = current_time - self._last_step_time
+                if time_span > 0:
+                    # Use the current delta steps for rate calculation
+                    self._wheel_steps_per_second = abs(jog_delta) / time_span
+                else:
+                    self._wheel_steps_per_second = 0.0
+            else:
+                # First step, can't calculate rate yet
+                self._wheel_steps_per_second = 0.0
+            
+            # Update for next iteration
+            self._last_step_time = current_time
+            self._last_step_delta = abs(jog_delta)
+        
+        # Determine if wheel is actively turning based on steps per second rate (only in continuous mode)
+        # In step mode, always trigger jog for any non-zero delta
+        # In continuous mode, only trigger if wheel is active
+        should_trigger_jog = False
+        if self._display_step_indicator == StepIndicator.STEP:
+            # Step mode: trigger for any non-zero delta
+            should_trigger_jog = jog_delta != 0
+        else:
+            # Continuous mode: trigger only if wheel is active
+            should_trigger_jog = self.wheel_is_active
+        
+        if should_trigger_jog:
             if self.on_jog is not None:
                 self.callback_executor(lambda d=jog_delta: self.on_jog(self, d))
 

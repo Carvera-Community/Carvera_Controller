@@ -107,6 +107,7 @@ if WHB04_SUPPORTED:
             self._daemon.on_update = self._handle_display_update
             self._daemon.on_jog = self._handle_jogging
             self._daemon.on_button_press = self._handle_button_press
+            self._daemon.on_stop_jog = self._handle_stop_jog
 
             self._daemon.start()
 
@@ -126,21 +127,41 @@ if WHB04_SUPPORTED:
             daemon.set_display_position(whb04.Axis.A, self._cnc.vars["ma"])
             daemon.set_display_feedrate(self._cnc.vars["curfeed"])
             daemon.set_display_spindle_speed(self._cnc.vars["curspindle"])
+            
+            # Update the step indicator to reflect current jog mode
+            current_jog_mode = self._controller.getJogMode()
+            if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
+                daemon.set_display_step_indicator(whb04.StepIndicator.CONTINUOUS)
+            else:
+                daemon.set_display_step_indicator(whb04.StepIndicator.STEP)
 
         def _handle_jogging(self, daemon: whb04.Daemon, steps: int) -> None:
-            if not self._is_jogging_enabled():
-                return
+            #if not self._is_jogging_enabled():
+                #return
 
-            distance = steps * daemon.step_size_value
             axis = daemon.active_axis_name
 
             if axis not in "XYZA":
                 return
+            
+            current_jog_mode = self._controller.getJogMode()
+            
+            if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
+                distance = steps
+                #feed = self._cnc.vars["curfeed"] * daemon.step_size_value
+                feed = 3000 * daemon.step_size_value
+            else:
+                distance = steps * daemon.step_size_value
+                feed = 10000
 
             # Jog as fast as you can as the machine should follow the pendant as
             # closely as possible. We choose some reasonably high speed here,
             # the machine will limit itself to the maximum speed it can handle.
-            self._controller.jog_with_speed(f"{axis}{distance}", 10000)
+            if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
+                if not self._controller.isContinuousJogActive():
+                    self._controller.startContinuousJog(f"{axis}{distance}", feed)
+            else:
+                self._controller.jog_with_speed(f"{axis}{distance}", 10000)
 
         def _handle_button_press(self, daemon: whb04.Daemon, button: whb04.Button) -> None:
             is_fn_pressed = whb04.Button.FN in daemon.pressed_buttons
@@ -156,6 +177,12 @@ if WHB04_SUPPORTED:
                 self._controller.abortCommand()
             if button == whb04.Button.START_PAUSE:
                 self._handle_run_pause_resume()
+
+            # Handle jog mode switching buttons (these work regardless of FN state)
+            if button == whb04.Button.MODE_CONTINUOUS:
+                self._controller.setJogMode(self._controller.JOG_MODE_CONTINUOUS)
+            if button == whb04.Button.MODE_STEP:
+                self._controller.setJogMode(self._controller.JOG_MODE_STEP)
 
             if should_run_action:
                 if button == whb04.Button.FEED_PLUS:
@@ -194,6 +221,10 @@ if WHB04_SUPPORTED:
                     return
                 macro_idx = 1 + MACROS.index(button)
                 self.run_macro(macro_idx)
+
+        def _handle_stop_jog(self, daemon: whb04.Daemon) -> None:
+            if self._controller.isContinuousJogActive():
+                self._controller.stopContinuousJog()
 
 
 SUPPORTED_PENDANTS = {
