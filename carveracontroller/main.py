@@ -375,6 +375,34 @@ class ZProbePopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(ZProbePopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that X and Y offset inputs are not empty and are valid numbers."""
+        x_offset_text = self.ids.txt_x_offset.text.strip()
+        y_offset_text = self.ids.txt_y_offset.text.strip()
+        
+        if not x_offset_text or not y_offset_text:
+            return False, tr._("Please enter values for both X and Y offsets.")
+        
+        try:
+            float(x_offset_text)
+            float(y_offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for X and Y offsets.")
+
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            self.coord_popup.set_config('zprobe', 'origin', 1 if self.ids.cbx_origin1.active else 2)
+            self.coord_popup.set_config('zprobe', 'x_offset', float(self.ids.txt_x_offset.text))
+            self.coord_popup.set_config('zprobe', 'y_offset', float(self.ids.txt_y_offset.text))
+            self.coord_popup.load_zprobe_label()
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            app.root.show_message_popup(error_message, False)
 
 class XYZProbePopup(ModalView):
     def __init__(self, **kwargs):

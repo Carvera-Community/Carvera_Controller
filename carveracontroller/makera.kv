@@ -1685,12 +1685,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    root.coord_popup.set_config('zprobe', 'origin', 1 if cbx_origin1.active else 2)
-                    root.coord_popup.set_config('zprobe', 'x_offset', float(txt_x_offset.text))
-                    root.coord_popup.set_config('zprobe', 'y_offset', float(txt_y_offset.text))
-                    root.coord_popup.load_zprobe_label()
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <XYZProbePopup>:
     size_hint: 0.5, 0.4
