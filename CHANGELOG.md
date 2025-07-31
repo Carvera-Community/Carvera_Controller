@@ -1,5 +1,5 @@
 [unreleased]
-- Change: Added input validation to zprobe offset inputs
+- Change: Added input validation to catch empty values on input boxes
 - Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined
 - Fix: Fixed single axis z probing
 
