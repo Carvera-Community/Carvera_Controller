@@ -147,7 +147,6 @@ class Controller:
         self.JOG_MODE_CONTINUOUS = 1
         self._jog_mode = self.JOG_MODE_STEP  # Default to step mode
         self._continuous_jog_active = False
-        self._continuous_jog_direction = None
         self._continuous_jog_speed = 1000  # Default speed for continuous jog
 
     # ----------------------------------------------------------------------
@@ -897,13 +896,11 @@ class Controller:
         if speed is None:
             speed = self._continuous_jog_speed
         
-        self._continuous_jog_direction = _dir
         self._continuous_jog_active = True
 
         print(f"Controller: Starting continuous jog - Direction: {_dir}, Speed: {speed}")
         
-        # TODO: Implement continuous jog command
-        # self.executeCommand(f"G91G1{_dir} F{speed}")
+        self.executeCommand(f"$J -c {_dir} F{speed}")
     
     def stopContinuousJog(self):
         """Stop continuous jogging"""
@@ -912,7 +909,10 @@ class Controller:
         
         print("Controller: Stopping continuous jog")
         self._continuous_jog_active = False
-        self._continuous_jog_direction = None
+        
+        # Send Y^ (Ctrl+Y) to stop continuous jogging
+        if self.stream is not None:
+            self.stream.send(b"\031")
 
     def jog(self, _dir):
         """Jog in step mode - single step movement"""

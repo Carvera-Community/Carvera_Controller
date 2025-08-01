@@ -99,6 +99,7 @@ if WHB04_SUPPORTED:
             super().__init__(*args, **kwargs)
 
             self._is_spindle_running = False
+            self._last_jog_direction = 0  # Track previous jog direction (0 = no direction, positive = CW, negative = CCW)
 
             self._daemon = whb04.Daemon(self.executor)
 
@@ -146,11 +147,29 @@ if WHB04_SUPPORTED:
             
             current_jog_mode = self._controller.getJogMode()
             
+            # Detect direction change for continuous jog
             if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
+                # Determine current direction (positive = CW, negative = CCW)
+                current_direction = 1 if steps > 0 else (-1 if steps < 0 else 0)
+                
+                # Check if direction has changed and continuous jog is active
+                if (self._last_jog_direction != 0 and 
+                    current_direction != 0 and 
+                    self._last_jog_direction != current_direction and
+                    self._controller.isContinuousJogActive()):
+                    print("Stopping continuous jog because direction changed")
+                    self._controller.stopContinuousJog()
+                
+                # Update direction tracking
+                if current_direction != 0:
+                    self._last_jog_direction = current_direction
+                
                 distance = steps
                 #feed = self._cnc.vars["curfeed"] * daemon.step_size_value
                 feed = 3000 * daemon.step_size_value
             else:
+                # Reset direction tracking for step mode
+                self._last_jog_direction = 0
                 distance = steps * daemon.step_size_value
                 feed = 10000
 
