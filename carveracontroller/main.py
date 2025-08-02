@@ -4205,17 +4205,17 @@ class Makera(RelativeLayout):
         if self.is_jogging_enabled():
             key = args[1]  # keycode
             if key == 274:  # down button
-                app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
             elif key == 273:  # up button
-                app.root.controller.jog_with_speed("Y-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog_with_speed("Y-{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
             elif key == 275:  # right button
-                app.root.controller.jog_with_speed("X{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog_with_speed("X{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
             elif key == 276:  # left button
-                app.root.controller.jog_with_speed("X-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog_with_speed("X-{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
             elif key == 280:  # page up
-                app.root.controller.jog_with_speed("Z{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog_with_speed("Z{}".format(app.root.step_z.text), app.root.jog_speed, context="keyboard")
             elif key == 281:  # page down
-                app.root.controller.jog_with_speed("Z-{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog_with_speed("Z-{}".format(app.root.step_z.text), app.root.jog_speed, context="keyboard")
 
     def apply_setting_changes(self):
         if self.setting_change_list:

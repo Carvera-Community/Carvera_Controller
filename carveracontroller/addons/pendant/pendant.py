@@ -46,13 +46,13 @@ class Pendant:
         self._cnc = cnc
         self._feed_override = feed_override
         self._spindle_override = spindle_override
-
         self._is_jogging_enabled = is_jogging_enabled
         self._handle_run_pause_resume = handle_run_pause_resume
         self._handle_probe_z = handle_probe_z
         self._open_probing_popup = open_probing_popup
         self._report_connection = report_connection
         self._report_disconnection = report_disconnection
+        self._jog_mode = self._controller.JOG_MODE_STEP
 
     def close(self) -> None:
         pass
@@ -146,6 +146,8 @@ if WHB04_SUPPORTED:
                 return
             
             current_jog_mode = self._controller.getJogMode()
+            if current_jog_mode != self._jog_mode:
+                self._controller.setJogMode(self._jog_mode)
             
             # Detect direction change for continuous jog
             if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
@@ -178,7 +180,6 @@ if WHB04_SUPPORTED:
             # the machine will limit itself to the maximum speed it can handle.
             if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
                 if not self._controller.isContinuousJogActive():
-                    self._controller.updateKeepAliveState(True, True)
                     self._controller.startContinuousJog(f"{axis}{distance}", feed)
             else:
                 self._controller.jog_with_speed(f"{axis}{distance}", 10000)
@@ -200,9 +201,13 @@ if WHB04_SUPPORTED:
 
             # Handle jog mode switching buttons (these work regardless of FN state)
             if button == whb04.Button.MODE_CONTINUOUS:
+                if not self._controller.is_community_firmware:
+                    return
                 self._controller.setJogMode(self._controller.JOG_MODE_CONTINUOUS)
+                self._jog_mode = self._controller.JOG_MODE_CONTINUOUS
             if button == whb04.Button.MODE_STEP:
                 self._controller.setJogMode(self._controller.JOG_MODE_STEP)
+                self._jog_mode = self._controller.JOG_MODE_STEP
 
             if should_run_action:
                 if button == whb04.Button.FEED_PLUS:
@@ -245,7 +250,6 @@ if WHB04_SUPPORTED:
         def _handle_stop_jog(self, daemon: whb04.Daemon) -> None:
             if self._controller.isContinuousJogActive():
                 self._controller.stopContinuousJog()
-                self._controller.updateKeepAliveState(False, False)
 
 
 SUPPORTED_PENDANTS = {

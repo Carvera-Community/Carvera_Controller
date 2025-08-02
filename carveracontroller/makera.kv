@@ -3482,12 +3482,12 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Y-'
-                                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'X-'
-                                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                                     Label:
                                     Spinner:
@@ -3502,12 +3502,12 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'X+'
-                                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Y+'
-                                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                         BoxLayout:
                             disabled: app.state != 'Idle'
@@ -3673,11 +3673,11 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'A+'
-                                        on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z+'
-                                        on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                                     Label:
                                     Spinner:
@@ -3701,11 +3701,11 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'A-'
-                                        on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), root.jog_speed, "controller")
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z-'
-                                        on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), root.jog_speed)
+                                        on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), root.jog_speed, "controller")
 
                             Widget:
                                 size_hint_x: 0.2

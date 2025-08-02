@@ -808,7 +808,10 @@ class Controller:
 
     def viewStatusReport(self, sio_status):
         if self.loadNUM == 0 and self.sendNUM == 0:
-            self.stream.send(b"?")
+            if self._keep_alive_active:
+                self.stream.send(b"?1")
+            else:
+                self.stream.send(b"?")
             self.sio_status = sio_status
 
     def viewDiagnoseReport(self, sio_diagnose):
@@ -880,6 +883,9 @@ class Controller:
     # ----------------------------------------------------------------------
     def setJogMode(self, mode):
         """Set the jog mode (step or continuous)"""
+        if not self.is_community_firmware:
+            return
+        
         if mode in [self.JOG_MODE_STEP, self.JOG_MODE_CONTINUOUS]:
             self._jog_mode = mode
             # Stop any active continuous jog when switching modes
@@ -903,6 +909,7 @@ class Controller:
 
     def startContinuousJog(self, _dir, speed=None):
         """Start continuous jogging in the specified direction"""
+        self.startKeepAlive()
         if self._jog_mode != self.JOG_MODE_CONTINUOUS:
             return
         
@@ -917,6 +924,8 @@ class Controller:
     
     def stopContinuousJog(self):
         """Stop continuous jogging"""
+
+        self.stopKeepAlive()
         if self._jog_mode != self.JOG_MODE_CONTINUOUS:
             return
         
@@ -938,9 +947,11 @@ class Controller:
         elif self._jog_mode == self.JOG_MODE_CONTINUOUS:
             self.startContinuousJog(_dir)
 
-    def jog_with_speed(self, _dir, speed):
+    def jog_with_speed(self, _dir, speed, context=None):
         """Jog with specified speed - can be used in both modes"""
-        print(f"Controller: jog_with_speed called - Direction: {_dir}, Speed: {speed}, Mode: {'Step' if self._jog_mode == self.JOG_MODE_STEP else 'Continuous'}")
+        if context == "keyboard" or context == "controller":
+            self.setJogMode(self.JOG_MODE_STEP)
+
         if self._jog_mode == self.JOG_MODE_STEP:
             if speed > 0:
                 self.executeCommand(f"G91G0{_dir} F{speed}")
@@ -959,9 +970,6 @@ class Controller:
             return
         
         self._keep_alive_active = True
-        self._keep_alive_timer = threading.Thread(target=self._keep_alive_loop, daemon=True)
-        self._keep_alive_timer.start()
-        print("Controller: Started keep-alive timer")
 
     def stopKeepAlive(self):
         """Stop sending keep-alive packets"""
@@ -969,26 +977,6 @@ class Controller:
             return
         
         self._keep_alive_active = False
-        if self._keep_alive_timer:
-            self._keep_alive_timer = None
-        print("Controller: Stopped keep-alive timer")
-
-    def _keep_alive_loop(self):
-        """Internal method that sends Ctrl+Z every 80ms"""
-        while self._keep_alive_active and not self.stop.is_set():
-            print("Controller: Sending keep-alive packet")
-            if self.stream is not None:
-                self.stream.send(b"\032")  # Ctrl+Z
-            time.sleep(0.4)  # 80ms interval
-
-    def updateKeepAliveState(self, continuous_jog_active, wheel_active):
-        """Update keep-alive state based on continuous jog and wheel activity"""
-        should_be_active = continuous_jog_active and wheel_active
-        
-        if should_be_active and not self._keep_alive_active:
-            self.startKeepAlive()
-        elif not should_be_active and self._keep_alive_active:
-            self.stopKeepAlive()
 
     # ----------------------------------------------------------------------
 
