@@ -180,7 +180,15 @@ if WHB04_SUPPORTED:
             # the machine will limit itself to the maximum speed it can handle.
             if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
                 if not self._controller.isContinuousJogActive():
-                    self._controller.startContinuousJog(f"{axis}{distance}", feed)
+                    if feed > 0:
+                        if axis == "Z":
+                            feed = min(200*daemon.step_size_value, feed)
+                        self._controller.startContinuousJog(f"{axis}{distance}", feed)
+                    elif feed == 0:
+                        if axis == "Z":
+                            self._controller.startContinuousJog(f"{axis}{distance}", 500 * daemon.step_size_value)
+                        else:
+                            self._controller.startContinuousJog(f"{axis}{distance} S{daemon.step_size_value}")
             else:
                 self._controller.jog_with_speed(f"{axis}{distance}", 10000)
 

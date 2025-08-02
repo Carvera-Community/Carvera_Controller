@@ -147,7 +147,7 @@ class Controller:
         self.JOG_MODE_CONTINUOUS = 1
         self._jog_mode = self.JOG_MODE_STEP  # Default to step mode
         self._continuous_jog_active = False
-        self._continuous_jog_speed = 1000  # Default speed for continuous jog
+        self._continuous_jog_speed = 0  # Default speed for continuous jog
         self._keep_alive_timer = None
         self._keep_alive_active = False
 
@@ -898,10 +898,8 @@ class Controller:
 
     def setContinuousJogSpeed(self, speed):
         """Set the speed for continuous jogging"""
-        if speed > 0:
-            self._continuous_jog_speed = speed
-        else:
-            self._continuous_jog_speed = CNC.vars["tarfeed"]
+        self._continuous_jog_speed = speed
+
             
     def getContinuousJogSpeed(self):
         """Get the current continuous jog speed"""
@@ -912,15 +910,12 @@ class Controller:
         self.startKeepAlive()
         if self._jog_mode != self.JOG_MODE_CONTINUOUS:
             return
-        
-        if speed is None:
-            speed = self._continuous_jog_speed
-        
         self._continuous_jog_active = True
-
-        print(f"Controller: Starting continuous jog - Direction: {_dir}, Speed: {speed}")
+        if speed is None:
+            self.executeCommand(f"$J -c {_dir}")
+        else:
+            self.executeCommand(f"$J -c {_dir} F{speed}")
         
-        self.executeCommand(f"$J -c {_dir} F{speed}")
     
     def stopContinuousJog(self):
         """Stop continuous jogging"""
@@ -958,7 +953,10 @@ class Controller:
             else:
                 self.executeCommand(f"G91G0{_dir}")
         elif self._jog_mode == self.JOG_MODE_CONTINUOUS:
-            self.startContinuousJog(_dir, speed)
+            if speed > 0:   
+                self.startContinuousJog(_dir, speed)
+            else:
+                self.startContinuousJog
 
     def isContinuousJogActive(self):
         """Check if continuous jog is currently active"""
