@@ -21,8 +21,11 @@ PROJECT_PATH = BUILD_PATH.parent.joinpath(PACKAGE_NAME).resolve()
 PACKAGE_PATH = PROJECT_PATH.resolve()
 
 def generate_pot():
-    for py_file in Path("./").rglob("*.py"):
-        py_file_path = str(py_file.resolve())  # Convert to absolute path
+    for py_file in Path("./carveracontroller").rglob("*.py"):
+        # Get the relative path from the carveracontroller directory
+        # Remove the "carveracontroller/" prefix since we're running from that directory
+        py_file_path = str(py_file).replace("carveracontroller/", "")
+        
         subprocess.run(
             ["xgettext", "-j", "-d", "messages", "-o", POT_FILE, "--from-code=UTF-8", "--language=Python", py_file_path], 
             cwd=PACKAGE_PATH
@@ -30,8 +33,10 @@ def generate_pot():
         print(f"Appended .pot file with entries from {py_file}")
 
     # Process .kv files separately with --language=Python
-    for kv_file in Path("./").rglob("*.kv"):
-        kv_file_path = str(kv_file.resolve())  # Convert to absolute path
+    for kv_file in Path("./carveracontroller").rglob("*.kv"):
+        # Get the relative path from the carveracontroller directory
+        # Remove the "carveracontroller/" prefix since we're running from that directory
+        kv_file_path = str(kv_file).replace("carveracontroller/", "")
         subprocess.run(
             ["xgettext", "-j", "-d", "messages", "-o", POT_FILE, "--from-code=UTF-8", "--language=Python", kv_file_path], 
             cwd=PACKAGE_PATH
