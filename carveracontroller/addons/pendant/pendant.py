@@ -165,8 +165,8 @@ if WHB04_SUPPORTED:
                     self._last_jog_direction = current_direction
                 
                 distance = steps
-                #feed = self._cnc.vars["curfeed"] * daemon.step_size_value
-                feed = 3000 * daemon.step_size_value
+                feed = self._controller.getContinuousJogSpeed() * daemon.step_size_value
+                #feed = 3000 * daemon.step_size_value
             else:
                 # Reset direction tracking for step mode
                 self._last_jog_direction = 0
@@ -178,6 +178,7 @@ if WHB04_SUPPORTED:
             # the machine will limit itself to the maximum speed it can handle.
             if current_jog_mode == self._controller.JOG_MODE_CONTINUOUS:
                 if not self._controller.isContinuousJogActive():
+                    self._controller.updateKeepAliveState(True, True)
                     self._controller.startContinuousJog(f"{axis}{distance}", feed)
             else:
                 self._controller.jog_with_speed(f"{axis}{distance}", 10000)
@@ -244,6 +245,7 @@ if WHB04_SUPPORTED:
         def _handle_stop_jog(self, daemon: whb04.Daemon) -> None:
             if self._controller.isContinuousJogActive():
                 self._controller.stopContinuousJog()
+                self._controller.updateKeepAliveState(False, False)
 
 
 SUPPORTED_PENDANTS = {

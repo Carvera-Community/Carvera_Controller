@@ -1012,6 +1012,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
                 app.root.open_setting_default_confirm_popup()
 
 class JogSpeedDropDown(ToolTipDropDown):
+    def __init__(self, controller, **kwargs):
+        super().__init__(**kwargs)
+        self.controller = controller
     pass
 
 class XDropDown(ToolTipDropDown):
@@ -1862,7 +1865,7 @@ class Makera(RelativeLayout):
         self.func_drop_down = FuncDropDown()
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
-        self.jog_speed_drop_down = JogSpeedDropDown()
+        self.jog_speed_drop_down = JogSpeedDropDown(self.controller)
 
         self.confirm_popup = ConfirmPopup()
         self.unlock_popup = UnlockPopup()
@@ -4582,7 +4585,7 @@ class MakeraApp(App):
     curr_page = NumericProperty(1)
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
-    model = ""
+    model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
 
     def on_stop(self):

@@ -418,10 +418,12 @@ class Daemon:
 
         if has_axis_change and self.on_axis_change is not None:
             print(f"WHB04 Daemon: Axis changed to {self._active_axis.name}")
+            self.callback_executor(lambda: self.on_stop_jog(self))
             self.callback_executor(lambda a=self._active_axis: self.on_axis_change(self, a))
 
         if has_step_size_change and self.on_step_size_change is not None:
             print(f"WHB04 Daemon: Step size changed to {self._step_size.name}")
+            self.callback_executor(lambda: self.on_stop_jog(self))
             self.callback_executor(lambda s=self._step_size: self.on_step_size_change(self, s))
         
         # Track wheel movement for improved stopping detection (only in continuous mode)

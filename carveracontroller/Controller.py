@@ -148,6 +148,8 @@ class Controller:
         self._jog_mode = self.JOG_MODE_STEP  # Default to step mode
         self._continuous_jog_active = False
         self._continuous_jog_speed = 1000  # Default speed for continuous jog
+        self._keep_alive_timer = None
+        self._keep_alive_active = False
 
     # ----------------------------------------------------------------------
     def quit(self, event=None):
@@ -537,6 +539,8 @@ class Controller:
         self.executeCommand(self.escape(play_command))
 
     def abortCommand(self):
+        # Stop keep-alive when aborting
+        self.stopKeepAlive()
         self.executeCommand("abort\n")
 
     def feedholdCommand(self):
@@ -555,6 +559,8 @@ class Controller:
             self.stream.send('~'.encode())
 
     def estopCommand(self):
+        # Stop keep-alive when emergency stop is triggered
+        self.stopKeepAlive()
         if self.stream:
             self.stream.send(b'\x18')
 
@@ -767,6 +773,10 @@ class Controller:
         self._runLines = 0
         time.sleep(0.5)
         self.thread = None
+        
+        # Stop keep-alive when connection is closed
+        self.stopKeepAlive()
+        
         try:
             self.stream.close()
         except:
@@ -882,8 +892,11 @@ class Controller:
 
     def setContinuousJogSpeed(self, speed):
         """Set the speed for continuous jogging"""
-        self._continuous_jog_speed = speed
-
+        if speed > 0:
+            self._continuous_jog_speed = speed
+        else:
+            self._continuous_jog_speed = CNC.vars["tarfeed"]
+            
     def getContinuousJogSpeed(self):
         """Get the current continuous jog speed"""
         return self._continuous_jog_speed
@@ -909,6 +922,9 @@ class Controller:
         
         print("Controller: Stopping continuous jog")
         self._continuous_jog_active = False
+        
+        # Stop keep-alive when continuous jog stops
+        self.stopKeepAlive()
         
         # Send Y^ (Ctrl+Y) to stop continuous jogging
         if self.stream is not None:
@@ -937,8 +953,42 @@ class Controller:
         """Check if continuous jog is currently active"""
         return self._continuous_jog_active
 
+    def startKeepAlive(self):
+        """Start sending keep-alive packets (Ctrl+Z) every 80ms"""
+        if self._keep_alive_active:
+            return
+        
+        self._keep_alive_active = True
+        self._keep_alive_timer = threading.Thread(target=self._keep_alive_loop, daemon=True)
+        self._keep_alive_timer.start()
+        print("Controller: Started keep-alive timer")
 
+    def stopKeepAlive(self):
+        """Stop sending keep-alive packets"""
+        if not self._keep_alive_active:
+            return
+        
+        self._keep_alive_active = False
+        if self._keep_alive_timer:
+            self._keep_alive_timer = None
+        print("Controller: Stopped keep-alive timer")
 
+    def _keep_alive_loop(self):
+        """Internal method that sends Ctrl+Z every 80ms"""
+        while self._keep_alive_active and not self.stop.is_set():
+            print("Controller: Sending keep-alive packet")
+            if self.stream is not None:
+                self.stream.send(b"\032")  # Ctrl+Z
+            time.sleep(0.4)  # 80ms interval
+
+    def updateKeepAliveState(self, continuous_jog_active, wheel_active):
+        """Update keep-alive state based on continuous jog and wheel activity"""
+        should_be_active = continuous_jog_active and wheel_active
+        
+        if should_be_active and not self._keep_alive_active:
+            self.startKeepAlive()
+        elif not should_be_active and self._keep_alive_active:
+            self.stopKeepAlive()
 
     # ----------------------------------------------------------------------
 

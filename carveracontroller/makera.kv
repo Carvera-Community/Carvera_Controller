@@ -310,6 +310,7 @@
         height: '40dp'
         on_release:
             app.root.jog_speed = 0
+            root.controller.setContinuousJogSpeed(0)
             root.select(self.text)
 
     Button:
@@ -317,6 +318,7 @@
         size_hint_y: None
         height: '40dp'
         on_release:
+            root.controller.setContinuousJogSpeed(2000)
             app.root.jog_speed = 2000
             root.select(self.text)
     Button:
@@ -324,6 +326,7 @@
         size_hint_y: None
         height: '40dp'
         on_release:
+            root.controller.setContinuousJogSpeed(1200)
             app.root.jog_speed = 1200
             root.select(self.text)
     Button:
@@ -331,6 +334,7 @@
         size_hint_y: None
         height: '40dp'
         on_release:
+            root.controller.setContinuousJogSpeed(600)
             app.root.jog_speed = 600
             root.select(self.text)
     Button:
@@ -338,6 +342,7 @@
         size_hint_y: None
         height: '40dp'
         on_release:
+            root.controller.setContinuousJogSpeed(300)
             app.root.jog_speed = 300
             root.select(self.text)
     Button:
@@ -345,6 +350,7 @@
         size_hint_y: None
         height: '40dp'
         on_release:
+            root.controller.setContinuousJogSpeed(100)
             app.root.jog_speed = 100
             root.select(self.text)
 
