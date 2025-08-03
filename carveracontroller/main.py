@@ -371,14 +371,146 @@ class OriginPopup(ModalView):
         self.txt_x_offset.text = str(x)
         self.txt_y_offset.text = str(y)
 
+    def validate_inputs(self):
+        """Validate inputs based on the active tab."""
+        # Check which tab is active by looking at the TabbedPanel
+        tabbed_panel = None
+        for child in self.children:
+            if hasattr(child, 'children'):
+                for grandchild in child.children:
+                    if hasattr(grandchild, 'current_tab'):
+                        tabbed_panel = grandchild
+                        break
+                if tabbed_panel:
+                    break
+        
+        if tabbed_panel and tabbed_panel.current_tab:
+            current_tab = tabbed_panel.current_tab
+            if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
+                # Validate XYZ Probe tab inputs
+                probe_height_text = self.ids.txt_probe_height.text.strip()
+                tool_diameter_text = self.ids.txt_tool_diameter.text.strip()
+                
+                if not probe_height_text or not tool_diameter_text:
+                    return False, tr._("Please enter values for both block thickness and tool diameter.")
+                
+                try:
+                    float(probe_height_text)
+                    float(tool_diameter_text)
+                    return True, ""
+                except ValueError:
+                    return False, tr._("Please enter valid numbers for block thickness and tool diameter.")
+        
+        # Default to validating X/Y offsets (Auto-Set By Offset tab)
+        x_offset_text = self.ids.txt_x_offset.text.strip()
+        y_offset_text = self.ids.txt_y_offset.text.strip()
+        
+        if not x_offset_text or not y_offset_text:
+            return False, tr._("Please enter values for both X and Y offsets.")
+        
+        try:
+            float(x_offset_text)
+            float(y_offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for X and Y offsets.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        app = App.get_running_app()
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            # Check which tab is active
+            tabbed_panel = None
+            for child in self.children:
+                if hasattr(child, 'children'):
+                    for grandchild in child.children:
+                        if hasattr(grandchild, 'current_tab'):
+                            tabbed_panel = grandchild
+                            break
+                    if tabbed_panel:
+                        break
+            
+            if tabbed_panel and tabbed_panel.current_tab:
+                current_tab = tabbed_panel.current_tab
+                if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
+                    # Handle XYZ Probe tab
+                    app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
+                    self.dismiss()
+                    return
+            
+            # Handle Auto-Set By Offset tab (default)
+            self.coord_popup.set_config('origin', 'anchor', self.selected_anchor())
+            self.coord_popup.set_config('origin', 'x_offset', float(self.ids.txt_x_offset.text))
+            self.coord_popup.set_config('origin', 'y_offset', float(self.ids.txt_y_offset.text))
+            app.root.set_work_origin()
+            self.dismiss()
+        else:
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False),0)
+            
+
 class ZProbePopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(ZProbePopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that X and Y offset inputs are not empty and are valid numbers."""
+        x_offset_text = self.ids.txt_x_offset.text.strip()
+        y_offset_text = self.ids.txt_y_offset.text.strip()
+        
+        if not x_offset_text or not y_offset_text:
+            return False, tr._("Please enter values for both X and Y offsets.")
+        
+        try:
+            float(x_offset_text)
+            float(y_offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for X and Y offsets.")
+
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            self.coord_popup.set_config('zprobe', 'origin', 1 if self.ids.cbx_origin1.active else 2)
+            self.coord_popup.set_config('zprobe', 'x_offset', float(self.ids.txt_x_offset.text))
+            self.coord_popup.set_config('zprobe', 'y_offset', float(self.ids.txt_y_offset.text))
+            self.coord_popup.load_zprobe_label()
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class XYZProbePopup(ModalView):
     def __init__(self, **kwargs):
         super(XYZProbePopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that probe height and tool diameter inputs are not empty and are valid numbers."""
+        probe_height_text = self.ids.txt_probe_height.text.strip()
+        tool_diameter_text = self.ids.txt_tool_diameter.text.strip()
+        
+        if not probe_height_text or not tool_diameter_text:
+            return False, tr._("Please enter values for both probe height and tool diameter.")
+        
+        try:
+            float(probe_height_text)
+            float(tool_diameter_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for probe height and tool diameter.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class LanguagePopup(ModalView):
     def __init__(self, **kwargs):
@@ -439,6 +571,46 @@ class AutoLevelPopup(ModalView):
         self.execute = execute
         self.init()
         self.open()
+    
+    def validate_inputs(self):
+        """Validate that height, x_points, and y_points inputs are not empty and are valid numbers."""
+        height_text = self.ids.sp_height.text.strip()
+        x_points_text = self.ids.sp_x_points.text.strip()
+        y_points_text = self.ids.sp_y_points.text.strip()
+        
+        if not height_text or not x_points_text or not y_points_text:
+            return False, tr._("Please enter values for height, X points, and Y points.")
+        
+        try:
+            int(height_text)
+            int(x_points_text)
+            int(y_points_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for height, X points, and Y points.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            self.coord_popup.set_config('leveling', 'height', int(self.ids.sp_height.text))
+            self.coord_popup.set_config('leveling', 'x_points', int(self.ids.sp_x_points.text))
+            self.coord_popup.set_config('leveling', 'y_points', int(self.ids.sp_y_points.text))
+            self.coord_popup.set_config('leveling', 'xn_offset', float(self.ids.txt_auto_xn_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_xn_offset.text.strip() and self.ids.txt_auto_xn_offset.text != '.' else 0.0)
+            self.coord_popup.set_config('leveling', 'xp_offset', float(self.ids.txt_auto_xp_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_xp_offset.text.strip() and self.ids.txt_auto_xp_offset.text != '.' else 0.0)
+            self.coord_popup.set_config('leveling', 'yn_offset', float(self.ids.txt_auto_yn_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_yn_offset.text.strip() and self.ids.txt_auto_yn_offset.text != '.' else 0.0)
+            self.coord_popup.set_config('leveling', 'yp_offset', float(self.ids.txt_auto_yp_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_yp_offset.text.strip() and self.ids.txt_auto_yp_offset.text != '.' else 0.0)
+            if self.ids.cbx_autolevelOffsets.active: self.coord_popup.set_config('zprobe', 'x_offset', float(self.ids.txt_auto_xn_offset.text) if self.ids.txt_auto_xn_offset.text.strip() and self.ids.txt_auto_xn_offset.text != '.' else 0.0)
+            if self.ids.cbx_autolevelOffsets.active: self.coord_popup.set_config('zprobe', 'y_offset', float(self.ids.txt_auto_yn_offset.text) if self.ids.txt_auto_yn_offset.text.strip() and self.ids.txt_auto_yn_offset.text != '.' else 0.0)
+            
+            self.coord_popup.load_leveling_label()
+            if self.execute: 
+                app = App.get_running_app()
+                app.root.execute_autolevel(int(self.ids.sp_x_points.text), int(self.ids.sp_y_points.text), False)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
@@ -701,21 +873,117 @@ class SetXPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetXPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for X offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for X offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.wcsSet(float(self.ids.txt_offset.text), None, None, None)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetYPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetYPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for Y offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for Y offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.wcsSet(None, float(self.ids.txt_offset.text), None, None)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetZPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetZPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for Z offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for Z offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.wcsSet(None, None, float(self.ids.txt_offset.text), None)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetAPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for A offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for A offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.RapMoveA(float(self.ids.txt_offset.text.strip()))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetToolPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
@@ -740,6 +1008,30 @@ class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that A position input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for A position.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for A position.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.RapMoveA(float(self.ids.txt_offset.text.strip()))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class WCSSettingsPopup(ModalView):
     def __init__(self, controller, wcs_names, **kwargs):
@@ -982,9 +1274,33 @@ class WCSSettingsPopup(ModalView):
 
 class SetRotationPopup(ModalView):
     def __init__(self, controller, cnc, **kwargs):
-        super(SetRotationPopup, self).__init__(**kwargs)
         self.controller = controller
         self.cnc = cnc
+        super(SetRotationPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that rotation input is not empty and is a valid number."""
+        rotation_text = self.ids.txt_rotation.text.strip()
+        
+        if not rotation_text:
+            return False, tr._("Please enter a value for rotation angle.")
+        
+        try:
+            float(rotation_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for rotation angle.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.setRotation(float(self.ids.txt_rotation.text))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
     
     def on_open(self):
         """Set the default rotation value when popup opens"""
@@ -1930,6 +2246,8 @@ class Makera(RelativeLayout):
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
         Clock.schedule_interval(self.switch_status, 8)
+        # model metadata check timer
+        Clock.schedule_interval(self.check_model_metadata, 10)
 
         self.has_onscreen_keyboard = False
         if sys.platform == "ios":
@@ -2222,6 +2540,19 @@ class Makera(RelativeLayout):
         self.status_index = self.status_index + 1
         if self.status_index >= 6:
             self.status_index = 0
+
+    # -----------------------------------------------------------------------
+    def check_model_metadata(self, *args):
+        app = App.get_running_app()
+        # Check if model has been set and if not, query for it
+        if not app.model or app.model == "":
+            if self.controller.stream is not None:
+                self.controller.queryModel()
+        
+        # Check if version has been set and if not, query for it
+        if not self.fw_version_old or self.fw_version_old == "":
+            if self.controller.stream is not None:
+                self.controller.queryVersion()
 
     # -----------------------------------------------------------------------
     def open_comports_drop_down(self, button):
@@ -4567,7 +4898,7 @@ class MakeraApp(App):
     curr_page = NumericProperty(1)
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
-    model = ""
+    model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
 
     def on_stop(self):

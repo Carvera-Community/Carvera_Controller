@@ -1534,13 +1534,7 @@
                     Button:
                         id: btn_ok
                         text: tr._('Ok')
-                        on_release:
-                            root.coord_popup.set_config('origin', 'anchor', root.selected_anchor())
-                            root.coord_popup.set_config('origin', 'x_offset', float(txt_x_offset.text))
-                            root.coord_popup.set_config('origin', 'y_offset', float(txt_y_offset.text))
-                            app.root.set_work_origin()
-                            # root.coord_popup.load_origin_label()
-                            root.dismiss()
+                        on_release: root.on_ok_pressed()
 
         TabbedPanelItem:
             text: tr._('Set By XYZ Probe')
@@ -1599,9 +1593,7 @@
                     Button:
                         id: btn_ok
                         text: tr._('Ok')
-                        on_release:
-                            app.root.controller.xyzProbe(float(txt_probe_height.text), float(txt_tool_diameter.text))
-                            root.dismiss()
+                        on_release: root.on_ok_pressed()
 
 <ZProbePopup>:
     size_hint: 0.5, 0.4
@@ -1685,12 +1677,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    root.coord_popup.set_config('zprobe', 'origin', 1 if cbx_origin1.active else 2)
-                    root.coord_popup.set_config('zprobe', 'x_offset', float(txt_x_offset.text))
-                    root.coord_popup.set_config('zprobe', 'y_offset', float(txt_y_offset.text))
-                    root.coord_popup.load_zprobe_label()
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <XYZProbePopup>:
     size_hint: 0.5, 0.4
@@ -1767,9 +1754,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.xyzProbe(float(txt_probe_height.text), float(txt_tool_diameter.text))
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <PairingPopup>:
     size_hint: 0.5, 0.4
@@ -2013,20 +1998,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    root.coord_popup.set_config('leveling', 'height', int(sp_height.text))
-                    root.coord_popup.set_config('leveling', 'x_points', int(sp_x_points.text))
-                    root.coord_popup.set_config('leveling', 'y_points', int(sp_y_points.text))
-                    root.coord_popup.set_config('leveling', 'xn_offset', float(txt_auto_xn_offset.text) if cbx_autolevelOffsets.active and txt_auto_xn_offset.text.strip() and txt_auto_xn_offset.text != '.' else 0.0)
-                    root.coord_popup.set_config('leveling', 'xp_offset', float(txt_auto_xp_offset.text) if cbx_autolevelOffsets.active and txt_auto_xp_offset.text.strip() and txt_auto_xp_offset.text != '.' else 0.0)
-                    root.coord_popup.set_config('leveling', 'yn_offset', float(txt_auto_yn_offset.text) if cbx_autolevelOffsets.active and txt_auto_yn_offset.text.strip() and txt_auto_yn_offset.text != '.' else 0.0)
-                    root.coord_popup.set_config('leveling', 'yp_offset', float(txt_auto_yp_offset.text) if cbx_autolevelOffsets.active and txt_auto_yp_offset.text.strip() and txt_auto_yp_offset.text != '.' else 0.0)
-                    if cbx_autolevelOffsets.active: root.coord_popup.set_config('zprobe', 'x_offset', float(txt_auto_xn_offset.text) if txt_auto_xn_offset.text.strip() and txt_auto_xn_offset.text != '.' else 0.0)
-                    if cbx_autolevelOffsets.active: root.coord_popup.set_config('zprobe', 'y_offset', float(txt_auto_yn_offset.text) if txt_auto_yn_offset.text.strip() and txt_auto_yn_offset.text != '.' else 0.0)
-
-                    root.coord_popup.load_leveling_label()
-                    if root.execute: app.root.execute_autolevel(int(sp_x_points.text), int(sp_y_points.text), False)
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <UpgradePopup>:
     padding: '10dp'
@@ -4266,9 +4238,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.wcsSet(float(txt_offset.text), None, None, None)
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <SetYPopup>:
     size_hint: 0.5, 0.4
@@ -4323,9 +4293,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.wcsSet(None, float(txt_offset.text), None, None)
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <SetZPopup>:
     size_hint: 0.5, 0.4
@@ -4380,9 +4348,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.wcsSet(None, None, float(txt_offset.text), None)
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <SetAPopup>:
     size_hint: 0.5, 0.4
@@ -4437,9 +4403,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.wcsSet(None, None, None, float(txt_offset.text))
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <SetToolPopup>:
     size_hint: 0.5, 0.4
@@ -4607,9 +4571,7 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.RapMoveA(float(txt_offset.text))
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
 
 <WCSSettingsPopup>:
     size_hint: 0.8, 0.8
@@ -5490,6 +5452,4 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release:
-                    app.root.controller.setRotation(float(txt_rotation.text))
-                    root.dismiss()
+                on_release: root.on_ok_pressed()
