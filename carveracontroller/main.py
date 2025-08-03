@@ -4898,7 +4898,7 @@ class MakeraApp(App):
     curr_page = NumericProperty(1)
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
-    model = ""
+    model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
 
     def on_stop(self):
