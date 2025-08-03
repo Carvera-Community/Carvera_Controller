@@ -46,6 +46,7 @@ class Pendant:
         self._cnc = cnc
         self._feed_override = feed_override
         self._spindle_override = spindle_override
+
         self._is_jogging_enabled = is_jogging_enabled
         self._handle_run_pause_resume = handle_run_pause_resume
         self._handle_probe_z = handle_probe_z
@@ -137,8 +138,8 @@ if WHB04_SUPPORTED:
                 daemon.set_display_step_indicator(whb04.StepIndicator.STEP)
 
         def _handle_jogging(self, daemon: whb04.Daemon, steps: int) -> None:
-            #if not self._is_jogging_enabled():
-                #return
+            if not self._is_jogging_enabled():
+                return
 
             axis = daemon.active_axis_name
 
@@ -159,7 +160,6 @@ if WHB04_SUPPORTED:
                     current_direction != 0 and 
                     self._last_jog_direction != current_direction and
                     self._controller.isContinuousJogActive()):
-                    print("Stopping continuous jog because direction changed")
                     self._controller.stopContinuousJog()
                 
                 # Update direction tracking
@@ -168,7 +168,6 @@ if WHB04_SUPPORTED:
                 
                 distance = steps
                 feed = self._controller.getContinuousJogSpeed() * daemon.step_size_value
-                #feed = 3000 * daemon.step_size_value
             else:
                 # Reset direction tracking for step mode
                 self._last_jog_direction = 0

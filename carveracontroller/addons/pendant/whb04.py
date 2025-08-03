@@ -122,7 +122,6 @@ class Daemon:
 
         # Wheel movement tracking for improved stopping detection
         self._last_step_time = 0.0  # Timestamp of last step
-        self._last_step_delta = 0  # Delta steps from last packet
         self._wheel_steps_per_second = 0.0  # Current steps per second rate
         self._wheel_active_threshold = 30.0  # Steps per second threshold for wheel activity
         self._last_wheel_activity_time = 0.0  # Timestamp of last wheel activity
@@ -408,21 +407,17 @@ class Daemon:
         # We make sure that any callback is executed after fully updating the
         # internal state of the daemon so the callback can use the methods.
         for button in newly_pressed:
-            print(f"WHB04 Daemon: Button pressed - {button.name}")
             if self.on_button_press is not None:
                 self.callback_executor(lambda b=button: self.on_button_press(self, b))
         for button in newly_released:
-            print(f"WHB04 Daemon: Button released - {button.name}")
             if self.on_button_release is not None:
                 self.callback_executor(lambda b=button: self.on_button_release(self, b))
 
         if has_axis_change and self.on_axis_change is not None:
-            print(f"WHB04 Daemon: Axis changed to {self._active_axis.name}")
             self.callback_executor(lambda: self.on_stop_jog(self))
             self.callback_executor(lambda a=self._active_axis: self.on_axis_change(self, a))
 
         if has_step_size_change and self.on_step_size_change is not None:
-            print(f"WHB04 Daemon: Step size changed to {self._step_size.name}")
             self.callback_executor(lambda: self.on_stop_jog(self))
             self.callback_executor(lambda s=self._step_size: self.on_step_size_change(self, s))
         
@@ -448,8 +443,7 @@ class Daemon:
             
             # Update for next iteration
             self._last_step_time = current_time
-            self._last_step_delta = abs(jog_delta)
-        
+
         # Determine if wheel is actively turning based on steps per second rate (only in continuous mode)
         # In step mode, always trigger jog for any non-zero delta
         # In continuous mode, only trigger if wheel is active

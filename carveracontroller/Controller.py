@@ -148,7 +148,6 @@ class Controller:
         self._jog_mode = self.JOG_MODE_STEP  # Default to step mode
         self._continuous_jog_active = False
         self._continuous_jog_speed = 0  # Default speed for continuous jog
-        self._keep_alive_timer = None
         self._keep_alive_active = False
 
     # ----------------------------------------------------------------------
@@ -539,8 +538,6 @@ class Controller:
         self.executeCommand(self.escape(play_command))
 
     def abortCommand(self):
-        # Stop keep-alive when aborting
-        self.stopKeepAlive()
         self.executeCommand("abort\n")
 
     def feedholdCommand(self):
@@ -773,10 +770,6 @@ class Controller:
         self._runLines = 0
         time.sleep(0.5)
         self.thread = None
-        
-        # Stop keep-alive when connection is closed
-        self.stopKeepAlive()
-        
         try:
             self.stream.close()
         except:
@@ -907,9 +900,9 @@ class Controller:
 
     def startContinuousJog(self, _dir, speed=None):
         """Start continuous jogging in the specified direction"""
-        self.startKeepAlive()
         if self._jog_mode != self.JOG_MODE_CONTINUOUS:
             return
+        self.startKeepAlive()
         self._continuous_jog_active = True
         if speed is None:
             self.executeCommand(f"$J -c {_dir}")
@@ -924,11 +917,7 @@ class Controller:
         if self._jog_mode != self.JOG_MODE_CONTINUOUS:
             return
         
-        print("Controller: Stopping continuous jog")
         self._continuous_jog_active = False
-        
-        # Stop keep-alive when continuous jog stops
-        self.stopKeepAlive()
         
         # Send Y^ (Ctrl+Y) to stop continuous jogging
         if self.stream is not None:
@@ -936,7 +925,6 @@ class Controller:
 
     def jog(self, _dir):
         """Jog in step mode - single step movement"""
-        print(f"Controller: jog called - Direction: {_dir}, Mode: {'Step' if self._jog_mode == self.JOG_MODE_STEP else 'Continuous'}")
         if self._jog_mode == self.JOG_MODE_STEP:
             self.executeCommand("G91G0{}".format(_dir))
         elif self._jog_mode == self.JOG_MODE_CONTINUOUS:
