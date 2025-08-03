@@ -902,7 +902,7 @@ class Controller:
         """Start continuous jogging in the specified direction"""
         if self._jog_mode != self.JOG_MODE_CONTINUOUS:
             return
-        self.startKeepAlive()
+        self._keep_alive_active = True
         self._continuous_jog_active = True
         if speed is None:
             self.executeCommand(f"$J -c {_dir}")
@@ -949,20 +949,6 @@ class Controller:
     def isContinuousJogActive(self):
         """Check if continuous jog is currently active"""
         return self._continuous_jog_active
-
-    def startKeepAlive(self):
-        """Start sending keep-alive packets (Ctrl+Z) every 80ms"""
-        if self._keep_alive_active:
-            return
-        
-        self._keep_alive_active = True
-
-    def stopKeepAlive(self):
-        """Stop sending keep-alive packets"""
-        if not self._keep_alive_active:
-            return
-        
-        self._keep_alive_active = False
 
     # ----------------------------------------------------------------------
 
