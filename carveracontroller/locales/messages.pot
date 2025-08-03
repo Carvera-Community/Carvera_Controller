@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-01 21:42+1000\n"
+"POT-Creation-Date: 2025-07-31 20:11+1000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,588 +17,612 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.py:122
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:157
+#: main.py:172
 msgid "Halt Manually"
 msgstr ""
 
-#: main.py:123
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:158
+#: main.py:173
 msgid "Home Fail"
 msgstr ""
 
-#: main.py:124
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:159
+#: main.py:174
 msgid "Probe Fail"
 msgstr ""
 
-#: main.py:125
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:160
+#: main.py:175
 msgid "Calibrate Fail"
 msgstr ""
 
-#: main.py:126
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:161
+#: main.py:176
 msgid "ATC Home Fail"
 msgstr ""
 
-#: main.py:127
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:162
+#: main.py:177
 msgid "ATC Invalid Tool Number"
 msgstr ""
 
-#: main.py:128
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:163
+#: main.py:178
 msgid "ATC Drop Tool Fail"
 msgstr ""
 
-#: main.py:129
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:164
+#: main.py:179
 msgid "ATC Position Occupied"
 msgstr ""
 
-#: main.py:130
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:165
+#: main.py:180
 msgid "Spindle Overheated"
 msgstr ""
 
-#: main.py:131
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:166
+#: main.py:181
 msgid "Soft Limit Triggered"
 msgstr ""
 
-#: main.py:132
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:167
+#: main.py:182
 msgid "Cover opened when playing"
 msgstr ""
 
-#: main.py:133
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:168
+#: main.py:183
 msgid "Wireless probe dead or not set"
 msgstr ""
 
-#: main.py:134
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:169
+#: main.py:184
 msgid "Emergency stop button pressed"
 msgstr ""
 
-#: main.py:136
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:171
+#: main.py:186
 msgid "Hard Limit Triggered, reset needed"
 msgstr ""
 
-#: main.py:137
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:172
+#: main.py:187
 msgid "X Axis Motor Error, reset needed"
 msgstr ""
 
-#: main.py:138
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:173
+#: main.py:188
 msgid "Y Axis Motor Error, reset needed"
 msgstr ""
 
-#: main.py:139
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:174
+#: main.py:189
 msgid "Z Axis Motor Error, reset needed"
 msgstr ""
 
-#: main.py:140
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:175
+#: main.py:190
 msgid "Spindle Stall, reset needed"
 msgstr ""
 
-#: main.py:141
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:176
+#: main.py:191
 msgid "SD card read fail, reset needed"
 msgstr ""
 
-#: main.py:143
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:178
+#: main.py:193
 msgid "Spindle Alarm, power off/on needed"
 msgstr ""
 
-#: main.py:306
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:341
-msgid "Press the Wireless Probe until the green LED blinks quickly."
+#: main.py:396
+msgid "Please enter values for both block thickness and tool diameter."
 msgstr ""
 
-#: main.py:307
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:342
-msgid "Pairing Success!"
+#: main.py:403
+msgid "Please enter valid numbers for block thickness and tool diameter."
 msgstr ""
 
-#: main.py:308
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:343
-msgid "Pairing Timeout!"
+#: main.py:410 main.py:464
+msgid "Please enter values for both X and Y offsets."
 msgstr ""
 
-#: main.py:476
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:584
-msgid "from Headstock"
-msgstr ""
-
-#: main.py:482
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:590
-msgid "from Anchor2"
-msgstr ""
-
-#: main.py:484
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:592
-msgid "from Anchor1"
-msgstr ""
-
-#: main.py:489
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:597
-msgid "Fixed Pos"
-msgstr ""
-
-#: main.py:491
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:599
-msgid "from"
-msgstr ""
-
-#: main.py:492 makera.kv:1477
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:600
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1549
-msgid "Work Origin"
-msgstr ""
-
-#: main.py:492 makera.kv:1483
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:600
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1555
-msgid "Path Origin"
-msgstr ""
-
-#: main.py:495
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:603
-msgid "X Points: "
+#: main.py:417 main.py:471
+msgid "Please enter valid numbers for X and Y offsets."
 msgstr ""
 
 #: main.py:496
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:604
+msgid "Please enter values for both probe height and tool diameter."
+msgstr ""
+
+#: main.py:503
+msgid "Please enter valid numbers for probe height and tool diameter."
+msgstr ""
+
+#: main.py:527
+msgid "Press the Wireless Probe until the green LED blinks quickly."
+msgstr ""
+
+#: main.py:528
+msgid "Pairing Success!"
+msgstr ""
+
+#: main.py:529
+msgid "Pairing Timeout!"
+msgstr ""
+
+#: main.py:583
+msgid "Please enter values for height, X points, and Y points."
+msgstr ""
+
+#: main.py:591
+msgid "Please enter valid numbers for height, X points, and Y points."
+msgstr ""
+
+#: main.py:810
+msgid "from Headstock"
+msgstr ""
+
+#: main.py:816
+msgid "from Anchor2"
+msgstr ""
+
+#: main.py:818
+msgid "from Anchor1"
+msgstr ""
+
+#: main.py:824
+msgid "Fixed Pos"
+msgstr ""
+
+#: main.py:826
+msgid "from"
+msgstr ""
+
+#: main.py:827 makera.kv:1630
+msgid "Work Origin"
+msgstr ""
+
+#: main.py:827 makera.kv:1636
+msgid "Path Origin"
+msgstr ""
+
+#: main.py:830
+msgid "X Points: "
+msgstr ""
+
+#: main.py:831
 msgid "Y Points: "
 msgstr ""
 
-#: main.py:497
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:605
+#: main.py:832
 msgid "Height: "
 msgstr ""
 
-#: main.py:1429 main.py:1457
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1666
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1698
+#: main.py:840
+msgid " Offsets: "
+msgstr ""
+
+#: main.py:841
+msgid " -X: "
+msgstr ""
+
+#: main.py:842
+msgid " +X: "
+msgstr ""
+
+#: main.py:843
+msgid " -Y: "
+msgstr ""
+
+#: main.py:844
+msgid " +Y: "
+msgstr ""
+
+#: main.py:883
+msgid "Please enter a value for X offset."
+msgstr ""
+
+#: main.py:889
+msgid "Please enter a valid number for X offset."
+msgstr ""
+
+#: main.py:912
+msgid "Please enter a value for Y offset."
+msgstr ""
+
+#: main.py:918
+msgid "Please enter a valid number for Y offset."
+msgstr ""
+
+#: main.py:941
+msgid "Please enter a value for Z offset."
+msgstr ""
+
+#: main.py:947
+msgid "Please enter a valid number for Z offset."
+msgstr ""
+
+#: main.py:970
+msgid "Please enter a value for A offset."
+msgstr ""
+
+#: main.py:976
+msgid "Please enter a valid number for A offset."
+msgstr ""
+
+#: main.py:1018
+msgid "Please enter a value for A position."
+msgstr ""
+
+#: main.py:1024
+msgid "Please enter a valid number for A position."
+msgstr ""
+
+#: main.py:1272
+msgid "Save Changes"
+msgstr ""
+
+#: main.py:1272 makera.kv:1258 makera.kv:1293 makera.kv:1382 makera.kv:1536
+#: makera.kv:1595 makera.kv:1679 makera.kv:1756 makera.kv:2000 makera.kv:4240
+#: makera.kv:4295 makera.kv:4350 makera.kv:4405 makera.kv:4460 makera.kv:4516
+#: makera.kv:4573 makera.kv:5391 makera.kv:5454
+msgid "Ok"
+msgstr ""
+
+#: main.py:1274
+msgid "Close without saving"
+msgstr ""
+
+#: main.py:1274 makera.kv:1811 makera.kv:2159 makera.kv:2403 makera.kv:2479
+#: makera.kv:2963 makera.kv:3202 makera.kv:5383
+#: addons/probing/ProbingPopup.kv:493
+msgid "Close"
+msgstr ""
+
+#: main.py:1287
+msgid "Please enter a value for rotation angle."
+msgstr ""
+
+#: main.py:1293
+msgid "Please enter a valid number for rotation angle."
+msgstr ""
+
+#: main.py:2292 makera.kv:2053
+msgid "Controller"
+msgstr ""
+
+#: main.py:2307
+msgid "Pendant"
+msgstr ""
+
+#: main.py:2373 main.py:2405
 msgid " New version detected: v"
 msgstr ""
 
-#: main.py:1429 main.py:1457
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1666
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1698
+#: main.py:2373 main.py:2405
 msgid " Current: v"
 msgstr ""
 
-#: main.py:1432 main.py:1460
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1669
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1701
+#: main.py:2376 main.py:2408
 msgid " Current version: v"
 msgstr ""
 
-#: main.py:1584
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1826
+#: main.py:2392
+msgid "Language setting applied, restart Controller app to take effect !"
+msgstr ""
+
+#: main.py:2536
 msgid "Timeout, Connection lost!"
 msgstr ""
 
-#: main.py:1610
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1853
+#: main.py:2576
 msgid "Documents"
 msgstr ""
 
-#: main.py:1612
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1855
+#: main.py:2578
 msgid "Downloads"
 msgstr ""
 
-#: main.py:1614
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1857
+#: main.py:2580
 msgid "Desktop"
 msgstr ""
 
-#: main.py:1625
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1868
+#: main.py:2593
 msgid "Storage"
 msgstr ""
 
-#: main.py:1675 main.py:1719
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1918
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1962
+#: main.py:2647 main.py:2691
 msgid "Recent Places"
 msgstr ""
 
-#: main.py:1735
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1978
+#: main.py:2707
 msgid "Cannot connect, machine is busy or not availiable."
 msgstr ""
 
-#: main.py:1737
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1980
+#: main.py:2709
 msgid "No previous machine network address stored."
 msgstr ""
 
-#: main.py:1742
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1985
+#: main.py:2714
 msgid "Searching for nearby machines..."
 msgstr ""
 
-#: main.py:1752
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2000
+#: main.py:2729
 msgid "None found, enter address manually..."
 msgstr ""
 
-#: main.py:1766
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2014
+#: main.py:2743
 msgid "Input machine network address:"
 msgstr ""
 
-#: main.py:1869
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2117
+#: main.py:2858
 msgid "Error loading dir"
 msgstr ""
 
-#: main.py:1871
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2119
+#: main.py:2860
 msgid "Timeout loading dir"
 msgstr ""
 
-#: main.py:1879
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2127
+#: main.py:2868
 msgid "Error deleting"
 msgstr ""
 
-#: main.py:1881
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2129
+#: main.py:2870
 msgid "Timeout deleting"
 msgstr ""
 
-#: main.py:1889
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2137
+#: main.py:2878
 msgid "Error renaming"
 msgstr ""
 
-#: main.py:1891
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2139
+#: main.py:2880
 msgid "Timeout renaming"
 msgstr ""
 
-#: main.py:1899
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2147
+#: main.py:2888
 msgid "Error making dir:"
 msgstr ""
 
-#: main.py:1901
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2149
+#: main.py:2890
 msgid "Timeout making dir:"
 msgstr ""
 
-#: main.py:1909
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2157
+#: main.py:2898
 msgid "Error getting WiFi info!"
 msgstr ""
 
-#: main.py:1911
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2159
+#: main.py:2900
 msgid "Timeout getting WiFi info!"
 msgstr ""
 
-#: main.py:1921
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2169
+#: main.py:2910
 msgid "Timeout connecting WiFi!"
 msgstr ""
 
-#: main.py:1931
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2179
+#: main.py:2920
 msgid "Delete File or Dir"
 msgstr ""
 
-#: main.py:1932
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2180
+#: main.py:2921
 msgid "Confirm to delete file or dir"
 msgstr ""
 
-#: main.py:1944
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2192
+#: main.py:2936 main.py:2950
 msgid "Machine Is Halted: "
 msgstr ""
 
-#: main.py:1946
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2194
+#: main.py:2938 main.py:2952
 msgid "Machine Is Halted!"
 msgstr ""
 
-#: main.py:1949
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2197
+#: main.py:2956
 msgid "Please manually switch off/on the machine!"
 msgstr ""
 
-#: main.py:1952 main.py:1964
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2200
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2212
+#: main.py:2959 main.py:2971
 msgid "Confirm to reset machine?"
 msgstr ""
 
-#: main.py:1955
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2203
+#: main.py:2962
 msgid "Confirm to unlock machine?"
 msgstr ""
 
-#: main.py:1963
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2211
+#: main.py:2970
 msgid "Machine Is Sleeping"
 msgstr ""
 
-#: main.py:1978
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2226
+#: main.py:2985
 msgid "Changing Tool"
 msgstr ""
 
-#: main.py:1979
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2227
+#: main.py:2986
 msgid "Please change to tool: "
 msgstr ""
 
-#: main.py:1979
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2227
+#: main.py:2986
 msgid "Then press ' Confirm' or main button to proceed"
 msgstr ""
 
-#: main.py:2009
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2257
+#: main.py:3022
 msgid "Change name"
 msgstr ""
 
-#: main.py:2017
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2265
+#: main.py:3030
 msgid "Input new folder name:"
 msgstr ""
 
-#: main.py:2025
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2286
+#: main.py:3051
 msgid "Input WiFi password of"
 msgstr ""
 
-#: main.py:2037 main.py:2068
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2298
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2329
+#: main.py:3063 main.py:3094
 msgid "File Already Exists"
 msgstr ""
 
-#: main.py:2038 main.py:2069
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2299
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2330
+#: main.py:3064 main.py:3095
 msgid "Confirm to overwrite file:"
 msgstr ""
 
-#: main.py:2045
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2306
+#: main.py:3071
 msgid "Updating Firmware"
 msgstr ""
 
-#: main.py:2046
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2307
-msgid "Reset the machine when uploading is complete."
+#: main.py:3072
+msgid ""
+"Are you sure you want to update the firmware? A machine reset will be "
+"required to apply the new firmware."
 msgstr ""
 
-#: main.py:2060
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2321
+#: main.py:3086
 msgid "Loading file"
 msgstr ""
 
-#: main.py:2086
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2347
+#: main.py:3112
 msgid "Opening local file"
 msgstr ""
 
-#: main.py:2142
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2403
+#: main.py:3168
 msgid ""
 "Error loading machine config setting. Possibly malformed value.\n"
 "Skipping setting key: "
 msgstr ""
 
-#: main.py:2152
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2413
+#: main.py:3178
 msgid "Download config file error"
 msgstr ""
 
-#: main.py:2168
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2429
+#: main.py:3194
 msgid "Load config..."
 msgstr ""
 
-#: main.py:2168
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2429
+#: main.py:3194
 msgid "Checking"
 msgstr ""
 
-#: main.py:2195
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2456
+#: main.py:3221
 msgid "Download config file error!"
 msgstr ""
 
-#: main.py:2197
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2458
+#: main.py:3223
 msgid "Download file error!"
 msgstr ""
 
-#: main.py:2211
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2472
+#: main.py:3237
 msgid "Synchronize version and time..."
 msgstr ""
 
-#: main.py:2218
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2479
+#: main.py:3244
 msgid "Open cached file"
 msgstr ""
 
-#: main.py:2228
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2489
+#: main.py:3254
 msgid "Downloading is canceled manually."
 msgstr ""
 
-#: main.py:2251
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2512
+#: main.py:3298
 msgid "Downloading"
 msgstr ""
 
-#: main.py:2265 main.py:2267
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2526
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2528
+#: main.py:3312 main.py:3314
 msgid "WiFi: Searching for network..."
 msgstr ""
 
-#: main.py:2292
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2553
+#: main.py:3339
 msgid "WiFi: Connected"
 msgstr ""
 
-#: main.py:2292
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2553
+#: main.py:3339
 msgid "WiFi: Not Connected"
 msgstr ""
 
-#: main.py:2295
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2556
+#: main.py:3342
 msgid "Close Connection"
 msgstr ""
 
-#: main.py:2336
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2597
+#: main.py:3383
 msgid "Can not load coordinate value:"
 msgstr ""
 
-#: main.py:2343
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2604
+#: main.py:3390
 msgid "Can not load laser offset value:"
 msgstr ""
 
-#: main.py:2404
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2665
+#: main.py:3451
 msgid "Connecting to"
 msgstr ""
 
-#: main.py:2525
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2786
+#: main.py:3583
 msgid "Uploading"
 msgstr ""
 
-#: main.py:2547
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2808
+#: main.py:3605
 msgid "Uploading is canceled manually."
 msgstr ""
 
-#: main.py:2556
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2817
+#: main.py:3614
 msgid "Upload file error!"
 msgstr ""
 
-#: main.py:2597
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2858
+#: main.py:3655
 msgid "Decompressing"
 msgstr ""
 
-#: main.py:2609
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2870
+#: main.py:3670
 msgid "Update Finished"
 msgstr ""
 
-#: main.py:2610
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2871
+#: main.py:3671
 msgid "Confirm to reset the machine?"
 msgstr ""
 
-#: main.py:2732 makera.kv:3081
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:2993
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3239
+#: main.py:3795 makera.kv:3302
 msgid "disconnect"
 msgstr ""
 
-#: main.py:2864 main.py:2883
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3125
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3144
+#: main.py:3930 main.py:3949
 msgid "Laser"
 msgstr ""
 
-#: main.py:2871
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3132
+#: main.py:3937
 msgid "None"
 msgstr ""
 
-#: main.py:2881 makera.kv:2941
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3142
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3099
+#: main.py:3947 makera.kv:3161
 msgid "Probe"
 msgstr ""
 
-#: main.py:2961
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3222
+#: main.py:3951
+msgid "3DProb"
+msgstr ""
+
+#: main.py:4040
 msgid " No Remote File Selected"
 msgstr ""
 
-#: main.py:3226 main.py:3237
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3497
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3508
+#: main.py:4317
 msgid "Load config error, Key:"
 msgstr ""
 
-#: main.py:3307
-msgid "Settings applied, need reset to take effect !"
+#: main.py:4475
+msgid "Enable Pendant"
 msgstr ""
 
-#: main.py:3312
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3650
+#: main.py:4480 makera.kv:3588
+msgid "No Pendant"
+msgstr ""
+
+#: main.py:4547
+msgid "Settings applied, need machine reset to take effect !"
+msgstr ""
+
+#: main.py:4553
+msgid "UI Density changed, restart application to apply."
+msgstr ""
+
+#: main.py:4568
 msgid "Restore Settings"
 msgstr ""
 
-#: main.py:3313
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3651
+#: main.py:4569
 msgid "Confirm to restore settings from default ?"
 msgstr ""
 
-#: main.py:3327
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3665
+#: main.py:4583
 msgid "Save As Default"
 msgstr ""
 
-#: main.py:3328
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3666
+#: main.py:4584
 msgid "Confirm to save current settings as default ?"
 msgstr ""
 
-#: main.py:3336
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3674
+#: main.py:4592
 msgid "Entering Laser Mode"
 msgstr ""
 
-#: main.py:3338
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3676
+#: main.py:4594
 msgid ""
 "You are about to enable laser mode. \n"
 "\n"
@@ -612,1345 +636,1185 @@ msgid ""
 "Are you read to proceed ?"
 msgstr ""
 
-#: main.py:3571
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3909
+#: main.py:4827
 msgid "Opening file error:"
 msgstr ""
 
-#: main.py:3571
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3909
+#: main.py:4827
 msgid "Please make sure the GCode file is valid"
 msgstr ""
 
-#: main.py:3654
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3992
+#: main.py:4911
 msgid "Carvera Controller Community"
 msgstr ""
 
-#: makera.kv:312
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:360
-msgid "Set X Origin"
+#: ui.py:42
+msgid "Open editor…"
 msgstr ""
 
-#: makera.kv:314
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:362
-msgid "X = 0"
+#: ui.py:53
+msgid "<unnamed>"
 msgstr ""
 
-#: makera.kv:323
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:371
-msgid "Set X"
+#: ui.py:55
+msgid "<invalid>"
 msgstr ""
 
-#: makera.kv:340
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:388
-msgid "Set Y Origin"
+#: ui.py:80
+msgid "Name:"
 msgstr ""
 
-#: makera.kv:342
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:390
-msgid "Y = 0"
+#: ui.py:87
+msgid "G-code:"
 msgstr ""
 
-#: makera.kv:351
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:399
-msgid "Set Y"
+#: ui.py:92
+msgid "Edit command"
 msgstr ""
 
-#: makera.kv:369
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:417
-msgid "Set Z Origin"
+#: ui.py:98
+msgid "Save"
 msgstr ""
 
-#: makera.kv:371
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:419
-msgid "Z = 0"
-msgstr ""
-
-#: makera.kv:380
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:428
-msgid "Set Z"
-msgstr ""
-
-#: makera.kv:389
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:437
-msgid "Auto Leveling"
-msgstr ""
-
-#: makera.kv:403
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:451
-msgid "max:"
-msgstr ""
-
-#: makera.kv:407
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:455
-msgid "Clear"
-msgstr ""
-
-#: makera.kv:424
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:473
-msgid "Set A Origin"
-msgstr ""
-
-#: makera.kv:426
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:475
-msgid "A = 0"
-msgstr ""
-
-#: makera.kv:435
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:484
-msgid "Set A"
-msgstr ""
-
-#: makera.kv:444
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:493
-msgid "Shrink"
-msgstr ""
-
-#: makera.kv:453
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:503
-msgid "Fast Move"
-msgstr ""
-
-#: makera.kv:475
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:525
-msgid "Feed Status"
-msgstr ""
-
-#: makera.kv:489 makera.kv:571
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:539
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:621
-msgid "Scale:"
-msgstr ""
-
-#: makera.kv:494 makera.kv:575
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:544
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:625
-msgid "Target:"
-msgstr ""
-
-#: makera.kv:498
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:548
-msgid "Speed Scaling"
-msgstr ""
-
-#: makera.kv:535 makera.kv:637 makera.kv:843 makera.kv:3639
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:585
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:687
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:895
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3434
-msgid "Reset"
-msgstr ""
-
-#: makera.kv:557
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:607
-msgid "Spindle Status"
-msgstr ""
-
-#: makera.kv:579
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:629
-msgid "Temp:"
-msgstr ""
-
-#: makera.kv:582 makera.kv:2493
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:632
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2651
-msgid "Auto Vacuum"
-msgstr ""
-
-#: makera.kv:601
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:651
-msgid "RPM Scaling"
-msgstr ""
-
-#: makera.kv:658
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:708
-msgid "Tool Status"
-msgstr ""
-
-#: makera.kv:672
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:722
-msgid "TLO:  "
-msgstr ""
-
-#: makera.kv:676
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:726
-msgid "WP:  "
-msgstr ""
-
-#: makera.kv:684 makera.kv:687 makera.kv:688
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:734
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:738
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:739
-msgid "Change..."
-msgstr ""
-
-#: makera.kv:691
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:742
-msgid "Calibrate"
-msgstr ""
-
-#: makera.kv:698
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:749
-msgid "Drop"
-msgstr ""
-
-#: makera.kv:709 makera.kv:712 makera.kv:713
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:760
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:764
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:765
-msgid "Set..."
-msgstr ""
-
-#: makera.kv:716
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:768
-msgid "Clamp"
-msgstr ""
-
-#: makera.kv:724
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:776
-msgid "Unclamp"
-msgstr ""
-
-#: makera.kv:744
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:796
-msgid "Laser Status"
-msgstr ""
-
-#: makera.kv:758
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:810
-msgid "scale:"
-msgstr ""
-
-#: makera.kv:761
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:813
-msgid "Enable Laser"
-msgstr ""
-
-#: makera.kv:785
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:837
-msgid "Laser Test"
-msgstr ""
-
-#: makera.kv:804
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:856
-msgid "Power Scaling"
-msgstr ""
-
-#: makera.kv:962
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1034
-msgid "Reconnect"
-msgstr ""
-
-#: makera.kv:973
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1045
-msgid "Scan Wi-Fi..."
-msgstr ""
-
-#: makera.kv:980
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1052
-msgid " USB..."
-msgstr ""
-
-#: makera.kv:998
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1070
-msgid "Disconnect"
-msgstr ""
-
-#: makera.kv:1010
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1082
-msgid "Upload..."
-msgstr ""
-
-#: makera.kv:1016 makera.kv:1871 makera.kv:1919 makera.kv:2253
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1088
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2021
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2069
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2399
-msgid "Download"
-msgstr ""
-
-#: makera.kv:1022 makera.kv:2019
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1094
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2169
-msgid "Delete"
-msgstr ""
-
-#: makera.kv:1028 makera.kv:2011
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1100
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2161
-msgid "Rename"
-msgstr ""
-
-#: makera.kv:1131
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1203
-msgid "Select Language"
-msgstr ""
-
-#: makera.kv:1143 makera.kv:1178 makera.kv:1207 makera.kv:1261 makera.kv:1372
-#: makera.kv:1436 makera.kv:1522 makera.kv:1603 makera.kv:1778 makera.kv:3936
-#: makera.kv:3993 makera.kv:4050 makera.kv:4107 makera.kv:4164
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1215
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1250
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1279
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1333
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1444
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1508
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1594
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1675
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1921
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4152
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4209
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4266
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4323
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4380
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4436
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4493
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\preview\ProbingPreviewPopup.kv:26
+#: ui.py:101 makera.kv:1255 makera.kv:1290 makera.kv:1319 makera.kv:1350
+#: makera.kv:1409 makera.kv:1532 makera.kv:1591 makera.kv:1675 makera.kv:1752
+#: makera.kv:1996 makera.kv:4236 makera.kv:4291 makera.kv:4346 makera.kv:4401
+#: makera.kv:4456 makera.kv:4512 makera.kv:4569 makera.kv:5450
+#: addons/probing/preview/ProbingPreviewPopup.kv:26
 msgid "Cancel"
 msgstr ""
 
-#: makera.kv:1146 makera.kv:1181 makera.kv:1234 makera.kv:1376 makera.kv:1440
-#: makera.kv:1526 makera.kv:1607 makera.kv:1782 makera.kv:3940 makera.kv:3997
-#: makera.kv:4054 makera.kv:4111 makera.kv:4168
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1218
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1253
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1306
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1448
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1512
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1598
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1679
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1925
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4156
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4213
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4270
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4327
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4384
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4440
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4497
-msgid "Ok"
-msgstr ""
-
-#: makera.kv:1163
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1235
-msgid "Input Box"
-msgstr ""
-
-#: makera.kv:1199
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1271
-msgid "Confirm Box"
-msgstr ""
-
-#: makera.kv:1203 makera.kv:1228
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1275
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1300
-msgid "Confirm to continue?"
-msgstr ""
-
-#: makera.kv:1213
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1285
-msgid "Confirm"
-msgstr ""
-
-#: makera.kv:1282
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1354
-msgid "Auto-Set By Offset"
-msgstr ""
-
-#: makera.kv:1297
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1369
-msgid "Anchor1"
-msgstr ""
-
-#: makera.kv:1306
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1378
-msgid "Anchor2"
-msgstr ""
-
-#: makera.kv:1315
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1387
-msgid "4Axis Origin"
-msgstr ""
-
-#: makera.kv:1324
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1396
-msgid "Current Pos"
-msgstr ""
-
-#: makera.kv:1332 makera.kv:1489
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1404
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1561
-msgid "X Offset:"
-msgstr ""
-
-#: makera.kv:1338 makera.kv:1495
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1410
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1567
-msgid "Enter X Offset"
-msgstr ""
-
-#: makera.kv:1346 makera.kv:1503
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1418
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1575
-msgid "Y Offset:"
-msgstr ""
-
-#: makera.kv:1352 makera.kv:1509
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1424
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1581
-msgid "Enter Y Offset"
-msgstr ""
-
-#: makera.kv:1363
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1435
-msgid "Note: Work origin will be set immediately when clicking OK."
-msgstr ""
-
-#: makera.kv:1386
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1458
-msgid "Set By XYZ Probe"
-msgstr ""
-
-#: makera.kv:1397 makera.kv:1564
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1469
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1636
-msgid "Probe Height:"
-msgstr ""
-
-#: makera.kv:1403 makera.kv:1570
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1475
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1642
-msgid "Height Above Workpiece"
-msgstr ""
-
-#: makera.kv:1411 makera.kv:1578
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1483
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1650
-msgid "Tool Diameter:"
-msgstr ""
-
-#: makera.kv:1417 makera.kv:1584
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1489
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1656
-msgid "Tool Diameter"
-msgstr ""
-
-#: makera.kv:1425 makera.kv:1592
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1497
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1664
-msgid ""
-"Note: Please make sure the probe is stably positioned and the magnet head is "
-"attached to the tool."
-msgstr ""
-
-#: makera.kv:1466
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1538
-msgid "Z Probe Config"
-msgstr ""
-
-#: makera.kv:1554
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1626
-msgid "XYZ Probe At Current Position"
-msgstr ""
-
-#: makera.kv:1630
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1702
-msgid "Paring Wireless Probe"
-msgstr ""
-
-#: makera.kv:1644
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1716
-msgid "Start Pairing"
-msgstr ""
-
-#: makera.kv:1664 makera.kv:1951 makera.kv:2199 makera.kv:2275 makera.kv:2747
-#: makera.kv:2982
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1736
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2101
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2345
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2421
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2905
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3140
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:504
-msgid "Close"
-msgstr ""
-
-#: makera.kv:1694
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1766
-msgid "Auto Leveling Config"
-msgstr ""
-
-#: makera.kv:1712
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1784
-msgid "Clearance Height:   "
-msgstr ""
-
-#: makera.kv:1724
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1796
-msgid "Min"
-msgstr ""
-
-#: makera.kv:1726
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1798
-msgid "Max"
-msgstr ""
-
-#: makera.kv:1728
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1800
-msgid "Step"
-msgstr ""
-
-#: makera.kv:1730
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1802
-msgid "Points"
-msgstr ""
-
-#: makera.kv:1813
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1963
-msgid "Upgrade"
-msgstr ""
-
-#: makera.kv:1823
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1973
-msgid " Check Updates on Startup"
-msgstr ""
-
-#: makera.kv:1841
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1991
-msgid "Controller"
-msgstr ""
-
-#: makera.kv:1851 makera.kv:1899
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2001
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2049
-msgid " Update Log:"
-msgstr ""
-
-#: makera.kv:1889 makera.kv:2233
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2039
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2379
-msgid "Firmware"
-msgstr ""
-
-#: makera.kv:1925
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2075
-msgid "Update"
-msgstr ""
-
-#: makera.kv:1946
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2096
-msgid "Check for Updates"
-msgstr ""
-
-#: makera.kv:1991
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2141
-msgid "Remote"
-msgstr ""
-
-#: makera.kv:2027
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2177
-msgid "New Folder"
-msgstr ""
-
-#: makera.kv:2034
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2184
-msgid "Upload File"
-msgstr ""
-
-#: makera.kv:2119 makera.kv:2361
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2265
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2507
-msgid "Search"
-msgstr ""
-
-#: makera.kv:2148 makera.kv:2390
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2294
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2536
-msgid "Name "
-msgstr ""
-
-#: makera.kv:2155 makera.kv:2397
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2301
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2543
-msgid "Date Modified "
-msgstr ""
-
-#: makera.kv:2165 makera.kv:2407
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2311
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2553
-msgid " Size"
-msgstr ""
-
-#: makera.kv:2203
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2349
-msgid "Clear Selection"
-msgstr ""
-
-#: makera.kv:2212
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2358
-msgid "Select"
-msgstr ""
-
-#: makera.kv:2233
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2379
-msgid "Local"
-msgstr ""
-
-#: makera.kv:2253
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2399
-msgid "View"
-msgstr ""
-
-#: makera.kv:2260
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2406
-msgid "Upload"
-msgstr ""
-
-#: makera.kv:2267
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2413
-msgid "Upload and Select"
-msgstr ""
-
-#: makera.kv:2361
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2507
-msgid "firmware"
-msgstr ""
-
-#: makera.kv:2461
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2607
-msgid "Config and Run"
-msgstr ""
-
-#: makera.kv:2461
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2607
-msgid " Config and Do "
-msgstr ""
-
-#: makera.kv:2531
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2689
-msgid " Set Work Origin"
-msgstr ""
-
-#: makera.kv:2549
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2707
-msgid " (0, 0) from Anchor1"
-msgstr ""
-
-#: makera.kv:2562 makera.kv:2644 makera.kv:2703
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2720
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2802
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2861
-msgid "Config"
-msgstr ""
-
-#: makera.kv:2583
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2741
-msgid " Scan Margin"
-msgstr ""
-
-#: makera.kv:2616
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2774
-msgid " Auto Z Probe"
-msgstr ""
-
-#: makera.kv:2631
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2789
-msgid " (10, 10) from Path Origin"
-msgstr ""
-
-#: makera.kv:2675
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2833
-msgid " Auto Leveling"
-msgstr ""
-
-#: makera.kv:2689
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2847
-msgid " X Points: 10, Y Points: 10, Height: 5"
-msgstr ""
-
-#: makera.kv:2751
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2909
-msgid "Run"
-msgstr ""
-
-#: makera.kv:2751
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2909
-msgid "Do "
-msgstr ""
-
-#: makera.kv:2865
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3023
-msgid "   Diagnostic Panel"
-msgstr ""
-
-#: makera.kv:2877
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3035
-msgid "Spindle Motor"
-msgstr ""
-
-#: makera.kv:2881 makera.kv:2910
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3039
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3068
-msgid "Spindle Fan"
-msgstr ""
-
-#: makera.kv:2884
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3042
-msgid "Vacuum"
-msgstr ""
-
-#: makera.kv:2884
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3042
-msgid "PowerFan"
-msgstr ""
-
-#: makera.kv:2887
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3045
-msgid "Engraving Laser"
-msgstr ""
-
-#: makera.kv:2891
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3049
-msgid "Enclosure Light"
-msgstr ""
-
-#: makera.kv:2895
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3053
-msgid "Air Assist"
-msgstr ""
-
-#: makera.kv:2921
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3079
-msgid "ToolSensorPWR"
-msgstr ""
-
-#: makera.kv:2921
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3079
-msgid "Probe Laser"
-msgstr ""
-
-#: makera.kv:2925
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3083
-msgid "WPChargePWR"
-msgstr ""
-
-#: makera.kv:2925
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3083
-msgid "Beep"
-msgstr ""
-
-#: makera.kv:2931
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3089
-msgid "X- Limit"
-msgstr ""
-
-#: makera.kv:2934
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3092
-msgid "Y- Limit"
-msgstr ""
-
-#: makera.kv:2937
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3095
-msgid "ATC Limit"
-msgstr ""
-
-#: makera.kv:2944
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3102
-msgid "Tool Sensor"
-msgstr ""
-
-#: makera.kv:2948
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3106
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4084
-msgid "E-Stop"
-msgstr ""
-
-#: makera.kv:2953
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3111
-msgid "X+ Limit"
-msgstr ""
-
-#: makera.kv:2956
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3114
-msgid "Y+ Limit"
-msgstr ""
-
-#: makera.kv:2959
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3117
-msgid "Z+ Limit"
-msgstr ""
-
-#: makera.kv:2962
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3120
-msgid "Tool Length Setter"
-msgstr ""
-
-#: makera.kv:2965
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3123
-msgid "Cover Switch"
-msgstr ""
-
-#: makera.kv:2971
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3129
-msgid "Changes in values are applied after 2 seconds."
-msgstr ""
-
-#: makera.kv:3000
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3158
-msgid " Settings"
-msgstr ""
-
-#: makera.kv:3009
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3167
-msgid "Apply"
-msgstr ""
-
-#: makera.kv:3308
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3727
-msgid "FILE"
-msgstr ""
-
-#: makera.kv:3314
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3734
-msgid "Enter command..."
-msgstr ""
-
-#: makera.kv:3323
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3743
-msgid "send"
-msgstr ""
-
-#: makera.kv:3633
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3430
-msgid "Unlock"
-msgstr ""
-
-#: makera.kv:3645
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3438
-msgid "Home"
-msgstr ""
-
-#: makera.kv:3652
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3443
-msgid "Margin..."
-msgstr ""
-
-#: makera.kv:3665
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3454
-msgid "ZProbe..."
-msgstr ""
-
-#: makera.kv:3678
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3465
-msgid "AutoLevel..."
-msgstr ""
-
-#: makera.kv:3694 makera.kv:3697 makera.kv:3698
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3477
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3480
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3481
-msgid "Goto..."
-msgstr ""
-
-#: makera.kv:3703
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3484
-msgid "Set Origin"
-msgstr ""
-
-#: makera.kv:3767
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3977
-msgid "SettingPage"
-msgstr ""
-
-#: makera.kv:3906
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4122
-msgid "Set X Current Pos"
-msgstr ""
-
-#: makera.kv:3922
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4138
-msgid "Enter X Pos"
-msgstr ""
-
-#: makera.kv:3963
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4179
-msgid "Set Y Current Pos"
-msgstr ""
-
-#: makera.kv:3979
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4195
-msgid "Enter Y Pos"
-msgstr ""
-
-#: makera.kv:4020
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4236
-msgid "Set Z Current Pos"
-msgstr ""
-
-#: makera.kv:4036
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4252
-msgid "Enter Z Pos"
-msgstr ""
-
-#: makera.kv:4077
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4293
-msgid "Set A Current Pos"
-msgstr ""
-
-#: makera.kv:4093 makera.kv:4150
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4309
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4479
-msgid "Enter A Pos"
-msgstr ""
-
-#: makera.kv:4134
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4463
-msgid "Rapidly move the A to"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:613
-msgid " Offsets: "
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:614
-msgid " -X: "
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:615
-msgid " +X: "
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:616
-msgid " -Y: "
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:617
-msgid " +Y: "
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:1685
-msgid "Language setting applied, restart Controller app to take effect !"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3633
-msgid "Settings applied, need machine reset to take effect !"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\main.py:3639
-msgid "UI Density changed, restart application to apply."
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:307
+#: makera.kv:306
 msgid "Jog Speed:"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:309
+#: makera.kv:308
 msgid "Match Feed"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:317
+#: makera.kv:316
 msgid "2000 mm/min"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:324
+#: makera.kv:323
 msgid "1200 mm/min"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:331
+#: makera.kv:330
 msgid "600 mm/min"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:338
+#: makera.kv:337
 msgid "300 mm/min"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:345
+#: makera.kv:344
 msgid "100 mm/min"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:456
+#: makera.kv:359
+msgid "Set X Origin"
+msgstr ""
+
+#: makera.kv:361
+msgid "X = 0"
+msgstr ""
+
+#: makera.kv:370
+msgid "Set X"
+msgstr ""
+
+#: makera.kv:387
+msgid "Set Y Origin"
+msgstr ""
+
+#: makera.kv:389
+msgid "Y = 0"
+msgstr ""
+
+#: makera.kv:398
+msgid "Set Y"
+msgstr ""
+
+#: makera.kv:416
+msgid "Set Z Origin"
+msgstr ""
+
+#: makera.kv:418
+msgid "Z = 0"
+msgstr ""
+
+#: makera.kv:427
+msgid "Set Z"
+msgstr ""
+
+#: makera.kv:436
+msgid "Auto Leveling"
+msgstr ""
+
+#: makera.kv:450
+msgid "max:"
+msgstr ""
+
+#: makera.kv:454
+msgid "Clear"
+msgstr ""
+
+#: makera.kv:455
 msgid ""
 "Clear any existing autolevel offsets. When autolevel offsets are enabled the "
 "Z axis dropdown will be blue"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:494
+#: makera.kv:472
+msgid "Set A Origin"
+msgstr ""
+
+#: makera.kv:474
+msgid "A = 0"
+msgstr ""
+
+#: makera.kv:483
+msgid "Set A"
+msgstr ""
+
+#: makera.kv:492
+msgid "Shrink"
+msgstr ""
+
+#: makera.kv:493
 msgid "Reset A Axis value to 0-360 while keeping the offset. Eg 374 becomes 14"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:917
+#: makera.kv:502
+msgid "Fast Move"
+msgstr ""
+
+#: makera.kv:523 makera.kv:5416
+msgid "Set Rotation"
+msgstr ""
+
+#: makera.kv:535 makera.kv:538 makera.kv:539
+msgid "Activate WCS"
+msgstr ""
+
+#: makera.kv:543 makera.kv:4595
+msgid "WCS Settings"
+msgstr ""
+
+#: makera.kv:562
+msgid "Feed Status"
+msgstr ""
+
+#: makera.kv:576 makera.kv:658
+msgid "Scale:"
+msgstr ""
+
+#: makera.kv:581 makera.kv:662
+msgid "Target:"
+msgstr ""
+
+#: makera.kv:585
+msgid "Speed Scaling"
+msgstr ""
+
+#: makera.kv:622 makera.kv:724 makera.kv:934 makera.kv:3508
+msgid "Reset"
+msgstr ""
+
+#: makera.kv:644
+msgid "Spindle Status"
+msgstr ""
+
+#: makera.kv:666
+msgid "Temp:"
+msgstr ""
+
+#: makera.kv:669 makera.kv:2709
+msgid "Auto Vacuum"
+msgstr ""
+
+#: makera.kv:688
+msgid "RPM Scaling"
+msgstr ""
+
+#: makera.kv:745
+msgid "Tool Status"
+msgstr ""
+
+#: makera.kv:759
+msgid "TLO:  "
+msgstr ""
+
+#: makera.kv:763
+msgid "WP:  "
+msgstr ""
+
+#: makera.kv:771 makera.kv:776 makera.kv:777
+msgid "Change..."
+msgstr ""
+
+#: makera.kv:780
+msgid "Calibrate"
+msgstr ""
+
+#: makera.kv:787
+msgid "Drop"
+msgstr ""
+
+#: makera.kv:798 makera.kv:803 makera.kv:804
+msgid "Set..."
+msgstr ""
+
+#: makera.kv:807
+msgid "Clamp"
+msgstr ""
+
+#: makera.kv:815
+msgid "Unclamp"
+msgstr ""
+
+#: makera.kv:835
+msgid "Laser Status"
+msgstr ""
+
+#: makera.kv:849
+msgid "scale:"
+msgstr ""
+
+#: makera.kv:852
+msgid "Enable Laser"
+msgstr ""
+
+#: makera.kv:876
+msgid "Laser Test"
+msgstr ""
+
+#: makera.kv:895
+msgid "Power Scaling"
+msgstr ""
+
+#: makera.kv:956
 msgid "Run File View"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:927
+#: makera.kv:966
 msgid "Manual Move View"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:940
+#: makera.kv:979
 msgid "Diagnostics Menu"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:951
+#: makera.kv:990
 msgid "Wifi Setup"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:962
+#: makera.kv:1001
 msgid "Pair Probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:971
+#: makera.kv:1010
 msgid "Update Firmware/Controller"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:984
+#: makera.kv:1023
 msgid "Language Selection"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:994
+#: makera.kv:1033
 msgid "Settings"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1003
+#: makera.kv:1042
 msgid "Send Bug Report"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1860
+#: makera.kv:1073
+msgid "Reconnect"
+msgstr ""
+
+#: makera.kv:1084
+msgid "Scan Wi-Fi..."
+msgstr ""
+
+#: makera.kv:1091
+msgid " USB..."
+msgstr ""
+
+#: makera.kv:1109
+msgid "Disconnect"
+msgstr ""
+
+#: makera.kv:1121
+msgid "Upload..."
+msgstr ""
+
+#: makera.kv:1127 makera.kv:2083 makera.kv:2131 makera.kv:2457
+msgid "Download"
+msgstr ""
+
+#: makera.kv:1133 makera.kv:2227
+msgid "Delete"
+msgstr ""
+
+#: makera.kv:1139 makera.kv:2219
+msgid "Rename"
+msgstr ""
+
+#: makera.kv:1243
+msgid "Select Language"
+msgstr ""
+
+#: makera.kv:1275
+msgid "Input Box"
+msgstr ""
+
+#: makera.kv:1311
+msgid "Confirm Box"
+msgstr ""
+
+#: makera.kv:1315 makera.kv:1376
+msgid "Confirm to continue?"
+msgstr ""
+
+#: makera.kv:1325
+msgid "Confirm"
+msgstr ""
+
+#: makera.kv:1342
+msgid "Machine Is Halted"
+msgstr ""
+
+#: makera.kv:1346
+msgid "Choose unlock option:"
+msgstr ""
+
+#: makera.kv:1354
+msgid "Unlock and Stay in Position"
+msgstr ""
+
+#: makera.kv:1360
+msgid "Unlock and Move to Safe Z"
+msgstr ""
+
+#: makera.kv:1430
+msgid "Auto-Set By Offset"
+msgstr ""
+
+#: makera.kv:1448
+msgid "Anchor1"
+msgstr ""
+
+#: makera.kv:1460
+msgid "Anchor2"
+msgstr ""
+
+#: makera.kv:1472
+msgid "4Axis Origin"
+msgstr ""
+
+#: makera.kv:1484
+msgid "Current Pos"
+msgstr ""
+
+#: makera.kv:1492 makera.kv:1642
+msgid "X Offset:"
+msgstr ""
+
+#: makera.kv:1498 makera.kv:1648
+msgid "Enter X Offset"
+msgstr ""
+
+#: makera.kv:1506 makera.kv:1656
+msgid "Y Offset:"
+msgstr ""
+
+#: makera.kv:1512 makera.kv:1662
+msgid "Enter Y Offset"
+msgstr ""
+
+#: makera.kv:1523
+msgid "Note: Work origin will be set immediately when clicking OK."
+msgstr ""
+
+#: makera.kv:1540
+msgid "Set By XYZ Probe"
+msgstr ""
+
+#: makera.kv:1551 makera.kv:1712
+msgid "Block Thickness:"
+msgstr ""
+
+#: makera.kv:1557 makera.kv:1718
+msgid "Thickness of probing block"
+msgstr ""
+
+#: makera.kv:1558 makera.kv:1719
+msgid ""
+"The mm thickness between the conductive surface of the probe block and the "
+"workpiece. Used as part of the probing calculation to determine the Z height"
+msgstr ""
+
+#: makera.kv:1566 makera.kv:1727
+msgid "Tool Diameter:"
+msgstr ""
+
+#: makera.kv:1572 makera.kv:1733
+msgid "Tool Diameter"
+msgstr ""
+
+#: makera.kv:1580 makera.kv:1741
+msgid ""
+"Note: Please make sure the probe is stably positioned and the magnet head is "
+"attached to the tool."
+msgstr ""
+
+#: makera.kv:1619
+msgid "Z Probe Config"
+msgstr ""
+
+#: makera.kv:1702
+msgid "XYZ Probe At Current Position"
+msgstr ""
+
+#: makera.kv:1777
+msgid "Paring Wireless Probe"
+msgstr ""
+
+#: makera.kv:1791
+msgid "Start Pairing"
+msgstr ""
+
+#: makera.kv:1841
+msgid "Auto Leveling Config"
+msgstr ""
+
+#: makera.kv:1859
+msgid "Clearance Height:   "
+msgstr ""
+
+#: makera.kv:1871
+msgid "Min"
+msgstr ""
+
+#: makera.kv:1873
+msgid "Max"
+msgstr ""
+
+#: makera.kv:1875
+msgid "Step"
+msgstr ""
+
+#: makera.kv:1877
+msgid "Points"
+msgstr ""
+
+#: makera.kv:1935
 msgid "Offsets:   "
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1868
+#: makera.kv:1943
 msgid "Left X-"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1870
+#: makera.kv:1945
 msgid "Right X+"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1872
+#: makera.kv:1947
 msgid "Front Y-"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1874
+#: makera.kv:1949
 msgid "Back Y+"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1881
+#: makera.kv:1956
 msgid "Enter -X Offset"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1889
+#: makera.kv:1964
 msgid "Enter +X Offset"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1897
+#: makera.kv:1972
 msgid "Enter -Y Offset"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:1905
+#: makera.kv:1980
 msgid "Enter +Y Offset"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:2638
+#: makera.kv:2025
+msgid "Upgrade"
+msgstr ""
+
+#: makera.kv:2035
+msgid " Check Updates on Startup"
+msgstr ""
+
+#: makera.kv:2063 makera.kv:2111
+msgid " Update Log:"
+msgstr ""
+
+#: makera.kv:2101 makera.kv:2437
+msgid "Firmware"
+msgstr ""
+
+#: makera.kv:2137
+msgid "Update"
+msgstr ""
+
+#: makera.kv:2154
+msgid "Check for Updates"
+msgstr ""
+
+#: makera.kv:2199
+msgid "Remote"
+msgstr ""
+
+#: makera.kv:2235
+msgid "New Folder"
+msgstr ""
+
+#: makera.kv:2242
+msgid "Upload File"
+msgstr ""
+
+#: makera.kv:2323 makera.kv:2565
+msgid "Search"
+msgstr ""
+
+#: makera.kv:2352 makera.kv:2594
+msgid "Name "
+msgstr ""
+
+#: makera.kv:2359 makera.kv:2601
+msgid "Date Modified "
+msgstr ""
+
+#: makera.kv:2369 makera.kv:2611
+msgid " Size"
+msgstr ""
+
+#: makera.kv:2407
+msgid "Clear Selection"
+msgstr ""
+
+#: makera.kv:2416
+msgid "Select"
+msgstr ""
+
+#: makera.kv:2437
+msgid "Local"
+msgstr ""
+
+#: makera.kv:2457
+msgid "View"
+msgstr ""
+
+#: makera.kv:2464
+msgid "Upload"
+msgstr ""
+
+#: makera.kv:2471
+msgid "Upload and Select"
+msgstr ""
+
+#: makera.kv:2565
+msgid "firmware"
+msgstr ""
+
+#: makera.kv:2665
+msgid "Config and Run"
+msgstr ""
+
+#: makera.kv:2665
+msgid " Config and Do "
+msgstr ""
+
+#: makera.kv:2696
 msgid "Background:"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3291
+#: makera.kv:2747
+msgid " Set Work Origin"
+msgstr ""
+
+#: makera.kv:2765
+msgid " (0, 0) from Anchor1"
+msgstr ""
+
+#: makera.kv:2778 makera.kv:2860 makera.kv:2919
+msgid "Config"
+msgstr ""
+
+#: makera.kv:2799
+msgid " Scan Margin"
+msgstr ""
+
+#: makera.kv:2832
+msgid " Auto Z Probe"
+msgstr ""
+
+#: makera.kv:2847
+msgid " (10, 10) from Path Origin"
+msgstr ""
+
+#: makera.kv:2891
+msgid " Auto Leveling"
+msgstr ""
+
+#: makera.kv:2905
+msgid " X Points: 10, Y Points: 10, Height: 5"
+msgstr ""
+
+#: makera.kv:2967
+msgid "Run"
+msgstr ""
+
+#: makera.kv:2967
+msgid "Do "
+msgstr ""
+
+#: makera.kv:3085
+msgid "   Diagnostic Panel"
+msgstr ""
+
+#: makera.kv:3097
+msgid "Spindle Motor"
+msgstr ""
+
+#: makera.kv:3101 makera.kv:3130
+msgid "Spindle Fan"
+msgstr ""
+
+#: makera.kv:3104
+msgid "Vacuum"
+msgstr ""
+
+#: makera.kv:3104
+msgid "PowerFan"
+msgstr ""
+
+#: makera.kv:3107
+msgid "Engraving Laser"
+msgstr ""
+
+#: makera.kv:3111
+msgid "Enclosure Light"
+msgstr ""
+
+#: makera.kv:3115
+msgid "Air Assist"
+msgstr ""
+
+#: makera.kv:3141
+msgid "ToolSensorPWR"
+msgstr ""
+
+#: makera.kv:3141
+msgid "Probe Laser"
+msgstr ""
+
+#: makera.kv:3145
+msgid "WPChargePWR"
+msgstr ""
+
+#: makera.kv:3145
+msgid "Beep"
+msgstr ""
+
+#: makera.kv:3151
+msgid "X- Limit"
+msgstr ""
+
+#: makera.kv:3154
+msgid "Y- Limit"
+msgstr ""
+
+#: makera.kv:3157
+msgid "ATC Limit"
+msgstr ""
+
+#: makera.kv:3164
+msgid "Tool Sensor"
+msgstr ""
+
+#: makera.kv:3168 makera.kv:4168
+msgid "E-Stop"
+msgstr ""
+
+#: makera.kv:3173
+msgid "X+ Limit"
+msgstr ""
+
+#: makera.kv:3176
+msgid "Y+ Limit"
+msgstr ""
+
+#: makera.kv:3179
+msgid "Z+ Limit"
+msgstr ""
+
+#: makera.kv:3182
+msgid "Tool Length Setter"
+msgstr ""
+
+#: makera.kv:3185
+msgid "Cover Switch"
+msgstr ""
+
+#: makera.kv:3191
+msgid "Changes in values are applied after 2 seconds."
+msgstr ""
+
+#: makera.kv:3220
+msgid " Settings"
+msgstr ""
+
+#: makera.kv:3229
+msgid "Apply"
+msgstr ""
+
+#: makera.kv:3348
+msgid "Coordinate System"
+msgstr ""
+
+#: makera.kv:3363
 msgid "Feed Rate Override"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3302
+#: makera.kv:3374
 msgid "Spindle and Vacuum Overrides"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3313
+#: makera.kv:3385
 msgid "Tool Settings"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3324
+#: makera.kv:3396
 msgid "Laser Settings"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3488
+#: makera.kv:3504
+msgid "Unlock"
+msgstr ""
+
+#: makera.kv:3512
+msgid "Home"
+msgstr ""
+
+#: makera.kv:3517
+msgid "Margin..."
+msgstr ""
+
+#: makera.kv:3528
+msgid "ZProbe..."
+msgstr ""
+
+#: makera.kv:3539
+msgid "AutoLevel..."
+msgstr ""
+
+#: makera.kv:3551 makera.kv:3554 makera.kv:3555
+msgid "Goto..."
+msgstr ""
+
+#: makera.kv:3558
+msgid "Set Origin"
+msgstr ""
+
+#: makera.kv:3562
 msgid "Jog Controls"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3495
+#: makera.kv:3570
 msgid "Probing..."
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3500
+#: makera.kv:3575
 msgid "Light"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3527
+#: makera.kv:3581
+msgid "Ext. Control"
+msgstr ""
+
+#: makera.kv:3611
 msgid "Jog Speed: Match Feed"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3536
+#: makera.kv:3620
 msgid "Keyboard Jog Mode"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3654
+#: makera.kv:3738
 msgid ""
 "Press to switch to MDI console to see console messages and send individual "
 "gcodes"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3667
+#: makera.kv:3751
 msgid "Jump to first page in file"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3675
+#: makera.kv:3759
 msgid "Go to last page in file"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3683
+#: makera.kv:3767
 msgid "Go to next page in file"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3691
+#: makera.kv:3775
 msgid "Jump to last page in file"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3728
+#: makera.kv:3811
+msgid "FILE"
+msgstr ""
+
+#: makera.kv:3812
 msgid "Retun to file view"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:3744
+#: makera.kv:3818
+msgid "Enter command..."
+msgstr ""
+
+#: makera.kv:3827
+msgid "send"
+msgstr ""
+
+#: makera.kv:3828
 msgid ""
 "The MDI is a console that allows you to send individual gcodes, and commands "
 "such as to change config values on the machine"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4000
+#: makera.kv:4061
+msgid "SettingPage"
+msgstr ""
+
+#: makera.kv:4084
 msgid "Select File"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4016
+#: makera.kv:4100
 msgid "Start File"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4028
+#: makera.kv:4112
 msgid "Pause File at Next Safe Opportunity and Enable MDI Control"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4034
+#: makera.kv:4118
 msgid "Abort File Now"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4044
+#: makera.kv:4128
 msgid "Pause File Without MDI"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4350
+#: makera.kv:4206
+msgid "Set X Current Pos"
+msgstr ""
+
+#: makera.kv:4222
+msgid "Enter X Pos"
+msgstr ""
+
+#: makera.kv:4261
+msgid "Set Y Current Pos"
+msgstr ""
+
+#: makera.kv:4277
+msgid "Enter Y Pos"
+msgstr ""
+
+#: makera.kv:4316
+msgid "Set Z Current Pos"
+msgstr ""
+
+#: makera.kv:4332
+msgid "Enter Z Pos"
+msgstr ""
+
+#: makera.kv:4371
+msgid "Set A Current Pos"
+msgstr ""
+
+#: makera.kv:4387 makera.kv:4555
+msgid "Enter A Pos"
+msgstr ""
+
+#: makera.kv:4426
 msgid "Set Current Tool Number"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4366
+#: makera.kv:4442
 msgid "Enter New Tool Number"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4406
+#: makera.kv:4482
 msgid "Change Current Tool"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\makera.kv:4422
+#: makera.kv:4498
 msgid "New Tool Number"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:36
+#: makera.kv:4539
+msgid "Rapidly move the A to"
+msgstr ""
+
+#: makera.kv:5387
+msgid "Clear All"
+msgstr ""
+
+#: makera.kv:5434
+msgid "Enter rotation angle in degrees"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:36
 msgid "Outside Corners"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:83
+#: addons/probing/ProbingPopup.kv:83
 msgid "Inside Corners"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:128
+#: addons/probing/ProbingPopup.kv:128
 msgid "Single Axis"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:200
+#: addons/probing/ProbingPopup.kv:200
 msgid "Bore/Pocket"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:246
+#: addons/probing/ProbingPopup.kv:246
 msgid "Boss/Block"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:292
+#: addons/probing/ProbingPopup.kv:292
 msgid "Angle"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\ProbingPopup.kv:496
+#: addons/probing/ProbingPopup.kv:485
 msgid ""
 "Note: Most of these operations require a true 3 axis probe, not the manual "
 "probe supplied with the Carvera. See the community youtube page for more info"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\preview\ProbingPreviewPopup.kv:29
-msgid "Start"
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:20
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:19
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:20
+msgid "X distance to probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:18
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:18
-msgid "Distance from center along X to move before probing back toward part"
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:33
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:32
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:33
+msgid "Y distance to probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:31
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:31
-msgid "Distance from center along Y to move before probing back toward part"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:44
-msgid ""
-"How far below the start height to move down for probing the sides of the "
-"Angle/block"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:56
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:135
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:136
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:71
-msgid "Degrees to rotate the XY coordinate plane when probing."
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:70
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:44
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:44
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:44
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:45
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:58
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:46
+#: addons/probing/operations/Bore/BoreSettings.kv:44
+#: addons/probing/operations/Boss/BossSettings.kv:58
+#: addons/probing/operations/Angle/AngleSettings.kv:57
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:45
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:60
 msgid "Effective Diameter of Probe Tip. Measure with M460"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:85
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:58
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:59
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:59
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:59
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:60
+#: addons/probing/operations/Bore/BoreSettings.kv:58
+#: addons/probing/operations/Boss/BossSettings.kv:73
+#: addons/probing/operations/Angle/AngleSettings.kv:72
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:60
 msgid ""
 "Distance to probe straight down before performing remainder of probing "
 "operations"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:98
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:71
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:72
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:72
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:72
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:85
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:73
+#: addons/probing/operations/Bore/BoreSettings.kv:71
+#: addons/probing/operations/Boss/BossSettings.kv:86
+#: addons/probing/operations/Angle/AngleSettings.kv:85
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:73
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:74
 msgid "Optional probing feed rate override"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:111
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:84
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:85
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:85
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:85
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:86
+#: addons/probing/operations/Bore/BoreSettings.kv:84
+#: addons/probing/operations/Boss/BossSettings.kv:99
+#: addons/probing/operations/Angle/AngleSettings.kv:98
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:86
 msgid "Optional rapid feed rate override"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:124
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:97
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:98
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:98
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:98
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:98
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:99
+#: addons/probing/operations/Bore/BoreSettings.kv:97
+#: addons/probing/operations/Boss/BossSettings.kv:112
+#: addons/probing/operations/Angle/AngleSettings.kv:111
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:99
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:87
 msgid "Number of times to repeat the probing operation"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:137
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:110
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:111
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:111
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:111
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:111
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:112
+#: addons/probing/operations/Bore/BoreSettings.kv:110
+#: addons/probing/operations/Boss/BossSettings.kv:125
+#: addons/probing/operations/Angle/AngleSettings.kv:124
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:112
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:100
 msgid "Distance away from surface to retract before double tapping the probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:150
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:123
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:124
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:124
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:124
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:125
+#: addons/probing/operations/Bore/BoreSettings.kv:123
+#: addons/probing/operations/Boss/BossSettings.kv:138
+#: addons/probing/operations/Angle/AngleSettings.kv:137
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:125
 msgid ""
 "If Pocket Depth is enabled, how far above the surface to raise before "
 "continuing the operation"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:163
-msgid ""
-"If set, the probe will trace the probed angle after the operation finishes"
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:138
+#: addons/probing/operations/Bore/BoreSettings.kv:135
+#: addons/probing/operations/Boss/BossSettings.kv:150
+#: addons/probing/operations/Angle/AngleSettings.kv:149
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:137
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:112
+msgid "Degrees to rotate the XY coordinate plane when probing."
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:177
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:164
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:152
 msgid ""
-"This switch will set your current WCS to the center of the bore/pocket you "
-"are probing"
+"How far below the start height to move down for probing the sides of the part"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Angle\AngleSettings.kv:192
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:165
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:179
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:153
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:166
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:140
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:169
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:155
+msgid "This switch will set your current WCS to the corner you are probing"
+msgstr ""
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:185
+#: addons/probing/operations/Boss/BossSettings.kv:197
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:171
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:146
+msgid "Disabled"
+msgstr ""
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:194
+#: addons/probing/operations/Boss/BossSettings.kv:206
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:180
+msgid "X/Y"
+msgstr ""
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:203
+#: addons/probing/operations/Boss/BossSettings.kv:215
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:189
+msgid "X/Y/Z"
+msgstr ""
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:215
+#: addons/probing/operations/Bore/BoreSettings.kv:165
+#: addons/probing/operations/Boss/BossSettings.kv:227
+#: addons/probing/operations/Angle/AngleSettings.kv:192
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:201
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:176
 msgid ""
 "Enable this switch if you have a normally closed probe instead of a normally "
 "open one"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:18
+#: addons/probing/operations/Bore/BoreSettings.kv:18
 msgid "Radial X distance to probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:31
+#: addons/probing/operations/Bore/BoreSettings.kv:31
 msgid "Radial Y distance to probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Bore\BoreSettings.kv:150
+#: addons/probing/operations/Bore/BoreSettings.kv:150
 msgid ""
 "This switch will set your current WCS to the center of the block/boss you "
 "are probing"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\Boss\BossSettings.kv:150
+#: addons/probing/operations/Boss/BossSettings.kv:19
+msgid "Boss Diameter in X"
+msgstr ""
+
+#: addons/probing/operations/Boss/BossSettings.kv:32
+msgid "Boss Diameter in Y"
+msgstr ""
+
+#: addons/probing/operations/Boss/BossSettings.kv:45
+msgid ""
+"When Probing a boss, this is added to the X and Y values when moving outside "
+"the boss. Defaults to 4mm"
+msgstr ""
+
+#: addons/probing/operations/Boss/BossSettings.kv:164
 msgid ""
 "How far below the start height to move down for probing the sides of the "
 "boss/block"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:18
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:19
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:18
-msgid "X distance to probe"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:31
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:32
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:31
-msgid "Y distance to probe"
-msgstr ""
-
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\InsideCorner\InsideCornerSettings.kv:138
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:151
+#: addons/probing/operations/Boss/BossSettings.kv:181
 msgid ""
-"This switch will set your current WCS to the corner that you are probing"
+"This switch will set your current WCS to the center of the bore/pocket you "
+"are probing"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\OutsideCorner\OutsideCornerSettings.kv:137
+#: addons/probing/operations/Angle/AngleSettings.kv:18
+msgid "Distance from center along X to move before probing back toward part"
+msgstr ""
+
+#: addons/probing/operations/Angle/AngleSettings.kv:31
+msgid "Distance from center along Y to move before probing back toward part"
+msgstr ""
+
+#: addons/probing/operations/Angle/AngleSettings.kv:44
 msgid ""
-"How far below the start height to move down for probing the sides of the part"
+"How far below the start height to move down for probing the sides of the "
+"Angle/block"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:44
+#: addons/probing/operations/Angle/AngleSettings.kv:163
+msgid ""
+"If set, the probe will trace the probed angle after the operation finishes"
+msgstr ""
+
+#: addons/probing/operations/Angle/AngleSettings.kv:177
+msgid ""
+"This switch will set your current WCS rotation to the probed rotation angle"
+msgstr ""
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:46
 msgid "Z distance to probe"
 msgstr ""
 
-#: C:\Users\sergeb\Documents\Projects\CarveraController-1\carveracontroller\addons\probing\operations\SingleAxis\SingleAxisProbeSettings.kv:125
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:130
 msgid ""
 "This switch will set your current WCS to the surface you are probing. It "
 "will only set the currently selected axis/axes"
+msgstr ""
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:155
+msgid "X or Y"
+msgstr ""
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:164
+msgid "Z"
+msgstr ""
+
+#: addons/probing/preview/ProbingPreviewPopup.kv:29
+msgid "Start"
 msgstr ""
