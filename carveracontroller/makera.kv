@@ -3503,7 +3503,7 @@
                                     GridLayout:
                                         padding: '10dp'
                                         cols: 3
-                                        rows: 5
+                                        rows: 4
                                         spacing: dp(3)
                                         GridBoxLayout:
                                             SmallRoundButton:
@@ -3564,18 +3564,12 @@
                                                 text: tr._('Set Origin')
                                                 on_release: root.coord_popup.origin_popup.open()
                                         GridBoxLayout:
-                                            ToggleButton:
-                                                text: tr._('Jog Controls')
-                                                height: '35dp'
-                                                on_release: app.root.toggle_jog_control_ui()
-
-                                        # 4th row
-                                        GridBoxLayout:
-                                            disabled: app.is_community_firmware == False
                                             SmallRoundButton:
+                                                disabled: app.is_community_firmware == False
                                                 text: tr._('Probing...')
                                                 on_release: app.root.probing_popup.open()
 
+                                        # 4th row
                                         GridBoxLayout:
                                             ToggleButton:
                                                 text: tr._('Light')
@@ -3589,29 +3583,28 @@
                                                 on_release: app.root.controller.setExternalControl(100 if self.state=="down" else 0)
 
                                         GridBoxLayout:
-                                            ToggleButton:
-                                                id: pendant_jogging_en_btn
-                                                text: tr._('No Pendant')
-                                                height: '35dp'
+                                        # empty spot
+
+
 
                             BoxLayout:
-                                disabled: not root.show_advanced_jog_controls or app.state != 'Idle'
-                                orientation: 'horizontal'
-                                padding: dp(12)
-                                size_hint_y: 0.4
-                                opacity: 1 if root.show_advanced_jog_controls else 0
-                                GridLayout:
-                                    cols: 3
-                                    rows: 1
-                                    BoxLayout:
-                                        padding: '10dp'
-                                        canvas.before:
-                                            Color:
-                                                rgba: 50/255, 50/255, 50/255, 1
-                                            RoundedRectangle:
-                                                pos: self.pos
-                                                size: self.size
-                                                radius: [dp(12),]
+                                disabled: app.state != 'Idle'
+                                orientation: 'vertical'
+                                padding: '3dp', '20dp','3dp', '3dp'
+                                size_hint_y: 0.5
+                                BoxLayout:
+                                    padding: '3dp'
+                                    canvas.before:
+                                        Color:
+                                            rgba: 50/255, 50/255, 50/255, 1
+                                        RoundedRectangle:
+                                            pos: self.pos
+                                            size: self.size
+                                            radius: [dp(12),]
+                                    GridLayout:
+                                        cols: 2
+                                        rows: 2
+                                        spacing: '3dp'
                                         GridBoxLayout:
                                             Button:
                                                 text: tr._('Jog Speed: Match Feed')
@@ -3621,11 +3614,24 @@
                                                 on_release: root.jog_speed_drop_down.open(self)
 
                                         GridBoxLayout:
+                                            Button:
+                                                id: jog_mode
+                                                disabled: app.is_community_firmware == False
+                                                text: tr._('Jog Mode: Step')
+                                                height: '35dp'
+
+                                        GridBoxLayout:
                                             ToggleButton:
                                                 id: kb_jog_btn
-                                                text: tr._('Keyboard Jog Mode')
+                                                text: tr._('Keyboard Jogging')
                                                 height: '35dp'
                                                 on_release: app.root.toggle_keyboard_jog_control()
+                                    
+                                        GridBoxLayout:
+                                            ToggleButton:
+                                                id: pendant_jogging_en_btn
+                                                text: tr._('No Pendant')
+                                                height: '35dp'
 
                         BoxLayout:
                             disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
