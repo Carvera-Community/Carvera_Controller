@@ -1,3 +1,7 @@
+[unreleased]
+- Change: App now has minimum window size of 1200x750 (adjusted for DPI scaling)
+- Change: Jogging buttons consolidated and always displayed
+
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
 - Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined

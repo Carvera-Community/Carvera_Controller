@@ -108,7 +108,7 @@ from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
-from kivy.metrics import Metrics
+from kivy.metrics import Metrics, dp
 
 try:
     from serial.tools.list_ports import comports
@@ -4916,6 +4916,12 @@ class MakeraApp(App):
         return Makera(ctl_version=__version__)
 
     def on_start(self):
+
+        # Set a minimum window size. 
+        # This can't be done on_build() since the monitor DPI is not known at that time
+        Window.minimum_width = dp(1200)
+        Window.minimum_height = dp(750)
+
         # Workaround for Android blank screen issue
         # https://github.com/kivy/python-for-android/issues/2720
         viewport_update_count = 0
