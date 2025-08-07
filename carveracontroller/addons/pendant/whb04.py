@@ -467,20 +467,20 @@ class Daemon:
             # Update for next iteration
             self._last_step_time = current_time
 
-        # Determine if wheel is actively turning based on steps per second rate (only in continuous mode)
-        # In step mode, always trigger jog for any non-zero delta
-        # In continuous mode, only trigger if wheel is active
-        should_trigger_jog = False
-        if self._display_step_indicator == StepIndicator.STEP:
-            # Step mode: trigger for any non-zero delta
-            should_trigger_jog = jog_delta != 0
-        else:
-            # Continuous mode: trigger only if wheel is active
-            should_trigger_jog = self.wheel_is_active
-        
-        if should_trigger_jog:
-            if self.on_jog is not None:
-                self.callback_executor(lambda d=jog_delta: self.on_jog(self, d))
+            # Determine if wheel is actively turning based on steps per second rate (only in continuous mode)
+            # In step mode, always trigger jog for any non-zero delta
+            # In continuous mode, only trigger if wheel is active
+            should_trigger_jog = False
+            if self._display_step_indicator == StepIndicator.STEP:
+                # Step mode: trigger for any non-zero delta
+                should_trigger_jog = jog_delta != 0
+            else:
+                # Continuous mode: trigger only if wheel is active
+                should_trigger_jog = self.wheel_is_active
+            
+            if should_trigger_jog:
+                if self.on_jog is not None:
+                    self.callback_executor(lambda d=jog_delta: self.on_jog(self, d))
 
     def _refresh_display(self, device: PendantHid) -> None:
         """

@@ -4426,11 +4426,7 @@ class Makera(RelativeLayout):
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
-
-        # We don't want to send more jogging commands while in the middle of a cont jog
-        if app.root.controller.continuous_jog_active == True:
-            return False
-
+        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
