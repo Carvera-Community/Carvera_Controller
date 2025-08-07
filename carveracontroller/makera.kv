@@ -671,7 +671,7 @@
         padding: '0.5dp'
         size_hint_y: None
         height: '40dp'
-        disabled: app.model == 'CA1'
+        disabled: app.model == 'CA1' and not app.root.ca1_ext_control_as_vacuum
         Switch:
             id: vacuum_switch
             canvas.before:
@@ -2704,7 +2704,7 @@
                     padding: '0.5dp'
                     size_hint_y: None
                     height: '30dp'
-                    disabled: app.model == 'CA1'
+                    disabled: app.model == 'CA1' and not app.root.ca1_ext_control_as_vacuum
                     Label:
                         text: tr._("Auto Vacuum")
                         halign: "left"
@@ -2924,7 +2924,7 @@
 #                BoxLayout:
 #                    size_hint_y: None
 #                    height: '25dp'
-#                    disabled: app.model == 'CA1'
+#                    disabled: app.model == 'CA1' and not app.root.ca1_ext_control_as_vacuum
 #                    canvas.before:
 #                        Color:
 #                            rgba: 65/255, 65/255, 65/255, 1
