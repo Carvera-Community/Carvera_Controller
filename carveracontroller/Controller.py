@@ -916,7 +916,8 @@ class Controller:
             else:
                 self.executeCommand(f"$J {_dir} F{self.jog_speed}")
         elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
-            self.startContinuousJog(_dir)
+            if not self.continuous_jog_active:
+                self.startContinuousJog(_dir)
 
     # ----------------------------------------------------------------------
 
