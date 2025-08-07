@@ -77,6 +77,9 @@ class Controller:
     MSG_ERROR = 1
     MSG_INTERIOR = 2
 
+    JOG_MODE_STEP = 0
+    JOG_MODE_CONTINUOUS = 1
+
     stop = threading.Event()
     usb_stream = None
     wifi_stream = None
@@ -142,13 +145,10 @@ class Controller:
 
         self.is_community_firmware = False
 
-        # Jog mode variables
-        self.JOG_MODE_STEP = 0
-        self.JOG_MODE_CONTINUOUS = 1
-        self._jog_mode = self.JOG_MODE_STEP  # Default to step mode
-        self._continuous_jog_active = False
-        self._continuous_jog_speed = 0  # Default speed for continuous jog
-        self._keep_alive_active = False
+        # Jog related variables
+        self.jog_mode = Controller.JOG_MODE_STEP
+        self.jog_speed = 10000  # mm/min. A value of 0 here would suggest to use last used feed
+        self.continuous_jog_active = False
 
     # ----------------------------------------------------------------------
     def quit(self, event=None):
@@ -556,8 +556,7 @@ class Controller:
             self.stream.send('~'.encode())
 
     def estopCommand(self):
-        # Stop keep-alive when emergency stop is triggered
-        self.stopKeepAlive()
+        self.continuous_jog_active = False  # Stop continuous jog when emergency stop is triggered
         if self.stream:
             self.stream.send(b'\x18')
 
@@ -801,7 +800,7 @@ class Controller:
 
     def viewStatusReport(self, sio_status):
         if self.loadNUM == 0 and self.sendNUM == 0:
-            if self._keep_alive_active:
+            if self.continuous_jog_active:
                 self.stream.send(b"?1")
             else:
                 self.stream.send(b"?")
@@ -879,33 +878,22 @@ class Controller:
         if not self.is_community_firmware:
             return
         
-        if mode in [self.JOG_MODE_STEP, self.JOG_MODE_CONTINUOUS]:
-            self._jog_mode = mode
-            # Stop any active continuous jog when switching modes
-            if self._continuous_jog_active:
+        if mode in [Controller.JOG_MODE_STEP, Controller.JOG_MODE_CONTINUOUS]:
+            self.jog_mode = mode
+            # TODO: Stop any active continuous jog when switching modes wherever
+            if self.continuous_jog_active:
                 self.stopContinuousJog()
-
-    def getJogMode(self):
-        """Get the current jog mode"""
-        return self._jog_mode
-
-    def setContinuousJogSpeed(self, speed):
-        """Set the speed for continuous jogging"""
-        self._continuous_jog_speed = speed
-
-            
-    def getContinuousJogSpeed(self):
-        """Get the current continuous jog speed"""
-        return self._continuous_jog_speed
 
     def startContinuousJog(self, _dir, speed=None):
         """Start continuous jogging in the specified direction"""
-        if self._jog_mode != self.JOG_MODE_CONTINUOUS:
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
             return
-        self._keep_alive_active = True
-        self._continuous_jog_active = True
+        self.continuous_jog_active = True
         if speed is None:
-            self.executeCommand(f"$J -c {_dir}")
+            if self.jog_speed > 0:
+                self.executeCommand(f"$J -c {_dir} F{self.jog_speed}")
+            else:
+                self.executeCommand(f"$J -c {_dir}") 
         else:
             self.executeCommand(f"$J -c {_dir} F{speed}")
         
@@ -913,42 +901,22 @@ class Controller:
     def stopContinuousJog(self):
         """Stop continuous jogging"""
 
-        self.stopKeepAlive()
-        if self._jog_mode != self.JOG_MODE_CONTINUOUS:
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
             return
         
-        self._continuous_jog_active = False
-        
+        self.continuous_jog_active = False
         # Send Y^ (Ctrl+Y) to stop continuous jogging
         if self.stream is not None:
             self.stream.send(b"\031")
 
     def jog(self, _dir):
-        """Jog in step mode - single step movement"""
-        if self._jog_mode == self.JOG_MODE_STEP:
-            self.executeCommand("G91G0{}".format(_dir))
-        elif self._jog_mode == self.JOG_MODE_CONTINUOUS:
+        if self.jog_mode == Controller.JOG_MODE_STEP:
+            if self.jog_speed == 0:
+                self.executeCommand(f"$J {_dir}")
+            else:
+                self.executeCommand(f"$J {_dir} F{self.jog_speed}")
+        elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
             self.startContinuousJog(_dir)
-
-    def jog_with_speed(self, _dir, speed, context=None):
-        """Jog with specified speed - can be used in both modes"""
-        if context == "keyboard" or context == "controller":
-            self.setJogMode(self.JOG_MODE_STEP)
-
-        if self._jog_mode == self.JOG_MODE_STEP:
-            if speed > 0:
-                self.executeCommand(f"G91G0{_dir} F{speed}")
-            else:
-                self.executeCommand(f"G91G0{_dir}")
-        elif self._jog_mode == self.JOG_MODE_CONTINUOUS:
-            if speed > 0:   
-                self.startContinuousJog(_dir, speed)
-            else:
-                self.startContinuousJog
-
-    def isContinuousJogActive(self):
-        """Check if continuous jog is currently active"""
-        return self._continuous_jog_active
 
     # ----------------------------------------------------------------------
 

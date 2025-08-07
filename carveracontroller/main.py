@@ -2021,7 +2021,6 @@ class Makera(RelativeLayout):
     input_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
-    jog_speed = NumericProperty(0)
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -4402,18 +4401,36 @@ class Makera(RelativeLayout):
         return True
 
     # -----------------------------------------------------------------------
-    def toggle_jog_control_ui(self):
-        app = App.get_running_app()
-        app.root.show_advanced_jog_controls = not app.root.show_advanced_jog_controls  # toggle the boolean
+    def toggle_jog_mode(self):
+        if self.controller.jog_mode == Controller.JOG_MODE_STEP:
+            self.update_ui_for_jog_mode_cont()
 
-        # Don't let the kb jog work if the advanced jog control bar is closed
-        if not app.root.show_advanced_jog_controls:
-            app.root.keyboard_jog_control = False
-            app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+        elif self.controller.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            self.update_ui_for_jog_mode_step()
+    
+    def update_ui_for_jog_mode_step(self):
+        self.controller.setJogMode(Controller.JOG_MODE_STEP)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        self.ids.step_xy.disabled = False
+        self.ids.step_a.disabled = False
+        self.ids.step_z.disabled = False
+    
+
+    def update_ui_for_jog_mode_cont(self):
+        self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continious')
+        self.ids.step_xy.disabled = True
+        self.ids.step_a.disabled = True
+        self.ids.step_z.disabled = True
+
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
+
+        # We don't want to send more jogging commands while in the middle of a cont jog
+        if app.root.controller.continuous_jog_active == True:
+            return False
+
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
@@ -4433,9 +4450,9 @@ class Makera(RelativeLayout):
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
 
         if app.root.keyboard_jog_control:
-            Window.bind(on_key_down=self._keyboard_jog_keydown)
+            Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
         else:
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+            Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -4471,7 +4488,8 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_probe_z,
                                 self.handle_pendant_open_probing_popup,
                                 self.handle_pendant_connected,
-                                self.handle_pendant_disconnected)
+                                self.handle_pendant_disconnected,
+                                self.handle_pendant_button_press)
 
     def handle_pendant_connected(self):
         self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
@@ -4503,6 +4521,22 @@ class Makera(RelativeLayout):
         else:
             self.probing_popup.open()
 
+    def handle_pendant_button_press(self, button_action: str):
+        """
+        Handle UI updates when pendant buttons are pressed.
+        This method can be customized to update specific UI elements
+        based on the button action.
+        """
+        app = App.get_running_app()
+        
+        # Update jog mode button text if jog mode changed
+        if button_action in ["mode_continuous", "mode_step"]:
+            if button_action == "mode_continuous":
+                self.update_ui_for_jog_mode_cont()
+            elif button_action == "mode_step":
+                self.update_ui_for_jog_mode_step()
+
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
@@ -4520,18 +4554,23 @@ class Makera(RelativeLayout):
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
         if self.is_jogging_enabled():
             key = args[1]  # keycode
+
             if key == 274:  # down button
-                app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
+                app.root.controller.jog(f"Y{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog_with_speed("Y-{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
+                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
             elif key == 275:  # right button
-                app.root.controller.jog_with_speed("X{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
+                app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
-                app.root.controller.jog_with_speed("X-{}".format(app.root.step_xy.text), app.root.jog_speed, context="keyboard")
+                app.root.controller.jog(f"X-{app.root.step_xy.text}")
             elif key == 280:  # page up
-                app.root.controller.jog_with_speed("Z{}".format(app.root.step_z.text), app.root.jog_speed, context="keyboard")
+                app.root.controller.jog(f"Z{app.root.step_xy.text}")
             elif key == 281:  # page down
-                app.root.controller.jog_with_speed("Z-{}".format(app.root.step_z.text), app.root.jog_speed, context="keyboard")
+                app.root.controller.jog(f"Z-{app.root.step_xy.text}")
+    
+    def _keyboard_jog_keyup(self, *args):
+        app = App.get_running_app()
+        app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
         if self.setting_change_list:

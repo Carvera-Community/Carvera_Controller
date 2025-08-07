@@ -127,6 +127,7 @@ class Daemon:
         self._last_wheel_activity_time = 0.0  # Timestamp of last wheel activity
         self._wheel_inactivity_timeout = 0.2  # Timeout in seconds before considering wheel inactive
         self._last_decay_check_time = 0.0  # Timestamp of last decay check
+        self._wheel_has_been_active = False  # Track if wheel has been active since last stop event
 
         self._display_position = {
             Axis.X: 0.0,
@@ -256,6 +257,14 @@ class Daemon:
             # In continuous mode, use speed-based detection
             return self._wheel_steps_per_second >= self._wheel_active_threshold
 
+    @property
+    def wheel_has_been_active(self) -> bool:
+        """
+        Returns True if the wheel has been active since the last stop event.
+        This can be used to determine if on_stop_jog should be called.
+        """
+        return self._wheel_has_been_active
+
     def set_display_position(self, axis: Axis, value: float) -> None:
         """
         Sets the display position for the given axis.
@@ -308,6 +317,17 @@ class Daemon:
         """
         self._display_workpiece_coords = True
 
+    def reset_wheel_activity_tracking(self) -> None:
+        """
+        Resets the wheel activity tracking. This can be called to manually
+        reset the wheel state, useful when external events should clear
+        the wheel activity state.
+        """
+        self._wheel_has_been_active = False
+        self._wheel_steps_per_second = 0.0
+        self._last_step_time = 0.0
+        self._last_wheel_activity_time = 0.0
+
     def _thread_loop(self) -> None:
         while self._is_running:
             try:
@@ -351,9 +371,10 @@ class Daemon:
                     self._wheel_steps_per_second = 0
                 self._last_decay_check_time = current_time
             
-            if self._wheel_steps_per_second == 0:
+            if self._wheel_steps_per_second == 0 and self._wheel_has_been_active:
                 if self.on_stop_jog is not None:
                     self.callback_executor(lambda: self.on_stop_jog(self))
+                self._wheel_has_been_active = False  # Reset the flag after calling stop
 
             if self.on_update is not None:
                 self.callback_executor(lambda: self.on_update(self))
@@ -414,11 +435,15 @@ class Daemon:
                 self.callback_executor(lambda b=button: self.on_button_release(self, b))
 
         if has_axis_change and self.on_axis_change is not None:
-            self.callback_executor(lambda: self.on_stop_jog(self))
+            if self._wheel_has_been_active and self.on_stop_jog is not None:
+                self.callback_executor(lambda: self.on_stop_jog(self))
+            self._wheel_has_been_active = False  # Reset wheel activity tracking
             self.callback_executor(lambda a=self._active_axis: self.on_axis_change(self, a))
 
         if has_step_size_change and self.on_step_size_change is not None:
-            self.callback_executor(lambda: self.on_stop_jog(self))
+            if self._wheel_has_been_active and self.on_stop_jog is not None:
+                self.callback_executor(lambda: self.on_stop_jog(self))
+            self._wheel_has_been_active = False  # Reset wheel activity tracking
             self.callback_executor(lambda s=self._step_size: self.on_step_size_change(self, s))
         
         # Track wheel movement for improved stopping detection (only in continuous mode)
@@ -427,6 +452,7 @@ class Daemon:
         if jog_delta != 0:
             # Update last activity time when we see actual movement
             self._last_wheel_activity_time = current_time
+            self._wheel_has_been_active = True  # Mark that wheel has been active
             
             # Store current step info for next calculation
             if self._last_step_time > 0:
