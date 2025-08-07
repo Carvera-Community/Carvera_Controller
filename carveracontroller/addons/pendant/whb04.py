@@ -123,10 +123,9 @@ class Daemon:
         # Wheel movement tracking for improved stopping detection
         self._last_step_time = 0.0  # Timestamp of last step
         self._wheel_steps_per_second = 0.0  # Current steps per second rate
-        self._wheel_active_threshold = 30.0  # Steps per second threshold for wheel activity
+        self._wheel_active_threshold = 10.0  # Steps per second threshold for wheel activity
         self._last_wheel_activity_time = 0.0  # Timestamp of last wheel activity
-        self._wheel_inactivity_timeout = 0.2  # Timeout in seconds before considering wheel inactive
-        self._last_decay_check_time = 0.0  # Timestamp of last decay check
+        self._wheel_inactivity_timeout = 0.1  # Timeout in seconds before considering wheel inactive
         self._wheel_has_been_active = False  # Track if wheel has been active since last stop event
 
         self._display_position = {
@@ -364,12 +363,10 @@ class Daemon:
             
             # Check for wheel inactivity and apply decay (runs continuously)
             current_time = time.time()
-            if current_time - self._last_decay_check_time > 0.05:  # Check every 100ms
-                time_since_last_activity = current_time - self._last_wheel_activity_time
-                if time_since_last_activity > self._wheel_inactivity_timeout:
-                    # Apply decay factor when wheel has been inactive
-                    self._wheel_steps_per_second = 0
-                self._last_decay_check_time = current_time
+            time_since_last_activity = current_time - self._last_wheel_activity_time
+            if time_since_last_activity > self._wheel_inactivity_timeout:
+                # Apply decay factor when wheel has been inactive
+                self._wheel_steps_per_second = 0
             
             if self._wheel_steps_per_second == 0 and self._wheel_has_been_active:
                 if self.on_stop_jog is not None:

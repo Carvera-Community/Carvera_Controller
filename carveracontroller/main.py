@@ -4958,8 +4958,8 @@ class MakeraApp(App):
 
         # Set a minimum window size. 
         # This can't be done on_build() since the monitor DPI is not known at that time
-        Window.minimum_width = dp(1200)
-        Window.minimum_height = dp(750)
+        #Window.minimum_width = dp(1200)
+        #Window.minimum_height = dp(750)
 
         # Workaround for Android blank screen issue
         # https://github.com/kivy/python-for-android/issues/2720
