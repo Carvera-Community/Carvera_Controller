@@ -1,9 +1,9 @@
 [unreleased]
-- Change: App now has minimum window size of 1200x750 (adjusted for DPI scaling)
+- Change: --> App now has minimum window size of 1200x750 (adjusted for DPI scaling) <-- Deactivated because needs fixing on windows
 - Change: Jogging option buttons consolidated and always displayed
 - Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
 - Change: Jog buttons act now on_press instead of on_release
-- Change: Jogging in step mode now uses $J for instead of G91G0 for quicker time-to-start
+- Enhancement: Support continuous jog mode (community firmware > 1.0.10c needed)
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
