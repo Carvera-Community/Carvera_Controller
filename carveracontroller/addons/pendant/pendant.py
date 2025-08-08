@@ -150,8 +150,10 @@ if WHB04_SUPPORTED:
             
             # Update the step indicator to reflect current jog mode
             if self._controller.jog_mode == self._controller.JOG_MODE_CONTINUOUS:
+                self._jog_mode = self._controller.JOG_MODE_CONTINUOUS
                 daemon.set_display_step_indicator(whb04.StepIndicator.CONTINUOUS)
             else:
+                self._jog_mode = self._controller.JOG_MODE_STEP
                 daemon.set_display_step_indicator(whb04.StepIndicator.STEP)
 
         def _handle_jogging(self, daemon: whb04.Daemon, steps: int) -> None:
