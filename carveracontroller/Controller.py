@@ -77,6 +77,9 @@ class Controller:
     MSG_ERROR = 1
     MSG_INTERIOR = 2
 
+    JOG_MODE_STEP = 0
+    JOG_MODE_CONTINUOUS = 1
+
     stop = threading.Event()
     usb_stream = None
     wifi_stream = None
@@ -141,6 +144,11 @@ class Controller:
         self.diagnosing = False
 
         self.is_community_firmware = False
+
+        # Jog related variables
+        self.jog_mode = Controller.JOG_MODE_STEP
+        self.jog_speed = 10000  # mm/min. A value of 0 here would suggest to use last used feed
+        self.continuous_jog_active = False
 
     # ----------------------------------------------------------------------
     def quit(self, event=None):
@@ -548,6 +556,7 @@ class Controller:
             self.stream.send('~'.encode())
 
     def estopCommand(self):
+        self.continuous_jog_active = False  # Stop continuous jog when emergency stop is triggered
         if self.stream:
             self.stream.send(b'\x18')
 
@@ -791,7 +800,10 @@ class Controller:
 
     def viewStatusReport(self, sio_status):
         if self.loadNUM == 0 and self.sendNUM == 0:
-            self.stream.send(b"?")
+            if self.continuous_jog_active:
+                self.stream.send(b"?1")
+            else:
+                self.stream.send(b"?")
             self.sio_status = sio_status
 
     def viewDiagnoseReport(self, sio_diagnose):
@@ -861,14 +873,53 @@ class Controller:
         pass
 
     # ----------------------------------------------------------------------
-    def jog(self, _dir):
-        self.executeCommand("G91G0{}".format(_dir))
+    def setJogMode(self, mode):
+        """Set the jog mode (step or continuous)"""
+        if not self.is_community_firmware:
+            return
+        
+        if mode in [Controller.JOG_MODE_STEP, Controller.JOG_MODE_CONTINUOUS]:
+            self.jog_mode = mode
+            if self.continuous_jog_active:
+                self.stopContinuousJog()
 
-    def jog_with_speed(self, _dir, speed):
-        if speed > 0:
-            self.executeCommand(f"G91G0{_dir} F{speed}")
+    def startContinuousJog(self, _dir, speed=None, scale_feed_override=None):
+        """Start continuous jogging in the specified direction"""
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
+            return
+        self.continuous_jog_active = True
+        if speed is None:
+            if self.jog_speed > 0 and self.jog_speed < 10000:
+                self.executeCommand(f"$J -c {_dir} F{self.jog_speed}")
+            else:
+                if scale_feed_override is not None:
+                    self.executeCommand(f"$J -c {_dir} {scale_feed_override}") 
+                else:
+                    self.executeCommand(f"$J -c {_dir}") 
         else:
-            self.executeCommand(f"G91G0{_dir}")
+            self.executeCommand(f"$J -c {_dir} F{speed}")
+        
+    
+    def stopContinuousJog(self):
+        """Stop continuous jogging"""
+
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
+            return
+        
+        self.continuous_jog_active = False
+        # Send Y^ (Ctrl+Y) to stop continuous jogging
+        if self.stream is not None:
+            self.stream.send(b"\031")
+
+    def jog(self, _dir):
+        if self.jog_mode == Controller.JOG_MODE_STEP:
+            if self.jog_speed == 0:
+                self.executeCommand(f"G91 G0 {_dir}")
+            else:
+                self.executeCommand(f"G91 G0 {_dir} F{self.jog_speed}")
+        elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            if not self.continuous_jog_active:
+                self.startContinuousJog(_dir)
 
     # ----------------------------------------------------------------------
 

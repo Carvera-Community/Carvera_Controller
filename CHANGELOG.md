@@ -1,3 +1,9 @@
+[unreleased]
+- Change: Jogging option buttons consolidated and always displayed
+- Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
+- Change: Jog buttons act now on_press instead of on_release
+- Enhancement: Support continuous jog mode (community firmware > 2.0.0c needed)
+
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
 - Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined
