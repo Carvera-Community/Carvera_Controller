@@ -439,7 +439,12 @@ def digitize_v(version):
     # Ensure we have at least 3 parts (major.minor.patch)
     while len(cleaned_parts) < 3:
         cleaned_parts.append(0)
-    
+
+    # default controller version (until build script runs) is 0.0.0
+    # This should be treated as the "latest" version
+    if cleaned_parts[0] == 0:
+        cleaned_parts[0] = 999
+
     return cleaned_parts[0] * 1000 * 1000 + cleaned_parts[1] * 1000 + cleaned_parts[2]
 
 #------------------------------------------------------------------------------
