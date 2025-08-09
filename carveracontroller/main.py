@@ -2800,9 +2800,10 @@ class Makera(RelativeLayout):
                             self.controller.is_community_firmware = False
                         if not app.is_community_firmware or not CNC.can_rotate_wcs:
                             self.controller.viewWCS()
-                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]', remote_version[0])
+                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+', remote_version[0])
                     if remote_version != None:
-                        self.fw_version_old = remote_version[0].split('=')[1]
+                        self.fw_version_old = remote_version[0].split('=')[1].strip()
+                        app.fw_version_digitized = Utils.digitize_v(self.fw_version_old)
                         if self.fw_version_new != '':
                             self.check_fw_version()
                     
@@ -4940,6 +4941,7 @@ class MakeraApp(App):
     loading_page = BooleanProperty(False)
     model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
+    fw_version_digitized = NumericProperty(0)
 
     def on_stop(self):
         self.root.stop_run()

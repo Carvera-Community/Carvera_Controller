@@ -880,7 +880,6 @@ class Controller:
         
         if mode in [Controller.JOG_MODE_STEP, Controller.JOG_MODE_CONTINUOUS]:
             self.jog_mode = mode
-            # TODO: Stop any active continuous jog when switching modes wherever
             if self.continuous_jog_active:
                 self.stopContinuousJog()
 
