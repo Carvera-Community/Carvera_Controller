@@ -3621,7 +3621,7 @@
                                         GridBoxLayout:
                                             Button:
                                                 id: jog_mode_btn
-                                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= 2000000)
+                                                disabled: not (app.is_community_firmware and app.is_fw_min("2.0.0"))
                                                 text: tr._('Jog Mode:Step')
                                                 height: '35dp'
                                                 on_release: app.root.toggle_jog_mode()

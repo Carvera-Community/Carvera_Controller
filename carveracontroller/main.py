@@ -4941,7 +4941,6 @@ class MakeraApp(App):
     loading_page = BooleanProperty(False)
     model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
-    fw_version_digitized = NumericProperty(0)
 
     def on_stop(self):
         self.root.stop_run()
@@ -4977,6 +4976,11 @@ class MakeraApp(App):
 
     def on_pause(self):
         return True
+
+    def is_fw_min(self, version):
+        """Checks if the machine firmware meets minimum version requirement"""
+        app = App.get_running_app()
+        return Utils.digitize_v(version) >= Utils.digitize_v(app.root.fw_version_old)
 
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
