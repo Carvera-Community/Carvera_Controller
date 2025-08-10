@@ -108,7 +108,7 @@ from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
-from kivy.metrics import Metrics
+from kivy.metrics import Metrics, dp
 
 try:
     from serial.tools.list_ports import comports
@@ -1328,6 +1328,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
                 app.root.open_setting_default_confirm_popup()
 
 class JogSpeedDropDown(ToolTipDropDown):
+    def __init__(self, controller, **kwargs):
+        super().__init__(**kwargs)
+        self.controller = controller
     pass
 
 class XDropDown(ToolTipDropDown):
@@ -2018,7 +2021,6 @@ class Makera(RelativeLayout):
     input_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
-    jog_speed = NumericProperty(0)
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -2178,7 +2180,7 @@ class Makera(RelativeLayout):
         self.func_drop_down = FuncDropDown()
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
-        self.jog_speed_drop_down = JogSpeedDropDown()
+        self.jog_speed_drop_down = JogSpeedDropDown(self.controller)
 
         self.confirm_popup = ConfirmPopup()
         self.unlock_popup = UnlockPopup()
@@ -2798,9 +2800,10 @@ class Makera(RelativeLayout):
                             self.controller.is_community_firmware = False
                         if not app.is_community_firmware or not CNC.can_rotate_wcs:
                             self.controller.viewWCS()
-                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]', remote_version[0])
+                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+', remote_version[0])
                     if remote_version != None:
-                        self.fw_version_old = remote_version[0].split('=')[1]
+                        self.fw_version_old = remote_version[0].split('=')[1].strip()
+                        app.fw_version_digitized = Utils.digitize_v(self.fw_version_old)
                         if self.fw_version_new != '':
                             self.check_fw_version()
                     
@@ -4399,18 +4402,32 @@ class Makera(RelativeLayout):
         return True
 
     # -----------------------------------------------------------------------
-    def toggle_jog_control_ui(self):
-        app = App.get_running_app()
-        app.root.show_advanced_jog_controls = not app.root.show_advanced_jog_controls  # toggle the boolean
+    def toggle_jog_mode(self):
+        if self.controller.jog_mode == Controller.JOG_MODE_STEP:
+            self.update_ui_for_jog_mode_cont()
 
-        # Don't let the kb jog work if the advanced jog control bar is closed
-        if not app.root.show_advanced_jog_controls:
-            app.root.keyboard_jog_control = False
-            app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+        elif self.controller.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            self.update_ui_for_jog_mode_step()
+    
+    def update_ui_for_jog_mode_step(self):
+        self.controller.setJogMode(Controller.JOG_MODE_STEP)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        self.ids.step_xy.disabled = False
+        self.ids.step_a.disabled = False
+        self.ids.step_z.disabled = False
+    
+
+    def update_ui_for_jog_mode_cont(self):
+        self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continious')
+        self.ids.step_xy.disabled = True
+        self.ids.step_a.disabled = True
+        self.ids.step_z.disabled = True
+
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
+        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
@@ -4430,9 +4447,9 @@ class Makera(RelativeLayout):
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
 
         if app.root.keyboard_jog_control:
-            Window.bind(on_key_down=self._keyboard_jog_keydown)
+            Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
         else:
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+            Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -4468,10 +4485,11 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_probe_z,
                                 self.handle_pendant_open_probing_popup,
                                 self.handle_pendant_connected,
-                                self.handle_pendant_disconnected)
+                                self.handle_pendant_disconnected,
+                                self.handle_pendant_button_press)
 
     def handle_pendant_connected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant')
+        self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
         self.ids.pendant_jogging_en_btn.disabled = False
         self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
 
@@ -4500,6 +4518,22 @@ class Makera(RelativeLayout):
         else:
             self.probing_popup.open()
 
+    def handle_pendant_button_press(self, button_action: str):
+        """
+        Handle UI updates when pendant buttons are pressed.
+        This method can be customized to update specific UI elements
+        based on the button action.
+        """
+        app = App.get_running_app()
+        
+        # Update jog mode button text if jog mode changed
+        if button_action in ["mode_continuous", "mode_step"]:
+            if button_action == "mode_continuous":
+                self.update_ui_for_jog_mode_cont()
+            elif button_action == "mode_step":
+                self.update_ui_for_jog_mode_step()
+
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
@@ -4517,18 +4551,25 @@ class Makera(RelativeLayout):
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
         if self.is_jogging_enabled():
             key = args[1]  # keycode
+
             if key == 274:  # down button
-                app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"Y{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog_with_speed("Y-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
             elif key == 275:  # right button
-                app.root.controller.jog_with_speed("X{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
-                app.root.controller.jog_with_speed("X-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"X-{app.root.step_xy.text}")
             elif key == 280:  # page up
-                app.root.controller.jog_with_speed("Z{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog(f"Z{app.root.step_xy.text}")
             elif key == 281:  # page down
-                app.root.controller.jog_with_speed("Z-{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog(f"Z-{app.root.step_xy.text}")
+    
+    def _keyboard_jog_keyup(self, *args):
+        app = App.get_running_app()
+        key = args[1]  # keycode
+        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+            app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
         if self.setting_change_list:
@@ -4913,6 +4954,12 @@ class MakeraApp(App):
         return Makera(ctl_version=__version__)
 
     def on_start(self):
+
+        # Set a minimum window size. 
+        # This can't be done on_build() since the monitor DPI is not known at that time
+        #Window.minimum_width = dp(1200)
+        #Window.minimum_height = dp(750)
+
         # Workaround for Android blank screen issue
         # https://github.com/kivy/python-for-android/issues/2720
         viewport_update_count = 0
@@ -4929,6 +4976,11 @@ class MakeraApp(App):
 
     def on_pause(self):
         return True
+
+    def is_fw_min(self, version):
+        """Checks if the machine firmware meets minimum version requirement"""
+        app = App.get_running_app()
+        return Utils.digitize_v(version) >= Utils.digitize_v(app.root.fw_version_old)
 
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":

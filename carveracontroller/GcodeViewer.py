@@ -696,6 +696,10 @@ class GCodeViewer(Widget):
     #camera
     m_xRot = 30
     m_yRot = 180
+    m_xLastRot = 30
+    m_yLastRot = 180
+
+    m_lastPos = [0,0,0]
 
     m_xRotTarget = 90
     m_yRotTarget = 0
