@@ -2293,6 +2293,8 @@ class Makera(RelativeLayout):
 
         self.config_popup.settings_panel.add_json_panel(tr._('Controller'), Config, data=json.dumps(controller_config))
 
+        self._update_macro_button_text()
+
     def load_pendant_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'pendant_config.json')
         with open(config_def_file) as file:
@@ -2308,6 +2310,39 @@ class Makera(RelativeLayout):
 
         self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
 
+    def _update_macro_button_text(self):
+
+        for macro_config_key in ['touch_macro_1', 'touch_macro_2', 'touch_macro_3']:
+
+            macro_value = Config.get("carvera", macro_config_key)
+            if macro_value:
+                macro_name = json.loads(macro_value).get("name", macro_config_key)
+                if macro_name:
+                    self.ids[macro_config_key + "_btn"].text = macro_name  # the button ids for the macro UI buttons are suffixed with _btn
+
+
+    def run_macro(self, macro_id: int) -> None:
+        macro_key = f"touch_macro_{macro_id}"
+        macro_value = Config.get("carvera", macro_key)
+
+        if not macro_value:
+            logger.warning(f"No macro defined for ID {macro_id}")
+            return
+
+        macro_value = json.loads(macro_value)
+
+        if not macro_value.get("gcode"):
+            Clock.schedule_once(partial(self.loadError, tr._('No Macro defined. Configure one in Settings-> Controller')), 0)
+
+        try:
+            lines = macro_value.get("gcode", "").splitlines()
+            for l in lines:
+                l = l.strip()
+                if l == "":
+                    continue
+                self.controller.sendGCode(l)
+        except Exception as e:
+            logger.error(f"Failed to run macro {macro_id}: {e}")
 
     def open_download(self):
         webbrowser.open(DOWNLOAD_ADDRESS, new = 2)
@@ -4598,6 +4633,10 @@ class Makera(RelativeLayout):
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
             self.setup_pendant()
+
+        for touch_macro_id in ["touch_macro_1", "touch_macro_2", "touch_macro_3"]:  # the config keys for the macros
+            if touch_macro_id in self.controller_setting_change_list:
+                self._update_macro_button_text(touch_macro_id)
 
         self.config_popup.btn_apply.disabled = True
 
