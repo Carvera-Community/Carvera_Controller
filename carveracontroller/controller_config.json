@@ -63,5 +63,29 @@
         "key": "keyboard_mode",
         "default": "",
         "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"]
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 1",
+        "desc": "GCode to trigger when pressing the Macro 1 button on the control screen.",
+        "section": "carvera",
+        "key": "touch_macro_1",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 2",
+        "desc": "GCode to trigger when pressing the Macro 2 button on the control screen.",
+        "section": "carvera",
+        "key": "touch_macro_2",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 3",
+        "desc": "GCode to trigger when pressing the Macro 3 button on the control screen.",
+        "section": "carvera",
+        "key": "touch_macro_3",
+        "default": {}
     }
 ]

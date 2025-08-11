@@ -3492,11 +3492,12 @@
                             orientation: 'vertical'
                             padding: '10dp'
                             Widget:
-                                size_hint_y: 0.5
+                                size_hint_y: 0.15
                             BoxLayout:
-                                disabled: app.state != 'Idle'
                                 orientation: 'vertical'
                                 padding: '3dp'
+                                size_hint_y: 0.3
+                                size_hint_min_y: '41dp'  # 35dp button + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
                                     padding: '3dp'
                                     canvas.before:
@@ -3505,7 +3506,48 @@
                                         RoundedRectangle:
                                             pos: self.pos
                                             size: self.size
-                                            radius: [dp(3),]
+                                            radius: [dp(12),]
+                                    GridLayout:
+                                        cols: 3
+                                        rows: 1
+                                        spacing: '3dp'
+                                        GridBoxLayout:
+                                            SmallRoundButton:
+                                                text: tr._('Macro 1')
+                                                id: touch_macro_1_btn
+                                                center: 0.5, 0.5
+                                                height: '35dp'
+                                                on_release: app.root.run_macro(1)
+
+                                        GridBoxLayout:
+                                            SmallRoundButton:
+                                                id: touch_macro_2_btn
+                                                text: tr._('Macro 2')
+                                                height: '35dp'
+                                                on_release: app.root.run_macro(2)
+
+                                        GridBoxLayout:
+                                            SmallRoundButton:
+                                                id: touch_macro_3_btn
+                                                text: tr._('Macro 3')
+                                                height: '35dp'
+                                                on_release: app.root.run_macro(3)
+                            Widget:
+                                size_hint_y: 0.15
+                            BoxLayout:
+                                disabled: app.state != 'Idle'
+                                orientation: 'vertical'
+                                padding: '3dp'
+                                size_hint_min_y: '176dp'  # 35dp button x4 + 10dp spacing between buttons x 3 + 3dp padding top + 3dp padding bottom
+                                BoxLayout:
+                                    padding: '3dp'
+                                    canvas.before:
+                                        Color:
+                                            rgba: 50/255, 50/255, 50/255, 1
+                                        RoundedRectangle:
+                                            pos: self.pos
+                                            size: self.size
+                                            radius: [dp(12),]
                                     GridLayout:
                                         padding: '10dp'
                                         cols: 3
@@ -3591,12 +3633,13 @@
                                         GridBoxLayout:
                                         # empty spot
 
-
-
+                            Widget:
+                                size_hint_y: 0.1
                             BoxLayout:
                                 orientation: 'vertical'
-                                padding: '3dp', '20dp','3dp', '3dp'
+                                padding: '3dp'
                                 size_hint_y: 0.5
+                                size_hint_min_y: '79dp'  # 35dp button x2 + 3dp spacing between buttons + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
                                     padding: '3dp'
                                     canvas.before:
