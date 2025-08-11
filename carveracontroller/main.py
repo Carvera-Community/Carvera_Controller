@@ -40,6 +40,7 @@ import time
 import datetime
 import threading
 import logging
+logger = logging.getLogger(__name__)
 
 # Add Android imports
 if kivy_platform == 'android':
@@ -56,7 +57,7 @@ def has_all_files_access():
         try:
             return Environment.isExternalStorageManager()
         except Exception as e:
-            print(f"Error checking storage manager status: {e}")
+            logger.error(f"Error checking storage manager status: {e}")
             return False
     return True
 
@@ -65,14 +66,14 @@ def request_android_permissions():
         try:
             # Check if we already have all files access
             if has_all_files_access():
-                print("Already have all files access permission")
+                logger.info("Already have all files access permission")
                 return
 
             # Request all files access permission
             intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             mActivity.startActivity(intent)
         except Exception as e:
-            print(f"Error requesting permissions: {e}")
+            logger.error(f"Error requesting permissions: {e}")
 
 from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
@@ -731,7 +732,7 @@ class CoordPopup(ModalView):
 
         # Ensure the folder exists
         if not os.path.exists(folder_path):
-            print(f"Folder '{folder_path}' does not exist!")
+            logger.warning(f"Folder '{folder_path}' does not exist!")
             return
 
         # Open based on OS
@@ -746,7 +747,7 @@ class CoordPopup(ModalView):
 
         # Ensure the folder exists
         if not os.path.exists(folder_path):
-            print(f"Folder '{folder_path}' does not exist!")
+            logger.warning(f"Folder '{folder_path}' does not exist!")
             return
 
         # Open based on OS
@@ -1206,7 +1207,7 @@ class WCSSettingsPopup(ModalView):
             # Update the button display
             self.update_active_wcs_button(wcs)
         except Exception as e:
-            print(f"Error activating WCS {wcs}: {e}")
+            logger.error(f"Error activating WCS {wcs}: {e}")
     
     def update_ui_for_firmware_type(self):
         """Update UI elements based on firmware type"""
@@ -1230,7 +1231,7 @@ class WCSSettingsPopup(ModalView):
             if hasattr(self.ids, 'btn_clear_all'):
                 self.ids.btn_clear_all.disabled = not is_community
         except Exception as e:
-            print(f"Error updating UI for firmware type: {e}")
+            logger.error(f"Error updating UI for firmware type: {e}")
     
     def check_for_changes(self):
         """Check if any values have changed and update the OK button text"""
@@ -2263,12 +2264,12 @@ class Makera(RelativeLayout):
         try:
             shutil.rmtree(self.temp_dir)
         except Exception as e:
-            print(f"Error cleaning up temporary directory: {e}")
+            logger.error(f"Error cleaning up temporary directory: {e}")
 
         try:
             self.pendant.close()
         except Exception as e:
-            print(f"Error closing pendant: {e}")
+            logger.error(f"Error closing pendant: {e}")
 
         # Save the last window size.
         # Seems that kivvy uses the window size before dpi scaling in the config,
@@ -2492,8 +2493,6 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def blink_state(self, *args):
         app = App.get_running_app()
-        # print(app.root.size)
-        # print(self.status_data_view.size)
         if self.uploading or self.downloading:
             return
         if self.holding == 1:
@@ -2582,7 +2581,7 @@ class Makera(RelativeLayout):
 
         # android storage
         if kivy_platform == 'android':
-            print('Android storage permission check')
+            logger.info('Android storage permission check')
             try:
                 # Request permissions first
                 request_android_permissions()
@@ -2593,7 +2592,7 @@ class Makera(RelativeLayout):
                     self.common_local_dir_list.append(
                         {'name': tr._('Storage'), 'path': str(android_storage_path), 'icon': 'data/folder-home.png'})
             except Exception as e:
-                print(f'Get Android Storage Error: {e}')
+                logger.error(f'Get Android Storage Error: {e}')
 
         # windows disks
         available_drives = ['%s:' % d for d in string.ascii_uppercase if os.path.exists('%s:' % d)]
@@ -2829,7 +2828,7 @@ class Makera(RelativeLayout):
                     elif msg == Controller.MSG_ERROR:
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
-                    print(sys.exc_info()[1])
+                    logger.error(sys.exc_info()[1])
                     break
             # Update Decompress status bar
             if self.decompstatus == True:
@@ -3206,7 +3205,7 @@ class Makera(RelativeLayout):
             self.controller.pauseStream(0.2)
             download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
             self.downloading = False
 
@@ -3471,7 +3470,7 @@ class Makera(RelativeLayout):
             # Check if the filename.lz is writeable
             can_write_in_lz = os.access(input_filename + '.lz', os.W_OK)
             if not can_write_in_lz:
-                print(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
+                logger.warning(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
                 # First copy the file to the temp dir
                 shutil.copy(input_filename, self.temp_dir)
                 input_filename = os.path.join(self.temp_dir, os.path.basename(input_filename))
@@ -3507,11 +3506,11 @@ class Makera(RelativeLayout):
                 sumdata = struct.pack('>H', sum & 0xffff)
                 f_out.write(sumdata)
 
-            print(f"Compression completed. Compressed file saved as '{output_filename}'.")
+            logger.info(f"Compression completed. Compressed file saved as '{output_filename}'.")
             return output_filename
 
         except Exception as e:
-            print(f"Compression failed: {e}")
+            logger.error(f"Compression failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return None
@@ -3550,14 +3549,14 @@ class Makera(RelativeLayout):
             sumdata = sum & 0xffff
 
             if(sumfile != sumdata):
-                print(f"deCompress failed: sum checksum mismatch")
+                logger.error(f"deCompress failed: sum checksum mismatch")
                 return False
 
-            print(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
+            logger.info(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
             return True
 
         except Exception as e:
-            print(f"deCompress failed: {e}")
+            logger.error(f"deCompress failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return False
@@ -4082,7 +4081,7 @@ class Makera(RelativeLayout):
                     self.wpb_leveling.value = 84
 
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
 
     # -----------------------------------------------------------------------
     def updateDiagnose(self, *args):
@@ -4218,7 +4217,7 @@ class Makera(RelativeLayout):
             self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
             self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
 
     def update_control(self, name, value):
         if name in self.control_list:
@@ -4243,7 +4242,7 @@ class Makera(RelativeLayout):
            self.controller.open(CONN_USB, device)
            self.controller.connection_type = CONN_USB
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
 
@@ -4254,7 +4253,7 @@ class Makera(RelativeLayout):
             self.controller.connection_type = CONN_WIFI
             self.store_machine_address(address.split(':')[0])
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
 
@@ -4272,7 +4271,7 @@ class Makera(RelativeLayout):
         try:
             self.controller.close()
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -4301,13 +4300,13 @@ class Makera(RelativeLayout):
                                 elif self.setting_type_list[child.key] == 'numeric':
                                     new_value = new_value + '.0' if new_value.isdigit() else new_value
                             if new_value != child.value:
-                                # print(child.key, child.value, new_value)
+                                logger.debug(child.key, child.value, new_value)
                                 child.value = new_value
                         elif child.key in self.setting_default_list:
                             new_value = self.setting_default_list[child.key]
                             self.setting_change_list[child.key] = new_value
                             if new_value != child.value:
-                                # print(child.key, child.value, new_value)
+                                logger.debug(child.key, child.value, new_value)
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
@@ -4859,7 +4858,7 @@ class Makera(RelativeLayout):
             # with open("laser.txt", "w") as output:
             #     output.write(str(temp_list))
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
             self.heartbeat_time = time.time()
             self.loading_file = False
             if f:

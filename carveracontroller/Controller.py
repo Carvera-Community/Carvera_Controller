@@ -9,6 +9,8 @@ import time
 import threading
 import webbrowser
 import math
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 
@@ -1177,7 +1179,7 @@ class Controller:
                     wcs_data[wcs_code] = [x, y, z, a, b, rotation]  # Store only X, Y, Z, A, B, Rotation
                     
                 except (ValueError, IndexError):
-                    print(f"Error parsing WCS values for {wcs_code}: {values_str}")
+                    logger.error(f"Error parsing WCS values for {wcs_code}: {values_str}")
         
         # Send the parsed data to the WCS Settings popup if it's open
         if hasattr(self, 'wcs_popup_callback') and self.wcs_popup_callback:

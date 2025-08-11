@@ -109,7 +109,7 @@ try:
     from . import whb04
     WHB04_SUPPORTED = True
 except Exception as e:
-    logger.warn(f"WHB04 pendant not supported: {e}")
+    logger.warning(f"WHB04 pendant not supported: {e}")
     WHB04_SUPPORTED = False
 
 if WHB04_SUPPORTED:
