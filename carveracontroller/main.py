@@ -4634,9 +4634,7 @@ class Makera(RelativeLayout):
             self.pendant.close()
             self.setup_pendant()
 
-        for touch_macro_id in ["touch_macro_1", "touch_macro_2", "touch_macro_3"]:  # the config keys for the macros
-            if touch_macro_id in self.controller_setting_change_list:
-                self._update_macro_button_text(touch_macro_id)
+        self._update_macro_button_text()
 
         self.config_popup.btn_apply.disabled = True
 
