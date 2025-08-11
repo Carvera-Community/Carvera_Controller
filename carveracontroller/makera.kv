@@ -3497,6 +3497,7 @@
                                 orientation: 'vertical'
                                 padding: '3dp'
                                 size_hint_y: 0.3
+                                size_hint_min_y: '41dp'  # 35dp button + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
                                     padding: '3dp'
                                     canvas.before:
@@ -3537,6 +3538,7 @@
                                 disabled: app.state != 'Idle'
                                 orientation: 'vertical'
                                 padding: '3dp'
+                                size_hint_min_y: '176dp'  # 35dp button x4 + 10dp spacing between buttons x 3 + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
                                     padding: '3dp'
                                     canvas.before:
@@ -3637,6 +3639,7 @@
                                 orientation: 'vertical'
                                 padding: '3dp'
                                 size_hint_y: 0.5
+                                size_hint_min_y: '79dp'  # 35dp button x2 + 3dp spacing between buttons + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
                                     padding: '3dp'
                                     canvas.before:
