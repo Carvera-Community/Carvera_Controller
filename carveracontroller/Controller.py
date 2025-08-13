@@ -916,9 +916,9 @@ class Controller:
     def jog(self, _dir):
         if self.jog_mode == Controller.JOG_MODE_STEP:
             if self.jog_speed == 0:
-                self.executeCommand(f"G91 G0 {_dir}")
+                self.executeCommand(f"$J {_dir}")
             else:
-                self.executeCommand(f"G91 G0 {_dir} F{self.jog_speed}")
+                self.executeCommand(f"$J {_dir} F{self.jog_speed}")
         elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
             if not self.continuous_jog_active:
                 self.startContinuousJog(_dir)
