@@ -1409,8 +1409,8 @@
                 on_release: root.reconnect()
                 size_hint_x: 0.5
             Button:
-                text: tr._('Cancel')
-                on_release: root.cancel_reconnect()
+                text: tr._('Cancel') if root.auto_reconnect_mode else tr._('Ok')
+                on_release: root.cancel_reconnect() if root.auto_reconnect_mode else root.dismiss()
                 size_hint_x: 0.5
 
 <ProgressPopup>:

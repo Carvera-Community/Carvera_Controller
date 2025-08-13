@@ -298,6 +298,8 @@ class MessagePopup(ModalView):
         super(MessagePopup, self).__init__(**kwargs)
 
 class ReconnectionPopup(ModalView):
+    auto_reconnect_mode = BooleanProperty(False)
+    
     def __init__(self, **kwargs):
         super(ReconnectionPopup, self).__init__(**kwargs)
         self.countdown = 0
@@ -306,7 +308,6 @@ class ReconnectionPopup(ModalView):
         self.wait_time = 10
         self.cancel_callback = None
         self.reconnect_callback = None
-        self.auto_reconnect_mode = False
 
     def start_countdown(self, max_attempts, wait_time, reconnect_callback, cancel_callback):
         """Start auto-reconnect countdown mode"""
