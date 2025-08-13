@@ -1,5 +1,7 @@
 from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
+import logging
+logger = logging.getLogger(__name__)
 
 from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase
 
@@ -24,7 +26,7 @@ class ProbingPreviewPopup(ModalView):
 
     def  start_probing(self):
         if len(self.gcode) > 0:
-            print("running gcode: " + self.gcode)
+            logger.debug("running gcode: " + self.gcode)
             self.controller.executeCommand(self.gcode + "\n")
         else:
-            print("no gcode")
+            logger.error("no gcode")
