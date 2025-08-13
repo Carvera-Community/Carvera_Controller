@@ -645,6 +645,7 @@ class FilePopup(ModalView):
                break
         self.btn_view.disabled = (not self.firmware_mode and not has_select) or (self.firmware_mode and app.state != 'Idle')
         self.btn_upload.disabled = not has_select or app.state != 'Idle'
+        self.btn_upload_and_select.disabled = not has_select or app.state != 'Idle'
 
     # -----------------------------------------------------------------------
     def update_remote_buttons(self):
