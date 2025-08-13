@@ -4335,13 +4335,11 @@ class Makera(RelativeLayout):
                                 elif self.setting_type_list[child.key] == 'numeric':
                                     new_value = new_value + '.0' if new_value.isdigit() else new_value
                             if new_value != child.value:
-                                logger.debug(child.key, child.value, new_value)
                                 child.value = new_value
                         elif child.key in self.setting_default_list:
                             new_value = self.setting_default_list[child.key]
                             self.setting_change_list[child.key] = new_value
                             if new_value != child.value:
-                                logger.debug(child.key, child.value, new_value)
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
