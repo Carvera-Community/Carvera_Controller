@@ -297,6 +297,78 @@ class MessagePopup(ModalView):
     def __init__(self, **kwargs):
         super(MessagePopup, self).__init__(**kwargs)
 
+class ReconnectionPopup(ModalView):
+    def __init__(self, **kwargs):
+        super(ReconnectionPopup, self).__init__(**kwargs)
+        self.countdown = 0
+        self.max_attempts = 0
+        self.current_attempt = 0
+        self.wait_time = 10
+        self.cancel_callback = None
+        self.reconnect_callback = None
+        self.auto_reconnect_mode = False
+
+    def start_countdown(self, max_attempts, wait_time, reconnect_callback, cancel_callback):
+        """Start auto-reconnect countdown mode"""
+        self.auto_reconnect_mode = True
+        self.max_attempts = max_attempts
+        self.current_attempt = 0
+        self.wait_time = wait_time
+        self.reconnect_callback = reconnect_callback
+        self.cancel_callback = cancel_callback
+        self.countdown = wait_time
+        self.update_display()
+
+    def show_manual_reconnect(self, reconnect_callback):
+        """Show manual reconnect mode (no countdown)"""
+        self.auto_reconnect_mode = False
+        self.reconnect_callback = reconnect_callback
+        self.update_display()
+
+    def update_display(self):
+        if hasattr(self, 'lb_content'):
+            if self.auto_reconnect_mode:
+                remaining_attempts = self.max_attempts - self.current_attempt
+                self.lb_content.text = tr._('Connection lost. Attempting to reconnect...\n\nAttempt {} of {}\nReconnecting in {} seconds'.format(
+                    self.current_attempt + 1, self.max_attempts, self.countdown))
+            else:
+                self.lb_content.text = tr._('Connection to machine lost.')
+
+    def countdown_tick(self, dt=None):
+        if not self.auto_reconnect_mode:
+            return
+            
+        if self.countdown > 0:
+            self.countdown -= 1
+            self.update_display()
+        else:
+            self.countdown = self.wait_time
+            self.current_attempt += 1
+            if self.current_attempt < self.max_attempts:
+                if self.reconnect_callback:
+                    self.reconnect_callback()
+            else:
+                self.dismiss()
+                if self.cancel_callback:
+                    self.cancel_callback()
+
+    def cancel_reconnect(self):
+        self.dismiss()
+        if self.cancel_callback:
+            self.cancel_callback()
+
+    def reconnect(self):
+        """Handle reconnect button press"""
+        if self.reconnect_callback:
+            self.reconnect_callback()
+        self.dismiss()
+
+    def on_dismiss(self):
+        """Called when popup is dismissed"""
+        super().on_dismiss()
+        # Stop the countdown timer
+        Clock.unschedule(self.countdown_tick)
+
 class InputPopup(ModalView):
     cache_var1 = StringProperty('')
     cache_var2 = StringProperty('')
@@ -645,7 +717,6 @@ class FilePopup(ModalView):
                break
         self.btn_view.disabled = (not self.firmware_mode and not has_select) or (self.firmware_mode and app.state != 'Idle')
         self.btn_upload.disabled = not has_select or app.state != 'Idle'
-        self.btn_upload_and_select.disabled = not has_select or app.state != 'Idle'
 
     # -----------------------------------------------------------------------
     def update_remote_buttons(self):
@@ -2019,6 +2090,7 @@ class Makera(RelativeLayout):
     confirm_popup = ObjectProperty()
     unlock_popup = ObjectProperty()
     message_popup = ObjectProperty()
+    reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
@@ -2125,6 +2197,8 @@ class Makera(RelativeLayout):
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
         self.controller = Controller(self.cnc, self.execCallback)
+        # Set up reconnection callbacks
+        self.controller.set_reconnection_callbacks(self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success)
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
@@ -2187,6 +2261,7 @@ class Makera(RelativeLayout):
         self.confirm_popup = ConfirmPopup()
         self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
+        self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
 
@@ -2568,8 +2643,33 @@ class Makera(RelativeLayout):
             return
 
         if time.time() - self.heartbeat_time > HEARTBEAT_TIMEOUT and self.controller.stream:
+            # Check reconnection configuration (only if not a manual disconnect and not already reconnecting)
+            if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
+                reconnect_wait_time = Config.getint('carvera', 'reconnect_wait_time', fallback=10)
+                reconnect_attempts = Config.getint('carvera', 'reconnect_attempts', fallback=3)
+                
+                # Update controller reconnection settings
+                self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
+                
+                if auto_reconnect_enabled:
+                    # Show reconnection popup with countdown
+                    self.reconnection_popup.start_countdown(
+                        reconnect_attempts, 
+                        reconnect_wait_time, 
+                        self.attempt_reconnect, 
+                        self.on_reconnect_failed
+                    )
+                    self.reconnection_popup.open()
+                    
+                    # Start countdown timer
+                    Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
+                else:
+                    # Show reconnection popup in manual mode
+                    self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
+                    self.reconnection_popup.open()
+            
             self.controller.close()
-            self.controller.log.put((Controller.MSG_ERROR, 'ALARM: ' + tr._('Timeout, Connection lost!')))
             self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -2581,6 +2681,11 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def check_model_metadata(self, *args):
         app = App.get_running_app()
+        
+        # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
+        if app is None:
+            return
+            
         # Check if model has been set and if not, query for it
         if not app.model or app.model == "":
             if self.controller.stream is not None:
@@ -2744,6 +2849,38 @@ class Makera(RelativeLayout):
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
+
+    # -----------------------------------------------------------------------
+    def attempt_reconnect(self):
+        """Attempt to reconnect to the last known connection"""
+        if self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+            # Try to reconnect to WiFi
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
+                # Stop the countdown timer if reconnection popup is open
+                if self.reconnection_popup._is_open:
+                    Clock.unschedule(self.reconnection_popup.countdown_tick)
+                    self.reconnection_popup.dismiss()
+                # Don't cancel reconnection here - let the connection state change handle it
+            else:
+                # Machine is busy, show error and stop reconnection
+                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+                self.controller.cancel_reconnection()
+        else:
+            # For USB connections or no previous WiFi address, just stop reconnection
+            self.controller.cancel_reconnection()
+
+    def on_reconnect_failed(self):
+        """Called when all reconnection attempts have failed"""
+        # Only show the message if we're actually disconnected and not in the process of connecting
+        app = App.get_running_app()
+        if app and app.state == NOT_CONNECTED and self.controller.stream is None:
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Reconnection failed. Please connect manually."), False), 0)
+
+    def on_reconnect_success(self):
+        """Called when reconnection succeeds"""
+        # Stop any ongoing reconnection attempts
+        self.controller.cancel_reconnection()
 
     def open_wifi_conn_drop_down(self, button):
         self.wifi_conn_drop_down.clear_widgets()
@@ -3818,6 +3955,11 @@ class Makera(RelativeLayout):
             now = time.time()
             self.heartbeat_time = now
             app = App.get_running_app()
+            
+            # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
+            if app is None:
+                return
+                
             if app.state != CNC.vars["state"]:
                 app.state = CNC.vars["state"]
                 CNC.vars["color"] = STATECOLOR[app.state]
@@ -3836,11 +3978,49 @@ class Makera(RelativeLayout):
                     self.config_loaded = False
                     self.config_loading = False
                     self.fw_version_checked = False
+                    
+                    # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting)
+                    if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                        auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
+                        if auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+                            # Show reconnection popup
+                            reconnect_wait_time = Config.getint('carvera', 'reconnect_wait_time', fallback=10)
+                            reconnect_attempts = Config.getint('carvera', 'reconnect_attempts', fallback=3)
+                            
+                            self.reconnection_popup.start_countdown(
+                                reconnect_attempts, 
+                                reconnect_wait_time, 
+                                self.attempt_reconnect, 
+                                self.on_reconnect_failed
+                            )
+                            self.reconnection_popup.open()
+                            
+                            # Start countdown timer
+                            Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
+                            
+                            # Also trigger the controller reconnection logic
+                            self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
+                            self.controller.start_reconnection()
+                        elif not auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+                            # Show reconnection popup in manual mode
+                            self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
+                            self.reconnection_popup.open()
                 else:
                     self.status_data_view.minr_text = 'WiFi' if self.controller.connection_type == CONN_WIFI else 'USB'
                     self.status_drop_down.btn_connect_usb.disabled = True
                     self.status_drop_down.btn_connect_wifi.disabled = True
                     self.status_drop_down.btn_disconnect.disabled = False
+                    
+                    # If we just reconnected, stop any reconnection popup and timer
+                    if self.reconnection_popup._is_open:
+                        Clock.unschedule(self.reconnection_popup.countdown_tick)
+                        self.reconnection_popup.dismiss()
+                    
+                    # Notify that reconnection succeeded
+                    self.controller.notify_reconnection_success()
+                    
+                    # Reset manual disconnect flag since we're now connected
+                    self.controller._manual_disconnect = False
 
                 self.status_drop_down.btn_unlock.disabled = (app.state != "Alarm" and app.state != "Sleep")
                 if (CNC.vars["halt_reason"] in HALT_REASON and CNC.vars["halt_reason"] > 20) or app.state == "Sleep":
@@ -4305,7 +4485,7 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def close(self):
         try:
-            self.controller.close()
+            self.controller.close_manual()
         except:
             logger.error(sys.exc_info()[1])
         self.updateStatus()
@@ -5081,7 +5261,7 @@ def load_constants():
 
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30 # s
-    HEARTBEAT_TIMEOUT = 10
+    HEARTBEAT_TIMEOUT = 5
     MAX_TOUCH_INTERVAL = 0.15
     GCODE_VIEW_SPEED = 1
 

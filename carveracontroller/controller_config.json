@@ -87,5 +87,29 @@
         "section": "carvera",
         "key": "touch_macro_3",
         "default": {}
+    },
+    {
+        "type": "bool",
+        "title": "Enable Auto-Reconnection",
+        "desc": "Automatically attempt to reconnect when connection is lost",
+        "section": "carvera",
+        "key": "auto_reconnect_enabled",
+        "default": "true"
+    },
+    {
+        "type": "numeric",
+        "title": "Reconnection Wait Time (seconds)",
+        "desc": "How long to wait between reconnection attempts",
+        "section": "carvera",
+        "key": "reconnect_wait_time",
+        "default": "10"
+    },
+    {
+        "type": "numeric",
+        "title": "Reconnection Attempts",
+        "desc": "Maximum number of reconnection attempts",
+        "section": "carvera",
+        "key": "reconnect_attempts",
+        "default": "3"
     }
 ]
