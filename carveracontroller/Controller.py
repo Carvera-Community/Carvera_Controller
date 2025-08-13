@@ -92,6 +92,16 @@ class Controller:
     def __init__(self, cnc, callback):
         self.usb_stream = USBStream()
         self.wifi_stream = WIFIStream()
+        
+        # Reconnection properties
+        self.reconnect_enabled = True
+        self.reconnect_wait_time = 10
+        self.reconnect_attempts = 3
+        self.reconnect_countdown = 0
+        self.reconnect_timer = None
+        self.reconnect_callback = None
+        self.cancel_reconnect_callback = None
+        self._manual_disconnect = False
 
         # Global variables
         self.history = []
@@ -749,6 +759,8 @@ class Controller:
             #self.stream.send(b"\n")
             self._gcount = 0
             self._alarm = True
+            # Reset manual disconnect flag when connection is established
+            self._manual_disconnect = False
             try:
                 self.clearRun()
             except:
@@ -778,6 +790,89 @@ class Controller:
         self.stream = None
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[CNC.vars["state"]]
+        
+        # Start reconnection if enabled
+        if self.reconnect_enabled and self.reconnect_callback:
+            self.start_reconnection()
+
+    def close_manual(self):
+        """Close connection manually (user initiated) - don't auto-reconnect"""
+        if self.stream is None: return
+        try:
+            self.stopRun()
+        except:
+            self.log.put((self.MSG_ERROR, 'Controller stop thread error!'))
+        self._runLines = 0
+        time.sleep(0.5)
+        self.thread = None
+        try:
+            self.stream.close()
+        except:
+            self.log.put((self.MSG_ERROR, 'Controller close stream error!'))
+        self.stream = None
+        # Set a flag to indicate this was a manual disconnection
+        self._manual_disconnect = True
+        CNC.vars["state"] = NOT_CONNECTED
+        CNC.vars["color"] = STATECOLOR[CNC.vars["state"]]
+
+    def set_reconnection_config(self, enabled, wait_time, attempts):
+        """Set reconnection configuration"""
+        self.reconnect_enabled = enabled
+        self.reconnect_wait_time = wait_time
+        self.reconnect_attempts = attempts
+
+    def set_reconnection_callbacks(self, reconnect_callback, cancel_callback, success_callback=None):
+        """Set reconnection callbacks"""
+        self.reconnect_callback = reconnect_callback
+        self.cancel_reconnect_callback = cancel_callback
+        self.reconnect_success_callback = success_callback
+
+    def start_reconnection(self):
+        """Start the reconnection process"""
+        if not self.reconnect_enabled or not self.reconnect_callback:
+            return
+            
+        self.reconnect_countdown = self.reconnect_wait_time
+        self.reconnect_attempts_remaining = self.reconnect_attempts
+        
+        # Schedule the first reconnection attempt
+        if self.reconnect_timer:
+            self.reconnect_timer.cancel()
+        self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
+        self.reconnect_timer.start()
+
+    def attempt_reconnect(self):
+        """Attempt to reconnect"""
+        if self.reconnect_attempts_remaining <= 0:
+            if self.cancel_reconnect_callback:
+                self.cancel_reconnect_callback()
+            return
+            
+        self.reconnect_attempts_remaining -= 1
+        
+        # Try to reconnect using the callback
+        if self.reconnect_callback:
+            self.reconnect_callback()
+            
+        # Schedule next attempt if there are more attempts remaining
+        if self.reconnect_attempts_remaining > 0:
+            if self.reconnect_timer:
+                self.reconnect_timer.cancel()
+            self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
+            self.reconnect_timer.start()
+
+    def cancel_reconnection(self):
+        """Cancel the reconnection process"""
+        if self.reconnect_timer:
+            self.reconnect_timer.cancel()
+            self.reconnect_timer = None
+        if self.cancel_reconnect_callback:
+            self.cancel_reconnect_callback()
+
+    def notify_reconnection_success(self):
+        """Notify that reconnection was successful"""
+        if self.reconnect_success_callback:
+            self.reconnect_success_callback()
 
     # ----------------------------------------------------------------------
     def stopRun(self):

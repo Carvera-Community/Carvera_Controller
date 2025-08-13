@@ -1385,11 +1385,33 @@
         BoxLayout:
             id: btn_ok
             size_hint_y: 0.4
-            Label:
             Button:
                 text: tr._('Ok')
                 on_release: root.dismiss()
-            Label:
+
+<ReconnectionPopup>:
+    lb_content: lb_content
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            id: lb_content
+            text: tr._('Connection lost. Attempting to reconnect...')
+        BoxLayout:
+            size_hint_y: 0.4
+            spacing: '10dp'
+            Button:
+                id: btn_reconnect
+                text: tr._('Reconnect')
+                on_release: root.reconnect()
+                size_hint_x: 0.5
+            Button:
+                text: tr._('Cancel') if root.auto_reconnect_mode else tr._('Ok')
+                on_release: root.cancel_reconnect() if root.auto_reconnect_mode else root.dismiss()
+                size_hint_x: 0.5
 
 <ProgressPopup>:
     progress_bar: progress_bar
