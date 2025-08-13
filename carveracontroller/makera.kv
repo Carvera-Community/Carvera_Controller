@@ -531,7 +531,7 @@
         text: tr._('Set Rotation')
         size_hint_y: None
         height: '40dp'
-        disabled: app.is_community_firmware == False
+        disabled: not (app.is_community_firmware and app.is_fw_min("1.0.11"))
         on_release:
             root.select('Third Item')
             app.root.set_rotation_popup.open()
@@ -3613,7 +3613,7 @@
                                                 on_release: root.coord_popup.origin_popup.open()
                                         GridBoxLayout:
                                             SmallRoundButton:
-                                                disabled: app.is_community_firmware == False
+                                                disabled: not app.is_community_firmware
                                                 text: tr._('Probing...')
                                                 on_release: app.root.probing_popup.open()
 
