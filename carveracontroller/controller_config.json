@@ -90,7 +90,7 @@
     },
     {
         "type": "bool",
-        "title": "Enable Auto-Reconnection",
+        "title": "Auto-Reconnection",
         "desc": "Automatically attempt to reconnect when connection is lost",
         "section": "carvera",
         "key": "auto_reconnect_enabled",
@@ -98,8 +98,8 @@
     },
     {
         "type": "numeric",
-        "title": "Reconnection Wait Time (seconds)",
-        "desc": "How long to wait between reconnection attempts",
+        "title": "Reconnection Wait Time",
+        "desc": "How many seconds to wait between reconnection attempts",
         "section": "carvera",
         "key": "reconnect_wait_time",
         "default": "10"
