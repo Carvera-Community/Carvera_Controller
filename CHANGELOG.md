@@ -10,6 +10,7 @@
 - Change: Light toggle button initial state is set on connect
 - Change: Controller logging options now available in settings. Default log_level is info and log to file is enabled.
 - Fix: Upload-and-Select button is now disabled until a file is selected
+- Fix: WBH04 Pendant Macro-10 should be treated as an action button
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
