@@ -2138,7 +2138,7 @@ class Makera(RelativeLayout):
     show_update = True
     fw_upd_text = ''
     fw_version_new = ''
-    fw_version_old = ''
+    fw_version = ''
     fw_version_checking = False
     fw_version_checked = False
 
@@ -2153,7 +2153,7 @@ class Makera(RelativeLayout):
 
     ctl_upd_text = ''
     ctl_version_new = ''
-    ctl_version_old = ''
+    ctl_version = ''
 
     common_local_dir_list = []
     recent_local_dir_list = []
@@ -2192,7 +2192,7 @@ class Makera(RelativeLayout):
         super(Makera, self).__init__()
 
         self.temp_dir = tempfile.mkdtemp()
-        self.ctl_version_old = ctl_version
+        self.ctl_version = ctl_version
         self.file_popup = FilePopup()
 
         self.cnc = CNC()
@@ -2480,14 +2480,14 @@ class Makera(RelativeLayout):
         versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
         if versions != None:
             self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
-            if self.fw_version_old != '':
+            if self.fw_version != '':
                 app = App.get_running_app()
-                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version_old):
+                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version):
                     app.fw_has_update = True
-                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version
                 else:
                     app.fw_has_update = False
-                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version
         self.fw_version_checked = False
 
     def ctl_upd_loaded(self, req, result):
@@ -2514,12 +2514,12 @@ class Makera(RelativeLayout):
         if versions != None:
             self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
             app = App.get_running_app()
-            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version_old):
+            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version):
                 app.ctl_has_update = True
-                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version
             else:
                 app.ctl_has_update = False
-                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version
         self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
@@ -2693,7 +2693,7 @@ class Makera(RelativeLayout):
                 self.controller.queryModel()
         
         # Check if version has been set and if not, query for it
-        if not self.fw_version_old or self.fw_version_old == "":
+        if not self.fw_version or self.fw_version == "":
             if self.controller.stream is not None:
                 self.controller.queryVersion()
 
@@ -2975,8 +2975,9 @@ class Makera(RelativeLayout):
                             self.controller.viewWCS()
                         remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+', remote_version[0])
                     if remote_version != None:
-                        self.fw_version_old = remote_version[0].split('=')[1].strip()
-                        app.fw_version_digitized = Utils.digitize_v(self.fw_version_old)
+                        self.fw_version = remote_version[0].split('=')[1].strip()
+                        app.fw_version_digitized = Utils.digitize_v(self.fw_version)
+                        logger.debug(f"Firmware Version detected as {self.fw_version}")
                         if self.fw_version_new != '':
                             self.check_fw_version()
                     
@@ -5157,6 +5158,7 @@ class MakeraApp(App):
     loading_page = BooleanProperty(False)
     model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
+    fw_version_digitized = NumericProperty(0)
 
     def on_stop(self):
         self.root.stop_run()
@@ -5192,11 +5194,6 @@ class MakeraApp(App):
 
     def on_pause(self):
         return True
-
-    def is_fw_min(self, version):
-        """Checks if the machine firmware meets minimum version requirement"""
-        app = App.get_running_app()
-        return Utils.digitize_v(version) >= Utils.digitize_v(app.root.fw_version_old)
 
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
