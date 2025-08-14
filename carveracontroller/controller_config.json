@@ -111,5 +111,22 @@
         "section": "carvera",
         "key": "reconnect_attempts",
         "default": "3"
+    },
+    {
+        "type": "options",
+        "title": "Log Level",
+        "desc": "Sets the logging level for the application. Higher levels include all lower levels.",
+        "section": "kivy",
+        "key": "log_level",
+        "default": "info",
+        "options": ["debug", "info", "warning", "error"]
+    },
+    {
+        "type": "bool",
+        "title": "Log to file",
+        "desc": "Store logs to file",
+        "section": "kivy",
+        "key": "log_enable",
+        "default": "true"
     }
 ]

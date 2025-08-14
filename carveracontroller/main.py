@@ -4822,6 +4822,13 @@ class Makera(RelativeLayout):
 
         self.config_popup.btn_apply.disabled = True
 
+        # Configure logging level from config
+        if "log_level" in self.controller_setting_change_list:
+            log_level = Config.get('kivy', 'log_level').upper()
+            if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+                logging.getLogger().setLevel(getattr(logging, log_level))
+                logger.info(f"Log level set to {log_level}")
+
 
     # -----------------------------------------------------------------------
     def open_setting_restore_confirm_popup(self):
@@ -5201,6 +5208,13 @@ class MakeraApp(App):
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
+
+    # Configure logging level from config
+    if Config.has_option('kivy', 'log_level'):
+        log_level = Config.get('kivy', 'log_level').upper()
+        if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+            logging.getLogger().setLevel(getattr(logging, log_level))
+            logger.info(f"Log level set to {log_level}")
 
 def set_config_defaults(default_lang):
     if not Config.has_section('carvera'):
