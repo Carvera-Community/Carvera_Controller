@@ -8,6 +8,7 @@
 - Change: Probing cancel button becomes halt button if machine is moving
 - Change: Machine heartbeat is now 5s to be a bit more responsive on disconnects
 - Change: Light toggle button initial state is set on connect
+- Change: Controller logging options now available in settings. Default log_level is info and log to file is enabled.
 - Fix: Upload-and-Select button is now disabled until a file is selected
 
 [0.10.1]
