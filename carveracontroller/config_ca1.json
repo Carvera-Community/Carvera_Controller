@@ -445,7 +445,20 @@
         "section": "Advanced",
         "key": "temperature_control.spindle.max_temp"
     },
-    
+
+    {
+        "type": "title",
+        "title": "External Control",
+        "section": "Advanced"
+    },
+    {
+        "type": "bool",
+        "title": "Enable External Control as Vacuum (Experimental)",
+        "desc": "Treats the 'External Control' output as a vacuum and enables the auto-vacuum feature.",
+        "section": "Advanced",
+        "key": "ca1_ext_control_as_vacuum",
+        "default": "false"
+    },
 
     {
         "type": "string",
