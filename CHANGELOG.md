@@ -2,6 +2,7 @@
 - Enhancement: Continuous jog mode support (community firmware > 2.0.0c needed)
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
 - Enhancement: Auto-Reconnect functionality with configurable delay, and attempts
+- Enhancement: Add Online Documentation link to Function dropdown
 - Change: Jogging option buttons consolidated and always displayed
 - Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
 - Change: Jog buttons act now on_press instead of on_release

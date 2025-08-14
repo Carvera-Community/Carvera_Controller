@@ -2438,9 +2438,12 @@ class Makera(RelativeLayout):
             self.file_popup.open()
             self.file_popup.local_rv.child_dir('')
 
+    def open_online_docs(self):
+        webbrowser.open('https://carvera-community.gitbook.io/docs/controller/')
+
     def send_bug_report(self):
-        webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues')
-        webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues')
+        webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues/new')
+        webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/new')
         log_dir = Path.home() / ".kivy" / "logs"
 
         # Open the log directory with whatever native file browser is availiable
