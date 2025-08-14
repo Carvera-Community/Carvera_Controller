@@ -7,6 +7,7 @@
 - Change: Jog buttons act now on_press instead of on_release
 - Change: Probing cancel button becomes halt button if machine is moving
 - Change: Machine heartbeat is now 5s to be a bit more responsive on disconnects
+- Change: Light toggle button initial state is set on connect
 - Fix: Upload-and-Select button is now disabled until a file is selected
 
 [0.10.1]

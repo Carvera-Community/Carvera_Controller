@@ -4023,6 +4023,9 @@ class Makera(RelativeLayout):
                     
                     # Reset manual disconnect flag since we're now connected
                     self.controller._manual_disconnect = False
+                    
+                    # Set initial light toggle button state
+                    self.ids.light_toggle.state = 'normal' if CNC.vars["sw_light"] == 1 else 'down'
 
                 self.status_drop_down.btn_unlock.disabled = (app.state != "Alarm" and app.state != "Sleep")
                 if (CNC.vars["halt_reason"] in HALT_REASON and CNC.vars["halt_reason"] > 20) or app.state == "Sleep":

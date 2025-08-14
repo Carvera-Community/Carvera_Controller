@@ -3642,6 +3642,7 @@
                                         # 4th row
                                         GridBoxLayout:
                                             ToggleButton:
+                                                id: light_toggle
                                                 text: tr._('Light')
                                                 height: '35dp'
                                                 on_release: app.root.controller.setLightSwitch(not self.state=="normal")
