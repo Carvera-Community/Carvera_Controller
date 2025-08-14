@@ -1,5 +1,6 @@
 #:kivy 1.11.1
 #:import Factory kivy.factory.Factory
+#:import digitize_v carveracontroller.Utils.digitize_v
 #:import tr carveracontroller.__main__.tr
 #:include addons/tooltips/Tooltips.kv
 #:include addons/probing/ProbingPopup.kv
@@ -531,7 +532,7 @@
         text: tr._('Set Rotation')
         size_hint_y: None
         height: '40dp'
-        disabled: not (app.is_community_firmware and app.fw_version_digitized >= 1000011)  # >= 1.0.11c
+        disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("1.0.11"))
         on_release:
             root.select('Third Item')
             app.root.set_rotation_popup.open()
@@ -3697,7 +3698,7 @@
                                         GridBoxLayout:
                                             Button:
                                                 id: jog_mode_btn
-                                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= 2000000)  # >= 2.0.0c
+                                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
                                                 text: tr._('Jog Mode:Step')
                                                 height: '35dp'
                                                 on_release: app.root.toggle_jog_mode()
