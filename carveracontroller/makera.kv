@@ -1064,6 +1064,16 @@
         on_release:
             root.select('')
             app.root.probing_popup.open()
+    IconButton:
+        icon: 'data/open_iconic_UI/oi--question-mark.png'
+        icon_size: 24
+        small_icon: True
+        size_hint_y: None
+        height: '50dp'
+        tooltip_txt: tr._('Online Documentation')
+        on_release:
+            root.select('')
+            app.root.open_online_docs()
 
 <StatusDropDown>:
     btn_connect_usb: btn_connect_usb
