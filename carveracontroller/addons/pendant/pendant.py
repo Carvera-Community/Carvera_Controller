@@ -282,6 +282,8 @@ if WHB04_SUPPORTED:
                     self._handle_probe_z()
                     if self._update_ui_on_button_press:
                         self._update_ui_on_button_press("probe_z")
+                if button == whb04.Button.MACRO_10:  # macro-10 has no action so it should always run
+                    self.run_macro(10)
             else:
                 MACROS = [
                     whb04.Button.FEED_PLUS,
