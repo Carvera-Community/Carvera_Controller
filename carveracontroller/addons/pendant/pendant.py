@@ -207,7 +207,7 @@ if WHB04_SUPPORTED:
                             self._controller.startContinuousJog(f"{axis}{distance}", None, f"S{daemon.step_size_value}")
             else:
                 if daemon.step_size == whb04.StepSize.LEAD:
-                    self._controller.jog(f"{axis}{steps * 0.1}", abs(steps * 0.1 / 0.05) * 60 * 0.97)
+                    self._controller.jog(f"{axis}{round(steps * 0.1,3)}", round(abs(steps * 0.1 / 0.05) * 60 * 0.97), 3)
                 else:
                     self._controller.jog(f"{axis}{distance}")
 
