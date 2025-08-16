@@ -3,6 +3,7 @@
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
 - Enhancement: Auto-Reconnect functionality with configurable delay, and attempts
 - Enhancement: Add Online Documentation link to Function dropdown
+- Enhancement: WBH04 Pendant step size option "Lead" scales the feedrate to the rotational wheel speed of the pendant
 - Change: Jogging option buttons consolidated and always displayed
 - Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
 - Change: Jog buttons act now on_press instead of on_release
