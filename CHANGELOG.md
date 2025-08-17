@@ -15,6 +15,7 @@
 - Fix: Upload-and-Select button is now disabled until a file is selected
 - Fix: WBH04 Pendant Macro-10 should be treated as an action button
 - Fix: Better handling of machine diagnostic output to support analogue mode spindles
+- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes

@@ -447,16 +447,8 @@ class OriginPopup(ModalView):
 
     def validate_inputs(self):
         """Validate inputs based on the active tab."""
-        # Check which tab is active by looking at the TabbedPanel
-        tabbed_panel = None
-        for child in self.children:
-            if hasattr(child, 'children'):
-                for grandchild in child.children:
-                    if hasattr(grandchild, 'current_tab'):
-                        tabbed_panel = grandchild
-                        break
-                if tabbed_panel:
-                    break
+        # Check which tab is active using the ID
+        tabbed_panel = self.ids.tabbed_panel
         
         if tabbed_panel and tabbed_panel.current_tab:
             current_tab = tabbed_panel.current_tab
@@ -494,19 +486,12 @@ class OriginPopup(ModalView):
         app = App.get_running_app()
         is_valid, error_message = self.validate_inputs()
         if is_valid:
-            # Check which tab is active
-            tabbed_panel = None
-            for child in self.children:
-                if hasattr(child, 'children'):
-                    for grandchild in child.children:
-                        if hasattr(grandchild, 'current_tab'):
-                            tabbed_panel = grandchild
-                            break
-                    if tabbed_panel:
-                        break
-            
+            # Check which tab is active using the ID
+            tabbed_panel = self.ids.tabbed_panel
+
             if tabbed_panel and tabbed_panel.current_tab:
                 current_tab = tabbed_panel.current_tab
+                
                 if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
                     # Handle XYZ Probe tab
                     app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
@@ -580,6 +565,7 @@ class XYZProbePopup(ModalView):
         is_valid, error_message = self.validate_inputs()
         if is_valid:
             app = App.get_running_app()
+            logger.debug(f"XYZProbePopup.on_ok_pressed: probe height={self.ids.txt_probe_height.text}, tool diameter={self.ids.txt_tool_diameter.text}")
             app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
             self.dismiss()
         else:
