@@ -447,16 +447,8 @@ class OriginPopup(ModalView):
 
     def validate_inputs(self):
         """Validate inputs based on the active tab."""
-        # Check which tab is active by looking at the TabbedPanel
-        tabbed_panel = None
-        for child in self.children:
-            if hasattr(child, 'children'):
-                for grandchild in child.children:
-                    if hasattr(grandchild, 'current_tab'):
-                        tabbed_panel = grandchild
-                        break
-                if tabbed_panel:
-                    break
+        # Check which tab is active using the ID
+        tabbed_panel = self.ids.tabbed_panel
         
         if tabbed_panel and tabbed_panel.current_tab:
             current_tab = tabbed_panel.current_tab
@@ -494,19 +486,12 @@ class OriginPopup(ModalView):
         app = App.get_running_app()
         is_valid, error_message = self.validate_inputs()
         if is_valid:
-            # Check which tab is active
-            tabbed_panel = None
-            for child in self.children:
-                if hasattr(child, 'children'):
-                    for grandchild in child.children:
-                        if hasattr(grandchild, 'current_tab'):
-                            tabbed_panel = grandchild
-                            break
-                    if tabbed_panel:
-                        break
-            
+            # Check which tab is active using the ID
+            tabbed_panel = self.ids.tabbed_panel
+
             if tabbed_panel and tabbed_panel.current_tab:
                 current_tab = tabbed_panel.current_tab
+                
                 if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
                     # Handle XYZ Probe tab
                     app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
@@ -580,6 +565,7 @@ class XYZProbePopup(ModalView):
         is_valid, error_message = self.validate_inputs()
         if is_valid:
             app = App.get_running_app()
+            logger.debug(f"XYZProbePopup.on_ok_pressed: probe height={self.ids.txt_probe_height.text}, tool diameter={self.ids.txt_tool_diameter.text}")
             app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
             self.dismiss()
         else:
@@ -2393,7 +2379,8 @@ class Makera(RelativeLayout):
 
             macro_value = Config.get("carvera", macro_config_key)
             if macro_value:
-                macro_name = json.loads(macro_value).get("name", macro_config_key)
+                logger.debug(f"{macro_config_key} set to: {macro_value=}")
+                macro_name = json.loads(macro_value).get("name", False)
                 if macro_name:
                     self.ids[macro_config_key + "_btn"].text = macro_name  # the button ids for the macro UI buttons are suffixed with _btn
 
@@ -3002,8 +2989,10 @@ class Makera(RelativeLayout):
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
+                        logger.info(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
+                        logger.error(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
                     logger.error(sys.exc_info()[1])
@@ -4458,6 +4447,7 @@ class Makera(RelativeLayout):
         self.gcode_rv.set_selected_line(self.test_line - 1)
 
     def execCallback(self, line):
+        logger.info(f"MDI Sent: {line}")
         self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
 
     # -----------------------------------------------------------------------

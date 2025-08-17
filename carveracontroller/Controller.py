@@ -697,7 +697,15 @@ class Controller:
         l = ln.split('|')
 
         # strip of rest into a dict of name: [values,...,]
-        d = {a: [int(y) for y in b.split(',')] for a, b in [x.split(':') for x in l]}
+        d = {}
+        for x in l:
+            if ':' in x:
+                try:
+                    a, b = x.split(':', 1)  # Split on first colon only
+                    d[a] = [int(y) for y in b.split(',')]
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"parseBigParentheses: Failed to parse line '{x}': {e}")
+                    continue
         if 'S' in d:
             CNC.vars["sw_spindle"] = int(d['S'][0])
             CNC.vars["sl_spindle"] = int(d['S'][1])
@@ -1031,11 +1039,13 @@ class Controller:
         self.sendGCode("%s" % (cmd))
 
     def gotoSafeZ(self):
+        # using 2mm below the homing point as CA1 x-sag compensation could be a whole mm
         self.sendGCode("G53 G0 Z-2")
 
     def gotoMachineHome(self):
         self.gotoSafeZ()
-        self.sendGCode("G53 G0 X-1 Y-1")
+        # CA1 x-sag compensation could be a whole mm in Y, so use 2mm to be safe. Same for X for consistency
+        self.sendGCode("G53 G0 X-2 Y-2")
 
     def gotoWCSHome(self):
         self.gotoSafeZ()
