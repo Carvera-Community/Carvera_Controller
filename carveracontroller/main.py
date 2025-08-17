@@ -2393,7 +2393,8 @@ class Makera(RelativeLayout):
 
             macro_value = Config.get("carvera", macro_config_key)
             if macro_value:
-                macro_name = json.loads(macro_value).get("name", macro_config_key)
+                logger.debug(f"{macro_config_key} set to: {macro_value=}")
+                macro_name = json.loads(macro_value).get("name", False)
                 if macro_name:
                     self.ids[macro_config_key + "_btn"].text = macro_name  # the button ids for the macro UI buttons are suffixed with _btn
 
