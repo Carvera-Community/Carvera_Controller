@@ -3,6 +3,7 @@
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
 - Enhancement: Auto-Reconnect functionality with configurable delay, and attempts
 - Enhancement: Add Online Documentation link to Function dropdown
+- Enhancement: WBH04 Pendant step size option "Lead" scales the feedrate to the rotational wheel speed of the pendant
 - Change: Jogging option buttons consolidated and always displayed
 - Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
 - Change: Jog buttons act now on_press instead of on_release
@@ -10,6 +11,7 @@
 - Change: Machine heartbeat is now 5s to be a bit more responsive on disconnects
 - Change: Light toggle button initial state is set on connect
 - Change: Controller logging options now available in settings. Default log_level is info and log to file is enabled.
+- Change: SafeZ positions are now 2mm from the home positions to provide clearence for users of x-sag compensation
 - Fix: Upload-and-Select button is now disabled until a file is selected
 - Fix: WBH04 Pendant Macro-10 should be treated as an action button
 

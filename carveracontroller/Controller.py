@@ -1008,12 +1008,15 @@ class Controller:
         if self.stream is not None:
             self.stream.send(b"\031")
 
-    def jog(self, _dir):
+    def jog(self, _dir, speed=None):
         if self.jog_mode == Controller.JOG_MODE_STEP:
-            if self.jog_speed == 0:
-                self.executeCommand(f"$J {_dir}")
+            if speed is None:
+                if self.jog_speed == 0:
+                    self.executeCommand(f"$J {_dir}")
+                else:
+                    self.executeCommand(f"$J {_dir} F{self.jog_speed}")
             else:
-                self.executeCommand(f"$J {_dir} F{self.jog_speed}")
+                self.executeCommand(f"$J {_dir} F{speed}")
         elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
             if not self.continuous_jog_active:
                 self.startContinuousJog(_dir)
@@ -1028,7 +1031,7 @@ class Controller:
         self.sendGCode("%s" % (cmd))
 
     def gotoSafeZ(self):
-        self.sendGCode("G53 G0 Z-1")
+        self.sendGCode("G53 G0 Z-2")
 
     def gotoMachineHome(self):
         self.gotoSafeZ()

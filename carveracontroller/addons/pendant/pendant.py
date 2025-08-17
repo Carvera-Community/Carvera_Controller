@@ -190,7 +190,6 @@ if WHB04_SUPPORTED:
                 # Reset direction tracking for step mode
                 self._last_jog_direction = 0
                 distance = steps * daemon.step_size_value
-                feed = 10000
 
             # Jog as fast as you can as the machine should follow the pendant as
             # closely as possible. We choose some reasonably high speed here,
@@ -207,7 +206,10 @@ if WHB04_SUPPORTED:
                         else:
                             self._controller.startContinuousJog(f"{axis}{distance}", None, f"S{daemon.step_size_value}")
             else:
-                self._controller.jog(f"{axis}{distance}")
+                if daemon.step_size == whb04.StepSize.LEAD:
+                    self._controller.jog(f"{axis}{round(steps * 0.1,3)}", round(abs(steps * 0.1 / 0.05) * 60 * 0.97), 3)
+                else:
+                    self._controller.jog(f"{axis}{round(distance, 3)}")
 
         def _handle_button_press(self, daemon: whb04.Daemon, button: whb04.Button) -> None:
             is_fn_pressed = whb04.Button.FN in daemon.pressed_buttons
