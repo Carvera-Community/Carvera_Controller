@@ -3765,11 +3765,13 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'A-'
-                                        on_release: root.controller.jog("A-{}".format(root.step_a.text))
+                                        on_press: root.controller.jog("A-{}".format(root.step_a.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z-'
-                                        on_release: root.controller.jog("Z-{}".format(root.step_z.text))
+                                        on_press: root.controller.jog("Z-{}".format(root.step_z.text))
+                                        on_release: root.controller.stopContinuousJog()
 
                             Widget:
                                 size_hint_x: 0.2
