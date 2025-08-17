@@ -697,7 +697,15 @@ class Controller:
         l = ln.split('|')
 
         # strip of rest into a dict of name: [values,...,]
-        d = {a: [int(y) for y in b.split(',')] for a, b in [x.split(':') for x in l]}
+        d = {}
+        for x in l:
+            if ':' in x:
+                try:
+                    a, b = x.split(':', 1)  # Split on first colon only
+                    d[a] = [int(y) for y in b.split(',')]
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"parseBigParentheses: Failed to parse line '{x}': {e}")
+                    continue
         if 'S' in d:
             CNC.vars["sw_spindle"] = int(d['S'][0])
             CNC.vars["sl_spindle"] = int(d['S'][1])
