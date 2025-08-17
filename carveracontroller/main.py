@@ -2989,8 +2989,10 @@ class Makera(RelativeLayout):
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
+                        logger.info(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
+                        logger.error(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
                     logger.error(sys.exc_info()[1])
@@ -4445,6 +4447,7 @@ class Makera(RelativeLayout):
         self.gcode_rv.set_selected_line(self.test_line - 1)
 
     def execCallback(self, line):
+        logger.info(f"MDI Sent: {line}")
         self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
 
     # -----------------------------------------------------------------------
