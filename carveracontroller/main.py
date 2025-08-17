@@ -111,6 +111,29 @@ from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
 from kivy.metrics import Metrics, dp
 
+# Custom Property to monitor CNC.vars["sw_light"] changes
+class LightProperty(BooleanProperty):
+    """Custom property that monitors CNC.vars['sw_light'] and converts it to a boolean"""
+    
+    def __init__(self, defaultvalue=False, **kwargs):
+        super().__init__(defaultvalue=defaultvalue, **kwargs)
+        self._light_value = 0
+        # Don't call update_from_state in __init__ since we don't have an obj yet
+    
+    def update_from_state(self, obj):
+        """Update the property value from CNC.vars['sw_light']"""
+        try:
+            current_value = CNC.vars.get("sw_light", 0)
+            if current_value != self._light_value:
+                self._light_value = current_value
+                # Convert to boolean: 1 = True (down), 0 = False (normal)
+                new_bool_value = current_value == 1
+                BooleanProperty.set(self, obj, new_bool_value)
+
+        except Exception as e:
+            # If CNC.vars is not available yet, default to False
+            BooleanProperty.set(self, obj, False)
+
 try:
     from serial.tools.list_ports import comports
 except ImportError:
@@ -2132,6 +2155,9 @@ class Makera(RelativeLayout):
 
     used_tools = ListProperty()
     upcoming_tool = 0
+    
+    # Custom property to monitor CNC light state
+    light_state = LightProperty(False)
 
     played_lines = 0
 
@@ -3419,6 +3445,8 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.controller.queryVersion, 0.3)
                 self.filetype = ''
                 Clock.schedule_once(self.controller.queryFtype, 0.4)
+                # Schedule a one off diagnostic command to get the machine's extended state
+                Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
                 Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
                 # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
@@ -3984,6 +4012,11 @@ class Makera(RelativeLayout):
                     self.config_loading = False
                     self.fw_version_checked = False
                     
+                    # Clean up light toggle binding when disconnected
+                    if hasattr(self, '_light_toggle_bound'):
+                        self.unbind(light_state=self._on_light_state_changed)
+                        delattr(self, '_light_toggle_bound')
+                    
                     # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting)
                     if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
                         auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
@@ -4026,9 +4059,6 @@ class Makera(RelativeLayout):
                     
                     # Reset manual disconnect flag since we're now connected
                     self.controller._manual_disconnect = False
-                    
-                    # Set initial light toggle button state
-                    self.ids.light_toggle.state = 'normal' if CNC.vars["sw_light"] == 1 else 'down'
 
                 self.status_drop_down.btn_unlock.disabled = (app.state != "Alarm" and app.state != "Sleep")
                 if (CNC.vars["halt_reason"] in HALT_REASON and CNC.vars["halt_reason"] > 20) or app.state == "Sleep":
@@ -4040,6 +4070,11 @@ class Makera(RelativeLayout):
             if not app.playing and not self.config_loaded and not self.config_loading and app.state == "Idle":
                 self.config_loading = True
                 self.download_config_file()
+                
+                # Bind light toggle button to LightProperty (only once per connection)
+                if not hasattr(self, '_light_toggle_bound'):
+                    self.bind_light_toggle_to_property()
+                    self._light_toggle_bound = True
 
             # show update
             if not app.playing and self.fw_upd_text != '' and not self.fw_version_checked and app.state == "Idle":
@@ -4394,6 +4429,10 @@ class Makera(RelativeLayout):
                 if self.diagnose_popup.sw_light.switch.active != CNC.vars["sw_light"]:
                     self.diagnose_popup.sw_light.set_flag = True
                     self.diagnose_popup.sw_light.switch.active = CNC.vars["sw_light"]
+            
+            # Update the custom light property to trigger UI updates
+            property_obj = self.__class__.__dict__['light_state']
+            property_obj.update_from_state(self)
 
             # control tool sensor power
             elapsed = now - self.control_list['tool_sensor_switch'][0]
@@ -4765,6 +4804,26 @@ class Makera(RelativeLayout):
                            self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
+    
+    def bind_light_toggle_to_property(self):
+        """Bind the light toggle button state to the LightProperty"""
+        self.bind(light_state=self._on_light_state_changed)
+
+        # Trigger an initial update by accessing the property object directly
+        property_obj = self.__class__.__dict__['light_state']
+        property_obj.update_from_state(self)
+    
+    def _on_light_state_changed(self, instance, value):
+        """Handle changes in the LightProperty and update the light toggle button"""
+        new_state = 'down' if value else 'normal'
+        self.ids.light_toggle.state = new_state
+    
+    def refresh_light_state(self):
+        """Manually refresh the light state from CNC.vars"""
+        if hasattr(self, 'light_state'):
+            property_obj = self.__class__.__dict__['light_state']
+            property_obj.update_from_state(self)
+            logger.debug("Light state manually refreshed from CNC.vars")
 
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
