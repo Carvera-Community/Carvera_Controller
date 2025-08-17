@@ -1031,11 +1031,11 @@ class Controller:
         self.sendGCode("%s" % (cmd))
 
     def gotoSafeZ(self):
-        self.sendGCode("G53 G0 Z-1")
+        self.sendGCode("G53 G0 Z-2")
 
     def gotoMachineHome(self):
         self.gotoSafeZ()
-        self.sendGCode("G53 G0 X-1 Y-1")
+        self.sendGCode("G53 G0 X-2 Y-2")
 
     def gotoWCSHome(self):
         self.gotoSafeZ()
