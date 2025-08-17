@@ -1039,11 +1039,13 @@ class Controller:
         self.sendGCode("%s" % (cmd))
 
     def gotoSafeZ(self):
+        # using 2mm below the homing point as CA1 x-sag compensation could be a whole mm
         self.sendGCode("G53 G0 Z-2")
 
     def gotoMachineHome(self):
         self.gotoSafeZ()
-        self.sendGCode("G53 G0 X-1 Y-1")
+        # CA1 x-sag compensation could be a whole mm in Y, so use 2mm to be safe. Same for X for consistency
+        self.sendGCode("G53 G0 X-2 Y-2")
 
     def gotoWCSHome(self):
         self.gotoSafeZ()
