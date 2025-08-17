@@ -1035,7 +1035,7 @@ class Controller:
 
     def gotoMachineHome(self):
         self.gotoSafeZ()
-        self.sendGCode("G53 G0 X-2 Y-2")
+        self.sendGCode("G53 G0 X-1 Y-1")
 
     def gotoWCSHome(self):
         self.gotoSafeZ()
