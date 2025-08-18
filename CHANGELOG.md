@@ -5,6 +5,7 @@
 - Enhancement: Add Online Documentation link to Function dropdown
 - Enhancement: WBH04 Pendant step size option "Lead" scales the feedrate to the rotational wheel speed of the pendant
 - Enhancement: MDI sent/recived now logged to log file (if enabled)
+- Enhancement: New HALT message when a 3D probe crash was detected
 - Change: Jogging option buttons consolidated and always displayed
 - Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
 - Change: Jog buttons act now on_press instead of on_release
@@ -16,7 +17,7 @@
 - Fix: Upload-and-Select button is now disabled until a file is selected
 - Fix: WBH04 Pendant Macro-10 should be treated as an action button
 - Fix: Better handling of machine diagnostic output to support analogue mode spindles
-- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3
+- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3 
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes

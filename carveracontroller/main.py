@@ -182,6 +182,7 @@ def load_halt_translations(tr: translation.Lang):
         11: tr._("Cover opened when playing"),
         12: tr._("Wireless probe dead or not set"),
         13: tr._("Emergency stop button pressed"),
+        16: tr._("3D probe crash detected"),
         # Need to reset the machine
         21: tr._("Hard Limit Triggered, reset needed"),
         22: tr._("X Axis Motor Error, reset needed"),
