@@ -2129,6 +2129,9 @@ class Makera(RelativeLayout):
     fw_version_checking = False
     fw_version_checked = False
 
+    echosended = False
+    echosending = False
+
     filetype_support = 'nc'
     filetype = ''
 
@@ -3001,13 +3004,13 @@ class Makera(RelativeLayout):
             # Update Decompress status bar
             if self.decompstatus == True:
                 if self.decompercent != self.decompercentlast:
-                    self.updateCompressProgress(self.decompercent)
+                    self.updateDeCompressProgress(self.decompercent)
                     self.decompercentlast = self.decompercent
                     self.decomptime = time.time()
                 else:
                     t = time.time()
                     if t - self.decomptime > 8:
-                        self.updateCompressProgress(self.fileCompressionBlocks)
+                        self.updateDeCompressProgress(self.fileCompressionBlocks)
 
             # Update position if needed
             if self.controller.posUpdate:
@@ -3294,7 +3297,12 @@ class Makera(RelativeLayout):
         remote_path = self.file_popup.remote_rv.curr_selected_file
         remote_size = self.file_popup.remote_rv.curr_selected_filesize
         remote_post_path = remote_path.replace('/sd/', '').replace('\\sd\\', '')
-        local_path = os.path.join(self.temp_dir, remote_post_path)
+        if kivy_platform == 'ios':
+            from os.path import expanduser
+            local_path = join(expanduser('~'), 'Documents')
+            local_path = join(local_path, remote_post_path)
+        else:  # inserted
+            local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), remote_post_path)
         app = App.get_running_app()
         app.selected_local_filename = local_path
         app.selected_remote_filename = remote_path
@@ -3308,7 +3316,12 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def download_config_file(self):
         app = App.get_running_app()
-        app.selected_local_filename = os.path.join(self.temp_dir, 'config.txt')
+        if kivy_platform == 'ios':
+            import tempfile
+            tmp_file = tempfile.gettempdir()
+            app.selected_local_filename = os.path.join(tmp_file, 'config.txt')
+        else:  # inserted
+            app.selected_local_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.txt')
         self.downloading_file = '/sd/config.txt'
         self.downloading_size = 1024 * 5
         self.downloading_config = True
@@ -3318,8 +3331,12 @@ class Makera(RelativeLayout):
     def finishLoadConfig(self, success, *args):
         if success:
             self.setting_list.clear()
-            # caching config file
-            config_path = os.path.join(self.temp_dir, 'config.txt')
+            if kivy_platform == 'ios':
+                import tempfile
+                tmp_file = tempfile.gettempdir()
+                config_path = os.path.join(tmp_file, 'config.txt')
+            else:  # inserted
+                config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config.txt')
             with open(config_path, 'r') as f:
                 config_string = '[dummy_section]\n' + f.read()
             # remove notes
@@ -3370,7 +3387,7 @@ class Makera(RelativeLayout):
             if os.path.exists(tmp_filename):
                 md5 = Utils.md5(tmp_filename)
             self.controller.downloadCommand(self.downloading_file)
-            self.controller.pauseStream(0.2)
+            self.controller.pauseStream(0.0)
             download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
         except:
             logger.error(sys.exc_info()[1])
@@ -3462,9 +3479,8 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
-    def downloadCallback(self, packet_size, success_count, error_count):
-        packets = self.downloading_size / packet_size + (1 if self.downloading_size % packet_size > 0 else 0)
-        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
+    def downloadCallback(self, seq_rev, totalpackets):
+        Clock.schedule_once(partial(self.progressUpdate, seq_rev * 100.0 / totalpackets, tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
 
     # -----------------------------------------------------------------------
     def cancelSelectFile(self):
@@ -3629,13 +3645,17 @@ class Makera(RelativeLayout):
         self.message_popup.open()
 
     # -----------------------------------------------------------------------
-    def compress_file(self,input_filename):
+    def compress_file(self, input_filename):
+        self.qlzfilename = None
+        compercent = 0
         try:
             # If the uploaded file is a firmware file, return the original filename without compression.
             if input_filename.find('.bin') != -1:
+                self.qlzfilename = input_filename
+                self.compstatus = False
                 return input_filename
 
-            # Check if the filename.lz is writeable
+            #Check if the filename.lz is writeable
             can_write_in_lz = os.access(input_filename + '.lz', os.W_OK)
             if not can_write_in_lz:
                 logger.warning(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
@@ -3651,36 +3671,43 @@ class Makera(RelativeLayout):
             self.decompercent = 0
             self.decompercentlast = 0
             with open(input_filename, 'rb') as f_in, open(output_filename, 'wb') as f_out:
-                while True:
-                    # Read block data
-                    block = f_in.read(BLOCK_SIZE)
-                    if not block:
-                        break
-                    # Calculate the sum
-                    for byte in block:
-                        sum += byte
-                    # Compress the block data
-                    compressed_block = quicklz.compress(block)
-
-                    # Calculate the size of the compressed data block
-                    cmprs_size = len(compressed_block)
-                    buffer_hdr = struct.pack('>I', cmprs_size)
-                    # Write the length of the compressed data block to the output file
-                    f_out.write(buffer_hdr)
-                    # Write the compressed data block to the output file
-                    f_out.write(compressed_block)
-                    self.fileCompressionBlocks += 1
-                # Write the checksum
-                sumdata = struct.pack('>H', sum & 0xffff)
-                f_out.write(sumdata)
-
+                    file_stats = os.stat(f_in.fileno())
+                    fileCompresssize = file_stats.st_size
+                    Clock.schedule_once(partial(self.progressStart, tr._('compressing') + '\n%s' % input_filename, None), 0)
+                    while True:
+                            # Read block data
+                            block = f_in.read(BLOCK_SIZE)
+                            if not block:
+                                break
+                            compercent += len(block)
+                            # Calculate the sum
+                            for byte in block:
+                                sum += byte
+                            # Compress the block data
+                            compressed_block = quicklz.compress(block)
+                            # Calculate the size of the compressed data block
+                            cmprs_size = len(compressed_block)
+                            buffer_hdr = struct.pack('>I', cmprs_size)
+                            # Write the length of the compressed data block to the output file
+                            f_out.write(buffer_hdr)
+                            # Write the compressed data block to the output file
+                            f_out.write(compressed_block)
+                            self.fileCompressionBlocks += 1
+                            Clock.schedule_once(partial(self.progressUpdate, compercent * 100.0 / fileCompresssize, '', True), 0)
+                    # Write the checksum
+                    sumdata = struct.pack('>H', sum & 0xffff)
+                    f_out.write(sumdata)
+            Clock.schedule_once(self.progressFinish, 0.5)
+            self.compstatus = False
             logger.info(f"Compression completed. Compressed file saved as '{output_filename}'.")
+            self.qlzfilename = output_filename
             return output_filename
 
         except Exception as e:
             logger.error(f"Compression failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
+            self.compstatus = False
             return None
     # -----------------------------------------------------------------------
     def decompress_file(self,input_filename,output_filename):
@@ -3730,17 +3757,26 @@ class Makera(RelativeLayout):
             return False
     # -----------------------------------------------------------------------
     def uploadLocalFile(self, filepath, callback=None):
-        self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
-        self.original_upload_filepath = filepath  # Store original path for recent directory tracking
-        if 'lz' in self.filetype:               #如果固件支持的上传文件类型为.lz，则进行压缩
-            qlzfilename = self.compress_file(filepath)
-            if qlzfilename:
-                self.uploading_file = qlzfilename
-        threading.Thread(target=self.doUpload,args=(callback,)).start()
+        try:
+            file_size = os.path.getsize(self.uploading_file)
+        except FileNotFoundError:
+            file_size = 0
+        if 'lz' in self.filetype and file_size > BLOCK_SIZE:
+            self.compstatus = True
+            threading.Thread(target=self.compress_file, args=(filepath,)).start()
+        threading.Thread(target=self.doUpload).start()
 
     # -----------------------------------------------------------------------
-    def doUpload(self, callback):
+    def doUpload(self):
+        while self.compstatus:
+                    ts = time.time()
+        self.controller.sendNUM = SEND_FILE
+        ts = td = time.time()
+        while ts - td < 1:
+                    ts = time.time()
+        if self.qlzfilename:
+            self.uploading_file = self.qlzfilename
         self.uploading_size = os.path.getsize(self.uploading_file)
         remotename = os.path.join(self.file_popup.remote_rv.curr_dir, os.path.basename(os.path.normpath(self.uploading_file)))
         if self.file_popup.firmware_mode:
@@ -3757,6 +3793,7 @@ class Makera(RelativeLayout):
             #md5 = Utils.md5(self.uploading_file)
             md5 = Utils.md5(displayname)
             self.controller.uploadCommand(os.path.normpath(remotename))
+            time.sleep(0.2)
             upload_result = self.controller.stream.upload(self.uploading_file, md5, self.uploadCallback)
         except:
             self.controller.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
@@ -3785,7 +3822,13 @@ class Makera(RelativeLayout):
             # copy file to application directory if needed
             remote_path = os.path.join(self.file_popup.remote_rv.curr_dir, os.path.basename(os.path.normpath(self.uploading_file)))
             remote_post_path = remote_path.replace('/sd/', '').replace('\\sd\\', '')
-            local_path = os.path.join(self.temp_dir, remote_post_path)
+            if kivy_platform == 'ios':
+                from os.path import expanduser
+                sandbox_documents_path = os.path.join(expanduser('~'), 'Documents')
+                curr_dir = os.path.join(sandbox_documents_path, 'gcodes')
+                local_path = os.path.join(os.path.dirname(curr_dir), remote_post_path)
+            else:  # inserted
+                local_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), remote_post_path)
             if self.uploading_file != local_path and not self.file_popup.firmware_mode:
                 if self.uploading_file.endswith('.lz'):
                     #copy lz file to .lz dir
@@ -3821,15 +3864,9 @@ class Makera(RelativeLayout):
                 self.decompstatus = True
                 os.remove(self.uploading_file)
                 self.decomptime = time.time()
-                Clock.schedule_once(partial(self.progressStart, tr._('Decompressing') + '\n%s' % displayname, False), 0.2)
+                Clock.schedule_once(partial(self.progressStart, tr._('Decompressing') + '\n%s' % displayname, False), 0.5)
 
         self.controller.sendNUM = 0
-        if upload_result and callback:  # Only run callback if upload succeeded
-            if self.uploading_file.endswith('.lz'):
-                callback(remotename[:-3], origin_path)
-            else:
-                callback(remotename, local_path)
-        # For iOS we display the file list remotely only so we need to refresh it but on main thread
         if upload_result and not self.file_popup.firmware_mode and not self.uploading_file.endswith('.lz'):
             Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
 
@@ -3936,7 +3973,7 @@ class Makera(RelativeLayout):
         self.progress_popup.dismiss()
 
     # --------------------------------------------------------------`---------
-    def updateCompressProgress(self, value):
+    def updateDeCompressProgress(self, value):
         Clock.schedule_once(partial(self.progressUpdate, value * 100.0 / self.fileCompressionBlocks, '', True), 0)
         if value == self.fileCompressionBlocks:
             Clock.schedule_once(self.progressFinish, 0)
@@ -3973,6 +4010,8 @@ class Makera(RelativeLayout):
                     self.config_loaded = False
                     self.config_loading = False
                     self.fw_version_checked = False
+                    self.echosended = False
+                    self.echosending = False
                     
                     # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting)
                     if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
@@ -4025,7 +4064,20 @@ class Makera(RelativeLayout):
                     self.status_drop_down.btn_unlock.text = 'Reset'
                 else:
                     self.status_drop_down.btn_unlock.text = 'Unlock'
-
+            if not app.playing and (not self.echosended) and (not self.echosending):
+                try:
+                    if self.controller.stream:
+                        self.echosending = True
+                        self.controller.stream.send(b'echo echo\n')
+                        echo = self.controller.stream.getc(10)
+                        if echo == b'echo: echo':
+                            self.message_popup.lb_content.text = tr._('Firmware version mismatch! \nPlease use a Controller with version V0.9.11 or earlier \nto upgrade the firmware to V1.0.4.')
+                            self.message_popup.btn_ok.disabled = False
+                            self.message_popup.open(self)
+                            return
+                        self.echosended = True
+                except:
+                    print(sys.exc_info()[1])
             # load config, only one time per connection
             if not app.playing and not self.config_loaded and not self.config_loading and app.state == "Idle":
                 self.config_loading = True

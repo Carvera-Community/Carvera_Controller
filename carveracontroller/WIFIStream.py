@@ -3,7 +3,8 @@ import sys
 import time
 import socket
 import select
-
+import os
+from . import Utils
 from .XMODEM import XMODEM
 import logging
 
@@ -11,19 +12,21 @@ import logging
 TCP_PORT = 2222
 UDP_PORT = 3333
 BUFFER_SIZE = 1024
-SOCKET_TIMEOUT = 0.3  # s
+SOCKET_TIMEOUT = 5
 
 # ==============================================================================
 # Machine Detector class
 # ==============================================================================
 class MachineDetector:
+
     def __init__(self):
         self.machine_list = []
         self.machine_name_list = []
         self.sock = None
         self.t = None
         self.tr = None
-
+        return
+    
     def is_machine_busy(self, addr):
         """Tries to connect to the machine, if machine is available returns true else false"""
         try:
@@ -67,8 +70,6 @@ class MachineDetector:
         except:
             print(sys.exc_info()[1])
 
-
-
 # ==============================================================================
 # WiFi stream class
 # ==============================================================================
@@ -79,9 +80,7 @@ class WIFIStream:
 
     # ----------------------------------------------------------------------
     def __init__(self):
-
-        self.modem = XMODEM(self.getc, self.putc, 'xmodem8k')
-
+        self.modem = XMODEM(self.getc, self.putc, 'wifiMode')
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(logging.WARNING)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -98,17 +97,20 @@ class WIFIStream:
 
     # ----------------------------------------------------------------------
     def open(self, address):
-        self.socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-        ip_port = address.split(':')
-        self.socket.settimeout(2)
-        self.socket.connect((address.split(':')[0], (int)(address.split(':')[1]) if len(ip_port) > 1 else TCP_PORT))
-        self.socket.settimeout(SOCKET_TIMEOUT)
-
-        return True
+        try:
+            self.socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+            ip_port = address.split(':')
+            self.socket.settimeout(3)
+            self.socket.connect((address.split(':')[0], int(address.split(':')[1]) if len(ip_port) > 1 else TCP_PORT))
+            self.socket.settimeout(SOCKET_TIMEOUT)
+            return True
+        except socket.error as e:
+            return False
 
     # ----------------------------------------------------------------------
     def close(self):
-        if self.socket is None: return
+        if self.socket is None:
+            return
         try:
             self.modem.clear_mode_set()
             self.socket.close()
@@ -164,13 +166,13 @@ class WIFIStream:
     def upload(self, filename, local_md5, callback):
         # do upload
         stream = open(filename, 'rb')
-        result = self.modem.send(stream, md5 = local_md5, retry = 10, callback = callback)
+        result = self.modem.send(stream, md5=local_md5, retry=50, callback=callback)
         stream.close()
         return result
 
     def download(self, filename, local_md5, callback):
         stream = open(filename, 'wb')
-        result = self.modem.recv(stream, md5 = local_md5, retry = 10, callback = callback)
+        result = self.modem.recv(stream, md5=local_md5, retry=50, callback=callback)
         stream.close()
         return result
 
