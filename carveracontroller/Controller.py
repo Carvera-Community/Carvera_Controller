@@ -568,7 +568,6 @@ class Controller:
             self.stream.send('~'.encode())
 
     def estopCommand(self):
-        self.continuous_jog_active = False  # Stop continuous jog when emergency stop is triggered
         if self.stream:
             self.stream.send(b'\x18')
 
@@ -1011,9 +1010,8 @@ class Controller:
         if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
             return
         
-        self.continuous_jog_active = False
         # Send Y^ (Ctrl+Y) to stop continuous jogging
-        if self.stream is not None:
+        if self.stream is not None and self.continuous_jog_active:
             self.stream.send(b"\031")
 
     def jog(self, _dir, speed=None):
@@ -1143,6 +1141,9 @@ class Controller:
             self.parseWCSParameters(line)
         elif line[0] == "#":
             self.log.put((self.MSG_INTERIOR, line))
+        elif line[0] == "^":
+            if line[1] == "Y":
+                self.continuous_jog_active = False
         elif "error" in line.lower() or "alarm" in line.lower():
             self.log.put((self.MSG_ERROR, line))
         else:
