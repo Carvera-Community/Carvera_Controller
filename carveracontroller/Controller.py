@@ -989,7 +989,7 @@ class Controller:
 
     def startContinuousJog(self, _dir, speed=None, scale_feed_override=None):
         """Start continuous jogging in the specified direction"""
-        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS or self.continuous_jog_active:
             return
         self.continuous_jog_active = True
         if speed is None:
@@ -1024,8 +1024,7 @@ class Controller:
             else:
                 self.executeCommand(f"$J {_dir} F{speed}")
         elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
-            if not self.continuous_jog_active:
-                self.startContinuousJog(_dir)
+            self.startContinuousJog(_dir)
 
     # ----------------------------------------------------------------------
 
