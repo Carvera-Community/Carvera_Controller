@@ -3153,7 +3153,7 @@ class Makera(RelativeLayout):
             target_tool = 'Laser'
         self.confirm_popup.lb_title.text = tr._('Changing Tool')
         self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
-        self.confirm_popup.cancel = None
+        self.confirm_popup.cancel = partial(self.controller.stopRun)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
 
