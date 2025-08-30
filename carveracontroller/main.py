@@ -3205,7 +3205,7 @@ class Makera(RelativeLayout):
         self.fetch_recent_local_dir_list()
 
         # Find the most recent directory that is still present
-        local_path = None
+        local_path = ''
         for dir in self.recent_local_dir_list:
             if os.path.isdir(dir):
                 local_path = dir
