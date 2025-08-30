@@ -1,4 +1,4 @@
-[unreleased]
+[2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
 - Enhancement: Auto-Reconnect functionality with configurable delay, and attempts
