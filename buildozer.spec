@@ -293,7 +293,7 @@ android.archs = armeabi-v7a, arm64-v8a, x86_64
 
 # (int) overrides automatic versionCode computation (used in build.gradle)
 # this is not the same as app version and should only be edited if you know what you're doing
-# android.numeric_version = 1
+android.numeric_version = 1  # this is updated by build.py
 
 # (bool) enables Android auto backup feature (Android API >=23)
 android.allow_backup = True
