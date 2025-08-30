@@ -249,17 +249,25 @@ def fix_macos_version_string(version)-> None:
         sys.exit(result.returncode)
 
 
-def codegen_version_string(package_version: str, project_path: str, root_path: str)-> None:
+def codegen_version_string(package_version: str, project_path: str, root_path: str, target_os: str = None)-> None:
+    # For Android builds, we need to use the converted version without suffix
+    # to avoid parsing errors in the Android build system
+    if target_os == "android":
+        version_for_files = convert_version_to_4part(package_version, always_include_build=True)
+        logger.info(f"Using Android-compatible version '{version_for_files}' for __version__.py and pyproject.toml")
+    else:
+        version_for_files = package_version
+    
     # Update the __version__.py file used by the project
     with open(project_path.joinpath("__version__.py").resolve(), "w") as f:
-        f.write(f"__version__ = '{package_version}'\n")
+        f.write(f"__version__ = '{version_for_files}'\n")
     
     # Update the value of `version` in` pyproject.toml
     pyproject_path = root_path.joinpath("pyproject.toml").resolve()
     data = toml.load(pyproject_path)
     if "tool" not in data or "poetry" not in data["tool"]:
         raise ValueError("[tool.poetry] section not found in pyproject.toml")
-    data["tool"]["poetry"]["version"] = package_version
+    data["tool"]["poetry"]["version"] = version_for_files
     with open(pyproject_path, "w", encoding="utf-8") as f:
         toml.dump(data, f)
 
@@ -335,8 +343,11 @@ def rename_release_file(os_name, package_version):
         dst = f"./dist/{file_name}"
     elif os_name == "android":
         arch_name = "armeabi-v7a_arm64-v8a_x86_64"
+        # For Android, we need to use the converted version for the source filename
+        # since the APK was built with the converted version (e.g., 2.0.0.1)
+        android_version = convert_version_to_4part(package_version, always_include_build=True)
         file_name = f"carveracontroller-community-{package_version}.apk"
-        src = f"./dist/carveracontrollercommunity-{package_version}-{arch_name}-debug.apk"
+        src = f"./dist/carveracontrollercommunity-{android_version}-{arch_name}-debug.apk"
         dst = f"./dist/{file_name}"
     else:
         # For any other OS (and pypi build), don't attempt to rename
@@ -388,15 +399,45 @@ def update_buildozer_version(package_version: str) -> None:
     
     # Convert version with suffix to Android-compatible version
     # Android build system expects a version string that can be parsed into numeric components
-    android_version = convert_version_to_4part(package_version)
+    # We need to ensure it's always in a consistent format for parsing
+    android_version = convert_version_to_4part(package_version, always_include_build=True)
     logger.info(f"Converting version '{package_version}' to Android-compatible version '{android_version}'")
+    
+    # Calculate a reasonable version code for Android
+    # Format: MMNNPP where MM=major, NN=minor, PP=patch
+    # For versions with suffixes, add a small offset to avoid conflicts
+    version_parts = android_version.split('.')
+    major = int(version_parts[0])
+    minor = int(version_parts[1])
+    patch = int(version_parts[2])
+    
+    # Create version code: major * 10000 + minor * 100 + patch
+    # This gives us room for up to 99 minor versions and 99 patch versions
+    version_code = major * 10000 + minor * 100 + patch
+    
+    # If there was a suffix in the original version, add a small offset
+    if '-' in package_version:
+        version_code += 1000  # Add offset for pre-release versions
+    
+    logger.info(f"Calculated Android version code: {version_code}")
     
     with open(buildozer_spec_path, 'r') as file:
         lines = file.readlines()
     
+    # Update the version field
     for i, line in enumerate(lines):
         if line.startswith('version = '):
             lines[i] = f'version = {android_version}\n'
+            break
+    
+    # Update the android.numeric_version field
+    for i, line in enumerate(lines):
+        if line.startswith('android.numeric_version = '):
+            lines[i] = f'android.numeric_version = {version_code}\n'
+            break
+        elif line.startswith('# android.numeric_version = '):
+            # If it's commented out, uncomment and set the value
+            lines[i] = f'android.numeric_version = {version_code}\n'
             break
     
     with open(buildozer_spec_path, 'w') as file:
@@ -467,7 +508,7 @@ def main():
     backup_codegen_files(ROOT_PATH, PROJECT_PATH)
 
     logger.info("Revising files by codegen")
-    codegen_version_string(package_version, PROJECT_PATH, ROOT_PATH)
+    codegen_version_string(package_version, PROJECT_PATH, ROOT_PATH, target_os=os_name)
 
     # Compile translation files
     compile_mo()
