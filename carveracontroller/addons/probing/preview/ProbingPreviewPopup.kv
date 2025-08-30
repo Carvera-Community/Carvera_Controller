@@ -23,8 +23,8 @@
         BoxLayout:
             size_hint_y: 0.4
             Button:
-                text: tr._('Cancel')
-                on_release: root.dismiss()
+                text: tr._('Halt') if app.state != 'Idle' else tr._('Cancel')
+                on_release: app.root.controller.estopCommand() if app.state != 'Idle' else root.dismiss()
             Button:
                 text: tr._('Start')
                 disabled: (not root.gcode) or (app.state != 'Idle')

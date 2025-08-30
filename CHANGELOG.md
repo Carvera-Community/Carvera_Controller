@@ -1,3 +1,26 @@
+[2.0.0-RC1]
+- Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
+- Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
+- Enhancement: Auto-Reconnect functionality with configurable delay, and attempts
+- Enhancement: Add Online Documentation link to Function dropdown
+- Enhancement: WBH04 Pendant step size option "Lead" scales the feedrate to the rotational wheel speed of the pendant
+- Enhancement: MDI sent/recived now logged to log file (if enabled)
+- Enhancement: New HALT message when a 3D probe crash was detected
+- Change: Jogging option buttons consolidated and always displayed
+- Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
+- Change: Jog buttons act now on_press instead of on_release
+- Change: Probing cancel button becomes halt button if machine is moving
+- Change: Machine heartbeat is now 5s to be a bit more responsive on disconnects
+- Change: Light toggle button initial state is set on connect
+- Change: Controller logging options now available in settings. Default log_level is info and log to file is enabled.
+- Change: SafeZ positions are now 2mm from the home positions to provide clearence for users of x-sag compensation
+- Change: Pushing Cancel on the Changing Tool popup stops g-code playback. Community firmware > 2.0.0c is required for this feature.
+- Change: Added config item to skip moving to path origin on gcode playback start. Community firmware > 2.0.0c is required for this feature.
+- Fix: Upload-and-Select button is now disabled until a file is selected
+- Fix: WBH04 Pendant Macro-10 should be treated as an action button
+- Fix: Better handling of machine diagnostic output to support analogue mode spindles
+- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3 
+
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
 - Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined

@@ -40,6 +40,7 @@ import time
 import datetime
 import threading
 import logging
+logger = logging.getLogger(__name__)
 
 # Add Android imports
 if kivy_platform == 'android':
@@ -56,7 +57,7 @@ def has_all_files_access():
         try:
             return Environment.isExternalStorageManager()
         except Exception as e:
-            print(f"Error checking storage manager status: {e}")
+            logger.error(f"Error checking storage manager status: {e}")
             return False
     return True
 
@@ -65,14 +66,14 @@ def request_android_permissions():
         try:
             # Check if we already have all files access
             if has_all_files_access():
-                print("Already have all files access permission")
+                logger.info("Already have all files access permission")
                 return
 
             # Request all files access permission
             intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             mActivity.startActivity(intent)
         except Exception as e:
-            print(f"Error requesting permissions: {e}")
+            logger.error(f"Error requesting permissions: {e}")
 
 from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
@@ -108,7 +109,30 @@ from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
-from kivy.metrics import Metrics
+from kivy.metrics import Metrics, dp
+
+# Custom Property to monitor CNC.vars["sw_light"] changes
+class LightProperty(BooleanProperty):
+    """Custom property that monitors CNC.vars['sw_light'] and converts it to a boolean"""
+    
+    def __init__(self, defaultvalue=False, **kwargs):
+        super().__init__(defaultvalue=defaultvalue, **kwargs)
+        self._light_value = 0
+        # Don't call update_from_state in __init__ since we don't have an obj yet
+    
+    def update_from_state(self, obj):
+        """Update the property value from CNC.vars['sw_light']"""
+        try:
+            current_value = CNC.vars.get("sw_light", 0)
+            if current_value != self._light_value:
+                self._light_value = current_value
+                # Convert to boolean: 1 = True (down), 0 = False (normal)
+                new_bool_value = current_value == 1
+                BooleanProperty.set(self, obj, new_bool_value)
+
+        except Exception as e:
+            # If CNC.vars is not available yet, default to False
+            BooleanProperty.set(self, obj, False)
 
 try:
     from serial.tools.list_ports import comports
@@ -181,6 +205,7 @@ def load_halt_translations(tr: translation.Lang):
         11: tr._("Cover opened when playing"),
         12: tr._("Wireless probe dead or not set"),
         13: tr._("Emergency stop button pressed"),
+        16: tr._("3D probe crash detected"),
         # Need to reset the machine
         21: tr._("Hard Limit Triggered, reset needed"),
         22: tr._("X Axis Motor Error, reset needed"),
@@ -296,6 +321,79 @@ class MessagePopup(ModalView):
     def __init__(self, **kwargs):
         super(MessagePopup, self).__init__(**kwargs)
 
+class ReconnectionPopup(ModalView):
+    auto_reconnect_mode = BooleanProperty(False)
+    
+    def __init__(self, **kwargs):
+        super(ReconnectionPopup, self).__init__(**kwargs)
+        self.countdown = 0
+        self.max_attempts = 0
+        self.current_attempt = 0
+        self.wait_time = 10
+        self.cancel_callback = None
+        self.reconnect_callback = None
+
+    def start_countdown(self, max_attempts, wait_time, reconnect_callback, cancel_callback):
+        """Start auto-reconnect countdown mode"""
+        self.auto_reconnect_mode = True
+        self.max_attempts = max_attempts
+        self.current_attempt = 0
+        self.wait_time = wait_time
+        self.reconnect_callback = reconnect_callback
+        self.cancel_callback = cancel_callback
+        self.countdown = wait_time
+        self.update_display()
+
+    def show_manual_reconnect(self, reconnect_callback):
+        """Show manual reconnect mode (no countdown)"""
+        self.auto_reconnect_mode = False
+        self.reconnect_callback = reconnect_callback
+        self.update_display()
+
+    def update_display(self):
+        if hasattr(self, 'lb_content'):
+            if self.auto_reconnect_mode:
+                remaining_attempts = self.max_attempts - self.current_attempt
+                self.lb_content.text = tr._('Connection lost. Attempting to reconnect...\n\nAttempt {} of {}\nReconnecting in {} seconds'.format(
+                    self.current_attempt + 1, self.max_attempts, self.countdown))
+            else:
+                self.lb_content.text = tr._('Connection to machine lost.')
+
+    def countdown_tick(self, dt=None):
+        if not self.auto_reconnect_mode:
+            return
+            
+        if self.countdown > 0:
+            self.countdown -= 1
+            self.update_display()
+        else:
+            self.countdown = self.wait_time
+            self.current_attempt += 1
+            if self.current_attempt < self.max_attempts:
+                if self.reconnect_callback:
+                    self.reconnect_callback()
+            else:
+                self.dismiss()
+                if self.cancel_callback:
+                    self.cancel_callback()
+
+    def cancel_reconnect(self):
+        self.dismiss()
+        if self.cancel_callback:
+            self.cancel_callback()
+
+    def reconnect(self):
+        """Handle reconnect button press"""
+        if self.reconnect_callback:
+            self.reconnect_callback()
+        self.dismiss()
+
+    def on_dismiss(self):
+        """Called when popup is dismissed"""
+        super().on_dismiss()
+        # Stop the countdown timer
+        Clock.unschedule(self.countdown_tick)
+
 class InputPopup(ModalView):
     cache_var1 = StringProperty('')
     cache_var2 = StringProperty('')
@@ -373,16 +471,8 @@ class OriginPopup(ModalView):
 
     def validate_inputs(self):
         """Validate inputs based on the active tab."""
-        # Check which tab is active by looking at the TabbedPanel
-        tabbed_panel = None
-        for child in self.children:
-            if hasattr(child, 'children'):
-                for grandchild in child.children:
-                    if hasattr(grandchild, 'current_tab'):
-                        tabbed_panel = grandchild
-                        break
-                if tabbed_panel:
-                    break
+        # Check which tab is active using the ID
+        tabbed_panel = self.ids.tabbed_panel
         
         if tabbed_panel and tabbed_panel.current_tab:
             current_tab = tabbed_panel.current_tab
@@ -420,19 +510,12 @@ class OriginPopup(ModalView):
         app = App.get_running_app()
         is_valid, error_message = self.validate_inputs()
         if is_valid:
-            # Check which tab is active
-            tabbed_panel = None
-            for child in self.children:
-                if hasattr(child, 'children'):
-                    for grandchild in child.children:
-                        if hasattr(grandchild, 'current_tab'):
-                            tabbed_panel = grandchild
-                            break
-                    if tabbed_panel:
-                        break
-            
+            # Check which tab is active using the ID
+            tabbed_panel = self.ids.tabbed_panel
+
             if tabbed_panel and tabbed_panel.current_tab:
                 current_tab = tabbed_panel.current_tab
+                
                 if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
                     # Handle XYZ Probe tab
                     app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
@@ -506,6 +589,7 @@ class XYZProbePopup(ModalView):
         is_valid, error_message = self.validate_inputs()
         if is_valid:
             app = App.get_running_app()
+            logger.debug(f"XYZProbePopup.on_ok_pressed: probe height={self.ids.txt_probe_height.text}, tool diameter={self.ids.txt_tool_diameter.text}")
             app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
             self.dismiss()
         else:
@@ -731,7 +815,7 @@ class CoordPopup(ModalView):
 
         # Ensure the folder exists
         if not os.path.exists(folder_path):
-            print(f"Folder '{folder_path}' does not exist!")
+            logger.warning(f"Folder '{folder_path}' does not exist!")
             return
 
         # Open based on OS
@@ -746,7 +830,7 @@ class CoordPopup(ModalView):
 
         # Ensure the folder exists
         if not os.path.exists(folder_path):
-            print(f"Folder '{folder_path}' does not exist!")
+            logger.warning(f"Folder '{folder_path}' does not exist!")
             return
 
         # Open based on OS
@@ -1206,7 +1290,7 @@ class WCSSettingsPopup(ModalView):
             # Update the button display
             self.update_active_wcs_button(wcs)
         except Exception as e:
-            print(f"Error activating WCS {wcs}: {e}")
+            logger.error(f"Error activating WCS {wcs}: {e}")
     
     def update_ui_for_firmware_type(self):
         """Update UI elements based on firmware type"""
@@ -1230,7 +1314,7 @@ class WCSSettingsPopup(ModalView):
             if hasattr(self.ids, 'btn_clear_all'):
                 self.ids.btn_clear_all.disabled = not is_community
         except Exception as e:
-            print(f"Error updating UI for firmware type: {e}")
+            logger.error(f"Error updating UI for firmware type: {e}")
     
     def check_for_changes(self):
         """Check if any values have changed and update the OK button text"""
@@ -1328,6 +1412,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
                 app.root.open_setting_default_confirm_popup()
 
 class JogSpeedDropDown(ToolTipDropDown):
+    def __init__(self, controller, **kwargs):
+        super().__init__(**kwargs)
+        self.controller = controller
     pass
 
 class XDropDown(ToolTipDropDown):
@@ -2014,11 +2101,11 @@ class Makera(RelativeLayout):
     confirm_popup = ObjectProperty()
     unlock_popup = ObjectProperty()
     message_popup = ObjectProperty()
+    reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
-    jog_speed = NumericProperty(0)
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -2055,13 +2142,16 @@ class Makera(RelativeLayout):
 
     used_tools = ListProperty()
     upcoming_tool = 0
+    
+    # Custom property to monitor CNC light state
+    light_state = LightProperty(False)
 
     played_lines = 0
 
     show_update = True
     fw_upd_text = ''
     fw_version_new = ''
-    fw_version_old = ''
+    fw_version = ''
     fw_version_checking = False
     fw_version_checked = False
 
@@ -2076,7 +2166,7 @@ class Makera(RelativeLayout):
 
     ctl_upd_text = ''
     ctl_version_new = ''
-    ctl_version_old = ''
+    ctl_version = ''
 
     common_local_dir_list = []
     recent_local_dir_list = []
@@ -2115,12 +2205,14 @@ class Makera(RelativeLayout):
         super(Makera, self).__init__()
 
         self.temp_dir = tempfile.mkdtemp()
-        self.ctl_version_old = ctl_version
+        self.ctl_version = ctl_version
         self.file_popup = FilePopup()
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
         self.controller = Controller(self.cnc, self.execCallback)
+        # Set up reconnection callbacks
+        self.controller.set_reconnection_callbacks(self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success)
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
@@ -2178,11 +2270,12 @@ class Makera(RelativeLayout):
         self.func_drop_down = FuncDropDown()
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
-        self.jog_speed_drop_down = JogSpeedDropDown()
+        self.jog_speed_drop_down = JogSpeedDropDown(self.controller)
 
         self.confirm_popup = ConfirmPopup()
         self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
+        self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
 
@@ -2261,12 +2354,12 @@ class Makera(RelativeLayout):
         try:
             shutil.rmtree(self.temp_dir)
         except Exception as e:
-            print(f"Error cleaning up temporary directory: {e}")
+            logger.error(f"Error cleaning up temporary directory: {e}")
 
         try:
             self.pendant.close()
         except Exception as e:
-            print(f"Error closing pendant: {e}")
+            logger.error(f"Error closing pendant: {e}")
 
         # Save the last window size.
         # Seems that kivvy uses the window size before dpi scaling in the config,
@@ -2290,6 +2383,8 @@ class Makera(RelativeLayout):
 
         self.config_popup.settings_panel.add_json_panel(tr._('Controller'), Config, data=json.dumps(controller_config))
 
+        self._update_macro_button_text()
+
     def load_pendant_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'pendant_config.json')
         with open(config_def_file) as file:
@@ -2305,6 +2400,40 @@ class Makera(RelativeLayout):
 
         self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
 
+    def _update_macro_button_text(self):
+
+        for macro_config_key in ['touch_macro_1', 'touch_macro_2', 'touch_macro_3']:
+
+            macro_value = Config.get("carvera", macro_config_key)
+            if macro_value:
+                logger.debug(f"{macro_config_key} set to: {macro_value=}")
+                macro_name = json.loads(macro_value).get("name", False)
+                if macro_name:
+                    self.ids[macro_config_key + "_btn"].text = macro_name  # the button ids for the macro UI buttons are suffixed with _btn
+
+
+    def run_macro(self, macro_id: int) -> None:
+        macro_key = f"touch_macro_{macro_id}"
+        macro_value = Config.get("carvera", macro_key)
+
+        if not macro_value:
+            logger.warning(f"No macro defined for ID {macro_id}")
+            return
+
+        macro_value = json.loads(macro_value)
+
+        if not macro_value.get("gcode"):
+            Clock.schedule_once(partial(self.loadError, tr._('No Macro defined. Configure one in Settings-> Controller')), 0)
+
+        try:
+            lines = macro_value.get("gcode", "").splitlines()
+            for l in lines:
+                l = l.strip()
+                if l == "":
+                    continue
+                self.controller.sendGCode(l)
+        except Exception as e:
+            logger.error(f"Failed to run macro {macro_id}: {e}")
 
     def open_download(self):
         webbrowser.open(DOWNLOAD_ADDRESS, new = 2)
@@ -2323,9 +2452,12 @@ class Makera(RelativeLayout):
             self.file_popup.open()
             self.file_popup.local_rv.child_dir('')
 
+    def open_online_docs(self):
+        webbrowser.open('https://carvera-community.gitbook.io/docs/controller/')
+
     def send_bug_report(self):
-        webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues')
-        webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues')
+        webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues/new')
+        webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/new')
         log_dir = Path.home() / ".kivy" / "logs"
 
         # Open the log directory with whatever native file browser is availiable
@@ -2365,14 +2497,14 @@ class Makera(RelativeLayout):
         versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
         if versions != None:
             self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
-            if self.fw_version_old != '':
+            if self.fw_version != '':
                 app = App.get_running_app()
-                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version_old):
+                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version):
                     app.fw_has_update = True
-                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version
                 else:
                     app.fw_has_update = False
-                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version
         self.fw_version_checked = False
 
     def ctl_upd_loaded(self, req, result):
@@ -2399,12 +2531,12 @@ class Makera(RelativeLayout):
         if versions != None:
             self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
             app = App.get_running_app()
-            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version_old):
+            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version):
                 app.ctl_has_update = True
-                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version
             else:
                 app.ctl_has_update = False
-                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version
         self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
@@ -2490,8 +2622,6 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def blink_state(self, *args):
         app = App.get_running_app()
-        # print(app.root.size)
-        # print(self.status_data_view.size)
         if self.uploading or self.downloading:
             return
         if self.holding == 1:
@@ -2531,8 +2661,33 @@ class Makera(RelativeLayout):
             return
 
         if time.time() - self.heartbeat_time > HEARTBEAT_TIMEOUT and self.controller.stream:
+            # Check reconnection configuration (only if not a manual disconnect and not already reconnecting)
+            if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
+                reconnect_wait_time = Config.getint('carvera', 'reconnect_wait_time', fallback=10)
+                reconnect_attempts = Config.getint('carvera', 'reconnect_attempts', fallback=3)
+                
+                # Update controller reconnection settings
+                self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
+                
+                if auto_reconnect_enabled:
+                    # Show reconnection popup with countdown
+                    self.reconnection_popup.start_countdown(
+                        reconnect_attempts, 
+                        reconnect_wait_time, 
+                        self.attempt_reconnect, 
+                        self.on_reconnect_failed
+                    )
+                    self.reconnection_popup.open()
+                    
+                    # Start countdown timer
+                    Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
+                else:
+                    # Show reconnection popup in manual mode
+                    self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
+                    self.reconnection_popup.open()
+            
             self.controller.close()
-            self.controller.log.put((Controller.MSG_ERROR, 'ALARM: ' + tr._('Timeout, Connection lost!')))
             self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -2544,13 +2699,18 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def check_model_metadata(self, *args):
         app = App.get_running_app()
+        
+        # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
+        if app is None:
+            return
+            
         # Check if model has been set and if not, query for it
         if not app.model or app.model == "":
             if self.controller.stream is not None:
                 self.controller.queryModel()
         
         # Check if version has been set and if not, query for it
-        if not self.fw_version_old or self.fw_version_old == "":
+        if not self.fw_version or self.fw_version == "":
             if self.controller.stream is not None:
                 self.controller.queryVersion()
 
@@ -2580,7 +2740,7 @@ class Makera(RelativeLayout):
 
         # android storage
         if kivy_platform == 'android':
-            print('Android storage permission check')
+            logger.info('Android storage permission check')
             try:
                 # Request permissions first
                 request_android_permissions()
@@ -2591,7 +2751,7 @@ class Makera(RelativeLayout):
                     self.common_local_dir_list.append(
                         {'name': tr._('Storage'), 'path': str(android_storage_path), 'icon': 'data/folder-home.png'})
             except Exception as e:
-                print(f'Get Android Storage Error: {e}')
+                logger.error(f'Get Android Storage Error: {e}')
 
         # windows disks
         available_drives = ['%s:' % d for d in string.ascii_uppercase if os.path.exists('%s:' % d)]
@@ -2708,6 +2868,38 @@ class Makera(RelativeLayout):
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
 
+    # -----------------------------------------------------------------------
+    def attempt_reconnect(self):
+        """Attempt to reconnect to the last known connection"""
+        if self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+            # Try to reconnect to WiFi
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
+                # Stop the countdown timer if reconnection popup is open
+                if self.reconnection_popup._is_open:
+                    Clock.unschedule(self.reconnection_popup.countdown_tick)
+                    self.reconnection_popup.dismiss()
+                # Don't cancel reconnection here - let the connection state change handle it
+            else:
+                # Machine is busy, show error and stop reconnection
+                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+                self.controller.cancel_reconnection()
+        else:
+            # For USB connections or no previous WiFi address, just stop reconnection
+            self.controller.cancel_reconnection()
+
+    def on_reconnect_failed(self):
+        """Called when all reconnection attempts have failed"""
+        # Only show the message if we're actually disconnected and not in the process of connecting
+        app = App.get_running_app()
+        if app and app.state == NOT_CONNECTED and self.controller.stream is None:
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Reconnection failed. Please connect manually."), False), 0)
+
+    def on_reconnect_success(self):
+        """Called when reconnection succeeds"""
+        # Stop any ongoing reconnection attempts
+        self.controller.cancel_reconnection()
+
     def open_wifi_conn_drop_down(self, button):
         self.wifi_conn_drop_down.clear_widgets()
         btn = MachineButton(text=tr._('Searching for nearby machines...'), size_hint_y=None, height='35dp',
@@ -2798,9 +2990,11 @@ class Makera(RelativeLayout):
                             self.controller.is_community_firmware = False
                         if not app.is_community_firmware or not CNC.can_rotate_wcs:
                             self.controller.viewWCS()
-                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]', remote_version[0])
+                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+', remote_version[0])
                     if remote_version != None:
-                        self.fw_version_old = remote_version[0].split('=')[1]
+                        self.fw_version = remote_version[0].split('=')[1].strip()
+                        app.fw_version_digitized = Utils.digitize_v(self.fw_version)
+                        logger.debug(f"Firmware Version detected as {self.fw_version}")
                         if self.fw_version_new != '':
                             self.check_fw_version()
                     
@@ -2822,11 +3016,13 @@ class Makera(RelativeLayout):
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
+                        logger.info(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
+                        logger.error(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
-                    print(sys.exc_info()[1])
+                    logger.error(sys.exc_info()[1])
                     break
             # Update Decompress status bar
             if self.decompstatus == True:
@@ -2983,7 +3179,7 @@ class Makera(RelativeLayout):
             target_tool = 'Laser'
         self.confirm_popup.lb_title.text = tr._('Changing Tool')
         self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
-        self.confirm_popup.cancel = None
+        self.confirm_popup.cancel = partial(self.controller.abortCommand)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
 
@@ -3203,7 +3399,7 @@ class Makera(RelativeLayout):
             self.controller.pauseStream(0.2)
             download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
             self.downloading = False
 
@@ -3239,6 +3435,8 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.controller.queryVersion, 0.3)
                 self.filetype = ''
                 Clock.schedule_once(self.controller.queryFtype, 0.4)
+                # Schedule a one off diagnostic command to get the machine's extended state
+                Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
                 Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
                 # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
@@ -3468,7 +3666,7 @@ class Makera(RelativeLayout):
             # Check if the filename.lz is writeable
             can_write_in_lz = os.access(input_filename + '.lz', os.W_OK)
             if not can_write_in_lz:
-                print(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
+                logger.warning(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
                 # First copy the file to the temp dir
                 shutil.copy(input_filename, self.temp_dir)
                 input_filename = os.path.join(self.temp_dir, os.path.basename(input_filename))
@@ -3504,11 +3702,11 @@ class Makera(RelativeLayout):
                 sumdata = struct.pack('>H', sum & 0xffff)
                 f_out.write(sumdata)
 
-            print(f"Compression completed. Compressed file saved as '{output_filename}'.")
+            logger.info(f"Compression completed. Compressed file saved as '{output_filename}'.")
             return output_filename
 
         except Exception as e:
-            print(f"Compression failed: {e}")
+            logger.error(f"Compression failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return None
@@ -3547,14 +3745,14 @@ class Makera(RelativeLayout):
             sumdata = sum & 0xffff
 
             if(sumfile != sumdata):
-                print(f"deCompress failed: sum checksum mismatch")
+                logger.error(f"deCompress failed: sum checksum mismatch")
                 return False
 
-            print(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
+            logger.info(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
             return True
 
         except Exception as e:
-            print(f"deCompress failed: {e}")
+            logger.error(f"deCompress failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return False
@@ -3780,6 +3978,11 @@ class Makera(RelativeLayout):
             now = time.time()
             self.heartbeat_time = now
             app = App.get_running_app()
+            
+            # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
+            if app is None:
+                return
+                
             if app.state != CNC.vars["state"]:
                 app.state = CNC.vars["state"]
                 CNC.vars["color"] = STATECOLOR[app.state]
@@ -3798,11 +4001,54 @@ class Makera(RelativeLayout):
                     self.config_loaded = False
                     self.config_loading = False
                     self.fw_version_checked = False
+                    
+                    # Clean up light toggle binding when disconnected
+                    if hasattr(self, '_light_toggle_bound'):
+                        self.unbind(light_state=self._on_light_state_changed)
+                        delattr(self, '_light_toggle_bound')
+                    
+                    # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting)
+                    if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                        auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
+                        if auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+                            # Show reconnection popup
+                            reconnect_wait_time = Config.getint('carvera', 'reconnect_wait_time', fallback=10)
+                            reconnect_attempts = Config.getint('carvera', 'reconnect_attempts', fallback=3)
+                            
+                            self.reconnection_popup.start_countdown(
+                                reconnect_attempts, 
+                                reconnect_wait_time, 
+                                self.attempt_reconnect, 
+                                self.on_reconnect_failed
+                            )
+                            self.reconnection_popup.open()
+                            
+                            # Start countdown timer
+                            Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
+                            
+                            # Also trigger the controller reconnection logic
+                            self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
+                            self.controller.start_reconnection()
+                        elif not auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+                            # Show reconnection popup in manual mode
+                            self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
+                            self.reconnection_popup.open()
                 else:
                     self.status_data_view.minr_text = 'WiFi' if self.controller.connection_type == CONN_WIFI else 'USB'
                     self.status_drop_down.btn_connect_usb.disabled = True
                     self.status_drop_down.btn_connect_wifi.disabled = True
                     self.status_drop_down.btn_disconnect.disabled = False
+                    
+                    # If we just reconnected, stop any reconnection popup and timer
+                    if self.reconnection_popup._is_open:
+                        Clock.unschedule(self.reconnection_popup.countdown_tick)
+                        self.reconnection_popup.dismiss()
+                    
+                    # Notify that reconnection succeeded
+                    self.controller.notify_reconnection_success()
+                    
+                    # Reset manual disconnect flag since we're now connected
+                    self.controller._manual_disconnect = False
 
                 self.status_drop_down.btn_unlock.disabled = (app.state != "Alarm" and app.state != "Sleep")
                 if (CNC.vars["halt_reason"] in HALT_REASON and CNC.vars["halt_reason"] > 20) or app.state == "Sleep":
@@ -3814,6 +4060,11 @@ class Makera(RelativeLayout):
             if not app.playing and not self.config_loaded and not self.config_loading and app.state == "Idle":
                 self.config_loading = True
                 self.download_config_file()
+                
+                # Bind light toggle button to LightProperty (only once per connection)
+                if not hasattr(self, '_light_toggle_bound'):
+                    self.bind_light_toggle_to_property()
+                    self._light_toggle_bound = True
 
             # show update
             if not app.playing and self.fw_upd_text != '' and not self.fw_version_checked and app.state == "Idle":
@@ -4079,7 +4330,7 @@ class Makera(RelativeLayout):
                     self.wpb_leveling.value = 84
 
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
 
     # -----------------------------------------------------------------------
     def updateDiagnose(self, *args):
@@ -4168,6 +4419,10 @@ class Makera(RelativeLayout):
                 if self.diagnose_popup.sw_light.switch.active != CNC.vars["sw_light"]:
                     self.diagnose_popup.sw_light.set_flag = True
                     self.diagnose_popup.sw_light.switch.active = CNC.vars["sw_light"]
+            
+            # Update the custom light property to trigger UI updates
+            property_obj = self.__class__.__dict__['light_state']
+            property_obj.update_from_state(self)
 
             # control tool sensor power
             elapsed = now - self.control_list['tool_sensor_switch'][0]
@@ -4215,7 +4470,7 @@ class Makera(RelativeLayout):
             self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
             self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
 
     def update_control(self, name, value):
         if name in self.control_list:
@@ -4232,6 +4487,7 @@ class Makera(RelativeLayout):
         self.gcode_rv.set_selected_line(self.test_line - 1)
 
     def execCallback(self, line):
+        logger.info(f"MDI Sent: {line}")
         self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
 
     # -----------------------------------------------------------------------
@@ -4240,7 +4496,7 @@ class Makera(RelativeLayout):
            self.controller.open(CONN_USB, device)
            self.controller.connection_type = CONN_USB
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
 
@@ -4251,7 +4507,7 @@ class Makera(RelativeLayout):
             self.controller.connection_type = CONN_WIFI
             self.store_machine_address(address.split(':')[0])
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
 
@@ -4267,9 +4523,9 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def close(self):
         try:
-            self.controller.close()
+            self.controller.close_manual()
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -4298,13 +4554,11 @@ class Makera(RelativeLayout):
                                 elif self.setting_type_list[child.key] == 'numeric':
                                     new_value = new_value + '.0' if new_value.isdigit() else new_value
                             if new_value != child.value:
-                                # print(child.key, child.value, new_value)
                                 child.value = new_value
                         elif child.key in self.setting_default_list:
                             new_value = self.setting_default_list[child.key]
                             self.setting_change_list[child.key] = new_value
                             if new_value != child.value:
-                                # print(child.key, child.value, new_value)
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
@@ -4399,18 +4653,32 @@ class Makera(RelativeLayout):
         return True
 
     # -----------------------------------------------------------------------
-    def toggle_jog_control_ui(self):
-        app = App.get_running_app()
-        app.root.show_advanced_jog_controls = not app.root.show_advanced_jog_controls  # toggle the boolean
+    def toggle_jog_mode(self):
+        if self.controller.jog_mode == Controller.JOG_MODE_STEP:
+            self.update_ui_for_jog_mode_cont()
 
-        # Don't let the kb jog work if the advanced jog control bar is closed
-        if not app.root.show_advanced_jog_controls:
-            app.root.keyboard_jog_control = False
-            app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+        elif self.controller.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            self.update_ui_for_jog_mode_step()
+    
+    def update_ui_for_jog_mode_step(self):
+        self.controller.setJogMode(Controller.JOG_MODE_STEP)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        self.ids.step_xy.disabled = False
+        self.ids.step_a.disabled = False
+        self.ids.step_z.disabled = False
+    
+
+    def update_ui_for_jog_mode_cont(self):
+        self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continious')
+        self.ids.step_xy.disabled = True
+        self.ids.step_a.disabled = True
+        self.ids.step_z.disabled = True
+
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
+        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
@@ -4430,9 +4698,9 @@ class Makera(RelativeLayout):
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
 
         if app.root.keyboard_jog_control:
-            Window.bind(on_key_down=self._keyboard_jog_keydown)
+            Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
         else:
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
+            Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -4468,10 +4736,11 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_probe_z,
                                 self.handle_pendant_open_probing_popup,
                                 self.handle_pendant_connected,
-                                self.handle_pendant_disconnected)
+                                self.handle_pendant_disconnected,
+                                self.handle_pendant_button_press)
 
     def handle_pendant_connected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('Enable Pendant')
+        self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
         self.ids.pendant_jogging_en_btn.disabled = False
         self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
 
@@ -4500,6 +4769,22 @@ class Makera(RelativeLayout):
         else:
             self.probing_popup.open()
 
+    def handle_pendant_button_press(self, button_action: str):
+        """
+        Handle UI updates when pendant buttons are pressed.
+        This method can be customized to update specific UI elements
+        based on the button action.
+        """
+        app = App.get_running_app()
+        
+        # Update jog mode button text if jog mode changed
+        if button_action in ["mode_continuous", "mode_step"]:
+            if button_action == "mode_continuous":
+                self.update_ui_for_jog_mode_cont()
+            elif button_action == "mode_step":
+                self.update_ui_for_jog_mode_step()
+
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
@@ -4510,6 +4795,26 @@ class Makera(RelativeLayout):
                            self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
+    
+    def bind_light_toggle_to_property(self):
+        """Bind the light toggle button state to the LightProperty"""
+        self.bind(light_state=self._on_light_state_changed)
+
+        # Trigger an initial update by accessing the property object directly
+        property_obj = self.__class__.__dict__['light_state']
+        property_obj.update_from_state(self)
+    
+    def _on_light_state_changed(self, instance, value):
+        """Handle changes in the LightProperty and update the light toggle button"""
+        new_state = 'down' if value else 'normal'
+        self.ids.light_toggle.state = new_state
+    
+    def refresh_light_state(self):
+        """Manually refresh the light state from CNC.vars"""
+        if hasattr(self, 'light_state'):
+            property_obj = self.__class__.__dict__['light_state']
+            property_obj.update_from_state(self)
+            logger.debug("Light state manually refreshed from CNC.vars")
 
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
@@ -4517,18 +4822,25 @@ class Makera(RelativeLayout):
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
         if self.is_jogging_enabled():
             key = args[1]  # keycode
+
             if key == 274:  # down button
-                app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"Y{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog_with_speed("Y-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
             elif key == 275:  # right button
-                app.root.controller.jog_with_speed("X{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
-                app.root.controller.jog_with_speed("X-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"X-{app.root.step_xy.text}")
             elif key == 280:  # page up
-                app.root.controller.jog_with_speed("Z{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog(f"Z{app.root.step_xy.text}")
             elif key == 281:  # page down
-                app.root.controller.jog_with_speed("Z-{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog(f"Z-{app.root.step_xy.text}")
+    
+    def _keyboard_jog_keyup(self, *args):
+        app = App.get_running_app()
+        key = args[1]  # keycode
+        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+            app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
         if self.setting_change_list:
@@ -4559,7 +4871,16 @@ class Makera(RelativeLayout):
             self.pendant.close()
             self.setup_pendant()
 
+        self._update_macro_button_text()
+
         self.config_popup.btn_apply.disabled = True
+
+        # Configure logging level from config
+        if "log_level" in self.controller_setting_change_list:
+            log_level = Config.get('kivy', 'log_level').upper()
+            if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+                logging.getLogger().setLevel(getattr(logging, log_level))
+                logger.info(f"Log level set to {log_level}")
 
 
     # -----------------------------------------------------------------------
@@ -4818,7 +5139,7 @@ class Makera(RelativeLayout):
             # with open("laser.txt", "w") as output:
             #     output.write(str(temp_list))
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
             self.heartbeat_time = time.time()
             self.loading_file = False
             if f:
@@ -4900,6 +5221,7 @@ class MakeraApp(App):
     loading_page = BooleanProperty(False)
     model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
+    fw_version_digitized = NumericProperty(0)
 
     def on_stop(self):
         self.root.stop_run()
@@ -4913,6 +5235,12 @@ class MakeraApp(App):
         return Makera(ctl_version=__version__)
 
     def on_start(self):
+
+        # Set a minimum window size. 
+        # This can't be done on_build() since the monitor DPI is not known at that time
+        #Window.minimum_width = dp(1200)
+        #Window.minimum_height = dp(750)
+
         # Workaround for Android blank screen issue
         # https://github.com/kivy/python-for-android/issues/2720
         viewport_update_count = 0
@@ -4933,6 +5261,13 @@ class MakeraApp(App):
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
+
+    # Configure logging level from config
+    if Config.has_option('kivy', 'log_level'):
+        log_level = Config.get('kivy', 'log_level').upper()
+        if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+            logging.getLogger().setLevel(getattr(logging, log_level))
+            logger.info(f"Log level set to {log_level}")
 
 def set_config_defaults(default_lang):
     if not Config.has_section('carvera'):
@@ -4994,7 +5329,7 @@ def load_constants():
 
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30 # s
-    HEARTBEAT_TIMEOUT = 10
+    HEARTBEAT_TIMEOUT = 5
     MAX_TOUCH_INTERVAL = 0.15
     GCODE_VIEW_SPEED = 1
 

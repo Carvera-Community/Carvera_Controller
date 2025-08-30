@@ -1,5 +1,6 @@
 #:kivy 1.11.1
 #:import Factory kivy.factory.Factory
+#:import digitize_v carveracontroller.Utils.digitize_v
 #:import tr carveracontroller.__main__.tr
 #:include addons/tooltips/Tooltips.kv
 #:include addons/probing/ProbingPopup.kv
@@ -309,7 +310,15 @@
         size_hint_y: None
         height: '40dp'
         on_release:
-            app.root.jog_speed = 0
+            root.controller.jog_speed = 0
+            root.select(self.text)
+
+    Button:
+        text: tr._('Max')
+        size_hint_y: None
+        height: '40dp'
+        on_release:
+            root.controller.jog_speed = 10000
             root.select(self.text)
 
     Button:
@@ -317,35 +326,35 @@
         size_hint_y: None
         height: '40dp'
         on_release:
-            app.root.jog_speed = 2000
+            root.controller.jog_speed = 2000
             root.select(self.text)
     Button:
         text: tr._('1200 mm/min')
         size_hint_y: None
         height: '40dp'
         on_release:
-            app.root.jog_speed = 1200
+            root.controller.jog_speed = 1200
             root.select(self.text)
     Button:
         text: tr._('600 mm/min')
         size_hint_y: None
         height: '40dp'
         on_release:
-            app.root.jog_speed = 600
+            root.controller.jog_speed = 600
             root.select(self.text)
     Button:
         text: tr._('300 mm/min')
         size_hint_y: None
         height: '40dp'
         on_release:
-            app.root.jog_speed = 300
+            root.controller.jog_speed = 300
             root.select(self.text)
     Button:
         text: tr._('100 mm/min')
         size_hint_y: None
         height: '40dp'
         on_release:
-            app.root.jog_speed = 100
+            root.controller.jog_speed = 100
             root.select(self.text)
 
 <XDropDown>:
@@ -523,7 +532,7 @@
         text: tr._('Set Rotation')
         size_hint_y: None
         height: '40dp'
-        disabled: app.is_community_firmware == False
+        disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("1.0.11"))
         on_release:
             root.select('Third Item')
             app.root.set_rotation_popup.open()
@@ -1056,6 +1065,16 @@
         on_release:
             root.select('')
             app.root.probing_popup.open()
+    IconButton:
+        icon: 'data/open_iconic_UI/oi--question-mark.png'
+        icon_size: 24
+        small_icon: True
+        size_hint_y: None
+        height: '50dp'
+        tooltip_txt: tr._('Online Documentation')
+        on_release:
+            root.select('')
+            app.root.open_online_docs()
 
 <StatusDropDown>:
     btn_connect_usb: btn_connect_usb
@@ -1377,11 +1396,33 @@
         BoxLayout:
             id: btn_ok
             size_hint_y: 0.4
-            Label:
             Button:
                 text: tr._('Ok')
                 on_release: root.dismiss()
-            Label:
+
+<ReconnectionPopup>:
+    lb_content: lb_content
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            id: lb_content
+            text: tr._('Connection lost. Attempting to reconnect...')
+        BoxLayout:
+            size_hint_y: 0.4
+            spacing: '10dp'
+            Button:
+                id: btn_reconnect
+                text: tr._('Reconnect')
+                on_release: root.reconnect()
+                size_hint_x: 0.5
+            Button:
+                text: tr._('Cancel') if root.auto_reconnect_mode else tr._('Ok')
+                on_release: root.cancel_reconnect() if root.auto_reconnect_mode else root.dismiss()
+                size_hint_x: 0.5
 
 <ProgressPopup>:
     progress_bar: progress_bar
@@ -1424,6 +1465,7 @@
     txt_x_offset: txt_x_offset
     txt_y_offset: txt_y_offset
     TabbedPanel:
+        id: tabbed_panel
         do_default_tab: False
         tab_width: root.width / 2 - dp(2)
         TabbedPanelItem:
@@ -3448,12 +3490,14 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Y-'
-                                        on_release: root.controller.jog_with_speed("Y-{}".format(root.step_xy.text), root.jog_speed)
+                                        on_press: root.controller.jog("Y-{}".format(root.step_xy.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'X-'
-                                        on_release: root.controller.jog_with_speed("X-{}".format(root.step_xy.text), root.jog_speed)
+                                        on_press: root.controller.jog("X-{}".format(root.step_xy.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                     Label:
                                     Spinner:
@@ -3468,23 +3512,26 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'X+'
-                                        on_release: root.controller.jog_with_speed("X{}".format(root.step_xy.text), root.jog_speed)
+                                        on_press: root.controller.jog("X{}".format(root.step_xy.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Y+'
-                                        on_release: root.controller.jog_with_speed("Y{}".format(root.step_xy.text), root.jog_speed)
+                                        on_press: root.controller.jog("Y{}".format(root.step_xy.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                         BoxLayout:
                             disabled: app.state != 'Idle'
                             orientation: 'vertical'
                             padding: '10dp'
                             Widget:
-                                size_hint_y: 0.5
+                                size_hint_y: 0.15
                             BoxLayout:
-                                disabled: app.state != 'Idle'
                                 orientation: 'vertical'
                                 padding: '3dp'
+                                size_hint_y: 0.3
+                                size_hint_min_y: '41dp'  # 35dp button + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
                                     padding: '3dp'
                                     canvas.before:
@@ -3493,11 +3540,52 @@
                                         RoundedRectangle:
                                             pos: self.pos
                                             size: self.size
-                                            radius: [dp(3),]
+                                            radius: [dp(12),]
+                                    GridLayout:
+                                        cols: 3
+                                        rows: 1
+                                        spacing: '3dp'
+                                        GridBoxLayout:
+                                            SmallRoundButton:
+                                                text: tr._('Macro 1')
+                                                id: touch_macro_1_btn
+                                                center: 0.5, 0.5
+                                                height: '35dp'
+                                                on_release: app.root.run_macro(1)
+
+                                        GridBoxLayout:
+                                            SmallRoundButton:
+                                                id: touch_macro_2_btn
+                                                text: tr._('Macro 2')
+                                                height: '35dp'
+                                                on_release: app.root.run_macro(2)
+
+                                        GridBoxLayout:
+                                            SmallRoundButton:
+                                                id: touch_macro_3_btn
+                                                text: tr._('Macro 3')
+                                                height: '35dp'
+                                                on_release: app.root.run_macro(3)
+                            Widget:
+                                size_hint_y: 0.15
+                            BoxLayout:
+                                disabled: app.state != 'Idle'
+                                orientation: 'vertical'
+                                padding: '3dp'
+                                size_hint_min_y: '176dp'  # 35dp button x4 + 10dp spacing between buttons x 3 + 3dp padding top + 3dp padding bottom
+                                BoxLayout:
+                                    padding: '3dp'
+                                    canvas.before:
+                                        Color:
+                                            rgba: 50/255, 50/255, 50/255, 1
+                                        RoundedRectangle:
+                                            pos: self.pos
+                                            size: self.size
+                                            radius: [dp(12),]
                                     GridLayout:
                                         padding: '10dp'
                                         cols: 3
-                                        rows: 5
+                                        rows: 4
                                         spacing: dp(3)
                                         GridBoxLayout:
                                             SmallRoundButton:
@@ -3558,20 +3646,15 @@
                                                 text: tr._('Set Origin')
                                                 on_release: root.coord_popup.origin_popup.open()
                                         GridBoxLayout:
-                                            ToggleButton:
-                                                text: tr._('Jog Controls')
-                                                height: '35dp'
-                                                on_release: app.root.toggle_jog_control_ui()
-
-                                        # 4th row
-                                        GridBoxLayout:
-                                            disabled: app.is_community_firmware == False
                                             SmallRoundButton:
+                                                disabled: not app.is_community_firmware
                                                 text: tr._('Probing...')
                                                 on_release: app.root.probing_popup.open()
 
+                                        # 4th row
                                         GridBoxLayout:
                                             ToggleButton:
+                                                id: light_toggle
                                                 text: tr._('Light')
                                                 height: '35dp'
                                                 on_release: app.root.controller.setLightSwitch(not self.state=="normal")
@@ -3583,43 +3666,56 @@
                                                 on_release: app.root.controller.setExternalControl(100 if self.state=="down" else 0)
 
                                         GridBoxLayout:
-                                            ToggleButton:
-                                                id: pendant_jogging_en_btn
-                                                text: tr._('No Pendant')
-                                                height: '35dp'
+                                        # empty spot
 
+                            Widget:
+                                size_hint_y: 0.1
                             BoxLayout:
-                                disabled: not root.show_advanced_jog_controls or app.state != 'Idle'
-                                orientation: 'horizontal'
-                                padding: dp(12)
-                                size_hint_y: 0.4
-                                opacity: 1 if root.show_advanced_jog_controls else 0
-                                GridLayout:
-                                    cols: 3
-                                    rows: 1
-                                    BoxLayout:
-                                        padding: '10dp'
-                                        canvas.before:
-                                            Color:
-                                                rgba: 50/255, 50/255, 50/255, 1
-                                            RoundedRectangle:
-                                                pos: self.pos
-                                                size: self.size
-                                                radius: [dp(12),]
+                                orientation: 'vertical'
+                                padding: '3dp'
+                                size_hint_y: 0.5
+                                size_hint_min_y: '79dp'  # 35dp button x2 + 3dp spacing between buttons + 3dp padding top + 3dp padding bottom
+                                BoxLayout:
+                                    padding: '3dp'
+                                    canvas.before:
+                                        Color:
+                                            rgba: 50/255, 50/255, 50/255, 1
+                                        RoundedRectangle:
+                                            pos: self.pos
+                                            size: self.size
+                                            radius: [dp(12),]
+                                    GridLayout:
+                                        cols: 2
+                                        rows: 2
+                                        spacing: '3dp'
                                         GridBoxLayout:
                                             Button:
-                                                text: tr._('Jog Speed: Match Feed')
+                                                text: tr._('Jog Speed:Max')
                                                 id: jog_speed_btn
                                                 center: 0.5, 0.5
                                                 height: '35dp'
                                                 on_release: root.jog_speed_drop_down.open(self)
 
                                         GridBoxLayout:
+                                            Button:
+                                                id: jog_mode_btn
+                                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
+                                                text: tr._('Jog Mode:Step')
+                                                height: '35dp'
+                                                on_release: app.root.toggle_jog_mode()
+
+                                        GridBoxLayout:
                                             ToggleButton:
                                                 id: kb_jog_btn
-                                                text: tr._('Keyboard Jog Mode')
+                                                text: tr._('Keyboard Jogging')
                                                 height: '35dp'
                                                 on_release: app.root.toggle_keyboard_jog_control()
+                                    
+                                        GridBoxLayout:
+                                            ToggleButton:
+                                                id: pendant_jogging_en_btn
+                                                text: tr._('No Pendant')
+                                                height: '35dp'
 
                         BoxLayout:
                             disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
@@ -3639,11 +3735,13 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'A+'
-                                        on_release: root.controller.jog_with_speed("A{}".format(root.step_a.text), root.jog_speed)
+                                        on_press: root.controller.jog("A{}".format(root.step_a.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z+'
-                                        on_release: root.controller.jog_with_speed("Z{}".format(root.step_z.text), root.jog_speed)
+                                        on_press: root.controller.jog("Z{}".format(root.step_z.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                     Label:
                                     Spinner:
@@ -3667,11 +3765,13 @@
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'A-'
-                                        on_release: root.controller.jog_with_speed("A-{}".format(root.step_a.text), root.jog_speed)
+                                        on_press: root.controller.jog("A-{}".format(root.step_a.text))
+                                        on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z-'
-                                        on_release: root.controller.jog_with_speed("Z-{}".format(root.step_z.text), root.jog_speed)
+                                        on_press: root.controller.jog("Z-{}".format(root.step_z.text))
+                                        on_release: root.controller.stopContinuousJog()
 
                             Widget:
                                 size_hint_x: 0.2
