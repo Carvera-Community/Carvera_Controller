@@ -319,6 +319,14 @@
         "section": "Advanced",
         "key": "epsilon_acceleration"
     },	
+    {
+        "type": "bool",
+        "title": "Skip move to path origin on playback start",
+        "desc": "When true, the start of gcode playback will only move to SafeZ position then start running the file",
+        "default": "false",
+        "section": "Advanced",
+        "key": "atc.skip_path_origin"
+    },
 	
     {
         "type": "title",
