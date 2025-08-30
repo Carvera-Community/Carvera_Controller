@@ -108,7 +108,7 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     
     # Convert version with suffix to Windows-compatible 4-part version
     # Windows version files require exactly 4 numeric components
-    windows_version = convert_version_for_windows(package_version)
+    windows_version = convert_version_to_4part(package_version)
     logger.info(f"Converting version '{package_version}' to Windows-compatible version '{windows_version}'")
     
     pyinstaller_versionfile.create_versionfile(
@@ -125,16 +125,20 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     return versionfile_path
 
 
-def convert_version_for_windows(version_string: str) -> str:
+def convert_version_to_4part(version_string: str, always_include_build: bool = False) -> str:
     """
-    Convert a version string with optional suffix to a Windows-compatible 4-part version.
-    Windows version files require exactly 4 numeric components.
+    Generic function to convert a version string with optional suffix to a compatible version.
+    
+    Args:
+        version_string: Version string in X.Y.Z[-SUFFIX] format
+        always_include_build: If True, always return 4-part version (X.Y.Z.BUILD)
+                             If False, only include build number when suffix exists
     
     Examples:
-    - "1.2.3" -> "1.2.3.0"
-    - "2.0.0-RC1" -> "2.0.0.1" (RC1 = build 1)
-    - "1.0.0-BETA2" -> "1.0.0.2" (BETA2 = build 2)
-    - "3.1.0-ALPHA" -> "3.1.0.3" (ALPHA = build 3)
+    - "1.2.3" -> "1.2.3" (always_include_build=False) or "1.2.3.0" (always_include_build=True)
+    - "2.0.0-RC1" -> "2.0.0.1"
+    - "1.0.0-BETA2" -> "1.0.0.12"
+    - "3.1.0-ALPHA" -> "3.1.0.20"
     """
     # Split version and suffix
     if '-' in version_string:
@@ -182,9 +186,11 @@ def convert_version_for_windows(version_string: str) -> str:
             # Unknown suffix, use a high build number to avoid conflicts
             build_number = 100
     
-    # Return 4-part version: X.Y.Z.BUILD
-    return f"{version_components[0]}.{version_components[1]}.{version_components[2]}.{build_number}"
-
+    # Return version based on always_include_build parameter
+    if always_include_build or build_number > 0:
+        return f"{version_components[0]}.{version_components[1]}.{version_components[2]}.{build_number}"
+    else:
+        return base_version
 
 def run_linuxdeploy_appimage(package_version: str) -> None:
     """Build AppImage using linuxdeploy."""
@@ -380,12 +386,17 @@ def update_buildozer_version(package_version: str) -> None:
     logger.info("Updating version in buildozer.spec")
     buildozer_spec_path = ROOT_PATH.joinpath("buildozer.spec")
     
+    # Convert version with suffix to Android-compatible version
+    # Android build system expects a version string that can be parsed into numeric components
+    android_version = convert_version_to_4part(package_version)
+    logger.info(f"Converting version '{package_version}' to Android-compatible version '{android_version}'")
+    
     with open(buildozer_spec_path, 'r') as file:
         lines = file.readlines()
     
     for i, line in enumerate(lines):
         if line.startswith('version = '):
-            lines[i] = f'version = {package_version}\n'
+            lines[i] = f'version = {android_version}\n'
             break
     
     with open(buildozer_spec_path, 'w') as file:
