@@ -105,9 +105,15 @@ def run_pyinstaller(build_args: list[str]) -> None:
 def generate_versionfile(package_version: str, output_filename: str) -> Path:
     logger.info("Generate versionfile.txt.")
     versionfile_path = BUILD_PATH.joinpath("versionfile.txt")
+    
+    # Convert version with suffix to Windows-compatible 4-part version
+    # Windows version files require exactly 4 numeric components
+    windows_version = convert_version_for_windows(package_version)
+    logger.info(f"Converting version '{package_version}' to Windows-compatible version '{windows_version}'")
+    
     pyinstaller_versionfile.create_versionfile(
         output_file=versionfile_path,
-        version=package_version,
+        version=windows_version,
         company_name=COMPANY_NAME,
         file_description=FILE_DESCRIPTION,
         internal_name=INTERNAL_NAME,
@@ -117,6 +123,67 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     )
 
     return versionfile_path
+
+
+def convert_version_for_windows(version_string: str) -> str:
+    """
+    Convert a version string with optional suffix to a Windows-compatible 4-part version.
+    Windows version files require exactly 4 numeric components.
+    
+    Examples:
+    - "1.2.3" -> "1.2.3.0"
+    - "2.0.0-RC1" -> "2.0.0.1" (RC1 = build 1)
+    - "1.0.0-BETA2" -> "1.0.0.2" (BETA2 = build 2)
+    - "3.1.0-ALPHA" -> "3.1.0.3" (ALPHA = build 3)
+    """
+    # Split version and suffix
+    if '-' in version_string:
+        version_parts = version_string.split('-', 1)
+        base_version = version_parts[0]
+        suffix = version_parts[1]
+    else:
+        base_version = version_string
+        suffix = None
+    
+    # Parse base version (should be X.Y.Z)
+    version_components = base_version.split('.')
+    if len(version_components) != 3:
+        raise ValueError(f"Base version must be in X.Y.Z format, got: {base_version}")
+    
+    # Convert suffix to build number
+    build_number = 0  # Default for releases without suffix
+    if suffix:
+        suffix_upper = suffix.upper()
+        if suffix_upper.startswith('RC'):
+            # RC1, RC2, etc. -> build numbers 1, 2, etc.
+            try:
+                build_number = int(suffix_upper[2:]) if len(suffix_upper) > 2 else 1
+            except ValueError:
+                build_number = 1
+        elif suffix_upper.startswith('BETA'):
+            # BETA1, BETA2, etc. -> build numbers 10, 11, etc.
+            try:
+                build_number = 10 + int(suffix_upper[4:]) if len(suffix_upper) > 4 else 10
+            except ValueError:
+                build_number = 10
+        elif suffix_upper.startswith('ALPHA'):
+            # ALPHA1, ALPHA2, etc. -> build numbers 20, 21, etc.
+            try:
+                build_number = 20 + int(suffix_upper[5:]) if len(suffix_upper) > 5 else 20
+            except ValueError:
+                build_number = 20
+        elif suffix_upper.startswith('DEV'):
+            # DEV1, DEV2, etc. -> build numbers 30, 31, etc.
+            try:
+                build_number = 30 + int(suffix_upper[3:]) if len(suffix_upper) > 3 else 30
+            except ValueError:
+                build_number = 30
+        else:
+            # Unknown suffix, use a high build number to avoid conflicts
+            build_number = 100
+    
+    # Return 4-part version: X.Y.Z.BUILD
+    return f"{version_components[0]}.{version_components[1]}.{version_components[2]}.{build_number}"
 
 
 def run_linuxdeploy_appimage(package_version: str) -> None:
@@ -223,8 +290,8 @@ def restore_codegen_files(root_path, project_path):
 
 
 def version_type(version_string):
-    if not re.match(r'^v?\d+\.\d+\.\d+$', version_string):
-        raise argparse.ArgumentTypeError("Must be in X.Y.Z format (e.g., 1.2.3 or v1.2.3)")
+    if not re.match(r'^v?\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$', version_string):
+        raise argparse.ArgumentTypeError("Must be in X.Y.Z[-SUFFIX] format (e.g., 1.2.3, v1.2.3, 2.0.0-RC1, or v2.0.0-RC1)")
     
     # Remove 'v' prefix if present
     version_string = version_string.lstrip('v')
@@ -373,7 +440,7 @@ def main():
         metavar="version",
         required=True,
         type=version_type,
-        help="Version string to use for build."
+        help="Version string to use for build. Supports X.Y.Z[-SUFFIX] format (e.g., 1.2.3, 2.0.0-RC1, v2.0.0-BETA2)."
     )
 
     args = parser.parse_args()
