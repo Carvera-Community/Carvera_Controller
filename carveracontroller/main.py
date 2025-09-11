@@ -2207,6 +2207,7 @@ class Makera(RelativeLayout):
 
     status_index = 0
     past_machine_addr = None
+    past_manual_wifi_ssid = None
     allow_mdi_while_machine_running = "0"
 
     def __init__(self, ctl_version):
@@ -2335,6 +2336,9 @@ class Makera(RelativeLayout):
 
         if Config.has_option('carvera', 'address'):
             self.past_machine_addr = Config.get('carvera', 'address')
+
+        if Config.has_option('carvera', 'manual_wifi_ssid'):
+            self.past_manual_wifi_ssid = Config.get('carvera', 'manual_wifi_ssid')
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
@@ -2987,7 +2991,13 @@ class Makera(RelativeLayout):
             return False
         self.input_popup.cache_var1 = ssid
         self.input_popup.txt_content.text = password
+        self.store_machine_ssid(ssid)
         self.connectToWiFi()
+
+    def store_machine_ssid(self, ssid):
+        Config.set('carvera', 'manual_wifi_ssid', ssid)
+        Config.write()
+        self.past_manual_wifi_ssid = ssid
 
     # -----------------------------------------------------------------------
     def update_coord_config(self):
