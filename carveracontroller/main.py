@@ -401,6 +401,13 @@ class InputPopup(ModalView):
     def __init__(self, **kwargs):
         super(InputPopup, self).__init__(**kwargs)
 
+class DualInputPopup(ModalView):
+    cache_var1 = StringProperty('')
+    cache_var2 = StringProperty('')
+    cache_var3 = StringProperty('')
+    def __init__(self, **kwargs):
+        super(DualInputPopup, self).__init__(**kwargs)
+
 class ProgressPopup(ModalView):
     progress_text = StringProperty('')
     progress_value = NumericProperty('0')
@@ -2104,6 +2111,7 @@ class Makera(RelativeLayout):
     reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
+    dual_input_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
 
@@ -2278,6 +2286,7 @@ class Makera(RelativeLayout):
         self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
+        self.dual_input_popup = DualInputPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
