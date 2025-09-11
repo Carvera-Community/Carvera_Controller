@@ -2964,6 +2964,31 @@ class Makera(RelativeLayout):
         Config.write()
         self.past_machine_addr = address
 
+    def manually_input_ssid(self):
+        self.dual_input_popup.lb_title1.text = tr._('Input Wi-Fi network name (SSID):')
+        if self.past_manual_wifi_ssid:
+            self.dual_input_popup.txt_content1.text = self.past_manual_wifi_ssid
+        else:
+            self.dual_input_popup.txt_content1.text = ''
+        self.dual_input_popup.lb_title2.text = tr._('Input Wi-Fi password (leave blank if open network):')
+        self.dual_input_popup.txt_content2.text = ''
+        self.dual_input_popup.txt_content1.password = False
+        self.dual_input_popup.txt_content2.password = True
+        self.dual_input_popup.confirm = self.manually_open_ssid
+        self.dual_input_popup.open(self)
+        self.wifi_ap_drop_down.dismiss()
+        self.status_drop_down.dismiss()
+
+    def manually_open_ssid(self):
+        ssid = self.dual_input_popup.txt_content1.text.strip()
+        password = self.dual_input_popup.txt_content2.text.strip()
+        self.dual_input_popup.dismiss()
+        if not ssid:
+            return False
+        self.input_popup.cache_var1 = ssid
+        self.input_popup.txt_content.text = password
+        self.connectToWiFi()
+
     # -----------------------------------------------------------------------
     def update_coord_config(self):
         self.wpb_margin.width = 50 if self.coord_config['margin']['active'] else 0
@@ -3555,6 +3580,9 @@ class Makera(RelativeLayout):
             btn = WiFiButton(connected = ap['connected'], ssid = ap['ssid'], encrypted = ap['encrypted'], strength = ap['strength'])
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(btn.ssid))
             self.wifi_ap_drop_down.add_widget(btn)
+        btn = WiFiButton(ssid = tr._('Other...'))
+        btn.bind(on_release=lambda btn: self.manually_input_ssid())
+        self.wifi_ap_drop_down.add_widget(btn)
 
     # -----------------------------------------------------------------------
     def loadWiFiError(self, error_msg, *args):
