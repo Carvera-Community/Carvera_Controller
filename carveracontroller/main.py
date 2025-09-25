@@ -4670,7 +4670,7 @@ class Makera(RelativeLayout):
 
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
-        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continious')
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continuous')
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
