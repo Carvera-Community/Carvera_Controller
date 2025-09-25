@@ -48,6 +48,8 @@ class ProbingPopup(ModalView):
         self.single_axis_settings = self.ids.single_axis_settings
         self.bore_settings = self.ids.bore_settings
         self.boss_settings = self.ids.boss_settings
+
+    def delayed_bind_complete(self, dt):
         self.angle_settings = self.ids.angle_settings
 
 

@@ -2200,6 +2200,7 @@ class Makera(RelativeLayout):
     status_index = 0
     past_machine_addr = None
     allow_mdi_while_machine_running = "0"
+    allow_jogging_while_machine_running = "0"
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
@@ -2329,6 +2330,9 @@ class Makera(RelativeLayout):
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+
+        if Config.has_option('carvera', 'allow_jogging_while_machine_running'):
+           self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
 
         # Setup pendant
         self.setup_pendant()
@@ -4679,6 +4683,10 @@ class Makera(RelativeLayout):
     def is_jogging_enabled(self):
         app = App.get_running_app()
         
+        # Allow jogging when machine is running if the setting is enabled
+        if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
+            return not self._is_popup_open()
+        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
@@ -4866,6 +4874,9 @@ class Makera(RelativeLayout):
 
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
+
+        if self.controller_setting_change_list.get("allow_jogging_while_machine_running") != self.allow_jogging_while_machine_running:
+            self.allow_jogging_while_machine_running = self.controller_setting_change_list.get("allow_jogging_while_machine_running")
 
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
