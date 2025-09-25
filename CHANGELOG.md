@@ -1,3 +1,7 @@
+[unreleased]
+- Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
+
+
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
