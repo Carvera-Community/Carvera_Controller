@@ -349,7 +349,7 @@
                 spacing:dp(0)
                 padding:dp(0)
                 BoxLayout:
-                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                     padding: '25dp'
                     orientation: 'horizontal'
                 #X and Y controls
@@ -364,7 +364,7 @@
                             size: self.size
                             radius: [self.height / 2,self.height / 2]
                     BoxLayout:
-                        disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                        disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                         padding: '0dp'
                         canvas.before:
                             Color:
@@ -379,12 +379,14 @@
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'Y-'
-                                    on_release: app.root.controller.jog("Y-{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("Y-{}".format(root.step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'X-'
-                                    on_release: app.root.controller.jog("X-{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("X-{}".format(root.step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                                 Label:
                                 Spinner:
@@ -398,20 +400,22 @@
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'X+'
-                                    on_release: app.root.controller.jog("X{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("X{}".format(root.step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'Y+'
-                                    on_release: app.root.controller.jog("Y{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("Y{}".format(root.step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                 BoxLayout:
-                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                     padding: '0dp'
                     orientation: 'horizontal'
                 #A and Z controls
                 BoxLayout:
-                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                     padding: '0dp'
                     orientation: 'horizontal'
                     canvas.before:
@@ -429,12 +433,14 @@
                             SmallRoundButton:
                                 text: 'A+'
                                 height: 30
-                                on_release: app.root.controller.jog("A{}".format(root.step_a.text))
+                                on_press: app.root.controller.jog("A{}".format(root.step_a.text))
+                                on_release: app.root.controller.stopContinuousJog()
                         GridBoxLayout:
                             SmallRoundButton:
                                 text: 'Z+'
                                 height: 30
-                                on_release: app.root.controller.jog("Z{}".format(root.step_z.text))
+                                on_press: app.root.controller.jog("Z{}".format(root.step_z.text))
+                                on_release: app.root.controller.stopContinuousJog()
                         GridBoxLayout:
                             Label:
                             Spinner:
@@ -459,14 +465,16 @@
                             SmallRoundButton:
                                 text: 'A-'
                                 height: 30
-                                on_release: app.root.controller.jog("A-{}".format(root.step_a.text))
+                                on_press: app.root.controller.jog("A-{}".format(root.step_a.text))
+                                on_release: app.root.controller.stopContinuousJog()
                         GridBoxLayout:
                             SmallRoundButton:
                                 text: 'Z-'
                                 height: 30
-                                on_release: app.root.controller.jog("Z-{}".format(root.step_z.text))
+                                on_press: app.root.controller.jog("Z-{}".format(root.step_z.text))
+                                on_release: app.root.controller.stopContinuousJog()
                 BoxLayout:
-                    disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                     padding: '25dp'
                     orientation: 'horizontal'
 

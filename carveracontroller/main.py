@@ -2200,6 +2200,7 @@ class Makera(RelativeLayout):
     status_index = 0
     past_machine_addr = None
     allow_mdi_while_machine_running = "0"
+    allow_jogging_while_machine_running = "0"
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
@@ -2329,6 +2330,9 @@ class Makera(RelativeLayout):
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+
+        if Config.has_option('carvera', 'allow_jogging_while_machine_running'):
+           self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
 
         # Setup pendant
         self.setup_pendant()
@@ -4670,7 +4674,7 @@ class Makera(RelativeLayout):
 
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
-        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continious')
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continuous')
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
@@ -4678,6 +4682,10 @@ class Makera(RelativeLayout):
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
+        
+        # Allow jogging when machine is running if the setting is enabled
+        if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
+            return not self._is_popup_open()
         
         return \
             not app.playing and \
@@ -4832,9 +4840,9 @@ class Makera(RelativeLayout):
             elif key == 276:  # left button
                 app.root.controller.jog(f"X-{app.root.step_xy.text}")
             elif key == 280:  # page up
-                app.root.controller.jog(f"Z{app.root.step_xy.text}")
+                app.root.controller.jog(f"Z{app.root.step_z.text}")
             elif key == 281:  # page down
-                app.root.controller.jog(f"Z-{app.root.step_xy.text}")
+                app.root.controller.jog(f"Z-{app.root.step_z.text}")
     
     def _keyboard_jog_keyup(self, *args):
         app = App.get_running_app()
@@ -4866,6 +4874,9 @@ class Makera(RelativeLayout):
 
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
+
+        if self.controller_setting_change_list.get("allow_jogging_while_machine_running") != self.allow_jogging_while_machine_running:
+            self.allow_jogging_while_machine_running = self.controller_setting_change_list.get("allow_jogging_while_machine_running")
 
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()

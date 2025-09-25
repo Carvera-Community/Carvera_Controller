@@ -1,3 +1,8 @@
+[unreleased]
+- Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
+- Fixed: Keyboard jogging of Z-axis in Step Mode uses X/Y step size, not Z step size
+- Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
+
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
