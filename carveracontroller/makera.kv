@@ -3475,7 +3475,7 @@
                                 size: self.size
                                 radius: [self.height / 2,]
                         BoxLayout:
-                            disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                            disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and root.allow_jogging_while_machine_running == '0')
                             padding: '25dp'
                             canvas.before:
                                 Color:
@@ -3522,7 +3522,7 @@
                                         on_release: root.controller.stopContinuousJog()
                                 GridBoxLayout:
                         BoxLayout:
-                            disabled: app.state != 'Idle'
+                            disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and root.allow_jogging_while_machine_running == '0')
                             orientation: 'vertical'
                             padding: '10dp'
                             Widget:
@@ -3718,7 +3718,7 @@
                                                 height: '35dp'
 
                         BoxLayout:
-                            disabled: (app.state != 'Idle' and app.state != 'Run' and app.state != 'Pause') or (app.playing and app.state != 'Pause')
+                            disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and root.allow_jogging_while_machine_running == '0')
                             padding: '25dp'
                             orientation: 'horizontal'
                             canvas.before:
