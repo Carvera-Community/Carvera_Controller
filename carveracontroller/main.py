@@ -4832,9 +4832,9 @@ class Makera(RelativeLayout):
             elif key == 276:  # left button
                 app.root.controller.jog(f"X-{app.root.step_xy.text}")
             elif key == 280:  # page up
-                app.root.controller.jog(f"Z{app.root.step_xy.text}")
+                app.root.controller.jog(f"Z{app.root.step_z.text}")
             elif key == 281:  # page down
-                app.root.controller.jog(f"Z-{app.root.step_xy.text}")
+                app.root.controller.jog(f"Z-{app.root.step_z.text}")
     
     def _keyboard_jog_keyup(self, *args):
         app = App.get_running_app()
