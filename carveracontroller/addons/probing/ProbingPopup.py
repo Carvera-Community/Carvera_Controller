@@ -26,6 +26,8 @@ from .operations.Angle.AngleSettings import AngleSettings
 from .operations.ProbeTip.ProbeTipOperationType import ProbeTipOperationType
 from .operations.ProbeTip.ProbeTipSettings import ProbeTipSettings
 
+import webbrowser
+
 class ProbingPopup(ModalView):
 
     controller: Controller
@@ -46,6 +48,9 @@ class ProbingPopup(ModalView):
         Clock.schedule_once(self.delayed_bind, 0.1)
 
         super(ProbingPopup, self).__init__(**kwargs)
+
+    def open_probe_info_url(self):
+        webbrowser.open("https://carvera-community.gitbook.io/docs/firmware/features/3d-probe-support")
 
     def delayed_bind(self, dt):
         self.outside_corner_settings = self.ids.outside_corner_settings
