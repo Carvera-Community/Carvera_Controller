@@ -1,9 +1,16 @@
 [unreleased]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
 - Enhancement: Max FPS can now be configured in the Controller settings
+- Enhancement: Tooltips can be turned on and off in the Controller settings
+- Enhancement: Tooltip delay before displaying can be configured in the controller settings
+- Enhancement: Probe Tip Calibration screens complete and functional
+- Enhancement: Probing popup confirm dialog now says close instead of cancel
+- Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
+- Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
 - Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
 - Fixed: Keyboard jogging of Z-axis in Step Mode uses X/Y step size, not Z step size
 - Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60. Even at 60FPS, resource consumption is now lower.
+- Fixed: Tooltips are now disabled when the source object is not in the active screen or popuup
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
