@@ -1,7 +1,9 @@
 [unreleased]
+- Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
+- Enhancement: Max FPS can now be configured in the Controller settings
 - Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
 - Fixed: Keyboard jogging of Z-axis in Step Mode uses X/Y step size, not Z step size
-- Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
+- Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60. Even at 60FPS, resource consumption is now lower.
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
