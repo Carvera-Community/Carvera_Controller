@@ -7,6 +7,7 @@
 #:include addons/probing/operations/Boss/BossSettings.kv
 #:include addons/probing/operations/Angle/AngleSettings.kv
 
+#:include addons/probing/operations/ProbeTip/ProbeTipSettings.kv
 
 
 <ProbingPopup>:
@@ -335,6 +336,50 @@
                             AngleSettings:
                                 id: angle_settings
 
+                TabbedPanelItem:
+                    text: tr._('ProbeTip')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        size_hint:1, 1
+                        spacing:dp(10)
+                        padding:dp(10)
+
+                        GridLayout:
+                            size_hint_x: 1
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
+
+                            ProbeButton:
+                                
+                                tooltip_txt: tr._('Calibrate probe tip using a known bore diameter')
+                                tooltip_image: ''
+                                on_press: root.on_probeTip_probing_pressed("Bore")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_BoreX.png'
+                            ProbeButton:
+                                
+                                tooltip_txt: tr._('Calibrate probe tip using a known boss in the X direction')
+                                tooltip_image: ''
+                                on_press: root.on_probeTip_probing_pressed("BossX")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_BossX.png'
+                            ProbeButton:
+                                tooltip_txt: tr._('Calibrate probe tip using anchor 2. This uses the config value Anchor Width and will move to position on its own')
+                                tooltip_image: ''
+                                on_press: root.on_probeTip_probing_pressed("Anchor2")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_On_Anchor_2.png'
+                            ProbeButton:
+                                
+                                tooltip_txt: tr._('Calibrate probe tip using a known boss in the Y direction')
+                                tooltip_image: ''
+                                on_press: root.on_probeTip_probing_pressed("BossY")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_BossY.png'
+
+                        BoxLayout:
+                            size_hint_x: .5
+                            ProbeTipSettings:
+                                id: probeTipSettings
                 
 
         #jogging controls
