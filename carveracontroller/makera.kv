@@ -1064,7 +1064,7 @@
         height: '50dp'
         on_release:
             root.select('')
-            app.root.probing_popup.open()
+            app.root.open_probing_popup()
     IconButton:
         icon: 'data/open_iconic_UI/oi--question-mark.png'
         icon_size: 24
@@ -3488,16 +3488,24 @@
                                 rows: 3
                                 GridBoxLayout:
                                 GridBoxLayout:
-                                    RoundButton:
+                                    ToolTipButton:
                                         text: 'Y-'
                                         on_press: root.controller.jog("Y-{}".format(root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_YNeg.png'
+                                        tooltip_image_size: [300,300]
+                                        small_icon: True
+                                        tooltip_radius: 30     
                                 GridBoxLayout:
                                 GridBoxLayout:
-                                    RoundButton:
+                                    ToolTipButton:
                                         text: 'X-'
                                         on_press: root.controller.jog("X-{}".format(root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_XNeg.png'
+                                        tooltip_image_size: [300,300]
+                                        small_icon: True
+                                        tooltip_radius: 30 
                                 GridBoxLayout:
                                     Label:
                                     Spinner:
@@ -3510,16 +3518,24 @@
                                     Label:
 
                                 GridBoxLayout:
-                                    RoundButton:
+                                    ToolTipButton:
                                         text: 'X+'
                                         on_press: root.controller.jog("X{}".format(root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_XPos.png'
+                                        tooltip_image_size: [300,300]
+                                        small_icon: True
+                                        tooltip_radius: 30 
                                 GridBoxLayout:
                                 GridBoxLayout:
-                                    RoundButton:
+                                    ToolTipButton:
                                         text: 'Y+'
                                         on_press: root.controller.jog("Y{}".format(root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_YPos.png'
+                                        tooltip_image_size: [300,300]
+                                        small_icon: True
+                                        tooltip_radius: 30 
                                 GridBoxLayout:
                         BoxLayout:
                             disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and root.allow_jogging_while_machine_running == '0')
@@ -3649,7 +3665,7 @@
                                             SmallRoundButton:
                                                 disabled: not app.is_community_firmware
                                                 text: tr._('Probing...')
-                                                on_release: app.root.probing_popup.open()
+                                                on_release: app.root.open_probing_popup()
 
                                         # 4th row
                                         GridBoxLayout:
@@ -3733,10 +3749,14 @@
                                 cols: 2
                                 rows: 3
                                 GridBoxLayout:
-                                    RoundButton:
+                                    ToolTipButton:
                                         text: 'A+'
                                         on_press: root.controller.jog("A{}".format(root.step_a.text))
                                         on_release: root.controller.stopContinuousJog()
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_APos.png'
+                                        tooltip_image_size: [300,300]
+                                        small_icon: True
+                                        tooltip_radius: 30 
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z+'
@@ -3763,10 +3783,14 @@
                                         values: '10', '1', '0.1', '0.01', '0.005'
                                     Label:
                                 GridBoxLayout:
-                                    RoundButton:
+                                    ToolTipButton:
                                         text: 'A-'
                                         on_press: root.controller.jog("A-{}".format(root.step_a.text))
                                         on_release: root.controller.stopContinuousJog()
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_ANeg.png'
+                                        tooltip_image_size: [300,300]
+                                        small_icon: True
+                                        tooltip_radius: 30 
                                 GridBoxLayout:
                                     RoundButton:
                                         text: 'Z-'
