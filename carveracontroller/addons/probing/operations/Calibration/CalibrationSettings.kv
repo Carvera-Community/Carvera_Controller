@@ -1,0 +1,109 @@
+<CalibrationSettings>:
+    ScrollView:
+        do_scroll_x: False
+        size_hint: 1,1
+        bar_width: 4
+        bar_inactive_color: [.7,.7,.7,.9]
+        StackLayout:
+            height: self.minimum_height
+            size_hint_y: None
+            spacing:dp(3)
+            padding:dp(1)
+            halign:'right'
+
+            ProbeSettingLabel:
+                label_text: 'X:'
+                ToolTipTextInput:
+                    id: XAxisDistance
+                    tooltip_txt: tr._('Distance from center along X to move before probing back toward part')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('XAxisDistance')
+                    on_text: root.setting_changed('XAxisDistance', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'Y:'
+                ToolTipTextInput:
+                    id: YAxisDistance
+                    tooltip_txt: tr._('Distance from center along Y to move before probing back toward part')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('YAxisDistance')
+                    on_text: root.setting_changed('YAxisDistance', self.text)
+            
+            ProbeSettingLabel:
+                label_text: 'D Tip Dia:'
+                ToolTipTextInput:
+                    id: ProbeTipDiameter
+                    tooltip_txt: tr._('Effective Diameter of Probe Tip. Measure with M460')
+                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_d.png'
+                    tooltip_image_size: 200,200
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('ProbeTipDiameter')
+                    on_text: root.setting_changed('ProbeTipDiameter', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'H Pocket Depth:'
+                tooltip_txt: 'test'
+                ToolTipTextInput:
+                    id: PocketProbeDepth
+                    tooltip_txt: tr._('Distance to probe straight down before performing remainder of probing operations')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('PocketProbeDepth')
+                    on_text: root.setting_changed('PocketProbeDepth', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'R Pin Diameter:'
+                ToolTipTextInput:
+                    id: PinDiameter
+                    tooltip_txt: tr._('Diameter of pin used for 4th axis Z calibration')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('PinDiameter')
+                    on_text: root.setting_changed('PinDiameter', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'S WIP:'
+                hint_text: 'Set WIP'
+                ToolTipSwitch:
+                    id: ZeroXYPosition
+                    tooltip_txt: tr._('Wip')
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    active: root.get_setting('ZeroXYPosition') == "1"
+                    on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")
+
+            ProbeSettingLabel:
+                label_text: 'I Normally Closed:'
+                hint_text: ''
+                ToolTipSwitch:
+                    id: UseProbeNormallyClosed
+                    tooltip_txt: tr._('Enable this switch if you have a normally closed probe instead of a normally open one')
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    active: root.get_setting('UseProbeNormallyClosed') == "1"
+                    on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")

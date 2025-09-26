@@ -6,7 +6,7 @@
 #:include addons/probing/operations/Bore/BoreSettings.kv
 #:include addons/probing/operations/Boss/BossSettings.kv
 #:include addons/probing/operations/Angle/AngleSettings.kv
-
+#:include addons/probing/operations/Calibration/CalibrationSettings.kv
 #:include addons/probing/operations/ProbeTip/ProbeTipSettings.kv
 
 
@@ -18,6 +18,7 @@
     step_xy: step_xy
     step_z: step_z
     step_a: step_a
+    overlay_color: 0,0,0,0.3
 
     GridLayout:
         cols:1
@@ -380,6 +381,53 @@
                             size_hint_x: .5
                             ProbeTipSettings:
                                 id: probeTipSettings
+                TabbedPanelItem:
+                    text: tr._('Calibration')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        size_hint:1, 1
+                        spacing:dp(10)
+                        padding:dp(10)
+
+                        GridLayout:
+                            size_hint_x: 1
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
+
+                            ProbeButton:
+                                
+                                tooltip_txt: 'Calibrate 4th Axis Center'
+                                tooltip_image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_4th_Axis_Y_TT.png'
+                                on_press: root.on_callibration_probing_pressed("FourthY")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_4th_Axis_Y.png'
+                            ProbeButton:
+                                
+                                tooltip_txt: 'Calibrate 4th Axis Z offset'
+                                tooltip_image: ''
+                                on_press: root.on_callibration_probing_pressed("FourthZ")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_4th_Axis_Z.png'
+                            
+                            ProbeButton:
+                                
+                                tooltip_txt: 'Calibrate Machine Anchor 1 Position'
+                                tooltip_image: ''
+                                on_press: root.on_callibration_probing_pressed("Anchor1")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_Anchor_1.png'
+                            ProbeButton:
+                                
+                                tooltip_txt: 'Calibrate Machine Anchor 2 Position'
+                                tooltip_image: ''
+                                on_press: root.on_callibration_probing_pressed("Anchor2")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_Anchor_2.png'
+
+                        BoxLayout:
+                            size_hint_x: .5
+                            CalibrationSettings:
+                                id: calibration_settings_id
+
                 
 
         #jogging controls

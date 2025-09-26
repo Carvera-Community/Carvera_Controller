@@ -22,6 +22,8 @@ from .operations.Boss.BossSettings import BossSettings
 from .operations.Angle.AngleOperationType import AngleOperationType
 from .operations.Angle.AngleSettings import AngleSettings
 
+from .operations.Calibration.CalibrationOperationType import CalibrationOperationType
+from .operations.Calibration.CalibrationSettings import CalibrationSettings
 
 from .operations.ProbeTip.ProbeTipOperationType import ProbeTipOperationType
 from .operations.ProbeTip.ProbeTipSettings import ProbeTipSettings
@@ -42,6 +44,7 @@ class ProbingPopup(ModalView):
         self.boss_settings = None
         self.angle_settings = None
         self.probeTipSettings = None
+        self.calibration_settings = None
         self.controller = controller
 
         self.preview_popup = ProbingPreviewPopup(controller)
@@ -60,10 +63,14 @@ class ProbingPopup(ModalView):
         self.single_axis_settings = self.ids.single_axis_settings
         self.bore_settings = self.ids.bore_settings
         self.boss_settings = self.ids.boss_settings
-
-    def delayed_bind_complete(self, dt):
+        self.calibration_settings = self.ids.calibration_settings_id
         self.angle_settings = self.ids.angle_settings
         self.probeTipSettings = self.ids.probeTipSettings
+
+    def delayed_bind_complete(self, dt):
+        #self.angle_settings = self.ids.angle_settings
+        #self.probeTipSettings = self.ids.probeTipSettings
+        return
 
 
     def on_single_axis_probing_pressed(self, operation_key: str):
@@ -103,6 +110,11 @@ class ProbingPopup(ModalView):
     def on_probeTip_probing_pressed(self, operation_key: str):
         cfg = self.probeTipSettings.get_config()
         the_op = ProbeTipOperationType[operation_key].value
+        self.show_preview(the_op,cfg)
+
+    def on_callibration_probing_pressed(self, operation_key: str):
+        cfg = self.calibration_settings.get_config()
+        the_op = CalibrationOperationType[operation_key].value
         self.show_preview(the_op,cfg)
 
 
