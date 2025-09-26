@@ -4,7 +4,7 @@
     auto_dismiss: False
     GridLayout:
         cols:1
-        rows:2
+        rows:3
         GridLayout:
             cols:2
             rows:1
@@ -21,12 +21,48 @@
                     id: lb_preview
                     text: root.probe_preview_label
         BoxLayout:
+            orientation: 'vertical'
+            spacing: '5dp'
+            PopupMDI:
+                id: manual_rvPopup
+                scroll_type: ['bars', 'content']
+                scroll_wheel_distance: dp(114)
+                data: app.mdi_data
+                bar_width: dp(20)
+                viewclass: 'Row'
+                SelectableRecycleBoxLayout:
+                    default_size: None, dp(20)
+                    default_size_hint: 1, None
+                    size_hint_y: None
+                    height: self.minimum_height
+                    orientation: 'vertical'
+                    spacing: dp(0.5)
+                    multiselect: False
+                    touch_multiselect: False
+
+        BoxLayout:
             size_hint_y: 0.4
             Button:
-                text: tr._('Halt') if app.state != 'Idle' else tr._('Cancel')
+                text: tr._('Halt') if app.state != 'Idle' else tr._('Close')
                 on_release: app.root.controller.estopCommand() if app.state != 'Idle' else root.dismiss()
             Button:
                 text: tr._('Start')
                 disabled: (not root.gcode) or (app.state != 'Idle')
                 on_release: root.start_probing()
 #                    root.dismiss()
+
+
+
+
+<Row@SelectableLabel>:
+    text: ''
+    color: 1, 1, 1, 1  # Add default
+    canvas.before:
+        Color:
+            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    text_size: self.size
+    halign: 'left'
+    shorten: True
