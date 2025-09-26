@@ -26,6 +26,8 @@ from .operations.Angle.AngleSettings import AngleSettings
 from .operations.ProbeTip.ProbeTipOperationType import ProbeTipOperationType
 from .operations.ProbeTip.ProbeTipSettings import ProbeTipSettings
 
+from kivy.app import App
+
 import webbrowser
 
 class ProbingPopup(ModalView):
@@ -114,3 +116,27 @@ class ProbingPopup(ModalView):
             self.preview_popup.probe_preview_label = "Missing required parameter " + missing_definition.label
 
         self.preview_popup.open()
+
+        Clock.schedule_once(lambda dt: self.link_shared_data_with_refresh(self.preview_popup), 0.1)
+
+    def link_shared_data_with_refresh(self, popup):
+        app = App.get_running_app()
+        popup.ids.manual_rvPopup.data = app.mdi_data
+
+        # Clear old data
+        app.mdi_data.clear()
+
+        app.bind(mdi_data=lambda instance, value: self.on_mdi_data_changed(popup))
+    
+    def on_mdi_data_changed(self, popup):
+        try:
+            popup.ids.manual_rvPopup.refresh_from_data()
+            Clock.schedule_once(lambda dt: self.scroll_to_bottom(popup.ids.manual_rvPopup), 0.01)
+        except Exception as e:
+            print("Popup refresh failed:", e)
+
+    def scroll_to_bottom(self, rv):
+        try:
+            Clock.schedule_once(lambda dt: setattr(rv, 'scroll_y', 0), 0.01)
+        except Exception as e:
+            print("Scroll failed:", e)
