@@ -24,6 +24,14 @@
         "default": "false"
     },
     {
+        "type": "numeric",
+        "title": "Max FPS",
+        "desc": "What maximum FPS to use for rendering? Reduce this if you are experiencing performance issues.",
+        "section": "graphics",
+        "key": "maxfps",
+        "default": "60"
+    },
+    {
         "type": "bool",
         "title": "Show Update Notification",
         "desc": "Check for new updates on startup?",

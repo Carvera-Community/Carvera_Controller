@@ -773,7 +773,7 @@ class GCodeViewer(Widget):
         #debug
         #self.load(lines)
         #self.set_frame_callback(frame_call_back_test)
-        Clock.schedule_interval(self.increase_angle, 1/60)
+        Clock.schedule_interval(self.increase_angle, 0)  # run at the maxfps configured for kivy
 
 
     #清空渲染
