@@ -528,6 +528,7 @@
             size_hint_y: None
             height: '40dp'
             halign: 'center'
+
             Label:
                 size_hint_min_x: dp(90)
                 padding: '5dp'
@@ -537,11 +538,16 @@
                 multiline: False
                 text: tr._('Note: Most of these operations require a true 3 axis probe, not the manual probe supplied with the Carvera. See the community youtube page for more info')
 
-        BoxLayout:
-            spacing: '5dp'
-            size_hint_y: None
-            height: '40dp'
             Button:
-                id: btn_close
-                text: tr._('Close')
-                on_release: root.dismiss()
+                text: "More Info"
+                size_hint_x: None
+                width: dp(100)
+                on_release: root.open_probe_info_url()
+                BoxLayout:
+                    spacing: '5dp'
+                    size_hint_y: None
+                    height: '40dp'
+                    Button:
+                        id: btn_close
+                        text: tr._('Close')
+                        on_release: root.dismiss()
