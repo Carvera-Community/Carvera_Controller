@@ -2309,6 +2309,17 @@ class Makera(RelativeLayout):
         self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
         self.pendant_probe_z_alt_cmd = Config.get('carvera', 'pendant_probe_z_alt_cmd')
 
+        if Config.has_option('carvera', 'tooltip_delay'):
+            delay_value = Config.getfloat('carvera','tooltip_delay')
+            print(delay_value)
+            App.get_running_app().tooltip_delay = delay_value if delay_value>=0 else 0.5
+        
+        if Config.has_option('carvera', 'show_tooltips'):
+            default_show_tooltips = Config.get('carvera', 'show_tooltips') != '0'
+            App.get_running_app().show_tooltips = default_show_tooltips
+            print(Config.get('carvera', 'show_tooltips'))
+
+            
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -2443,6 +2454,12 @@ class Makera(RelativeLayout):
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
                 subprocess.Popen([opener, log_dir])
 
+    def open_probing_popup(self):
+        if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
+            self.probing_popup.open()
+        else:
+            self.message_popup.lb_content.text = tr._('Probing tool not selected. Please set tool to Probe or 3D probe')
+            self.message_popup.open()
     def open_update_popup(self):
         self.upgrade_popup.check_button.disabled = False
         self.upgrade_popup.open(self)
@@ -3445,6 +3462,8 @@ class Makera(RelativeLayout):
             if app.is_community_firmware:
                 self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
                                                             'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 18.5
@@ -4808,6 +4827,13 @@ class Makera(RelativeLayout):
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
 
+        if self.controller_setting_change_list.get('show_tooltips'):
+            App.get_running_app().show_tooltips = self.controller_setting_change_list.get('show_tooltips') != '0'
+
+        if self.controller_setting_change_list.get('tooltip_delay'):
+            delay_value = float(self.controller_setting_change_list.get('tooltip_delay'))
+            App.get_running_app().tooltip_delay = delay_value if delay_value>0 else 0.5
+
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
             self.setup_pendant()
@@ -5163,6 +5189,8 @@ class MakeraApp(App):
     model = StringProperty("")
     is_community_firmware = BooleanProperty(False)
     fw_version_digitized = NumericProperty(0)
+    show_tooltips = BooleanProperty(True)
+    tooltip_delay = NumericProperty(0.5)
 
     def on_stop(self):
         self.root.stop_run()
@@ -5224,6 +5252,8 @@ def set_config_defaults(default_lang):
 
     # Configurable config options. Don't change if they are already set
     if not Config.has_option('carvera', 'show_update'): Config.set('carvera', 'show_update', '1')
+    if not Config.has_option('carvera', 'show_tooltips'): Config.set('carvera', 'show_tooltips' , '1')
+    if not Config.has_option('carvera', 'tooltip_delay'): Config.set('carvera', 'tooltip_delay','1.5')
     if not Config.has_option('carvera', 'language'): Config.set('carvera', 'language', default_lang)
     if not Config.has_option('carvera', 'local_folder_1'): Config.set('carvera', 'local_folder_1', '')
     if not Config.has_option('carvera', 'local_folder_2'): Config.set('carvera', 'local_folder_2', '')

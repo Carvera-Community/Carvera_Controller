@@ -1,6 +1,6 @@
 from kivy.clock import Clock
 from kivy.compat import string_types
-from kivy.properties import StringProperty, ObjectProperty
+from kivy.properties import StringProperty, ObjectProperty, NumericProperty, BooleanProperty
 from kivy.uix.spinner import Spinner
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -32,7 +32,8 @@ class ToolTipSwitch(Switch):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -110,6 +111,10 @@ class ToolTipSwitch(Switch):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -169,7 +174,8 @@ class ToolTipTextInput(TextInput):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -247,6 +253,10 @@ class ToolTipTextInput(TextInput):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -307,8 +317,10 @@ class ToolTipButton(Button):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
+    tooltip_radius = NumericProperty(0.2)
 
     def __init__(self, **kwargs):
         self._tooltip = None
@@ -385,6 +397,10 @@ class ToolTipButton(Button):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -443,7 +459,8 @@ class ToolTipDropDown(DropDown):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -521,6 +538,10 @@ class ToolTipDropDown(DropDown):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -580,7 +601,8 @@ class ToolTipLabel(Label):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -659,6 +681,10 @@ class ToolTipLabel(Label):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
