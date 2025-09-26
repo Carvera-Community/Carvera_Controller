@@ -2341,13 +2341,11 @@ class Makera(RelativeLayout):
 
         if Config.has_option('carvera', 'tooltip_delay'):
             delay_value = Config.getfloat('carvera','tooltip_delay')
-            print(delay_value)
             App.get_running_app().tooltip_delay = delay_value if delay_value>=0 else 0.5
         
         if Config.has_option('carvera', 'show_tooltips'):
             default_show_tooltips = Config.get('carvera', 'show_tooltips') != '0'
             App.get_running_app().show_tooltips = default_show_tooltips
-            print(Config.get('carvera', 'show_tooltips'))
 
             
         # blink timer

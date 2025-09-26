@@ -19,9 +19,9 @@
         "type": "bool",
         "title": "Show Tooltips",
         "desc": "Should the controller display tooltips?",
-        "section": "graphics",
+        "section": "carvera",
         "key": "show_tooltips",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "numeric",
