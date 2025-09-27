@@ -3037,11 +3037,13 @@ class Makera(RelativeLayout):
                     if msg == Controller.MSG_NORMAL:
                         logger.info(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
-                        App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
+                        if line not in [' ', 'ok', 'Done ATC' ]:
+                            App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
                         logger.error(f"MDI Recieved: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
-                        App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
+                        if line not in [' ', 'ok', 'Done ATC' ]:
+                            App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
                     logger.error(sys.exc_info()[1])
                     break
