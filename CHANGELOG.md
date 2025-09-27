@@ -8,9 +8,10 @@
 - Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
 - Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
 - Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
-- Fixed: Keyboard jogging of Z-axis in Step Mode uses X/Y step size, not Z step size
-- Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60. Even at 60FPS, resource consumption is now lower.
-- Fixed: Tooltips are now disabled when the source object is not in the active screen or popuup
+- Fixed: Keyboard jogging of Z-axis in Step Mode uses the selected Z step size, accidently selecting X/Y previously.
+- Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60.
+- Fixed: Tooltips are now disabled when the source object is not in the active screen or popup
+- Fixed: Autoreconnection failure dialog now only shown on failure of last attempt, previously was shown on every attempt
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
