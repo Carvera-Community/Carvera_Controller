@@ -7,6 +7,7 @@
 - Enhancement: Probing popup confirm dialog now says close instead of cancel
 - Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
 - Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
+- Enhancement: Added machine position calibration screen
 - Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
 - Fixed: Keyboard jogging of Z-axis in Step Mode uses X/Y step size, not Z step size
 - Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60. Even at 60FPS, resource consumption is now lower.
