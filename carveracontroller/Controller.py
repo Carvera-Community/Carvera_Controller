@@ -850,11 +850,6 @@ class Controller:
 
     def attempt_reconnect(self):
         """Attempt to reconnect"""
-        if self.reconnect_attempts_remaining <= 0:
-            if self.cancel_reconnect_callback:
-                self.cancel_reconnect_callback()
-            return
-            
         self.reconnect_attempts_remaining -= 1
         
         # Try to reconnect using the callback
@@ -867,6 +862,10 @@ class Controller:
                 self.reconnect_timer.cancel()
             self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
             self.reconnect_timer.start()
+        else:
+            # All attempts exhausted, call the cancel callback
+            if self.cancel_reconnect_callback:
+                self.cancel_reconnect_callback()
 
     def cancel_reconnection(self):
         """Cancel the reconnection process"""
