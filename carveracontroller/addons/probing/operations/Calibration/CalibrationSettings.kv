@@ -15,7 +15,7 @@
                 label_text: 'X:'
                 ToolTipTextInput:
                     id: XAxisDistance
-                    tooltip_txt: tr._('Distance from center along X to move before probing back toward part')
+                    tooltip_txt: tr._('How far to move along the X axis before probing toward pin when calibrating 4th axis Z offset')
                     tooltip_image: ''
                     multiline: False
                     halign:'right'
@@ -28,7 +28,7 @@
                 label_text: 'Y:'
                 ToolTipTextInput:
                     id: YAxisDistance
-                    tooltip_txt: tr._('Distance from center along Y to move before probing back toward part')
+                    tooltip_txt: tr._('Not needed by default. \nUse to change how far to each side the machine probes when calibrating X offset')
                     tooltip_image: ''
                     multiline: False
                     halign:'right'
@@ -56,7 +56,7 @@
                 tooltip_txt: 'test'
                 ToolTipTextInput:
                     id: PocketProbeDepth
-                    tooltip_txt: tr._('Distance to probe straight down before performing remainder of probing operations')
+                    tooltip_txt: tr._('Not needed by default. \nUsed in calibrating 4th axis X offset, see tooltip image')
                     tooltip_image: ''
                     multiline: False
                     halign:'right'

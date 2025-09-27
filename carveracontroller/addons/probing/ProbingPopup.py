@@ -135,10 +135,9 @@ class ProbingPopup(ModalView):
 
     def link_shared_data_with_refresh(self, popup):
         app = App.get_running_app()
+        app.mdi_data.clear()
         popup.ids.manual_rvPopup.data = app.mdi_data
 
-        # Clear old data
-        app.mdi_data.clear()
 
         app.bind(mdi_data=lambda instance, value: self.on_mdi_data_changed(popup))
     

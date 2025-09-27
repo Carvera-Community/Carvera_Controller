@@ -24,7 +24,7 @@ class CalibrationOperationFourthY(OperationsBase):
         config[CalibrationParameterDefinitions.XAxisDistance.code] = ''
         config[CalibrationParameterDefinitions.PinDiameter.code] = ''      
 
-        return "M469.4 " + self.config_to_gcode(config)
+        return "M469.4 " + self.config_to_gcode(config) + "\n Make sure 4th Axis and 3 axis probe are installed"
 
 
     def get_missing_config(self, config: dict[str, float]):
@@ -64,7 +64,7 @@ class CalibrationOperationFourthZ(OperationsBase):
         config[CalibrationParameterDefinitions.PinDiameter.code] = '' 
                
 
-        return "M469.5 " + self.config_to_gcode(config)
+        return "M469.5 " + self.config_to_gcode(config) + "\n Make sure 4th Axis in on has a pin in the chuck" 
 
 
     def get_missing_config(self, config: dict[str, float]):
@@ -105,7 +105,7 @@ class CalibrationOperationAnchor1(OperationsBase):
         config[CalibrationParameterDefinitions.PinDiameter.code] = ''  
         config[CalibrationParameterDefinitions.PocketProbeDepth.code] = ''                   
 
-        return "M469.1" + self.config_to_gcode(config)
+        return "M469.1" + self.config_to_gcode(config)+ "\n Make sure Anchor 1 and 3 axis probe are installed" 
 
 
     def get_missing_config(self, config: dict[str, float]):
@@ -147,7 +147,7 @@ class CalibrationOperationAnchor2(OperationsBase):
         config[CalibrationParameterDefinitions.PinDiameter.code] = ''
         config[CalibrationParameterDefinitions.PocketProbeDepth.code] = ''            
 
-        return "M469.2" + self.config_to_gcode(config)
+        return "M469.2" + self.config_to_gcode(config) + "\n Make sure Anchor 2 and 3 axis probe are installed" 
 
 
     def get_missing_config(self, config: dict[str, float]):
