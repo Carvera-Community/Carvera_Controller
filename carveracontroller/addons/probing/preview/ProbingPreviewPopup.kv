@@ -2,6 +2,7 @@
     size_hint: 0.5, 0.4
     pos_hint: {"right": 0.75, "top": 0.7}
     auto_dismiss: False
+    overlay_color: 0,0,0,0.3
     GridLayout:
         cols:1
         rows:3
@@ -20,6 +21,11 @@
                 Label:
                     id: lb_preview
                     text: root.probe_preview_label
+                    halign: 'center'
+                    valign: 'middle'
+                    text_size: self.width, None
+                    size_hint_y: None
+                    height: self.texture_size[1]
         BoxLayout:
             orientation: 'vertical'
             spacing: '5dp'
@@ -43,8 +49,8 @@
         BoxLayout:
             size_hint_y: 0.4
             Button:
-                text: tr._('Halt') if app.state != 'Idle' else tr._('Close')
-                on_release: app.root.controller.estopCommand() if app.state != 'Idle' else root.dismiss()
+                text: tr._('Halt') if app.state == 'Run' else tr._('Close')
+                on_release: app.root.controller.estopCommand() if app.state == 'Run' else root.dismiss()
             Button:
                 text: tr._('Start')
                 disabled: (not root.gcode) or (app.state != 'Idle')
