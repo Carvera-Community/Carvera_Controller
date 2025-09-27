@@ -2690,7 +2690,7 @@ class Makera(RelativeLayout):
                 # Update controller reconnection settings
                 self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
                 
-                if auto_reconnect_enabled:
+                if auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI:
                     # Show reconnection popup with countdown
                     self.reconnection_popup.start_countdown(
                         reconnect_attempts, 
