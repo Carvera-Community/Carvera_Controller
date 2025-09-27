@@ -369,13 +369,14 @@ class ReconnectionPopup(ModalView):
         else:
             self.countdown = self.wait_time
             self.current_attempt += 1
-            if self.current_attempt < self.max_attempts:
+            if self.current_attempt <= self.max_attempts:
                 if self.reconnect_callback:
                     self.reconnect_callback()
-            else:
-                self.dismiss()
-                if self.cancel_callback:
-                    self.cancel_callback()
+                # Only call cancel_callback after the last attempt has been made
+                if self.current_attempt >= self.max_attempts:
+                    self.dismiss()
+                    if self.cancel_callback:
+                        self.cancel_callback()
 
     def cancel_reconnect(self):
         self.dismiss()
@@ -2898,21 +2899,14 @@ class Makera(RelativeLayout):
                 if self.reconnection_popup._is_open:
                     Clock.unschedule(self.reconnection_popup.countdown_tick)
                     self.reconnection_popup.dismiss()
-                # Don't cancel reconnection here - let the connection state change handle it
-            else:
-                # Machine is busy, show error and stop reconnection
-                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
-                self.controller.cancel_reconnection()
-        else:
-            # For USB connections or no previous WiFi address, just stop reconnection
-            self.controller.cancel_reconnection()
+
 
     def on_reconnect_failed(self):
         """Called when all reconnection attempts have failed"""
         # Only show the message if we're actually disconnected and not in the process of connecting
         app = App.get_running_app()
         if app and app.state == NOT_CONNECTED and self.controller.stream is None:
-            Clock.schedule_once(partial(self.show_message_popup, tr._("Reconnection failed. Please connect manually."), False), 0)
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Auto-reconnection failed. Please connect manually."), False), 0)
 
     def on_reconnect_success(self):
         """Called when reconnection succeeds"""
