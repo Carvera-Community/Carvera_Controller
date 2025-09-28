@@ -17,6 +17,22 @@
     },
     {
         "type": "bool",
+        "title": "Show Tooltips",
+        "desc": "Should the controller display tooltips?",
+        "section": "carvera",
+        "key": "show_tooltips",
+        "default": "1"
+    },
+    {
+        "type": "numeric",
+        "title": "Tooltip Hover Delay",
+        "desc": "How long to hover before showing the tooltip.",
+        "section": "carvera",
+        "key": "tooltip_delay",
+        "default": "1.5"
+    },
+    {
+        "type": "bool",
         "title": "Allow Screensaver",
         "desc": "Should the screensaver be allowed to run?",
         "section": "graphics",
