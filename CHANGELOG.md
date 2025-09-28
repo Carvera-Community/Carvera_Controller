@@ -14,6 +14,7 @@
 - Fixed: Tooltips are now disabled when the source object is not in the active screen or popup
 - Fixed: Autoreconnection failure dialog now only shown on failure of last attempt, previously was shown on every attempt
 - Fixed: The probing start dialog can now be closed if the machine halts while probing
+- Fixed: Top bar buttons minimum size increased to ensure sufficient space for position values up to 999.999 without truncating
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
