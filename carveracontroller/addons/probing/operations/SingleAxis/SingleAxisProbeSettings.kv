@@ -128,12 +128,6 @@
                     # In the below get_setting() returns an int, so doing an inline mapping to the display text here
                     text: ["Disabled", "X or Y", "Z"][int(root.get_setting('ZeroXYPosition') or '0')]
                     tooltip_txt: tr._('This switch will set your current WCS to the surface you are probing. It will only set the currently selected axis/axes')
-                    canvas.before:
-                        Color:
-                            rgba: 50/255, 50/255, 50/255, 1
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
                     on_parent: wcs_drop_content.dismiss()
                     on_release: wcs_drop_content.open(self)
                 
