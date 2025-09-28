@@ -1605,7 +1605,7 @@ msgstr ""
 #: addons/probing/ProbingPopup.kv:485
 msgid ""
 "Note: Most of these operations require a true 3 axis probe, not the manual "
-"probe supplied with the Carvera. See the community youtube page for more info"
+"probe supplied with the Carvera. See the documentation for more info"
 msgstr ""
 
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:20
