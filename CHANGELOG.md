@@ -1,4 +1,4 @@
-[unreleased]
+[2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
 - Enhancement: Max FPS can now be configured in the Controller settings
 - Enhancement: Tooltips can be turned on and off in the Controller settings
@@ -15,6 +15,9 @@
 - Fixed: Autoreconnection failure dialog now only shown on failure of last attempt, previously was shown on every attempt
 - Fixed: The probing start dialog can now be closed if the machine halts while probing
 - Fixed: Top bar buttons minimum size increased to ensure sufficient space for position values up to 999.999 without truncating
+- Fixed: Including win32timezone for Windows builds. Fixes Play background images custom folder
+- Fixed: New installs would crash when no previous folder availiable to open in file browser
+- Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
