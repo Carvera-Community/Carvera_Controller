@@ -66,13 +66,14 @@ def build_pyinstaller_args(
     if os == "macos":
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.icns')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.icns')}"]
+        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi/macos/'+platform.machine()+'/libhidapi.dylib')}:."]
     if os == "windows":
         logger.info("Build option: onefile")
         build_args += ["--onefile"]
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.ico')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.ico')}"]
-        logger.info(f"Add hidapi.dll binary: {ROOT_ASSETS_PATH.joinpath('hidapi.dll')}")
-        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi.dll')}:."]
+        logger.info(f"Add hidapi.dll binary: {ROOT_ASSETS_PATH.joinpath('hidapi/windows/hidapi.dll')}")
+        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi/windows/hidapi.dll')}:."]
         logger.info("Add win32timezone to hidden imports")
         build_args += ["--hiddenimport", "win32timezone"]
     else:
