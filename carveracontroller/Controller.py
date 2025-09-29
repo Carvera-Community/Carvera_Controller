@@ -799,7 +799,7 @@ class Controller:
         CNC.vars["color"] = STATECOLOR[CNC.vars["state"]]
         
         # Start reconnection if enabled
-        if self.reconnect_enabled and self.reconnect_callback:
+        if self.reconnect_enabled and self.reconnect_callback and self.connection_type == CONN_WIFI:
             self.start_reconnection()
 
     def close_manual(self):
