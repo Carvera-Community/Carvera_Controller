@@ -8,6 +8,7 @@
 - Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
 - Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
 - Enhancement: Added machine position calibration screen
+- Enhancement: Minimum application window size is now set if running on a non-mobile OS. (850, 450) scaled by the DPI multipler.
 - Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
 - Fixed: Keyboard jogging of Z-axis in Step Mode uses the selected Z step size, accidently selecting X/Y previously.
 - Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60.
@@ -19,6 +20,7 @@
 - Fixed: New installs would crash when no previous folder availiable to open in file browser
 - Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
 - Fixed: HIDAPI Library for MacOS now embedded into MacOS releases, this enables the use of the WiXHC WHB04B Pendant on MacOS using the .dmg release artifacts
+- Fixed: Simulated multitouch (red dots) disabled if running controller on non-mobile OS
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
