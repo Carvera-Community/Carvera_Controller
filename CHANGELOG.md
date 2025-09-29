@@ -1,3 +1,26 @@
+[2.0.0-RC2]
+- Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
+- Enhancement: Max FPS can now be configured in the Controller settings
+- Enhancement: Tooltips can be turned on and off in the Controller settings
+- Enhancement: Tooltip delay before displaying can be configured in the controller settings
+- Enhancement: Probe Tip Calibration screens complete and functional
+- Enhancement: Probing popup confirm dialog now says close instead of cancel
+- Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
+- Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
+- Enhancement: Added machine position calibration screen
+- Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
+- Fixed: Keyboard jogging of Z-axis in Step Mode uses the selected Z step size, accidently selecting X/Y previously.
+- Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60.
+- Fixed: Tooltips are now disabled when the source object is not in the active screen or popup
+- Fixed: Autoreconnection failure dialog now only shown on failure of last attempt, previously was shown on every attempt
+- Fixed: The probing start dialog can now be closed if the machine halts while probing
+- Fixed: Top bar buttons minimum size increased to ensure sufficient space for position values up to 999.999 without truncating
+- Fixed: Including win32timezone for Windows builds. Fixes Play background images custom folder
+- Fixed: New installs would crash when no previous folder availiable to open in file browser
+- Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
+- Fixed: HIDAPI Library for MacOS now embedded into MacOS releases, this enables the use of the WiXHC WHB04B Pendant on MacOS using the .dmg release artifacts
+- Fixed: Simulated multitouch (red dots) disabled if running controller on non-mobile OS
+
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
 - Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings

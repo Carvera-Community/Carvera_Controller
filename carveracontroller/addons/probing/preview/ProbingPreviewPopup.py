@@ -1,5 +1,11 @@
 from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -30,3 +36,8 @@ class ProbingPreviewPopup(ModalView):
             self.controller.executeCommand(self.gcode + "\n")
         else:
             logger.error("no gcode")
+
+class PopupMDI(RecycleView):
+
+    def __init__(self, **kwargs):
+        super(PopupMDI, self).__init__(**kwargs)

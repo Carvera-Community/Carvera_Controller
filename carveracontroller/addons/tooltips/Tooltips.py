@@ -1,6 +1,6 @@
 from kivy.clock import Clock
 from kivy.compat import string_types
-from kivy.properties import StringProperty, ObjectProperty
+from kivy.properties import StringProperty, ObjectProperty, NumericProperty, BooleanProperty
 from kivy.uix.spinner import Spinner
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -10,6 +10,8 @@ from kivy.factory import Factory
 from kivy.uix.dropdown import DropDown
 from kivy.uix.textinput import TextInput
 from kivy.uix.switch import Switch
+from kivy.uix.popup import Popup
+from kivy.uix.modalview import ModalView
 import sys
 
 class Tooltip(BoxLayout):
@@ -32,7 +34,8 @@ class ToolTipSwitch(Switch):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -51,6 +54,22 @@ class ToolTipSwitch(Switch):
         self._build_tooltip()
         
 
+    def _is_blocked_by_modal(self):
+        for child in Window.children:
+            if isinstance(child, (Popup, ModalView)):
+                try:
+                    current = self.parent
+                    depth = 0
+                    while current and depth < 20:
+                        if current == child:
+                            return False
+                        current = current.parent
+                        depth += 1
+                    return True
+                except:
+                    return True
+        return False
+    
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
         if self._tooltip:
@@ -110,6 +129,10 @@ class ToolTipSwitch(Switch):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -119,6 +142,10 @@ class ToolTipSwitch(Switch):
             return
         
         if self.disabled:
+            self.close_tooltip()
+            return
+        
+        if self._is_blocked_by_modal():
             self.close_tooltip()
             return
         
@@ -169,7 +196,8 @@ class ToolTipTextInput(TextInput):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -187,6 +215,21 @@ class ToolTipTextInput(TextInput):
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
         
+    def _is_blocked_by_modal(self):
+        for child in Window.children:
+            if isinstance(child, (Popup, ModalView)):
+                try:
+                    current = self.parent
+                    depth = 0
+                    while current and depth < 20:
+                        if current == child:
+                            return False
+                        current = current.parent
+                        depth += 1
+                    return True
+                except:
+                    return True
+        return False
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -247,6 +290,10 @@ class ToolTipTextInput(TextInput):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -256,6 +303,10 @@ class ToolTipTextInput(TextInput):
             return
         
         if self.disabled:
+            self.close_tooltip()
+            return
+        
+        if self._is_blocked_by_modal():
             self.close_tooltip()
             return
         
@@ -301,14 +352,14 @@ class ToolTipTextInput(TextInput):
     def display_tooltip(self, *args):
         Window.add_widget(self._tooltip)
 
-
-
 class ToolTipButton(Button):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
+    tooltip_radius = NumericProperty(0.2)
 
     def __init__(self, **kwargs):
         self._tooltip = None
@@ -325,6 +376,21 @@ class ToolTipButton(Button):
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
         
+    def _is_blocked_by_modal(self):
+        for child in Window.children:
+            if isinstance(child, (Popup, ModalView)):
+                try:
+                    current = self.parent
+                    depth = 0
+                    while current and depth < 20:
+                        if current == child:
+                            return False
+                        current = current.parent
+                        depth += 1
+                    return True
+                except:
+                    return True
+        return False
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -385,6 +451,10 @@ class ToolTipButton(Button):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -397,6 +467,9 @@ class ToolTipButton(Button):
             self.close_tooltip()
             return
         
+        if self._is_blocked_by_modal():
+            self.close_tooltip()
+            return
     
         pos = args[1]
         tooltip_width, tooltip_height = self._tooltip.size
@@ -429,9 +502,6 @@ class ToolTipButton(Button):
         if self.collide_point(*self.to_widget(*pos)):
             Clock.schedule_once(self.display_tooltip, self.tooltip_delay)
 
-
-
-
     def close_tooltip(self, *args):
         if self._tooltip: #for memory leaks
             Window.remove_widget(self._tooltip)
@@ -439,11 +509,13 @@ class ToolTipButton(Button):
     def display_tooltip(self, *args):
         Window.add_widget(self._tooltip)
 
+
 class ToolTipDropDown(DropDown):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -461,6 +533,21 @@ class ToolTipDropDown(DropDown):
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
         
+    def _is_blocked_by_modal(self):
+        for child in Window.children:
+            if isinstance(child, (Popup, ModalView)):
+                try:
+                    current = self.parent
+                    depth = 0
+                    while current and depth < 20:
+                        if current == child:
+                            return False
+                        current = current.parent
+                        depth += 1
+                    return True
+                except:
+                    return True
+        return False
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -521,6 +608,10 @@ class ToolTipDropDown(DropDown):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -530,6 +621,10 @@ class ToolTipDropDown(DropDown):
             return
         
         if self.disabled:
+            self.close_tooltip()
+            return
+        
+        if self._is_blocked_by_modal():
             self.close_tooltip()
             return
         
@@ -580,7 +675,8 @@ class ToolTipLabel(Label):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
-    tooltip_delay = 0.5
+    tooltip_delay = NumericProperty(0.5)
+    show_tooltips = BooleanProperty(False)
     tooltip_image_size = ObjectProperty(None)
 
     def __init__(self, **kwargs):
@@ -598,6 +694,21 @@ class ToolTipLabel(Label):
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
         
+    def _is_blocked_by_modal(self):
+        for child in Window.children:
+            if isinstance(child, (Popup, ModalView)):
+                try:
+                    current = self.parent
+                    depth = 0
+                    while current and depth < 20:
+                        if current == child:
+                            return False
+                        current = current.parent
+                        depth += 1
+                    return True
+                except:
+                    return True
+        return False
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -659,6 +770,10 @@ class ToolTipLabel(Label):
         self._tooltip.ids.tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
+        if not self.show_tooltips:
+            self.close_tooltip()
+            return
+        
         if not self.get_root_window():
             self.close_tooltip()
             return
@@ -668,6 +783,10 @@ class ToolTipLabel(Label):
             return
         
         if self.disabled:
+            self.close_tooltip()
+            return
+        
+        if self._is_blocked_by_modal():
             self.close_tooltip()
             return
         

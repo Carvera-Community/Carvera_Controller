@@ -17,11 +17,35 @@
     },
     {
         "type": "bool",
+        "title": "Show Tooltips",
+        "desc": "Should the controller display tooltips?",
+        "section": "carvera",
+        "key": "show_tooltips",
+        "default": "1"
+    },
+    {
+        "type": "numeric",
+        "title": "Tooltip Hover Delay",
+        "desc": "How long to hover before showing the tooltip.",
+        "section": "carvera",
+        "key": "tooltip_delay",
+        "default": "1.5"
+    },
+    {
+        "type": "bool",
         "title": "Allow Screensaver",
         "desc": "Should the screensaver be allowed to run?",
         "section": "graphics",
         "key": "allow_screensaver",
         "default": "false"
+    },
+    {
+        "type": "numeric",
+        "title": "Max FPS",
+        "desc": "What maximum FPS to use for rendering? Reduce this if you are experiencing performance issues.",
+        "section": "graphics",
+        "key": "maxfps",
+        "default": "60"
     },
     {
         "type": "bool",
@@ -53,6 +77,14 @@
         "desc": "This could allow for dangerous movements, or firmware corruption if MDI commands are used while file uploads are occuring. Use this functionality with caution.",
         "section": "carvera",
         "key": "allow_mdi_while_machine_running",
+        "default": "false"
+    },
+    {
+        "type": "bool",
+        "title": "Allow Jogging When Machine Running",
+        "desc": "This option allows for manual movement while spindle is running. Use this functionality with caution.",
+        "section": "carvera",
+        "key": "allow_jogging_while_machine_running",
         "default": "false"
     },
     {
