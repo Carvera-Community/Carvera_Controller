@@ -5308,6 +5308,12 @@ def load_app_configs():
 def set_config_defaults(default_lang):
     if not Config.has_section('carvera'):
         Config.add_section('carvera')
+    
+    if not Config.has_section('input'):
+        Config.add_section('input')
+
+    if not kivy_platform in ['android', 'ios']:
+        Config.set('input', 'mouse', "mouse,multitouch_on_demand") # disable multitouch simulation on non-mobile platforms
 
     # Only update config if running new version
     if not Config.has_option('carvera', 'version') or Config.get('carvera', 'version') != __version__:
