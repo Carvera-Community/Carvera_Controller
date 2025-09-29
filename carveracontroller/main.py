@@ -5271,11 +5271,15 @@ class MakeraApp(App):
         return Makera(ctl_version=__version__)
 
     def on_start(self):
-
-        # Set a minimum window size. 
+        # Set minimum window size for desktop platforms
         # This can't be done on_build() since the monitor DPI is not known at that time
-        #Window.minimum_width = dp(1200)
-        #Window.minimum_height = dp(750)
+        if kivy_platform in ['win', 'linux', 'macosx']:
+            Window.minimum_width, Window.minimum_height = (dp(850), dp(450))
+
+        # Force mouse input to work immediately on desktop platforms
+        if kivy_platform in ['win', 'linux', 'macosx']:
+            # Schedule mouse input fix
+            Clock.schedule_once(lambda dt: self._enable_mouse_input_workaround(), 0.1)
 
         # Workaround for Android blank screen issue
         # https://github.com/kivy/python-for-android/issues/2720
@@ -5293,6 +5297,14 @@ class MakeraApp(App):
 
     def on_pause(self):
         return True
+        
+    def _enable_mouse_input_workaround(self):
+        """Force enable mouse input on desktop platforms after a window resize. Seems to be a Kivy bug."""
+        if kivy_platform in ['win', 'linux', 'macosx']:
+            # Trigger a window resize to force input reinitialization
+            current_size = Window.size
+            # Kivy returns DPI scaled pixel values, but not when applying it to the window size. This is a workaround.
+            Window.size = ((current_size[0]+1)/Metrics.dp, current_size[1]/Metrics.dp)
 
 def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
@@ -5340,8 +5352,6 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
-    if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width', '1440')
-    if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '900')
 
     Config.write()
 
@@ -5399,6 +5409,7 @@ def main():
 
     set_config_defaults(tr.lang)
     load_app_configs()
+    
     HALT_REASON = load_halt_translations(tr)
 
     base_path = app_base_path()
