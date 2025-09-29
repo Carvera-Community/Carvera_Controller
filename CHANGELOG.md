@@ -8,7 +8,6 @@
 - Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
 - Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
 - Enhancement: Added machine position calibration screen
-- Enhancement: Minimum application window size is now set if running on a non-mobile OS. (850, 450) scaled by the DPI multipler.
 - Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
 - Fixed: Keyboard jogging of Z-axis in Step Mode uses the selected Z step size, accidently selecting X/Y previously.
 - Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60.
