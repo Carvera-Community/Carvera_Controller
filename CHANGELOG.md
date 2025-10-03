@@ -1,5 +1,5 @@
 [unreleased]
-- Fixed: Closing the Controller after during auto-reconnection attempts fail causes the app to freeze
+- Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
