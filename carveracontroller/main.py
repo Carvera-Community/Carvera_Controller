@@ -402,6 +402,13 @@ class InputPopup(ModalView):
     def __init__(self, **kwargs):
         super(InputPopup, self).__init__(**kwargs)
 
+class ManualWifiPopup(ModalView):
+    cache_var1 = StringProperty('')
+    cache_var2 = StringProperty('')
+    cache_var3 = StringProperty('')
+    def __init__(self, **kwargs):
+        super(ManualWifiPopup, self).__init__(**kwargs)
+
 class ProgressPopup(ModalView):
     progress_text = StringProperty('')
     progress_value = NumericProperty('0')
@@ -2105,6 +2112,7 @@ class Makera(RelativeLayout):
     reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
+    manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
 
@@ -2280,6 +2288,7 @@ class Makera(RelativeLayout):
         self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
+        self.manual_wifi_popup = ManualWifiPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
@@ -2968,6 +2977,26 @@ class Makera(RelativeLayout):
         Config.write()
         self.past_machine_addr = address
 
+    def manually_input_ssid(self):
+        self.manual_wifi_popup.lb_title1.text = tr._('Input Wi-Fi network name (SSID):')
+        self.manual_wifi_popup.lb_title2.text = tr._('Input Wi-Fi password (leave blank if open network):')
+        self.manual_wifi_popup.txt_content1.password = False
+        self.manual_wifi_popup.txt_content2.password = True
+        self.manual_wifi_popup.confirm = self.manually_open_ssid
+        self.manual_wifi_popup.open(self)
+        self.wifi_ap_drop_down.dismiss()
+        self.status_drop_down.dismiss()
+
+    def manually_open_ssid(self):
+        ssid = self.manual_wifi_popup.txt_content1.text.strip()
+        password = self.manual_wifi_popup.txt_content2.text.strip()
+        self.manual_wifi_popup.dismiss()
+        if not ssid:
+            return False
+        self.input_popup.cache_var1 = ssid
+        self.input_popup.txt_content.text = password
+        self.connectToWiFi()
+
     # -----------------------------------------------------------------------
     def update_coord_config(self):
         self.wpb_margin.width = 50 if self.coord_config['margin']['active'] else 0
@@ -3565,6 +3594,9 @@ class Makera(RelativeLayout):
             btn = WiFiButton(connected = ap['connected'], ssid = ap['ssid'], encrypted = ap['encrypted'], strength = ap['strength'])
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(btn.ssid))
             self.wifi_ap_drop_down.add_widget(btn)
+        btn = WiFiButton(ssid = tr._('Other...'))
+        btn.bind(on_release=lambda btn: self.manually_input_ssid())
+        self.wifi_ap_drop_down.add_widget(btn)
 
     # -----------------------------------------------------------------------
     def loadWiFiError(self, error_msg, *args):
