@@ -5235,7 +5235,13 @@ class Makera(RelativeLayout):
 
     def stop_run(self):
         self.stop.set()
-        self.controller.stop.set()
+        if hasattr(self, 'controller') and self.controller:
+            self.controller.stop.set()
+            # Cancel any ongoing reconnection attempts
+            self.controller.cancel_reconnection()
+        # Dismiss reconnection popup if it's open
+        if hasattr(self, 'reconnection_popup') and self.reconnection_popup and self.reconnection_popup._is_open:
+            self.reconnection_popup.dismiss()
 
 
 class MakeraApp(App):
@@ -5260,6 +5266,17 @@ class MakeraApp(App):
     mdi_data = ListProperty([])
 
     def on_stop(self):
+        # Cancel any ongoing reconnection attempts to prevent hanging
+        if hasattr(self.root, 'controller') and self.root.controller:
+            self.root.controller.cancel_reconnection()
+        # Stop all scheduled Clock events
+        if hasattr(self.root, 'blink_state'):
+            Clock.unschedule(self.root.blink_state)
+        if hasattr(self.root, 'switch_status'):
+            Clock.unschedule(self.root.switch_status)
+        if hasattr(self.root, 'check_model_metadata'):
+            Clock.unschedule(self.root.check_model_metadata)
+        # Stop the main run loop
         self.root.stop_run()
 
     def build(self):
