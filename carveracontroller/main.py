@@ -1870,6 +1870,7 @@ class RemoteRV(DataRV):
     def __init__(self, **kwargs):
         super(RemoteRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
         self.base_dir = '/sd/gcodes'
         self.base_dir_win = '\\sd\\gcodes'
@@ -1901,6 +1902,10 @@ class RemoteRV(DataRV):
         app.root.loadRemoteDir(new_dir)
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        app.root.check_and_download()
 
 # -----------------------------------------------------------------------
 # Local Recycle View
