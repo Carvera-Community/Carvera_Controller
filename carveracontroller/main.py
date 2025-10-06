@@ -1735,6 +1735,8 @@ class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
                 rv = self.parent.recycleview
                 if rv.data[self.index]['is_dir']:
                     rv.child_dir(rv.data[self.index]['filename'])
+                else:
+                    rv.dispatch('on_double_tap')
                 return True
             return self.parent.select_with_touch(self.index, touch)
 
@@ -1776,9 +1778,13 @@ class DataRV(RecycleView):
     def __init__(self, **kwargs):
         super(DataRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
     # -----------------------------------------------------------------------
     def on_select(self):
+        pass
+        
+    def on_double_tap(self):
         pass
 
     # -----------------------------------------------------------------------
@@ -1904,6 +1910,7 @@ class LocalRV(DataRV):
     def __init__(self, **kwargs):
         super(LocalRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
         if kivy_platform == 'android':
             self.curr_dir = os.path.abspath('.carveracontroller/gcodes')
             if not os.path.exists(self.curr_dir):
@@ -1984,6 +1991,10 @@ class LocalRV(DataRV):
 
         if self.curr_path_list[0] == self.base_dir:
             self.curr_path_list[0] = 'root'
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        app.root.check_upload_and_select()
 
 # -----------------------------------------------------------------------
 # GCode Recycle View
