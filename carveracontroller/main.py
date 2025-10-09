@@ -1999,7 +1999,10 @@ class LocalRV(DataRV):
     
     def on_double_tap(self):
         app = App.get_running_app()
-        app.root.check_upload_and_select()
+        if app.root.file_popup.firmware_mode:
+            app.root.check_and_upload()
+        else:
+            app.root.check_upload_and_select()
 
 # -----------------------------------------------------------------------
 # GCode Recycle View
