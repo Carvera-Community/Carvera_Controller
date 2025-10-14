@@ -525,8 +525,7 @@ class XMODEM(object):
                 if char == SOH or char == STX:
                     break
                 elif char == EOT:
-                    # We received an EOT, so send an ACK and return t
-                    #                     he
+                    # We received an EOT, so send an ACK and return the
                     # received data length.
                     self.putc(ACK)
                     self.log.info("Transmission complete, %d bytes",
@@ -542,7 +541,7 @@ class XMODEM(object):
                         self.log.debug('cancellation at block %d', sequence)
                         cancel = 1
                 elif char == None:
-                    # no data avaliable
+                    # no data available
                     error_count += 1
                     if error_count > retry:
                         self.log.error('error_count reached %d, aborting.',
