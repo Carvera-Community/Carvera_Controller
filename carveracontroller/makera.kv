@@ -1060,7 +1060,7 @@
         icon_size: 35
         small_icon: True
         size_hint_y: None
-        # disabled: app.state == 'N/A'
+        disabled: app.state != 'Idle'
         height: '50dp'
         on_release:
             root.select('')
