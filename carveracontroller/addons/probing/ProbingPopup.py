@@ -136,7 +136,12 @@ class ProbingPopup(ModalView):
     def link_shared_data_with_refresh(self, popup):
         app = App.get_running_app()
         app.mdi_data.clear()
-        popup.ids.manual_rvPopup.data = app.mdi_data
+        try:
+            popup.ids.manual_rvPopup.data = app.mdi_data
+        except IndexError:
+            print('Recycle view layout change ignored')
+        except Exception as e:
+            print(f"unexpected error updating manual_rvPopup: {e}")
 
 
         app.bind(mdi_data=lambda instance, value: self.on_mdi_data_changed(popup))
