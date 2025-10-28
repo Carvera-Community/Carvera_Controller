@@ -1314,6 +1314,57 @@
                     if root.confirm():\
                     root.dismiss()
 
+<ManualWifiPopup>:
+    lb_title1: lb_title1
+    lb_title2: lb_title2
+    txt_content1: txt_content1
+    txt_content2: txt_content2
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            size_hint_y: 0.4
+            id: lb_title1
+            text: tr._('Input Box')
+            bold: True
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+            TextInput:
+                id: txt_content1
+                size_hint_y: None
+                height: '35dp'
+                multiline: False
+                text: ''
+            Label:
+        Label:
+            size_hint_y: 0.4
+            id: lb_title2
+            text: tr._('Input Box')
+            bold: True
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+            TextInput:
+                id: txt_content2
+                size_hint_y: None
+                height: '35dp'
+                multiline: False
+                text: ''
+            Label:
+        BoxLayout:
+            size_hint_y: 0.4
+            Button:
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                text: tr._('Ok')
+                on_release:
+                    if root.confirm():\
+                    root.dismiss()
 
 <ConfirmPopup>:
     lb_title: lb_title
