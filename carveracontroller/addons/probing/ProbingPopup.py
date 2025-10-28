@@ -28,6 +28,9 @@ from .operations.Calibration.CalibrationSettings import CalibrationSettings
 from .operations.ProbeTip.ProbeTipOperationType import ProbeTipOperationType
 from .operations.ProbeTip.ProbeTipSettings import ProbeTipSettings
 
+import logging
+logger = logging.getLogger(__name__)
+
 from kivy.app import App
 
 import webbrowser
@@ -139,9 +142,7 @@ class ProbingPopup(ModalView):
         try:
             popup.ids.manual_rvPopup.data = app.mdi_data
         except IndexError:
-            print('Recycle view layout change ignored')
-        except Exception as e:
-            print(f"unexpected error updating manual_rvPopup: {e}")
+            logger.error('Recycle view layout change ignored')
 
 
         app.bind(mdi_data=lambda instance, value: self.on_mdi_data_changed(popup))

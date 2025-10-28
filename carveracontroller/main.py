@@ -1830,9 +1830,7 @@ class DataRV(RecycleView):
                                   'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
                                   'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
             except IndexError:
-                print("Tried to write to recycle view data at same time as reading, ignore (indexError)")
-            except Exception as e:
-                print(f"unexpected error in recycleview: {e}")
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             rv_key += 1
         # trigger
         self.dispatch('on_select')
@@ -3038,9 +3036,7 @@ class Makera(RelativeLayout):
                         try:
                             self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                         except IndexError:
-                            print("Tried to write to recycle view data at same time as reading, ignore (indexError)")
-                        except Exception as e:
-                            print(f"unexpected error in recycleview: {e}")
+                            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
@@ -3048,9 +3044,7 @@ class Makera(RelativeLayout):
                         try:
                             self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                         except IndexError:
-                            print("Tried to write to recycle view data at same time as reading, ignore (indexError)")
-                        except Exception as e:
-                            print(f"unexpected error in recycleview: {e}")
+                            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
@@ -4525,9 +4519,7 @@ class Makera(RelativeLayout):
         try:
             self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
         except IndexError:
-            print("Tried to write to recycle view data at same time as reading, ignore (indexError)")
-        except Exception as e:
-            print(f"unexpected error in recycleview: {e}")
+            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
@@ -5056,9 +5048,7 @@ class Makera(RelativeLayout):
                 self.gcode_rv.data.append(
                     {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
             except IndexError:
-                print("Tried to write to recycle view data at same time as reading, ignore (indexError)")
-            except Exception as e:
-                print(f"unexpected error in recycleview: {e}")
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
         self.gcode_rv.data_length = len(self.gcode_rv.data)
         app.curr_page = page_no
