@@ -1838,9 +1838,12 @@ class DataRV(RecycleView):
         self.data = []
         rv_key = 0
         for file in filtered_list:
-            self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
-                              'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
-                              'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            try:
+                self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
+                                  'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
+                                  'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             rv_key += 1
         # trigger
         self.dispatch('on_select')
@@ -4558,8 +4561,10 @@ class Makera(RelativeLayout):
 
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
-        self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
-
+        try:
+            self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
+        except IndexError:
+            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
@@ -5084,8 +5089,11 @@ class Makera(RelativeLayout):
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line[:-1].replace("\x0d", "")
-            self.gcode_rv.data.append(
-                {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            try:
+                self.gcode_rv.data.append(
+                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
         self.gcode_rv.data_length = len(self.gcode_rv.data)
         app.curr_page = page_no
