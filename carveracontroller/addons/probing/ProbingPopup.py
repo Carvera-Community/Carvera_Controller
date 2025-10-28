@@ -28,6 +28,9 @@ from .operations.Calibration.CalibrationSettings import CalibrationSettings
 from .operations.ProbeTip.ProbeTipOperationType import ProbeTipOperationType
 from .operations.ProbeTip.ProbeTipSettings import ProbeTipSettings
 
+import logging
+logger = logging.getLogger(__name__)
+
 from kivy.app import App
 
 import webbrowser
@@ -136,7 +139,10 @@ class ProbingPopup(ModalView):
     def link_shared_data_with_refresh(self, popup):
         app = App.get_running_app()
         app.mdi_data.clear()
-        popup.ids.manual_rvPopup.data = app.mdi_data
+        try:
+            popup.ids.manual_rvPopup.data = app.mdi_data
+        except IndexError:
+            logger.error('Recycle view layout change ignored')
 
 
         app.bind(mdi_data=lambda instance, value: self.on_mdi_data_changed(popup))

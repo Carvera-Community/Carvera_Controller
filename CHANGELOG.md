@@ -24,6 +24,7 @@
 - Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
 - Fixed: HIDAPI Library for MacOS now embedded into MacOS releases, this enables the use of the WiXHC WHB04B Pendant on MacOS using the .dmg release artifacts
 - Fixed: Simulated multitouch (red dots) disabled if running controller on non-mobile OS
+- Fixed: crash in recycle view when the data is updated at the same time as being read
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
