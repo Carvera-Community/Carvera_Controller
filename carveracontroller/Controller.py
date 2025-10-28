@@ -872,6 +872,9 @@ class Controller:
         if self.reconnect_timer:
             self.reconnect_timer.cancel()
             self.reconnect_timer = None
+        # Reset reconnection state
+        self.reconnect_countdown = 0
+        self.reconnect_attempts_remaining = 0
         if self.cancel_reconnect_callback:
             self.cancel_reconnect_callback()
 

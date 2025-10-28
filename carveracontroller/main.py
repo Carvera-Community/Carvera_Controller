@@ -2477,7 +2477,7 @@ class Makera(RelativeLayout):
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/new')
         log_dir = Path.home() / ".kivy" / "logs"
 
-        # Open the log directory with whatever native file browser is availiable
+        # Open the log directory with whatever native file browser is available
         if sys.platform == "win32":
             os.startfile(log_dir)
         else:
@@ -2886,7 +2886,7 @@ class Makera(RelativeLayout):
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
             else:
-                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not available."), False), 0)
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
@@ -3027,7 +3027,7 @@ class Makera(RelativeLayout):
                     if remote_decompercent != None:
                         self.decompercent = int(remote_decompercent[0].split('=')[1])
 
-                    # hanlde specific messages
+                    # handle specific messages
                     if 'WP PAIR SUCCESS' in line:
                         self.pairing_popup.pairing_success = True
 
@@ -4955,7 +4955,7 @@ class Makera(RelativeLayout):
         self.confirm_popup.pos_hint={'center_x': 0.5, 'center_y': 0.5}
         self.confirm_popup.lb_title.text = tr._('Entering Laser Mode')
         self.confirm_popup.lb_title.size_hint_y = None
-        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you read to proceed ?')
+        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you ready to proceed ?')
         self.confirm_popup.confirm = partial(self.enter_laser_mode)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
@@ -5249,7 +5249,13 @@ class Makera(RelativeLayout):
 
     def stop_run(self):
         self.stop.set()
-        self.controller.stop.set()
+        if hasattr(self, 'controller') and self.controller:
+            self.controller.stop.set()
+            # Cancel any ongoing reconnection attempts
+            self.controller.cancel_reconnection()
+        # Dismiss reconnection popup if it's open
+        if hasattr(self, 'reconnection_popup') and self.reconnection_popup and self.reconnection_popup._is_open:
+            self.reconnection_popup.dismiss()
 
 
 class MakeraApp(App):
@@ -5274,6 +5280,17 @@ class MakeraApp(App):
     mdi_data = ListProperty([])
 
     def on_stop(self):
+        # Cancel any ongoing reconnection attempts to prevent hanging
+        if hasattr(self.root, 'controller') and self.root.controller:
+            self.root.controller.cancel_reconnection()
+        # Stop all scheduled Clock events
+        if hasattr(self.root, 'blink_state'):
+            Clock.unschedule(self.root.blink_state)
+        if hasattr(self.root, 'switch_status'):
+            Clock.unschedule(self.root.switch_status)
+        if hasattr(self.root, 'check_model_metadata'):
+            Clock.unschedule(self.root.check_model_metadata)
+        # Stop the main run loop
         self.root.stop_run()
 
     def build(self):
@@ -5402,7 +5419,7 @@ def main():
     # load the global constants
     load_constants()
 
-    # Language translation needs to be globally accessiable
+    # Language translation needs to be globally accessible
     global HALT_REASON
 
     set_config_defaults(tr.lang)
