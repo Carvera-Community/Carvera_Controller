@@ -2,8 +2,10 @@
 - Enhancement: Support connecting to hidden wifi networks
 - Enhancement: Upload and select a file when it's double clicked in the local file browser
 - Enhancement: Select a file when it's double clicked in the remote file browser
+- Enhancement: CI workflow for building iOS app
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
+- Fixed: Hard-coded search paths in Xcode project for iOS app
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
