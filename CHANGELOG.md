@@ -4,6 +4,7 @@
 - Enhancement: Select a file when it's double clicked in the remote file browser
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
+- Enhancement: Improved navigation in probing screens. Tab/enter now selects all the text in the next field and scrolls the view to match.
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
