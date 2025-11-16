@@ -1,4 +1,5 @@
 from kivy.clock import Clock
+import sys
 from kivy.compat import string_types
 from kivy.properties import StringProperty, ObjectProperty, NumericProperty, BooleanProperty
 from kivy.uix.spinner import Spinner
@@ -12,6 +13,8 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.switch import Switch
 from kivy.uix.popup import Popup
 from kivy.uix.modalview import ModalView
+from ...addons.TabInputFields.TabTextInput import TabTextInput
+
 import sys
 
 class Tooltip(BoxLayout):
@@ -192,7 +195,7 @@ class ToolTipSwitch(Switch):
         Window.add_widget(self._tooltip)
 
 
-class ToolTipTextInput(TextInput):
+class ToolTipTextInput(TabTextInput):
     tooltip_txt = StringProperty('')
     tooltip_cls = ObjectProperty(Tooltip)
     tooltip_image = StringProperty('')
