@@ -3994,7 +3994,7 @@
                                                     multiline: False
                                                     # disabled: app.state != 'Idle'
                                                     on_text_validate:
-                                                        if app.state == 'Idle' or app.state == 'Pause' : root.send_cmd()
+                                                        if app.state == 'Idle' or app.state == 'Pause' or root.allow_mdi_while_machine_running == '1' : root.send_cmd()
                                                 ToolTipButton:
                                                     id: send_cmd
                                                     width: '40dp'
