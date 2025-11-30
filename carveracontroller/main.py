@@ -2394,6 +2394,9 @@ class Makera(RelativeLayout):
         #
         threading.Thread(target=self.monitorSerial).start()
 
+        # try to connect over wifi if we've used it before
+        Clock.schedule_once(self.reconnect_wifi_conn_quietly)
+
     def __del__(self):
         # Cleanup the temporary directory when the app is closed
         try:
@@ -2907,6 +2910,12 @@ class Makera(RelativeLayout):
             self.remote_dir_drop_down.add_widget(btn)
 
         self.remote_dir_drop_down.open(button)
+
+    # -----------------------------------------------------------------------
+    def reconnect_wifi_conn_quietly(self, button):
+        if self.past_machine_addr:
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
 
     # -----------------------------------------------------------------------
     def reconnect_wifi_conn(self, button):
