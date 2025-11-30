@@ -6,6 +6,7 @@ import select
 
 from .XMODEM import XMODEM
 import logging
+logger = logging.getLogger(__name__)
 
 
 TCP_PORT = 2222
@@ -30,6 +31,7 @@ class MachineDetector:
             with socket.create_connection((addr, "2222"), timeout=1):
                 return False
         except (socket.timeout, socket.error) as e:
+            logger.error(f"Socket error: {e}")
             return True
 
     def query_for_machines(self):

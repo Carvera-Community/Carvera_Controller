@@ -2,9 +2,11 @@
 - Enhancement: Support connecting to hidden wifi networks
 - Enhancement: Upload and select a file when it's double clicked in the local file browser
 - Enhancement: Select a file when it's double clicked in the remote file browser
+- Enhancement: Automatically connect to the machine on startup if its wifi address is configured
 - Enhancement: CI workflow for building iOS app
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
+- Fixed: UI state for manual MDI text box and the Send button can be incorrect and make MDI seem broken
 - Fixed: Hard-coded search paths in Xcode project for iOS app
 
 [2.0.0-RC2]

@@ -371,7 +371,7 @@ jobs:
           platforms: linux/${{ matrix.platform == 'x64' && 'amd64' || matrix.platform }}
 
   publish-release:
-    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-android-artifacts, build-pypi-artifacts ]
+    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-pypi-artifacts ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -404,15 +404,36 @@ jobs:
           git tag -f dev
           git push origin dev --force
 
-      - name: Publish release
+      - name: Publish release  # All but android artifacts
         uses: softprops/action-gh-release@v2.2.2
         with:
           files: |
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
             linux-assets-*/carveracontroller-community-*.appimage
-            android-assets/carveracontroller-community-*.apk
             pypi-assets/*.whl
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
+          body_path: ${{ startsWith(github.ref, 'refs/tags/') && 'CHANGELOG.md' || 'dev-CHANGELOG.md' }} 
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/') && 'false' || 'true' }}
+
+  publish-android-release:
+    needs: [ build-android-artifacts ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-assets
+
+      - name: Publish Android release
+        uses: softprops/action-gh-release@v2.2.2
+        with:
+          files: |
+            android-assets/carveracontroller-community-*.apk
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
           body_path: ${{ startsWith(github.ref, 'refs/tags/') && 'CHANGELOG.md' || 'dev-CHANGELOG.md' }} 
           prerelease: ${{ startsWith(github.ref, 'refs/tags/') && 'false' || 'true' }} 
