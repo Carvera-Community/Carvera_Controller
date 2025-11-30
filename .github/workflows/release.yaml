@@ -113,6 +113,35 @@ jobs:
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.dmg
         retention-days: 2
 
+  build-ios-app:
+    name: build-ios
+    runs-on: macos-15
+    if: startsWith(github.ref, 'refs/heads/develop')
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Install poetry and dependencies
+      uses: ./.github/actions/bootstrap-poetry
+      with:
+        os: ios
+
+    - name: Build release
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=$GITHUB_REF_NAME
+        else
+          VERSION=$(date +'%Y.%m.%d')
+        fi
+        poetry run python scripts/build.py --os ios --version "$VERSION"
+
   build-linux-artifacts:
     name: build-linux-${{ matrix.platform }}
     runs-on: ${{ matrix.image }}

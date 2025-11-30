@@ -73,11 +73,11 @@
 		4DEA4A81A8F3A569B130BCAA /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = OpenGLES.framework; sourceTree = DEVELOPER_DIR; };
 		4F7140229CC1D236491CB9CA /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreHaptics.framework; sourceTree = DEVELOPER_DIR; };
 		537F42158DFB71F9E32277D8 /* libSDL2_mixer.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_mixer.xcframework; path = ../dist/xcframework/libSDL2_mixer.xcframework; sourceTree = SOURCE_ROOT; };
-		59738AB41A8BB5D8001B2C0C /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = /Users/mamonney/Carvera_Controller/dist/root/python3/lib; sourceTree = "<group>"; };
+		59738AB41A8BB5D8001B2C0C /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../dist/root/python3/lib; sourceTree = "<group>"; };
 		59738ABA1A8E19AA001B2C0C /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		59864361B31751B48655D9D2 /* libffi.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libffi.xcframework; path = ../dist/xcframework/libffi.xcframework; sourceTree = SOURCE_ROOT; };
 		59994E3A148E85C800863906 /* carveracontrollerpkg */ = {isa = PBXFileReference; lastKnownFileType = folder; path = carveracontrollerpkg; sourceTree = "<group>"; };
-		59FDEA8A21E7D34E004E6ECE /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = /Users/mamonney/Carvera_Controller/dist/root/python3/include; sourceTree = "<group>"; };
+		59FDEA8A21E7D34E004E6ECE /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../dist/root/python3/include; sourceTree = "<group>"; };
 		5A7641749B9D44C54E1BBDFE /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Photos.framework; sourceTree = DEVELOPER_DIR; };
 		64F7416AB075A0994023F21B /* libkivy.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libkivy.xcframework; path = ../dist/xcframework/libkivy.xcframework; sourceTree = SOURCE_ROOT; };
 		650D4733935B336C699C93ED /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Accelerate.framework; sourceTree = DEVELOPER_DIR; };
@@ -408,10 +408,9 @@
 				DEVELOPMENT_TEAM = QMMYJPQXNE;
 				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
-					/Users/mamonney/Carvera_Controller/dist/frameworks,
-					"$(SRCROOT)/../dist/xcframework",
-					"$(inherited)",
+					"$(SRCROOT)/../../../dist/frameworks",
 					"$(SRCROOT)/../../../dist/xcframework",
+					"$(inherited)",
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -420,8 +419,8 @@
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				HEADER_SEARCH_PATHS = (
-					"/Users/mamonney/Carvera_Controller/dist/root/python3/include/python3.11/**",
-					/Users/mamonney/Carvera_Controller/dist/include/common/sdl2,
+					"$(SRCROOT)/../../../dist/root/python3/include/python3.11/**",
+					"$(SRCROOT)/../../../dist/include/common/sdl2",
 				);
 				INFOPLIST_FILE = "carveracontroller-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CarveraController;
@@ -429,7 +428,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/Users/mamonney/Carvera_Controller/dist/lib,
+					"$(SRCROOT)/../../../dist/lib",
 				);
 				MARKETING_VERSION = 0.8.2;
 				ONLY_ACTIVE_ARCH = YES;
@@ -460,18 +459,17 @@
 				DEVELOPMENT_TEAM = QMMYJPQXNE;
 				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
-					/Users/mamonney/Carvera_Controller/dist/frameworks,
-					"$(SRCROOT)/../dist/xcframework",
-					"$(inherited)",
+					"$(SRCROOT)/../../../dist/frameworks",
 					"$(SRCROOT)/../../../dist/xcframework",
+					"$(inherited)",
 				);
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				HEADER_SEARCH_PATHS = (
-					"/Users/mamonney/Carvera_Controller/dist/root/python3/include/python3.11/**",
-					/Users/mamonney/Carvera_Controller/dist/include/common/sdl2,
+					"$(SRCROOT)/../../../dist/root/python3/include/python3.11/**",
+					"$(SRCROOT)/../../../dist/include/common/sdl2",
 				);
 				INFOPLIST_FILE = "carveracontroller-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CarveraController;
@@ -479,7 +477,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					/Users/mamonney/Carvera_Controller/dist/lib,
+					"$(SRCROOT)/../../../dist/lib",
 				);
 				MARKETING_VERSION = 0.8.2;
 				OTHER_LDFLAGS = "-all_load";
@@ -533,7 +531,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				USER_HEADER_SEARCH_PATHS = /Users/mamonney/Carvera_Controller/dist/root/include/;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../dist/root/include/";
 			};
 			name = Debug;
 		};
@@ -571,7 +569,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				USER_HEADER_SEARCH_PATHS = /Users/mamonney/Carvera_Controller/dist/root/include/;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../dist/root/include/";
 			};
 			name = Release;
 		};
