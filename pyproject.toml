@@ -35,5 +35,5 @@ virtualenv = "^20.31.2"
 buildozer = "^1.5.0"
 
 [tool.poetry.group.ios-dev.dependencies.kivy-ios]
-git = "https://github.com/acj/kivy-ios.git"
+git = "https://github.com/Carvera-Community/kivy-ios.git"
 branch = "pr-643-fix-custom-recipes"
