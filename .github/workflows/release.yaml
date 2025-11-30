@@ -116,6 +116,7 @@ jobs:
   build-ios-app:
     name: build-ios
     runs-on: macos-15
+    if: startsWith(github.ref, 'refs/heads/develop')
     defaults:
       run:
         shell: bash
