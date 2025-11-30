@@ -2,6 +2,7 @@
 - Enhancement: Support connecting to hidden wifi networks
 - Enhancement: Upload and select a file when it's double clicked in the local file browser
 - Enhancement: Select a file when it's double clicked in the remote file browser
+- Enhancement: Automatically connect to the machine on startup if it's wifi address configured
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
 
