@@ -123,6 +123,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Cache build directory
+      uses: actions/cache@v4
+      with:
+        path: |
+          build
+          dist
+        key: ${{ runner.os }}-ios-build-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-ios-build-
+
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
