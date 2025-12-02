@@ -528,6 +528,7 @@ def main():
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
         except subprocess.CalledProcessError as e:
+            logger.error(f"Stdout from build_ios.sh: {e.stdout}")
             logger.error(f"Error from build_ios.sh: {e.stderr}")
         else:
             logger.info(f"Stdout from build_ios.sh: {result.stdout}")
