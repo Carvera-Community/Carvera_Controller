@@ -529,7 +529,8 @@ def main():
             result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
         except subprocess.CalledProcessError as e:
             logger.error(f"Error from build_ios.sh: {e.stderr}")
-        logger.info(f"Stdout from build_ios.sh: {e.stdout}")
+        else:
+            logger.info(f"Stdout from build_ios.sh: {result.stdout}")
 
     if os_name == "android":
         # For Android we need some special handling as it is not supported by pyinstaller
