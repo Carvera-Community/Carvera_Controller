@@ -525,10 +525,11 @@ def main():
         # For iOS we need some special handling as it is not supported by pyinstaller
         # Execute the build_ios.sh script
         command = f"{BUILD_PATH}/build_ios.sh {package_version}"
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
-        if result.stderr:
-            logger.error(f"Error from build_ios.sh: {result.stderr}")
-        logger.info(f"Stdout from build_ios.sh: {result.stdout}")
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error from build_ios.sh: {e.stderr}")
+        logger.info(f"Stdout from build_ios.sh: {e.stdout}")
 
     if os_name == "android":
         # For Android we need some special handling as it is not supported by pyinstaller
