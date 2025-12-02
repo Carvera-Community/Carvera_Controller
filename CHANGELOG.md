@@ -2,6 +2,9 @@
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
+- Fixed: UI state for manual MDI text box and the Send button can be incorrect and make MDI seem broken
+- Fixed: Hard-coded search paths in Xcode project for iOS app
+- Fixed: Missing H parameter in A axis Y calibration and graphic was wrong
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
