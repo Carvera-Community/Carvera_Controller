@@ -2387,6 +2387,10 @@ class Makera(RelativeLayout):
         # model metadata check timer
         Clock.schedule_interval(self.check_model_metadata, 10)
 
+        # Device-specific settings
+        # CA1
+        self.ca1_ext_control_as_vacuum = False
+
         self.has_onscreen_keyboard = False
         if sys.platform == "ios":
             self.has_onscreen_keyboard = True
@@ -2415,6 +2419,18 @@ class Makera(RelativeLayout):
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
+
+    def reload_device_specific_ui(self):
+        """ Reloads the device-specific UI elements."""
+        # Initialize device-specific settings
+        app = App.get_running_app()
+        if app.model == 'CA1':
+            self.ca1_ext_control_as_vacuum = self.config.getboolean(
+                'Advanced', 'ca1_ext_control_as_vacuum', fallback=False)
+
+        self.spindle_drop_down = SpindleDropDown()
+        self.coord_popup = CoordPopup(self.coord_config)
+
 
     def load_controller_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
@@ -4233,7 +4249,11 @@ class Makera(RelativeLayout):
             elapsed = now - self.control_list['vacuum_mode'][0]
             if elapsed < 2:
                 if elapsed > 0.5:
-                    self.controller.setVacuumMode(self.control_list['vacuum_mode'][1])
+                    logging.info("Setting vacuum mode to: {}".format(self.control_list['vacuum_mode'][1]))
+                    if self.ca1_ext_control_as_vacuum:
+                        self.controller.setExternalControl(100 if self.control_list['vacuum_mode'][1] else 0)
+                    else:
+                        self.controller.setVacuumMode(self.control_list['vacuum_mode'][1])
                     self.control_list['vacuum_mode'][0] = now - 2
             elif elapsed > 3:
                 if self.spindle_drop_down.vacuum_switch.active != CNC.vars["vacuummode"]:
@@ -4734,6 +4754,10 @@ class Makera(RelativeLayout):
             self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
+        
+        # Reload device-specific UI elements
+        self.reload_device_specific_ui()
+
         return True
 
     # -----------------------------------------------------------------------
