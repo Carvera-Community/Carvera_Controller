@@ -1,5 +1,6 @@
 [unreleased]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
+- Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
 
 [2.0.0-RC2]
