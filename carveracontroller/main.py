@@ -402,6 +402,13 @@ class InputPopup(ModalView):
     def __init__(self, **kwargs):
         super(InputPopup, self).__init__(**kwargs)
 
+class ManualWifiPopup(ModalView):
+    cache_var1 = StringProperty('')
+    cache_var2 = StringProperty('')
+    cache_var3 = StringProperty('')
+    def __init__(self, **kwargs):
+        super(ManualWifiPopup, self).__init__(**kwargs)
+
 class ProgressPopup(ModalView):
     progress_text = StringProperty('')
     progress_value = NumericProperty('0')
@@ -1728,6 +1735,8 @@ class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
                 rv = self.parent.recycleview
                 if rv.data[self.index]['is_dir']:
                     rv.child_dir(rv.data[self.index]['filename'])
+                else:
+                    rv.dispatch('on_double_tap')
                 return True
             return self.parent.select_with_touch(self.index, touch)
 
@@ -1769,9 +1778,13 @@ class DataRV(RecycleView):
     def __init__(self, **kwargs):
         super(DataRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
     # -----------------------------------------------------------------------
     def on_select(self):
+        pass
+        
+    def on_double_tap(self):
         pass
 
     # -----------------------------------------------------------------------
@@ -1825,9 +1838,12 @@ class DataRV(RecycleView):
         self.data = []
         rv_key = 0
         for file in filtered_list:
-            self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
-                              'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
-                              'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            try:
+                self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
+                                  'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
+                                  'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             rv_key += 1
         # trigger
         self.dispatch('on_select')
@@ -1857,6 +1873,7 @@ class RemoteRV(DataRV):
     def __init__(self, **kwargs):
         super(RemoteRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
         self.base_dir = '/sd/gcodes'
         self.base_dir_win = '\\sd\\gcodes'
@@ -1888,6 +1905,10 @@ class RemoteRV(DataRV):
         app.root.loadRemoteDir(new_dir)
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        app.root.check_and_download()
 
 # -----------------------------------------------------------------------
 # Local Recycle View
@@ -1897,6 +1918,7 @@ class LocalRV(DataRV):
     def __init__(self, **kwargs):
         super(LocalRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
         if kivy_platform == 'android':
             self.curr_dir = os.path.abspath('.carveracontroller/gcodes')
             if not os.path.exists(self.curr_dir):
@@ -1977,6 +1999,13 @@ class LocalRV(DataRV):
 
         if self.curr_path_list[0] == self.base_dir:
             self.curr_path_list[0] = 'root'
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        if app.root.file_popup.firmware_mode:
+            app.root.check_and_upload()
+        else:
+            app.root.check_upload_and_select()
 
 # -----------------------------------------------------------------------
 # GCode Recycle View
@@ -2105,6 +2134,7 @@ class Makera(RelativeLayout):
     reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
+    manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
 
@@ -2280,6 +2310,7 @@ class Makera(RelativeLayout):
         self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
+        self.manual_wifi_popup = ManualWifiPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
@@ -2362,6 +2393,9 @@ class Makera(RelativeLayout):
 
         #
         threading.Thread(target=self.monitorSerial).start()
+
+        # try to connect over wifi if we've used it before
+        Clock.schedule_once(self.reconnect_wifi_conn_quietly)
 
     def __del__(self):
         # Cleanup the temporary directory when the app is closed
@@ -2474,7 +2508,7 @@ class Makera(RelativeLayout):
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/new')
         log_dir = Path.home() / ".kivy" / "logs"
 
-        # Open the log directory with whatever native file browser is availiable
+        # Open the log directory with whatever native file browser is available
         if sys.platform == "win32":
             os.startfile(log_dir)
         else:
@@ -2878,12 +2912,18 @@ class Makera(RelativeLayout):
         self.remote_dir_drop_down.open(button)
 
     # -----------------------------------------------------------------------
+    def reconnect_wifi_conn_quietly(self, button):
+        if self.past_machine_addr:
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
+
+    # -----------------------------------------------------------------------
     def reconnect_wifi_conn(self, button):
         if self.past_machine_addr:
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
             else:
-                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not available."), False), 0)
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
@@ -2968,6 +3008,26 @@ class Makera(RelativeLayout):
         Config.write()
         self.past_machine_addr = address
 
+    def manually_input_ssid(self):
+        self.manual_wifi_popup.lb_title1.text = tr._('Input Wi-Fi network name (SSID):')
+        self.manual_wifi_popup.lb_title2.text = tr._('Input Wi-Fi password (leave blank if open network):')
+        self.manual_wifi_popup.txt_content1.password = False
+        self.manual_wifi_popup.txt_content2.password = True
+        self.manual_wifi_popup.confirm = self.manually_open_ssid
+        self.manual_wifi_popup.open(self)
+        self.wifi_ap_drop_down.dismiss()
+        self.status_drop_down.dismiss()
+
+    def manually_open_ssid(self):
+        ssid = self.manual_wifi_popup.txt_content1.text.strip()
+        password = self.manual_wifi_popup.txt_content2.text.strip()
+        self.manual_wifi_popup.dismiss()
+        if not ssid:
+            return False
+        self.input_popup.cache_var1 = ssid
+        self.input_popup.txt_content.text = password
+        self.connectToWiFi()
+
     # -----------------------------------------------------------------------
     def update_coord_config(self):
         self.wpb_margin.width = 50 if self.coord_config['margin']['active'] else 0
@@ -3024,17 +3084,17 @@ class Makera(RelativeLayout):
                     if remote_decompercent != None:
                         self.decompercent = int(remote_decompercent[0].split('=')[1])
 
-                    # hanlde specific messages
+                    # handle specific messages
                     if 'WP PAIR SUCCESS' in line:
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
-                        logger.info(f"MDI Recieved: {line}")
+                        logger.info(f"MDI Received: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
-                        logger.error(f"MDI Recieved: {line}")
+                        logger.error(f"MDI Received: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
@@ -3565,6 +3625,9 @@ class Makera(RelativeLayout):
             btn = WiFiButton(connected = ap['connected'], ssid = ap['ssid'], encrypted = ap['encrypted'], strength = ap['strength'])
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(btn.ssid))
             self.wifi_ap_drop_down.add_widget(btn)
+        btn = WiFiButton(ssid = tr._('Other...'))
+        btn.bind(on_release=lambda btn: self.manually_input_ssid())
+        self.wifi_ap_drop_down.add_widget(btn)
 
     # -----------------------------------------------------------------------
     def loadWiFiError(self, error_msg, *args):
@@ -4507,8 +4570,10 @@ class Makera(RelativeLayout):
 
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
-        self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
-
+        try:
+            self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
+        except IndexError:
+            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
@@ -4944,7 +5009,7 @@ class Makera(RelativeLayout):
         self.confirm_popup.pos_hint={'center_x': 0.5, 'center_y': 0.5}
         self.confirm_popup.lb_title.text = tr._('Entering Laser Mode')
         self.confirm_popup.lb_title.size_hint_y = None
-        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you read to proceed ?')
+        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you ready to proceed ?')
         self.confirm_popup.confirm = partial(self.enter_laser_mode)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
@@ -5033,8 +5098,11 @@ class Makera(RelativeLayout):
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line[:-1].replace("\x0d", "")
-            self.gcode_rv.data.append(
-                {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            try:
+                self.gcode_rv.data.append(
+                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
         self.gcode_rv.data_length = len(self.gcode_rv.data)
         app.curr_page = page_no
@@ -5405,7 +5473,7 @@ def main():
     # load the global constants
     load_constants()
 
-    # Language translation needs to be globally accessiable
+    # Language translation needs to be globally accessible
     global HALT_REASON
 
     set_config_defaults(tr.lang)

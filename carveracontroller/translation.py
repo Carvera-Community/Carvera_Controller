@@ -67,7 +67,7 @@ class TrProxy:
             raise RuntimeError("Translation not initialized")
         return getattr(_translator, name)
 
-_translator: Optional[Lang] = None
+_translator: Optional[Lang] = Lang('en')
 tr = TrProxy()
 
 def init(langname: Optional[str] = None):

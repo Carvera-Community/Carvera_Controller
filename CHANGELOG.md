@@ -1,6 +1,15 @@
 [unreleased]
+- Enhancement: Support connecting to hidden wifi networks
+- Enhancement: Upload and select a file when it's double clicked in the local file browser
+- Enhancement: Select a file when it's double clicked in the remote file browser
+- Enhancement: Automatically connect to the machine on startup if its wifi address is configured
+- Enhancement: CI workflow for building iOS app
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
+- Fixed: Probing popup shouldn't be accessible when playback is suspended
+- Fixed: UI state for manual MDI text box and the Send button can be incorrect and make MDI seem broken
+- Fixed: Hard-coded search paths in Xcode project for iOS app
+- Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
@@ -20,10 +29,11 @@
 - Fixed: The probing start dialog can now be closed if the machine halts while probing
 - Fixed: Top bar buttons minimum size increased to ensure sufficient space for position values up to 999.999 without truncating
 - Fixed: Including win32timezone for Windows builds. Fixes Play background images custom folder
-- Fixed: New installs would crash when no previous folder availiable to open in file browser
+- Fixed: New installs would crash when no previous folder available to open in file browser
 - Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
 - Fixed: HIDAPI Library for MacOS now embedded into MacOS releases, this enables the use of the WiXHC WHB04B Pendant on MacOS using the .dmg release artifacts
 - Fixed: Simulated multitouch (red dots) disabled if running controller on non-mobile OS
+- Fixed: crash in recycle view when the data is updated at the same time as being read
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.

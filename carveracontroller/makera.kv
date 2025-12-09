@@ -1060,7 +1060,7 @@
         icon_size: 35
         small_icon: True
         size_hint_y: None
-        # disabled: app.state == 'N/A'
+        disabled: app.state != 'Idle'
         height: '50dp'
         on_release:
             root.select('')
@@ -1314,6 +1314,57 @@
                     if root.confirm():\
                     root.dismiss()
 
+<ManualWifiPopup>:
+    lb_title1: lb_title1
+    lb_title2: lb_title2
+    txt_content1: txt_content1
+    txt_content2: txt_content2
+    size_hint: 0.5, 0.4
+    pos_hint: {"right": 0.75, "top": 0.7}
+    auto_dismiss: False
+    BoxLayout:
+        padding: '15dp'
+        orientation: 'vertical'
+        Label:
+            size_hint_y: 0.4
+            id: lb_title1
+            text: tr._('Input Box')
+            bold: True
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+            TextInput:
+                id: txt_content1
+                size_hint_y: None
+                height: '35dp'
+                multiline: False
+                text: ''
+            Label:
+        Label:
+            size_hint_y: 0.4
+            id: lb_title2
+            text: tr._('Input Box')
+            bold: True
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+            TextInput:
+                id: txt_content2
+                size_hint_y: None
+                height: '35dp'
+                multiline: False
+                text: ''
+            Label:
+        BoxLayout:
+            size_hint_y: 0.4
+            Button:
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                text: tr._('Ok')
+                on_release:
+                    if root.confirm():\
+                    root.dismiss()
 
 <ConfirmPopup>:
     lb_title: lb_title
@@ -1816,7 +1867,7 @@
             id: caption
             size_hint_y: None
             height: '30dp'
-            text: tr._('Paring Wireless Probe')
+            text: tr._('Pairing Wireless Probe')
             halign: 'left'
             valign: 'middle'
         BoxLayout:
@@ -3933,7 +3984,7 @@
                                                     width: '40dp'
                                                     size_hint_x: None
                                                     text: tr._('FILE')
-                                                    tooltip_txt: tr._('Retun to file view')
+                                                    tooltip_txt: tr._('Return to file view')
                                                     on_release:
                                                         cmd_manager.transition.direction = 'right'
                                                         cmd_manager.current = 'gcode_cmd_page'
@@ -3943,14 +3994,14 @@
                                                     multiline: False
                                                     # disabled: app.state != 'Idle'
                                                     on_text_validate:
-                                                        if app.state == 'Idle' or app.state == 'Pause' : root.send_cmd()
+                                                        if app.state == 'Idle' or app.state == 'Pause' or root.allow_mdi_while_machine_running == '1' : root.send_cmd()
                                                 ToolTipButton:
                                                     id: send_cmd
                                                     width: '40dp'
                                                     size_hint_x: None
                                                     text: tr._('send')
                                                     tooltip_txt: tr._('The MDI is a console that allows you to send individual gcodes, and commands such as to change config values on the machine')
-                                                    disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running == '0')
+                                                    disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running in ['0', 'false', False])
                                                     on_release:
                                                         root.send_cmd()
                         FloatBox:

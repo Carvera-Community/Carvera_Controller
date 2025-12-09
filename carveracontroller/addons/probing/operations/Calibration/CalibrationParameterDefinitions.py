@@ -11,6 +11,8 @@ class CalibrationParameterDefinitions:
                                               "Optional parameter, if set the probe will probe down by "
                                               "this value to find the pocket bottom and then retract slightly "
                                               "before probing the sides of the Calibration. Useful for shallow pockets")
+    
+    SideProbeDepth =  ProbeSettingDefinition('E', "Y Probe Depth", False, "")
 
     PinDiameter = ProbeSettingDefinition('R', "Pin Diameter", False, "")
 
