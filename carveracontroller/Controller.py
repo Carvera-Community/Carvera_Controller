@@ -906,6 +906,8 @@ class Controller:
 
     def viewStatusReport(self, sio_status):
         if self.loadNUM == 0 and self.sendNUM == 0:
+            if self.stream is None:
+                return
             if self.continuous_jog_active:
                 self.stream.send(b"?1")
             else:
@@ -914,6 +916,8 @@ class Controller:
 
     def viewDiagnoseReport(self, sio_diagnose):
         if self.loadNUM == 0 and self.sendNUM == 0:
+            if self.stream is None:
+                return
             self.stream.send(b"diagnose\n")
             self.sio_diagnose = sio_diagnose
 
