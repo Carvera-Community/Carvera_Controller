@@ -314,7 +314,7 @@ msgid "Recent Places"
 msgstr ""
 
 #: main.py:2707
-msgid "Cannot connect, machine is busy or not availiable."
+msgid "Cannot connect, machine is busy or not available."
 msgstr ""
 
 #: main.py:2709
@@ -418,7 +418,7 @@ msgid "Please change to tool: "
 msgstr ""
 
 #: main.py:2986
-msgid "Then press ' Confirm' or main button to proceed"
+msgid "Then press 'Confirm' or main button to proceed"
 msgstr ""
 
 #: main.py:3022
@@ -628,7 +628,7 @@ msgid ""
 " It's recommended to remove the laser dust cap, and put on safety glasses "
 "now.\n"
 "\n"
-"Are you read to proceed ?"
+"Are you ready to proceed ?"
 msgstr ""
 
 #: main.py:4827
@@ -1074,7 +1074,7 @@ msgid "XYZ Probe At Current Position"
 msgstr ""
 
 #: makera.kv:1777
-msgid "Paring Wireless Probe"
+msgid "Pairing Wireless Probe"
 msgstr ""
 
 #: makera.kv:1791
@@ -1472,7 +1472,7 @@ msgid "FILE"
 msgstr ""
 
 #: makera.kv:3812
-msgid "Retun to file view"
+msgid "Return to file view"
 msgstr ""
 
 #: makera.kv:3818

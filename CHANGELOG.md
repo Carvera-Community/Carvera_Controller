@@ -1,6 +1,7 @@
 [unreleased]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
+- Fixed: Probing popup shouldn't be accessible when playback is suspended
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
@@ -20,10 +21,11 @@
 - Fixed: The probing start dialog can now be closed if the machine halts while probing
 - Fixed: Top bar buttons minimum size increased to ensure sufficient space for position values up to 999.999 without truncating
 - Fixed: Including win32timezone for Windows builds. Fixes Play background images custom folder
-- Fixed: New installs would crash when no previous folder availiable to open in file browser
+- Fixed: New installs would crash when no previous folder available to open in file browser
 - Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
 - Fixed: HIDAPI Library for MacOS now embedded into MacOS releases, this enables the use of the WiXHC WHB04B Pendant on MacOS using the .dmg release artifacts
 - Fixed: Simulated multitouch (red dots) disabled if running controller on non-mobile OS
+- Fixed: crash in recycle view when the data is updated at the same time as being read
 
 [2.0.0-RC1]
 - Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
