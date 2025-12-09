@@ -5,6 +5,7 @@
 - Enhancement: Automatically connect to the machine on startup if its wifi address is configured
 - Enhancement: CI workflow for building iOS app
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
+- Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
 - Fixed: UI state for manual MDI text box and the Send button can be incorrect and make MDI seem broken
 - Fixed: Hard-coded search paths in Xcode project for iOS app
