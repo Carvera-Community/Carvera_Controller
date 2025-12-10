@@ -439,6 +439,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: android-assets
+      
+      - name: Generate dev release notes (dev builds only)
+        if: startsWith(github.ref, 'refs/heads/develop')
+        run: python3 ./scripts/dev_release_notes.py
 
       - name: Publish Android release
         uses: softprops/action-gh-release@v2.2.2
