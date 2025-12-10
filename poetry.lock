@@ -669,6 +669,7 @@ files = [
     {file = "kivy_deps.glew-0.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:3f8b89dcf1846032d7a9c5ef88b0ee9cbd13366e9b4c85ada61e01549a910677"},
     {file = "kivy_deps.glew-0.3.1-cp39-cp39-win32.whl", hash = "sha256:4e377ed97670dfda619a1b63a82345a8589be90e7c616a458fba2810708810b1"},
     {file = "kivy_deps.glew-0.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:081a09b92f7e7817f489f8b6b31c9c9623661378de1dce1d6b097af5e7d42b45"},
+    {file = "kivy_deps_glew-0.3.1-cp314-cp314-win_amd64.whl", hash = "sha256:f12bd302dc65ed683bdc03cbbb301f23c2220d8837bca444529858a8b1767acc"},
 ]
 
 [package.source]
@@ -719,7 +720,7 @@ reference = "pypi-public"
 
 [[package]]
 name = "kivy-ios"
-version = "2024.3.17"
+version = "2025.5.17"
 description = "A toolchain to compile the necessary libraries for iOS to run Kivy applications."
 optional = false
 python-versions = "*"
@@ -729,6 +730,7 @@ develop = false
 
 [package.dependencies]
 cookiecutter = "*"
+packaging = "*"
 pbxproj = "*"
 Pillow = "*"
 sh = "*"
@@ -906,7 +908,7 @@ version = "25.0"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.8"
-groups = ["dev"]
+groups = ["dev", "ios-dev"]
 files = [
     {file = "packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484"},
     {file = "packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f"},
