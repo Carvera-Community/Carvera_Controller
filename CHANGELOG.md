@@ -5,10 +5,12 @@
 - Enhancement: Automatically connect to the machine on startup if its wifi address is configured
 - Enhancement: CI workflow for building iOS app
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
+- Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
 - Fixed: UI state for manual MDI text box and the Send button can be incorrect and make MDI seem broken
 - Fixed: Hard-coded search paths in Xcode project for iOS app
 - Change: Intel MacOS minimum version increased to MacOS-14 (Sonoma). Previous versions might work, but will be unsupported
+- Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
 
 [2.0.0-RC2]
 - Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
