@@ -3943,14 +3943,14 @@
                                                     multiline: False
                                                     # disabled: app.state != 'Idle'
                                                     on_text_validate:
-                                                        if app.state == 'Idle' or app.state == 'Pause' : root.send_cmd()
+                                                        if app.state == 'Idle' or app.state == 'Pause' or root.allow_mdi_while_machine_running == '1' : root.send_cmd()
                                                 ToolTipButton:
                                                     id: send_cmd
                                                     width: '40dp'
                                                     size_hint_x: None
                                                     text: tr._('send')
                                                     tooltip_txt: tr._('The MDI is a console that allows you to send individual gcodes, and commands such as to change config values on the machine')
-                                                    disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running == '0')
+                                                    disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running in ['0', 'false', False])
                                                     on_release:
                                                         root.send_cmd()
                         FloatBox:
