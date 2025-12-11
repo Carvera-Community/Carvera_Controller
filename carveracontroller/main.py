@@ -19,7 +19,7 @@ if is_android():
         activity = PythonActivity.mActivity
         metrics = DisplayMetrics()
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics)
-        screen_width_density  = int(metrics.widthPixels  * 10 / 960) / 10
+        screen_width_density  = int(metrics.widthPixels  * 10 / 1000) / 10
         screen_height_density = int(metrics.heightPixels * 10 / 550) / 10
 
         os.environ["KIVY_METRICS_DENSITY"] = str(min(screen_width_density, screen_height_density))
