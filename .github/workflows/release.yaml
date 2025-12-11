@@ -382,7 +382,7 @@ jobs:
           platforms: linux/${{ matrix.platform == 'x64' && 'amd64' || matrix.platform }}
 
   publish-release:
-    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-pypi-artifacts, build-android-artifacts ]
+    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-pypi-artifacts ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
