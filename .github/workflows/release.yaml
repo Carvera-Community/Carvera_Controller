@@ -428,7 +428,7 @@ jobs:
           prerelease: ${{ startsWith(github.ref, 'refs/tags/') && 'false' || 'true' }}
 
   publish-android-release:
-    needs: [ build-android-artifacts ]
+    needs: [ build-android-artifacts, publish-release ]  # depends on publish-release to delete previous release/tags
     runs-on: ubuntu-latest
     permissions:
       contents: write
