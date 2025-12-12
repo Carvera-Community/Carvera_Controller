@@ -64,6 +64,19 @@
                     input_filter: 'float'
                     text: root.get_setting('PocketProbeDepth')
                     on_text: root.setting_changed('PocketProbeDepth', self.text)
+            
+            ProbeSettingLabel:
+                label_text: 'E 4th axis Y Depth:'
+                ToolTipTextInput:
+                    id: PocketProbeDepth
+                    tooltip_txt: tr._('Not needed by default. \nUsed in calibrating 4th axis Y offset, see tooltip image')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('SideProbeDepth')
+                    on_text: root.setting_changed('SideProbeDepth', self.text)
 
             ProbeSettingLabel:
                 label_text: 'R Pin Diameter:'

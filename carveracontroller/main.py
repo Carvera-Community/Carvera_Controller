@@ -19,7 +19,7 @@ if is_android():
         activity = PythonActivity.mActivity
         metrics = DisplayMetrics()
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics)
-        screen_width_density  = int(metrics.widthPixels  * 10 / 960) / 10
+        screen_width_density  = int(metrics.widthPixels  * 10 / 1000) / 10
         screen_height_density = int(metrics.heightPixels * 10 / 550) / 10
 
         os.environ["KIVY_METRICS_DENSITY"] = str(min(screen_width_density, screen_height_density))
@@ -1825,9 +1825,12 @@ class DataRV(RecycleView):
         self.data = []
         rv_key = 0
         for file in filtered_list:
-            self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
-                              'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
-                              'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            try:
+                self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
+                                  'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
+                                  'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             rv_key += 1
         # trigger
         self.dispatch('on_select')
@@ -2474,7 +2477,7 @@ class Makera(RelativeLayout):
         webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/new')
         log_dir = Path.home() / ".kivy" / "logs"
 
-        # Open the log directory with whatever native file browser is availiable
+        # Open the log directory with whatever native file browser is available
         if sys.platform == "win32":
             os.startfile(log_dir)
         else:
@@ -2883,7 +2886,7 @@ class Makera(RelativeLayout):
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
             else:
-                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not available."), False), 0)
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
@@ -3024,18 +3027,24 @@ class Makera(RelativeLayout):
                     if remote_decompercent != None:
                         self.decompercent = int(remote_decompercent[0].split('=')[1])
 
-                    # hanlde specific messages
+                    # handle specific messages
                     if 'WP PAIR SUCCESS' in line:
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
-                        logger.info(f"MDI Recieved: {line}")
-                        self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
+                        logger.info(f"MDI Received: {line}")
+                        try:
+                            self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
+                        except IndexError:
+                            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
-                        logger.error(f"MDI Recieved: {line}")
-                        self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
+                        logger.error(f"MDI Received: {line}")
+                        try:
+                            self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
+                        except IndexError:
+                            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
@@ -4507,8 +4516,10 @@ class Makera(RelativeLayout):
 
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
-        self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
-
+        try:
+            self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
+        except IndexError:
+            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
@@ -4944,7 +4955,7 @@ class Makera(RelativeLayout):
         self.confirm_popup.pos_hint={'center_x': 0.5, 'center_y': 0.5}
         self.confirm_popup.lb_title.text = tr._('Entering Laser Mode')
         self.confirm_popup.lb_title.size_hint_y = None
-        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you read to proceed ?')
+        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you ready to proceed ?')
         self.confirm_popup.confirm = partial(self.enter_laser_mode)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
@@ -5033,8 +5044,11 @@ class Makera(RelativeLayout):
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line[:-1].replace("\x0d", "")
-            self.gcode_rv.data.append(
-                {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            try:
+                self.gcode_rv.data.append(
+                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
         self.gcode_rv.data_length = len(self.gcode_rv.data)
         app.curr_page = page_no
@@ -5235,7 +5249,13 @@ class Makera(RelativeLayout):
 
     def stop_run(self):
         self.stop.set()
-        self.controller.stop.set()
+        if hasattr(self, 'controller') and self.controller:
+            self.controller.stop.set()
+            # Cancel any ongoing reconnection attempts
+            self.controller.cancel_reconnection()
+        # Dismiss reconnection popup if it's open
+        if hasattr(self, 'reconnection_popup') and self.reconnection_popup and self.reconnection_popup._is_open:
+            self.reconnection_popup.dismiss()
 
 
 class MakeraApp(App):
@@ -5260,6 +5280,17 @@ class MakeraApp(App):
     mdi_data = ListProperty([])
 
     def on_stop(self):
+        # Cancel any ongoing reconnection attempts to prevent hanging
+        if hasattr(self.root, 'controller') and self.root.controller:
+            self.root.controller.cancel_reconnection()
+        # Stop all scheduled Clock events
+        if hasattr(self.root, 'blink_state'):
+            Clock.unschedule(self.root.blink_state)
+        if hasattr(self.root, 'switch_status'):
+            Clock.unschedule(self.root.switch_status)
+        if hasattr(self.root, 'check_model_metadata'):
+            Clock.unschedule(self.root.check_model_metadata)
+        # Stop the main run loop
         self.root.stop_run()
 
     def build(self):
@@ -5388,7 +5419,7 @@ def main():
     # load the global constants
     load_constants()
 
-    # Language translation needs to be globally accessiable
+    # Language translation needs to be globally accessible
     global HALT_REASON
 
     set_config_defaults(tr.lang)

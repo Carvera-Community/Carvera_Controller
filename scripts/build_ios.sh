@@ -56,5 +56,8 @@ else
     plutil -replace CFBundleVersion -string "$1" packaging_assets/ios/carveracontroller-ios/carveracontroller-Info.plist
 fi
 
-# For now we open the project in XCode and build it from there
-open packaging_assets/ios/carveracontroller-ios/carveracontroller.xcodeproj
+if [ -n "$CI" ]; then
+    xcodebuild -project packaging_assets/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPad mini (A17 Pro)'
+else
+    open packaging_assets/ios/carveracontroller-ios/carveracontroller.xcodeproj
+fi

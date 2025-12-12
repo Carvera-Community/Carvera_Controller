@@ -75,7 +75,7 @@ jobs:
         platform: [ Intel, AppleSilicon ]
         include:
           - platform: Intel
-            image: macos-13
+            image: macos-15-intel
           - platform: AppleSilicon
             image: macos-14
     defaults:
@@ -112,6 +112,45 @@ jobs:
         name: macos-assets-${{ matrix.platform }}
         path: ${{ github.workspace }}/dist/carveracontroller-community-*.dmg
         retention-days: 2
+
+  build-ios-app:
+    name: build-ios
+    runs-on: macos-15
+    if: startsWith(github.ref, 'refs/heads/develop')
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache build directory
+      uses: actions/cache@v4
+      with:
+        path: |
+          build
+          dist
+        key: ${{ runner.os }}-ios-build-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-ios-build-
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Install poetry and dependencies
+      uses: ./.github/actions/bootstrap-poetry
+      with:
+        os: ios
+
+    - name: Build release
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=$GITHUB_REF_NAME
+        else
+          VERSION=$(date +'%Y.%m.%d')
+        fi
+        poetry run python scripts/build.py --os ios --version "$VERSION"
 
   build-linux-artifacts:
     name: build-linux-${{ matrix.platform }}
@@ -343,7 +382,7 @@ jobs:
           platforms: linux/${{ matrix.platform == 'x64' && 'amd64' || matrix.platform }}
 
   publish-release:
-    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-android-artifacts, build-pypi-artifacts ]
+    needs: [ build-windows-artifacts, build-macos-artifacts, build-linux-artifacts, build-pypi-artifacts ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -376,15 +415,39 @@ jobs:
           git tag -f dev
           git push origin dev --force
 
-      - name: Publish release
+      - name: Publish release  # All but android artifacts
         uses: softprops/action-gh-release@v2.2.2
         with:
           files: |
             windows-assets-*/carveracontroller-community-*-windows-x64.exe
             macos-assets-*/carveracontroller-community-*.dmg
             linux-assets-*/carveracontroller-community-*.appimage
-            android-assets/carveracontroller-community-*.apk
             pypi-assets/*.whl
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
+          body_path: ${{ startsWith(github.ref, 'refs/tags/') && 'CHANGELOG.md' || 'dev-CHANGELOG.md' }} 
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/') && 'false' || 'true' }}
+
+  publish-android-release:
+    needs: [ build-android-artifacts, publish-release ]  # depends on publish-release to delete previous release/tags
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:  # Skip downloading docker images
+          pattern: '*-assets*'
+      
+      - name: Generate dev release notes (dev builds only)
+        if: startsWith(github.ref, 'refs/heads/develop')
+        run: python3 ./scripts/dev_release_notes.py
+
+      - name: Publish Android release
+        uses: softprops/action-gh-release@v2.2.2
+        with:
+          files: android-assets/carveracontroller-community-*.apk
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'dev' }}
           body_path: ${{ startsWith(github.ref, 'refs/tags/') && 'CHANGELOG.md' || 'dev-CHANGELOG.md' }} 
           prerelease: ${{ startsWith(github.ref, 'refs/tags/') && 'false' || 'true' }} 
