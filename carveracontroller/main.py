@@ -3389,7 +3389,7 @@ class Makera(RelativeLayout):
         self.wpb_play.value = 0
 
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
-        self.load_selected_gcode_file()
+        self.load_gcode_file(local_cached_file_path)
 
     def check_upload_and_select(self):
         filepath = self.file_popup.local_rv.curr_selected_file
@@ -3417,13 +3417,8 @@ class Makera(RelativeLayout):
         self.progress_popup.progress_text = tr._('Opening local file') + '\n%s' % filepath
         self.progress_popup.open()
 
-        threading.Thread(target=self.load_selected_gcode_file).start()
-        # Clock.schedule_once(self.load_selected_gcode_file, 0)
-
-    # -----------------------------------------------------------------------
-    def load_selected_gcode_file(self, *args):
-        app = App.get_running_app()
-        self.load(app.selected_local_filename)
+        threading.Thread(target=self.load_gcode_file, args=(filepath)).start()
+        # Clock.schedule_once(partial(self.load_gcode_file, filepath), 0)
 
     # -----------------------------------------------------------------------
     def check_and_download(self):
@@ -3436,19 +3431,18 @@ class Makera(RelativeLayout):
         app.selected_remote_filename = remote_path
         self.wpb_play.value = 0
 
-        self.downloading_file = remote_path
         self.downloading_size = remote_size
         self.downloading_config = False
-        threading.Thread(target=self.doDownload).start()
+        threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
     # -----------------------------------------------------------------------
     def download_config_file(self):
         app = App.get_running_app()
-        app.selected_local_filename = os.path.join(self.temp_dir, 'config.txt')
-        self.downloading_file = '/sd/config.txt'
         self.downloading_size = 1024 * 5
         self.downloading_config = True
-        threading.Thread(target=self.doDownload).start()
+        remote_path = '/sd/config.txt'
+        local_path = os.path.join(self.temp_dir, 'config.txt')
+        threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
     # -----------------------------------------------------------------------
     def finishLoadConfig(self, success, *args):
@@ -3488,26 +3482,26 @@ class Makera(RelativeLayout):
         self.updateStatus()
 
     # -----------------------------------------------------------------------
-    def doDownload(self):
+    def doDownload(self, remote_path, local_path):
         app = App.get_running_app()
-        if not self.downloading_config and not os.path.exists(os.path.dirname(app.selected_local_filename)):
-            #os.mkdir(os.path.dirname(app.selected_local_filename))
-            os.makedirs(os.path.dirname(app.selected_local_filename))
-        if os.path.exists(app.selected_local_filename):
-            shutil.copyfile(app.selected_local_filename, app.selected_local_filename + '.tmp')
+        if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
+            #os.mkdir(os.path.dirname(local_path))
+            os.makedirs(os.path.dirname(local_path))
+        if os.path.exists(local_path):
+            shutil.copyfile(local_path, local_path + '.tmp')
 
-        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % app.selected_local_filename), \
+        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % local_path), \
                                     None if self.downloading_config else self.cancelProcessingFile), 0)
         self.downloading = True
         download_result = False
         try:
-            tmp_filename = app.selected_local_filename + '.tmp'
+            tmp_filename = local_path + '.tmp'
             md5 = ''
             if os.path.exists(tmp_filename):
                 md5 = Utils.md5(tmp_filename)
-            self.controller.downloadCommand(self.downloading_file)
+            self.controller.downloadCommand(remote_path)
             self.controller.pauseStream(0.2)
-            download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
+            download_result = self.controller.stream.download(tmp_filename, md5, partial(self.downloadCallback, remote_path))
         except:
             logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
@@ -3519,7 +3513,7 @@ class Makera(RelativeLayout):
         self.heartbeat_time = time.time()
 
         if download_result is None:
-            os.remove(app.selected_local_filename + '.tmp')
+            os.remove(local_path + '.tmp')
             # show message popup
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0.1)
@@ -3529,12 +3523,12 @@ class Makera(RelativeLayout):
         elif download_result >= 0:
             if download_result > 0:
                 # download success
-                if os.path.exists(app.selected_local_filename):
-                    os.remove(app.selected_local_filename)
-                os.rename(app.selected_local_filename + '.tmp', app.selected_local_filename)
+                if os.path.exists(local_path):
+                    os.remove(local_path)
+                os.rename(local_path + '.tmp', local_path)
             else:
                 # MD5 same
-                os.remove(app.selected_local_filename + '.tmp')
+                os.remove(local_path + '.tmp')
             if self.downloading_config:
                 Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
@@ -3548,16 +3542,16 @@ class Makera(RelativeLayout):
                 # Schedule a one off diagnostic command to get the machine's extended state
                 Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
-                Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
-                # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
-                self.load_selected_gcode_file()
+                Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % local_path, True), 0)
+                # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
+                self.load_gcode_file(local_path)
 
             if not self.downloading_config:
-                self.update_recent_remote_dir_list(os.path.dirname(self.downloading_file))
+                self.update_recent_remote_dir_list(os.path.dirname(remote_path))
 
 
         elif download_result < 0:
-            os.remove(app.selected_local_filename + '.tmp')
+            os.remove(local_path + '.tmp')
             self.controller.log.put((Controller.MSG_NORMAL, tr._('Downloading is canceled manually.')))
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0)
@@ -3602,9 +3596,9 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
-    def downloadCallback(self, packet_size, success_count, error_count):
+    def downloadCallback(self, remote_path, packet_size, success_count, error_count):
         packets = self.downloading_size / packet_size + (1 if self.downloading_size % packet_size > 0 else 0)
-        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
+        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % remote_path, False), 0)
 
     # -----------------------------------------------------------------------
     def cancelSelectFile(self):
@@ -5218,7 +5212,7 @@ class Makera(RelativeLayout):
         self.load_page(0)
 
     # -----------------------------------------------------------------------
-    def load(self, filepath):
+    def load_gcode_file(self, filepath):
         self.load_event.set()
         self.upcoming_tool = 0
         self.used_tools = []
