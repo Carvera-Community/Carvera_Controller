@@ -3482,7 +3482,7 @@ class Makera(RelativeLayout):
         self.updateStatus()
 
     # -----------------------------------------------------------------------
-    def doDownload(self, remote_path, local_path):
+    def doDownload(self, remote_path, local_path, show_progress=True):
         app = App.get_running_app()
         if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
             #os.mkdir(os.path.dirname(local_path))
@@ -3490,8 +3490,10 @@ class Makera(RelativeLayout):
         if os.path.exists(local_path):
             shutil.copyfile(local_path, local_path + '.tmp')
 
-        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % local_path), \
-                                    None if self.downloading_config else self.cancelProcessingFile), 0)
+
+        if show_progress:
+            Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % local_path), \
+                                        None if self.downloading_config else self.cancelProcessingFile), 0)
         self.downloading = True
         download_result = False
         try:
@@ -3501,7 +3503,7 @@ class Makera(RelativeLayout):
                 md5 = Utils.md5(tmp_filename)
             self.controller.downloadCommand(remote_path)
             self.controller.pauseStream(0.2)
-            download_result = self.controller.stream.download(tmp_filename, md5, partial(self.downloadCallback, remote_path))
+            download_result = self.controller.stream.download(tmp_filename, md5, partial(self.downloadCallback, remote_path) if show_progress else None)
         except:
             logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
@@ -3530,10 +3532,12 @@ class Makera(RelativeLayout):
                 # MD5 same
                 os.remove(local_path + '.tmp')
             if self.downloading_config:
-                Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
 
-                Clock.schedule_once(partial(self.progressUpdate, 100, tr._('Synchronize version and time...'), True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 100, tr._('Synchronize version and time...'), True), 0)
                 Clock.schedule_once(self.controller.queryTime, 0.1)
                 Clock.schedule_once(self.controller.queryModel, 0.2)
                 Clock.schedule_once(self.controller.queryVersion, 0.3)
@@ -3542,13 +3546,13 @@ class Makera(RelativeLayout):
                 # Schedule a one off diagnostic command to get the machine's extended state
                 Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
-                Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % local_path, True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % local_path, True), 0)
                 # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
                 self.load_gcode_file(local_path)
 
             if not self.downloading_config:
                 self.update_recent_remote_dir_list(os.path.dirname(remote_path))
-
 
         elif download_result < 0:
             os.remove(local_path + '.tmp')
@@ -3556,7 +3560,8 @@ class Makera(RelativeLayout):
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0)
 
-        Clock.schedule_once(self.progressFinish, 0.1)
+        if show_progress:
+            Clock.schedule_once(self.progressFinish, 0.1)
 
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
