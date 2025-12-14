@@ -5,6 +5,14 @@ import struct
 # import os
 # os.environ["KIVY_METRICS_DENSITY"] = '1'
 
+CONFIG_FILES_TO_BACK_UP = [
+    '/sd/cartesian_nm.grid',
+    '/sd/config.default',
+    '/sd/config.txt',
+    '/sd/custom_tool_slots.txt',
+    '/sd/flex_compensation.dat',
+]
+
 def is_android():
     return 'ANDROID_ARGUMENT' in os.environ or 'ANDROID_PRIVATE' in os.environ or 'ANDROID_APP_PATH' in os.environ
 
@@ -106,6 +114,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
@@ -667,6 +676,23 @@ class PairingPopup(ModalView):
             self.pairing = False
             self.pairing_note = self.pairing_string['timeout']
             self.countdown_event.cancel()
+
+class PickFilePopup(FloatLayout):
+    on_select = ObjectProperty(None)
+    on_cancel = ObjectProperty(None)
+
+    def __init__(self, on_select, on_cancel=None, **kwargs):
+        super(PickFilePopup, self).__init__(**kwargs)
+        self.on_select = on_select
+        self.on_cancel = on_cancel
+
+    def on_select_pressed(self, directory, filename):
+        if self.on_select:
+            self.on_select(directory, filename)
+
+    def on_cancel_pressed(self):
+        if self.on_cancel:
+            self.on_cancel()
 
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
@@ -2312,6 +2338,7 @@ class Makera(RelativeLayout):
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
+        self.pick_file_popup = None
         self.language_popup = LanguagePopup()
         self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
@@ -3437,6 +3464,61 @@ class Makera(RelativeLayout):
         self.downloading_config = False
         threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
+    # -----------------------------------------------------------------------
+    def start_back_up_config(self):
+        self.downloading_config = True
+        Clock.schedule_once(partial(self.progressStart, tr._('Downloading config files...'), None), 0)
+
+        self.fill_remote_dir_callback = self.download_config_files
+        self.file_popup.remote_rv.list_dir("/sd")
+
+    # -----------------------------------------------------------------------
+    def download_config_files(self, remote_paths):
+        matching_paths = []
+        for file_info in remote_paths:
+            if file_info['path'] in CONFIG_FILES_TO_BACK_UP:
+                logger.debug(f"Found matching config file: {file_info['path']}")
+                matching_paths.append(file_info['path'])
+
+        local_paths = []
+        progress = 0.0
+        for remote_path in matching_paths:
+            local_path = os.path.join(self.temp_dir, os.path.basename(remote_path))
+            local_paths.append(local_path)
+            logger.debug(f"Downloading config file {remote_path} to {local_path}")
+            Clock.schedule_once(partial(self.progressUpdate, progress, tr._('Downloading') + ' \n%s' % remote_path, True), 0)
+            self.doDownload(remote_path, local_path, False)
+            progress += 100.0/len(matching_paths)
+            Clock.schedule_once(partial(self.progressUpdate, progress, tr._('Downloading') + ' \n%s' % remote_path, True), 0)
+
+            # Delay to avoid breaking communication with the machine
+            time.sleep(1.5)
+
+        Clock.schedule_once(partial(self.choose_back_up_config_destination, local_paths), 0)
+
+    # -----------------------------------------------------------------------
+    def choose_back_up_config_destination(self, local_paths, *args):
+        self.progressFinish()
+        content = PickFilePopup(partial(self.finish_backing_up_config, local_paths))
+        self.pick_file_popup = Popup(title="Choose where to back up your machine configuration", content=content, size_hint=(0.75, 0.75), auto_dismiss=True)
+        content.on_cancel = self.pick_file_popup.dismiss
+        self.pick_file_popup.open()
+
+    # -----------------------------------------------------------------------
+    def finish_backing_up_config(self, downloaded_file_paths, selected_dir, _selected_file):
+        for source_file_path in downloaded_file_paths:
+            dest_file_path = os.path.join(selected_dir, os.path.basename(source_file_path))
+            try:
+                shutil.copyfile(source_file_path, dest_file_path)
+            except Exception as e:
+                Clock.schedule_once(partial(self.show_message_popup, tr._(f"Couldn't back up '{source_file_path}'. The error was:\n\n{e}"), False), 0)
+                print("Error backing up config file:", e)
+        
+        self.pick_file_popup.dismiss()
+        self.pick_file_popup = None
+        self.downloading_config = False
+        Clock.schedule_once(partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0)
+        
     # -----------------------------------------------------------------------
     def download_config_file(self):
         app = App.get_running_app()

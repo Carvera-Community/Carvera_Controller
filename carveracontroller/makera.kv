@@ -2220,6 +2220,12 @@
                                 text_size: self.size
                             Button:
                                 size_hint_x: None
+                                width: '180dp'
+                                text: tr._("Back up machine config")
+                                on_release:
+                                    app.root.start_back_up_config()
+                            Button:
+                                size_hint_x: None
                                 width: '100dp'
                                 text: tr._("Download")
                                 on_release:
@@ -2253,6 +2259,25 @@
                 on_release:
                     app.root.close_update_popup()
 
+<PickFilePopup>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+            path: "."
+
+        BoxLayout:
+            size_hint_y: None
+            height: '50dp'
+            Button:
+                text: "Cancel"
+                on_release: root.on_cancel_pressed()
+
+            Button:
+                text: "Select"
+                on_release: root.on_select_pressed(filechooser.path, filechooser.selection)
 
 <FilePopup>:
     padding: '10dp'
