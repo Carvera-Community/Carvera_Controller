@@ -1932,7 +1932,7 @@ class RemoteRV(DataRV):
         self.curr_file_list_buff = []
 
         app = App.get_running_app()
-        app.root.loadRemoteDir(new_dir)
+        threading.Thread(target=app.root.loadRemoteDir, args=(new_dir,), daemon=True).start()
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
     
@@ -3166,7 +3166,7 @@ class Makera(RelativeLayout):
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
-                    Clock.schedule_once(self.fillRemoteDir, 0)
+                    self.process_loaded_dir(self.fill_remote_dir)
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
@@ -3993,9 +3993,9 @@ class Makera(RelativeLayout):
         self.controller.stream.cancel_process()
 
     # -----------------------------------------------------------------------
-    def fillRemoteDir(self, *args):
+    def process_loaded_dir(self, *args):
         is_dir = False
-        self.file_popup.remote_rv.curr_file_list_buff = []
+        file_list = []
         while self.controller.load_buffer.qsize() > 0:
             line = self.controller.load_buffer.get_nowait().strip('\r').strip('\n')
             if len(line) > 0 and line[0] != "<":
@@ -4011,10 +4011,15 @@ class Makera(RelativeLayout):
                         timestamp = time.mktime(datetime.datetime.strptime(file_infos[2], "%Y%m%d%H%M%S").timetuple())
                     except:
                         pass
-                    self.file_popup.remote_rv.curr_file_list_buff.append({'name': file_infos[0],
-                                                     'path': os.path.join(self.file_popup.remote_rv.curr_dir, file_infos[0]),
-                                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
+                    file_list.append({'name': file_infos[0],
+                                     'path': os.path.join(self.file_popup.remote_rv.curr_dir, file_infos[0]),
+                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
 
+        Clock.schedule_once(partial(self.fill_remote_dir, file_list), 0)
+
+    # -----------------------------------------------------------------------
+    def fill_remote_dir(self, file_list, *args):
+        self.file_popup.remote_rv.curr_file_list_buff = file_list
         self.file_popup.remote_rv.fill_dir(switch_reverse = False)
 
         self.file_popup.remote_rv.curr_dir = os.path.normpath(self.file_popup.remote_rv.curr_dir)
