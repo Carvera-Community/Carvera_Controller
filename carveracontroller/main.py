@@ -2384,6 +2384,8 @@ class Makera(RelativeLayout):
         self.heartbeat_time = 0
         self.file_just_loaded = False
 
+        self.fill_remote_dir_callback = None
+
         self.show_update = (Config.get('carvera', 'show_update') == '1')
         self.upgrade_popup.cbx_check_at_startup.active = self.show_update
         if self.show_update:
@@ -4029,6 +4031,10 @@ class Makera(RelativeLayout):
         if self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir \
                 or self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir_win:
             self.file_popup.remote_rv.curr_path_list = ['root']
+
+            if self.fill_remote_dir_callback:
+                threading.Thread(target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)).start()
+                self.fill_remote_dir_callback = None
             return
         else:
             self.file_popup.remote_rv.curr_path_list = [self.file_popup.remote_rv.curr_dir_name]
@@ -4047,6 +4053,10 @@ class Makera(RelativeLayout):
                 else:
                     self.file_popup.remote_rv.curr_path_list.insert(0, os.path.basename(parent_dir))
                 last_parent_dir = parent_dir
+
+        if self.fill_remote_dir_callback:
+            threading.Thread(target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)).start()
+            self.fill_remote_dir_callback = None
 
     # -----------------------------------------------------------------------
     def loadError(self, error_msg, *args):
