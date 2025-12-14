@@ -1467,6 +1467,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
             if section in ['carvera', 'graphics', 'kivy']:
                 app.root.controller_setting_change_list[key] = value
                 app.root.config_popup.btn_apply.disabled = False
+            elif section == 'Backup':
+                app.root.start_back_up_config()
+                app.root.config_popup.btn_apply.disabled = True
             elif section != 'Restore':
                 app.root.setting_change_list[key] = Utils.to_config(app.root.setting_type_list[key], value).strip()
                 app.root.config_popup.btn_apply.disabled = False
@@ -4780,7 +4783,8 @@ class Makera(RelativeLayout):
 
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
-                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics', 'kivy']:
+                        # backup is a one-shot operation and not a setting to be stored
+                        elif child.section.lower() not in ['restore','default', 'backup', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
                             self.controller.close()
@@ -4810,6 +4814,7 @@ class Makera(RelativeLayout):
             basic_config = []
             advanced_config = []
             restore_config = []
+            backup_config = []
             self.setting_type_list.clear()
             for setting in data:
                 if 'key' in setting and 'default' in setting:
@@ -4834,7 +4839,7 @@ class Makera(RelativeLayout):
                             #
                             # self.controller.log.put(
                             #     (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(setting['key'])))
-                        elif setting['key'].lower() != 'restore' and setting['key'].lower() != 'default' :
+                        elif setting['key'].lower() not in ['restore', 'default', 'backup']:
                             self.controller.log.put((Controller.MSG_ERROR, 'Load config error, Key: {}'.format(setting['key'])))
                             self.controller.close()
                             self.updateStatus()
@@ -4851,6 +4856,10 @@ class Makera(RelativeLayout):
                         self.config.setdefaults(setting['section'], {
                             setting['key']: Utils.from_config(setting['type'], '')})
                         restore_config.append(setting)
+                    elif 'section' in setting and setting['section'] == 'Backup':
+                        self.config.setdefaults(setting['section'], {
+                            setting['key']: Utils.from_config(setting['type'], '')})
+                        backup_config.append(setting)
             # clear title section
             for basic in basic_config:
                 if basic['type'] == 'title' and 'section' in basic:
@@ -4865,6 +4874,7 @@ class Makera(RelativeLayout):
             self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
+            self.config_popup.settings_panel.add_json_panel('Machine - Backup', self.config, data=json.dumps(backup_config))
         return True
 
     # -----------------------------------------------------------------------
