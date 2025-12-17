@@ -102,6 +102,7 @@ from kivy.properties import StringProperty
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
@@ -243,6 +244,27 @@ def register_images(base_path):
     icons_path = os.path.join(base_path)
     resource_add_path(icons_path)
 
+class MDITextInput(TextInput):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind(focus=self.on_focus)
+
+    def on_focus(self, instance, have_focus):
+        if have_focus:
+            Window.bind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+
+    def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
+        ENTER_KEY = 13
+        if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
+            self.send_mdi_command()
+            return True
+        return False
+
+    def send_mdi_command(self):
+        app = App.get_running_app()
+        app.root.send_cmd()
 
 class GcodePlaySlider(Slider):
     def on_touch_down(self, touch):
