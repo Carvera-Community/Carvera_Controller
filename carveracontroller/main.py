@@ -5316,7 +5316,10 @@ class Makera(RelativeLayout):
             if to_send.lower() == "clear":
                 self.manual_rv.data = []
             else:
-                self.controller.executeCommand(to_send)
+                sanitized_to_send = '\n'.join([line for line in to_send.split('\n') if line.strip().lower() != "clear"])
+                if sanitized_to_send != to_send:
+                    self.manual_rv.data.append({'text': 'clear command can\'t be used together with other commands', 'color': (250/255, 105/255, 102/255, 1)})
+                self.controller.executeCommand(sanitized_to_send)
         self.manual_cmd.text = ''
         Clock.schedule_once(self.refocus_cmd)
 
