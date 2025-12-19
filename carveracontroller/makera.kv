@@ -3978,7 +3978,7 @@
                                             BoxLayout:
                                                 orientation: 'horizontal'
                                                 size_hint_y: None
-                                                height: '33dp'
+                                                height: '66dp'
                                                 ToolTipButton:
                                                     id: toggle_file
                                                     width: '40dp'
@@ -3988,11 +3988,10 @@
                                                     on_release:
                                                         cmd_manager.transition.direction = 'right'
                                                         cmd_manager.current = 'gcode_cmd_page'
-                                                TextInput:
+                                                MDITextInput:
                                                     id: manual_cmd
-                                                    hint_text: tr._('Enter command...')
-                                                    multiline: False
-                                                    # disabled: app.state != 'Idle'
+                                                    hint_text: tr._('Enter command... <control+enter to send>')
+                                                    multiline: True
                                                     on_text_validate:
                                                         if app.state == 'Idle' or app.state == 'Pause' or root.allow_mdi_while_machine_running == '1' : root.send_cmd()
                                                 ToolTipButton:
