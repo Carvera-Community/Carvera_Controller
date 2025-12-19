@@ -4908,7 +4908,7 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if self.is_jogging_enabled():
+        if self.is_jogging_enabled() and not self.manual_cmd.focus:
             key = args[1]  # keycode
 
             if key == 274:  # down button
