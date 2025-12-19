@@ -4571,6 +4571,7 @@ class Makera(RelativeLayout):
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
         try:
+            Clock.schedule_once(lambda dt: setattr(self.manual_rv, 'scroll_y', 0), 0)
             self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
         except IndexError:
             logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
