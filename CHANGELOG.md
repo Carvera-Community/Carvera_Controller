@@ -12,6 +12,7 @@
 - Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
 - Fixed: Scaling of the UI in Android no longer cuts off menu button on displays with 5:3 aspect ratio
 - Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
+- Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Change: Intel MacOS minimum version increased to MacOS-14 (Sonoma). Previous versions might work, but will be unsupported
 
 [2.0.0-RC2]
