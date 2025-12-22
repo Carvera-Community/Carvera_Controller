@@ -2258,6 +2258,8 @@ class Makera(RelativeLayout):
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
 
+        Window.bind(on_request_close=self.on_request_close)
+
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
         self.file_popup = FilePopup()
@@ -2419,7 +2421,7 @@ class Makera(RelativeLayout):
         # try to connect over wifi if we've used it before
         Clock.schedule_once(self.reconnect_wifi_conn_quietly)
 
-    def __del__(self):
+    def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
         try:
             shutil.rmtree(self.temp_dir)
@@ -2437,6 +2439,7 @@ class Makera(RelativeLayout):
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
+        return False # Allow the window to close
 
     def load_controller_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
