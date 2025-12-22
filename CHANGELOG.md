@@ -4,6 +4,8 @@
 - Enhancement: Select a file when it's double clicked in the remote file browser
 - Enhancement: Automatically connect to the machine on startup if its wifi address is configured
 - Enhancement: CI workflow for building iOS app
+
+[2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
 - Fixed: Probing popup shouldn't be accessible when playback is suspended
