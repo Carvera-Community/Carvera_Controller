@@ -4596,6 +4596,7 @@ class Makera(RelativeLayout):
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
         try:
+            Clock.schedule_once(lambda dt: setattr(self.manual_rv, 'scroll_y', 0), 0)
             for cmd in line.strip().split('\n'):
                 self.manual_rv.data.append({'text': cmd, 'color': (200/255, 200/255, 200/255, 1)})
         except IndexError:
