@@ -104,6 +104,7 @@ from kivy.properties import StringProperty
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
@@ -246,6 +247,27 @@ def register_images(base_path):
     icons_path = os.path.join(base_path)
     resource_add_path(icons_path)
 
+class MDITextInput(TextInput):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind(focus=self.on_focus)
+
+    def on_focus(self, instance, have_focus):
+        if have_focus:
+            Window.bind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+
+    def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
+        ENTER_KEY = 13
+        if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
+            self.send_mdi_command()
+            return True
+        return False
+
+    def send_mdi_command(self):
+        app = App.get_running_app()
+        app.root.send_cmd()
 
 class GcodePlaySlider(Slider):
     def on_touch_down(self, touch):
@@ -2259,6 +2281,8 @@ class Makera(RelativeLayout):
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
 
+        Window.bind(on_request_close=self.on_request_close)
+
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
         self.file_popup = FilePopup()
@@ -2423,7 +2447,7 @@ class Makera(RelativeLayout):
         # try to connect over wifi if we've used it before
         Clock.schedule_once(self.reconnect_wifi_conn_quietly)
 
-    def __del__(self):
+    def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
         try:
             shutil.rmtree(self.temp_dir)
@@ -2441,6 +2465,7 @@ class Makera(RelativeLayout):
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
+        return False # Allow the window to close
 
     def load_controller_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
@@ -4664,7 +4689,9 @@ class Makera(RelativeLayout):
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
         try:
-            self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
+            Clock.schedule_once(lambda dt: setattr(self.manual_rv, 'scroll_y', 0), 0)
+            for cmd in line.strip().split('\n'):
+                self.manual_rv.data.append({'text': cmd, 'color': (200/255, 200/255, 200/255, 1)})
         except IndexError:
             logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
@@ -5007,7 +5034,7 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if self.is_jogging_enabled():
+        if self.is_jogging_enabled() and not self.manual_cmd.focus:
             key = args[1]  # keycode
 
             if key == 274:  # down button
@@ -5392,7 +5419,10 @@ class Makera(RelativeLayout):
             if to_send.lower() == "clear":
                 self.manual_rv.data = []
             else:
-                self.controller.executeCommand(to_send)
+                sanitized_to_send = '\n'.join([line for line in to_send.split('\n') if line.strip().lower() != "clear"])
+                if sanitized_to_send != to_send:
+                    self.manual_rv.data.append({'text': 'clear command can\'t be used together with other commands', 'color': (250/255, 105/255, 102/255, 1)})
+                self.controller.executeCommand(sanitized_to_send)
         self.manual_cmd.text = ''
         Clock.schedule_once(self.refocus_cmd)
 
