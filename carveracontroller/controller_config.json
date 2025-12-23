@@ -121,6 +121,54 @@
         "default": {}
     },
     {
+        "type": "string",
+        "title": "G54 description",
+        "desc": "Description for G54 coordinate system.",
+        "section": "carvera",
+        "key": "g54_description",
+        "default": "G54"
+    },
+    {
+        "type": "string",
+        "title": "G55 description",
+        "desc": "Description for G55 coordinate system.",
+        "section": "carvera",
+        "key": "g55_description",
+        "default": "G55"
+    },
+    {
+        "type": "string",
+        "title": "G56 description",
+        "desc": "Description for G56 coordinate system.",
+        "section": "carvera",
+        "key": "g56_description",
+        "default": "G56"
+    },
+    {
+        "type": "string",
+        "title": "G57 description",
+        "desc": "Description for G57 coordinate system.",
+        "section": "carvera",
+        "key": "g57_description",
+        "default": "G57"
+    },
+    {
+        "type": "string",
+        "title": "G58 description",
+        "desc": "Description for G58 coordinate system.",
+        "section": "carvera",
+        "key": "g58_description",
+        "default": "G58"
+    },
+    {
+        "type": "string",
+        "title": "G59 description",
+        "desc": "Description for G59 coordinate system.",
+        "section": "carvera",
+        "key": "g59_description",
+        "default": "G59"
+    },
+    {
         "type": "bool",
         "title": "Auto-Reconnection",
         "desc": "Automatically attempt to reconnect when connection is lost",

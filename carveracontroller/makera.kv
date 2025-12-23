@@ -4748,7 +4748,7 @@
                 on_release: root.on_ok_pressed()
 
 <WCSSettingsPopup>:
-    size_hint: 0.8, 0.8
+    size_hint: 0.95, 0.95
     pos_hint: {"center_x": 0.5, "center_y": 0.5}
     auto_dismiss: False
     
@@ -4773,7 +4773,7 @@
         ScrollView:
             GridLayout:
                 id: wcs_grid
-                cols: 9
+                cols: 8
                 spacing: '5dp'
                 size_hint_y: None
                 height: self.minimum_height
@@ -4850,31 +4850,24 @@
                             pos: self.pos
                             size: self.size
                 Label:
-                    text: 'Clear Rotation'
+                    text: 'Description'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '30dp'
                     canvas.before:
                         Color:
                             rgba: 60/255, 60/255, 60/255, 1
                         Rectangle:
                             pos: self.pos
-                            size: self.size
-                Label:
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '30dp'
-                    canvas.before:
-                        Color:
-                            rgba: 60/255, 60/255, 60/255, 1
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
-                
+                            size: self.size                
                 # G54 row
-                Label:
+                Button:
+                    id: G54
                     text: 'G54'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G54')
                 TextInput:
                     id: g54_x
                     text: '0.000'
@@ -4932,26 +4925,25 @@
                     on_release: root.clear_wcs_offsets('G54')
                     disabled: app.is_community_firmware == False
                     on_text: root.check_for_changes()
-                Button:
-                    text: 'Clear'
+                TextInput:
+                    id: g54_description
+                    text: 'G54'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
-                    on_release: root.clear_wcs_rotation('G54')
+                    input_type: 'text'
+                    multiline: False
                     disabled: app.is_community_firmware == False
-                    on_text: root.check_for_changes()
-                Button:
-                    id: g54_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G54')
+                    on_text: root.change_wcs_description('G54')
                 
                 # G55 row
-                Label:
+                Button:
+                    id: G55
                     text: 'G55'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G55')
                 TextInput:
                     id: g55_x
                     text: '0.000'
@@ -5008,25 +5000,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G55')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g55_description
+                    text: 'G55'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
+                    input_type: 'text'
+                    multiline: False
                     disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G55')
-                Button:
-                    id: g55_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G55')
+                    on_text: root.change_wcs_description('G55')
                 
                 # G56 row
-                Label:
+                Button:
+                    id: G56
                     text: 'G56'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G56')
                 TextInput:
                     id: g56_x
                     text: '0.000'
@@ -5083,25 +5076,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G56')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g56_description
+                    text: 'G56'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
+                    input_type: 'text'
+                    multiline: False
                     disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G56')
-                Button:
-                    id: g56_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G56')
+                    on_text: root.change_wcs_description('G56')
                 
                 # G57 row
-                Label:
+                Button:
+                    id: G57
                     text: 'G57'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G57')
                 TextInput:
                     id: g57_x
                     text: '0.000'
@@ -5158,25 +5152,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G57')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g57_description
+                    text: 'G57'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
+                    input_type: 'text'
+                    multiline: False
                     disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G57')
-                Button:
-                    id: g57_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G57')
+                    on_text: root.change_wcs_description('G57')
                 
                 # G58 row
-                Label:
+                Button:
+                    id: G58
                     text: 'G58'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G58')
                 TextInput:
                     id: g58_x
                     text: '0.000'
@@ -5233,25 +5228,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G58')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g58_description
+                    text: 'G58'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
+                    input_type: 'text'
+                    multiline: False
                     disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G58')
-                Button:
-                    id: g58_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G58')
+                    on_text: root.change_wcs_description('G58')
                 
                 # G59 row
-                Label:
+                Button:
+                    id: G59
                     text: 'G59'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59')
                 TextInput:
                     id: g59_x
                     text: '0.000'
@@ -5308,25 +5304,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_description
+                    text: 'G59'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
+                    input_type: 'text'
+                    multiline: False
                     disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G59')
-                Button:
-                    id: g59_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G59')
+                    on_text: root.change_wcs_description('G59')
                 
                 # G59.1 row
-                Label:
+                Button:
+                    id: G59_1
                     text: 'G59.1'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59.1')
                 TextInput:
                     id: g59_1_x
                     text: '0.000'
@@ -5383,25 +5380,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59.1')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_1_description
+                    text: 'G59.1'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
-                    disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G59.1')
-                Button:
-                    id: g59_1_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G59.1')
+                    input_type: 'text'
+                    multiline: False
+                    disabled: True
+                    on_text: root.change_wcs_description('G59.1')
                 
                 # G59.2 row
-                Label:
+                Button:
+                    id: G59_2
                     text: 'G59.2'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59.2')
                 TextInput:
                     id: g59_2_x
                     text: '0.000'
@@ -5458,25 +5456,26 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59.2')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_2_description
+                    text: 'G59.2'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
-                    disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G59.2')
-                Button:
-                    id: g59_2_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G59.2')
+                    input_type: 'text'
+                    multiline: False
+                    disabled: True
+                    on_text: root.change_wcs_description('G59.2')
                 
                 # G59.3 row
-                Label:
+                Button:
+                    id: G59_3
                     text: 'G59.3'
                     size_hint_y: None
                     height: '40dp'
+                    on_release: 
+                        root.activate_wcs('G59.3')
                 TextInput:
                     id: g59_3_x
                     text: '0.000'
@@ -5533,19 +5532,17 @@
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59.3')
-                Button:
-                    text: 'Clear'
+                    on_text: root.check_for_changes()
+                TextInput:
+                    id: g59_3_description
+                    text: 'G59.3'
                     size_hint_y: None
+                    size_hint_x: 2
                     height: '40dp'
-                    disabled: app.is_community_firmware == False
-                    on_release: root.clear_wcs_rotation('G59.3')
-                Button:
-                    id: g59_3_activate
-                    text: 'Activate'
-                    size_hint_y: None
-                    height: '40dp'
-                    on_release: 
-                        root.activate_wcs('G59.3')
+                    input_type: 'text'
+                    multiline: False
+                    disabled: True
+                    on_text: root.change_wcs_description('G59.3')
         
         BoxLayout:
             size_hint_y: None
