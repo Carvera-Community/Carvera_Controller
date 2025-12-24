@@ -1277,9 +1277,7 @@ class WCSSettingsPopup(ModalView):
                 if 'R' in changed_values:
                     cmd += f"R{changed_values['R']:.1f}"
                 self.controller.executeCommand(cmd)
-                
-                
-    
+               
     def clear_wcs_offsets(self, wcs):
         """Clear all offsets (X, Y, Z, A) for the specified WCS"""
         # Set all offset fields to 0.000
@@ -1446,7 +1444,7 @@ class SetRotationPopup(ModalView):
     def on_open(self):
         """Set the default rotation value when popup opens"""
         rotation_angle = self.cnc.vars.get("rotation_angle", 0.0)
-        self.ids.txt_rotation.text = f"{rotation_angle:.1f}"
+        self.ids.txt_rotation.text = f"{rotation_angle:.3f}"
 
 class MakeraConfigPanel(SettingsWithSidebar):
     def __init__(self, *args, **kwargs):

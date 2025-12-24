@@ -1101,7 +1101,7 @@ class Controller:
 
     def setRotation(self, rotation):
         """Set the rotation angle for the current coordinate system"""
-        cmd = f"G10L2R{rotation:.1f}P0"
+        cmd = f"G10L2R{rotation:.3f}P0"
         self.sendGCode(cmd)
 
     def feedHold(self, event=None):
