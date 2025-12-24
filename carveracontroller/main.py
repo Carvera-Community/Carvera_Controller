@@ -1369,6 +1369,7 @@ class WCSSettingsPopup(ModalView):
             # Update clear all button
             if hasattr(self.ids, 'btn_clear_all'):
                 self.ids.btn_clear_all.disabled = not is_community
+            self.check_for_changes()
         except Exception as e:
             logger.error(f"Error updating UI for firmware type: {e}")
     
