@@ -88,3 +88,8 @@ xcuserdata
 project.pbxproj*backup
 packaging_assets/ios/dist
 packaging_assets/ios/carveracontroller-ios/carveracontrollerpkg/*
+
+
+# Libraries for hidapi support that would normally be packaged
+carveracontroller/hidapi.dll
+carveracontroller/libhidapi.dylib
