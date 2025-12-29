@@ -590,47 +590,35 @@ class Controller:
                 return (None, None)
             
             command_upper = gcode_command.upper().strip()
-            parts = command_upper.split()
-            base_command = parts[0]
-            
-            # Build pattern to match the command with optional parameters
-            if len(parts) > 1:
-                pattern = r'\b' + re.escape(base_command) + r'(?:\s+' + '|'.join(re.escape(p) for p in parts[1:]) + r')?'
-            else:
-                pattern = r'\b' + re.escape(base_command) + r'(?:\s+[A-Z]\d+(?:\.\d+)?)*'
+            base_command = command_upper.split()[0]
             
             for i in range(start_line - 2, -1, -1):
                 original_line = lines[i]
-                line = original_line.strip().upper()
-                # Remove comments but keep original for full command extraction
+                line = original_line.strip()
+                
+                # Remove comments using string methods
                 if ';' in line:
                     line = line[:line.index(';')]
-                if '(' in line:
-                    line = re.sub(r'\([^)]*\)', '', line)
+                # Remove parentheses comments using string methods
+                while '(' in line and ')' in line:
+                    start_paren = line.index('(')
+                    end_paren = line.index(')', start_paren)
+                    line = line[:start_paren] + line[end_paren + 1:]
                 
-                match = re.search(pattern, line)
-                if match:
-                    # Extract the full command sequence from the original line
-                    # Remove comments and parentheses from original line for extraction
-                    original_clean = original_line.strip()
-                    if ';' in original_clean:
-                        original_clean = original_clean[:original_clean.index(';')]
-                    if '(' in original_clean:
-                        original_clean = re.sub(r'\([^)]*\)', '', original_clean)
-                    
-                    # Find the position of the matched command in the cleaned line
-                    # Then extract everything from the start of the line up to and including the command
-                    # This captures any preceding commands like "T2" before "M6"
-                    original_clean_upper = original_clean.upper()
-                    match_in_upper = re.search(pattern, original_clean_upper)
-                    if match_in_upper:
-                        # Extract from start of line to end of matched command
-                        end_pos = match_in_upper.end()
-                        full_command = original_clean[:end_pos].strip()
+                # Check if line contains the base command (case-insensitive)
+                line_upper = line.upper()
+                if base_command in line_upper:
+                    # Find the position of the command in the line
+                    cmd_pos = line_upper.find(base_command)
+                    if cmd_pos != -1:
+                        # Extract from start of line to end of the command word
+                        # Find where the command word ends (next space or end of line)
+                        end_pos = cmd_pos + len(base_command)
+                        # Include any parameters that follow the command (letters/numbers)
+                        while end_pos < len(line) and (line[end_pos].isspace() or line[end_pos].isalnum() or line[end_pos] in '.-'):
+                            end_pos += 1
+                        full_command = line[:end_pos].strip()
                         return (full_command, i + 1)
-                    else:
-                        # Fallback to just the matched command
-                        return (match.group(0).strip(), i + 1)
                 
         except Exception as e:
             logger.warning(f"Error finding command {gcode_command} before line {start_line} in {local_file_path}: {e}")
