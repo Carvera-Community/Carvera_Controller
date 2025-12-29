@@ -40,6 +40,14 @@
         "default": "false"
     },
     {
+        "type": "bool",
+        "title": "Allows on top",
+        "desc": "Should the application window be always ontop?",
+        "section": "graphics",
+        "key": "always_on_top",
+        "default": "false"
+    },
+    {
         "type": "numeric",
         "title": "Max FPS",
         "desc": "What maximum FPS to use for rendering? Reduce this if you are experiencing performance issues.",

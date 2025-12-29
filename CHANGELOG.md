@@ -4,6 +4,7 @@
 - Enhancement: Select a file when it's double clicked in the remote file browser
 - Enhancement: Automatically connect to the machine on startup if its wifi address is configured
 - Enhancement: CI workflow for building iOS app
+- Enhancement: Added allows on top Controller config option to keep the application window always ontop of other windows
 - Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
