@@ -278,6 +278,7 @@ class GcodePlaySlider(Slider):
     def __init__(self, **kwargs):
         super(GcodePlaySlider, self).__init__(**kwargs)
         self.programmatic_update = False  # Flag to prevent infinite loops
+        self._pending_line_update = None  # Track pending scheduled line update
 
     def on_touch_down(self, touch):
         if self.disabled:
@@ -305,6 +306,17 @@ class GcodePlaySlider(Slider):
 
     def _update_line_highlighting(self):
         """Update line highlighting in the file viewer based on current slider position"""
+        # Cancel any pending update
+        if self._pending_line_update is not None:
+            Clock.unschedule(self._pending_line_update)
+            self._pending_line_update = None
+        
+        # Schedule update for next frame
+        self._pending_line_update = Clock.schedule_once(self._do_update_line_highlighting, 0)
+    
+    def _do_update_line_highlighting(self, dt):
+        """Actually perform the line highlighting update on the next frame"""
+        self._pending_line_update = None
         app = App.get_running_app()
         if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
             # Get current position and line number from gcode viewer
@@ -2236,10 +2248,10 @@ class GCodeRV(RecycleView):
             # Set flag to prevent infinite loops
             self.programmatic_selection = True
             
-            # Clear all previous selections immediately to prevent multiple selections
-            for i in range(len(self.view_adapter.views)):
-                view = self.view_adapter.get_visible_view(i)
-                if view and hasattr(view, 'selected'):
+            # Clear all previous selections first - deselect all other lines
+            for key in self.view_adapter.views:
+                view = self.view_adapter.views[key]
+                if view and hasattr(view, 'selected') and view.selected is not None:
                     view.selected = False
             
             # Set the new selection immediately instead of scheduling
