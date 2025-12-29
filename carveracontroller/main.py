@@ -2825,7 +2825,8 @@ class Makera(RelativeLayout):
         # play file
         CNC.vars["playedseconds"] = 0
         if start_line:
-            self.controller.playStartLineCommand(file_name, start_line)
+            # Show confirmation dialog for beta resume playback feature
+            self.open_resume_playback_confirm_popup(file_name, start_line)
         else:
             self.controller.playCommand(file_name)
 
@@ -5240,6 +5241,23 @@ class Makera(RelativeLayout):
         self.confirm_popup.confirm = partial(self.enter_laser_mode)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
+
+    # -----------------------------------------------------------------------
+    def open_resume_playback_confirm_popup(self, file_name, start_line):
+        if self.confirm_popup.showing:
+            return
+        self.confirm_popup.size_hint = (0.5, 0.4)
+        self.confirm_popup.pos_hint = {"right": 0.75, "top": 0.7}
+        self.confirm_popup.lb_title.text = tr._('Beta Feature: Resume Playback')
+        self.confirm_popup.lb_content.text = tr._('The "resume playback at line" functionality is beta.\n\nPlease be prepared to e-stop your machine if it doesn\'t move correctly.\n\nDo you want to continue?')
+        self.confirm_popup.confirm = partial(self.execute_play_with_start_line, file_name, start_line)
+        self.confirm_popup.cancel = None
+        self.confirm_popup.open(self)
+
+    # -----------------------------------------------------------------------
+    def execute_play_with_start_line(self, file_name, start_line):
+        """Execute play command with start_line after user confirmation"""
+        self.controller.playStartLineCommand(file_name, start_line)
 
     # -----------------------------------------------------------------------
     def defaultSettings(self):
