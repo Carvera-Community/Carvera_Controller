@@ -288,12 +288,12 @@ android.logcat_filters = *:S python:D
 
 # (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
 # In past, was `android.arch` as we weren't supporting builds for multiple archs at the same time.
-android.archs = armeabi-v7a
+android.archs = armeabi-v7a, arm64-v8a, x86_64
 		 
 
 # (int) overrides automatic versionCode computation (used in build.gradle)
 # this is not the same as app version and should only be edited if you know what you're doing
-# android.numeric_version = 1
+android.numeric_version = 1  # this is updated by build.py
 
 # (bool) enables Android auto backup feature (Android API >=23)
 android.allow_backup = True
@@ -330,13 +330,14 @@ android.allow_backup = True
 p4a.branch = develop
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
-p4a.commit = HEAD
+# Commits after 6b66944a2f51e0c848c7ac51e04a771324067ecc break the build
+p4a.commit = c02cf781a0d3d232eb4ffbeaf580cc82cf2bd65f
 
 # (str) python-for-android git clone directory (if empty, it will be automatically cloned from github)
 #p4a.source_dir =
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
-#p4a.local_recipes =
+p4a.local_recipes = ./packaging_assets/android/recipes
 
 # (str) Filename to the hook for p4a
 #p4a.hook =

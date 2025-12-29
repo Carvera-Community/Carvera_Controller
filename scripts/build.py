@@ -66,11 +66,16 @@ def build_pyinstaller_args(
     if os == "macos":
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.icns')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.icns')}"]
+        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi/macos/'+platform.machine()+'/libhidapi.dylib')}:."]
     if os == "windows":
         logger.info("Build option: onefile")
         build_args += ["--onefile"]
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.ico')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.ico')}"]
+        logger.info(f"Add hidapi.dll binary: {ROOT_ASSETS_PATH.joinpath('hidapi/windows/hidapi.dll')}")
+        build_args += ["--add-binary", f"{ROOT_ASSETS_PATH.joinpath('hidapi/windows/hidapi.dll')}:."]
+        logger.info("Add win32timezone to hidden imports")
+        build_args += ["--hiddenimport", "win32timezone"]
     else:
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
@@ -103,9 +108,15 @@ def run_pyinstaller(build_args: list[str]) -> None:
 def generate_versionfile(package_version: str, output_filename: str) -> Path:
     logger.info("Generate versionfile.txt.")
     versionfile_path = BUILD_PATH.joinpath("versionfile.txt")
+    
+    # Convert version with suffix to Windows-compatible 4-part version
+    # Windows version files require exactly 4 numeric components
+    windows_version = convert_version_to_4part(package_version)
+    logger.info(f"Converting version '{package_version}' to Windows-compatible version '{windows_version}'")
+    
     pyinstaller_versionfile.create_versionfile(
         output_file=versionfile_path,
-        version=package_version,
+        version=windows_version,
         company_name=COMPANY_NAME,
         file_description=FILE_DESCRIPTION,
         internal_name=INTERNAL_NAME,
@@ -117,14 +128,113 @@ def generate_versionfile(package_version: str, output_filename: str) -> Path:
     return versionfile_path
 
 
-def run_appimage_builder(package_version: str)-> None:
-    revise_appimage_definition(package_version)
-    command = f"appimage-builder --recipe {ROOT_ASSETS_PATH}/AppImageBuilder.yml"
-    result = subprocess.run(command, shell=True, capture_output=False, text=True)
-    if result.returncode != 0:
-        logger.error(f"Error executing command: {command}")
-        logger.error(f"stderr: {result.stderr}")
-        sys.exit(result.returncode)
+def convert_version_to_4part(version_string: str, always_include_build: bool = False) -> str:
+    """
+    Generic function to convert a version string with optional suffix to a compatible version.
+    
+    Args:
+        version_string: Version string in X.Y.Z[-SUFFIX] format
+        always_include_build: If True, always return 4-part version (X.Y.Z.BUILD)
+                             If False, only include build number when suffix exists
+    
+    Examples:
+    - "1.2.3" -> "1.2.3" (always_include_build=False) or "1.2.3.0" (always_include_build=True)
+    - "2.0.0-RC1" -> "2.0.0.1"
+    - "1.0.0-BETA2" -> "1.0.0.12"
+    - "3.1.0-ALPHA" -> "3.1.0.20"
+    """
+    # Split version and suffix
+    if '-' in version_string:
+        version_parts = version_string.split('-', 1)
+        base_version = version_parts[0]
+        suffix = version_parts[1]
+    else:
+        base_version = version_string
+        suffix = None
+    
+    # Parse base version (should be X.Y.Z)
+    version_components = base_version.split('.')
+    if len(version_components) != 3:
+        raise ValueError(f"Base version must be in X.Y.Z format, got: {base_version}")
+    
+    # Convert suffix to build number
+    build_number = 0  # Default for releases without suffix
+    if suffix:
+        suffix_upper = suffix.upper()
+        if suffix_upper.startswith('RC'):
+            # RC1, RC2, etc. -> build numbers 1, 2, etc.
+            try:
+                build_number = int(suffix_upper[2:]) if len(suffix_upper) > 2 else 1
+            except ValueError:
+                build_number = 1
+        elif suffix_upper.startswith('BETA'):
+            # BETA1, BETA2, etc. -> build numbers 10, 11, etc.
+            try:
+                build_number = 10 + int(suffix_upper[4:]) if len(suffix_upper) > 4 else 10
+            except ValueError:
+                build_number = 10
+        elif suffix_upper.startswith('ALPHA'):
+            # ALPHA1, ALPHA2, etc. -> build numbers 20, 21, etc.
+            try:
+                build_number = 20 + int(suffix_upper[5:]) if len(suffix_upper) > 5 else 20
+            except ValueError:
+                build_number = 20
+        elif suffix_upper.startswith('DEV'):
+            # DEV1, DEV2, etc. -> build numbers 30, 31, etc.
+            try:
+                build_number = 30 + int(suffix_upper[3:]) if len(suffix_upper) > 3 else 30
+            except ValueError:
+                build_number = 30
+        else:
+            # Unknown suffix, use a high build number to avoid conflicts
+            build_number = 100
+    
+    # Return version based on always_include_build parameter
+    if always_include_build or build_number > 0:
+        return f"{version_components[0]}.{version_components[1]}.{version_components[2]}.{build_number}"
+    else:
+        return base_version
+
+def run_linuxdeploy_appimage(package_version: str) -> None:
+    """Build AppImage using linuxdeploy."""
+    # Prepare AppDir
+    appdir = BUILD_PATH / "AppDir"
+    if appdir.exists():
+        shutil.rmtree(appdir)
+    (appdir / "usr/share/icons").mkdir(parents=True, exist_ok=True)
+
+    # Copy icon
+    shutil.copy2(ROOT_ASSETS_PATH / "icon-src.png", appdir / "usr/share/icons/carveracontroller.png")
+    
+    # Copy built files
+    dist_dir = ROOT_PATH / "dist" / PACKAGE_NAME
+    if not dist_dir.exists():
+        print("Error: The dist/ directory doesn't exist. PyInstaller must have failed to output to it.")
+        sys.exit(1)
+    shutil.copytree(dist_dir, (appdir / "usr/bin"))
+
+    # Create .desktop file
+    desktop_file = appdir / "carveracontroller.desktop"
+    with open(desktop_file, "w") as f:
+        f.write(f"""[Desktop Entry]\nType=Application\nName=Carvera Controller Community\nExec=carveracontroller\nIcon=carveracontroller\nCategories=Utility;\n""")
+    
+    # Check for linuxdeploy in PATH
+    import shutil as sh
+    linuxdeploy = sh.which("linuxdeploy")
+    if not linuxdeploy:
+        print("Error: linuxdeploy not found in PATH. Please install it and try again.")
+        sys.exit(1)
+
+    # Run linuxdeploy
+    env = os.environ.copy()
+    env["LINUXDEPLOY_OUTPUT_VERSION"] = package_version
+    subprocess.run([
+        linuxdeploy,
+        "--appdir", str(appdir),
+        "--desktop-file", str(desktop_file),
+        "--icon-file", str(appdir / "usr/share/icons/carveracontroller.png"),
+        "--output",  'appimage'
+    ], check=True, env=env)
 
 
 def remove_shared_libraries(freeze_dir, *filename_patterns):
@@ -132,22 +242,6 @@ def remove_shared_libraries(freeze_dir, *filename_patterns):
         for file_path in glob(os.path.join(freeze_dir, pattern)):
             logger.info(f"Removing {file_path}")
             os.remove(file_path)
-
-
-def revise_appimage_definition(package_version: str):
-    yaml = YAML()
-    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder-template.yml") as file:
-        appimage_def = yaml.load(file)
-
-    # revise definition to current system arch
-    appimage_def["AppImage"]["arch"] = platform.machine()
-
-    # version
-    appimage_def["AppDir"]["app_info"]["version"] = package_version
-
-    with open(f"{ROOT_ASSETS_PATH}/AppImageBuilder.yml", 'wb') as file:
-        yaml.dump(appimage_def, file)
-
 
 def fix_macos_version_string(version)-> None:
     command = f"plutil -replace CFBundleShortVersionString -string {version} dist/*.app/Contents/Info.plist"
@@ -158,17 +252,25 @@ def fix_macos_version_string(version)-> None:
         sys.exit(result.returncode)
 
 
-def codegen_version_string(package_version: str, project_path: str, root_path: str)-> None:
+def codegen_version_string(package_version: str, project_path: str, root_path: str, target_os: str = None)-> None:
+    # For Android builds, we need to use the converted version without suffix
+    # to avoid parsing errors in the Android build system
+    if target_os == "android":
+        version_for_files = convert_version_to_4part(package_version, always_include_build=True)
+        logger.info(f"Using Android-compatible version '{version_for_files}' for __version__.py and pyproject.toml")
+    else:
+        version_for_files = package_version
+    
     # Update the __version__.py file used by the project
     with open(project_path.joinpath("__version__.py").resolve(), "w") as f:
-        f.write(f"__version__ = '{package_version}'\n")
+        f.write(f"__version__ = '{version_for_files}'\n")
     
     # Update the value of `version` in` pyproject.toml
     pyproject_path = root_path.joinpath("pyproject.toml").resolve()
     data = toml.load(pyproject_path)
     if "tool" not in data or "poetry" not in data["tool"]:
         raise ValueError("[tool.poetry] section not found in pyproject.toml")
-    data["tool"]["poetry"]["version"] = package_version
+    data["tool"]["poetry"]["version"] = version_for_files
     with open(pyproject_path, "w", encoding="utf-8") as f:
         toml.dump(data, f)
 
@@ -205,8 +307,8 @@ def restore_codegen_files(root_path, project_path):
 
 
 def version_type(version_string):
-    if not re.match(r'^v?\d+\.\d+\.\d+$', version_string):
-        raise argparse.ArgumentTypeError("Must be in X.Y.Z format (e.g., 1.2.3 or v1.2.3)")
+    if not re.match(r'^v?\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$', version_string):
+        raise argparse.ArgumentTypeError("Must be in X.Y.Z[-SUFFIX] format (e.g., 1.2.3, v1.2.3, 2.0.0-RC1, or v2.0.0-RC1)")
     
     # Remove 'v' prefix if present
     version_string = version_string.lstrip('v')
@@ -240,13 +342,20 @@ def rename_release_file(os_name, package_version):
     elif os_name == "linux":
         arch_name = platform.machine()
         file_name = f"carveracontroller-community-{package_version}-{arch_name}.appimage"
-        src = "./dist/carveracontroller-community.AppImage"
+        src = f"./Carvera_Controller_Community-{package_version}-{arch_name}.AppImage"
         dst = f"./dist/{file_name}"
     elif os_name == "android":
-        arch_name = "armeabi-v7a"
-        file_name = f"carveracontroller-community-{package_version}-android-{arch_name}.apk"
-        src = f"./dist/carveracontrollercommunity-{package_version}-{arch_name}-debug.apk"
+        arch_name = "armeabi-v7a_arm64-v8a_x86_64"
+        # For Android, we need to use the converted version for the source filename
+        # since the APK was built with the converted version (e.g., 2.0.0.1)
+        android_version = convert_version_to_4part(package_version, always_include_build=True)
+        file_name = f"carveracontroller-community-{package_version}.apk"
+        src = f"./dist/carveracontrollercommunity-{android_version}-{arch_name}-debug.apk"
         dst = f"./dist/{file_name}"
+    else:
+        # For any other OS (and pypi build), don't attempt to rename
+        return
+    
     shutil.move(src, dst)
 
 
@@ -291,12 +400,47 @@ def update_buildozer_version(package_version: str) -> None:
     logger.info("Updating version in buildozer.spec")
     buildozer_spec_path = ROOT_PATH.joinpath("buildozer.spec")
     
+    # Convert version with suffix to Android-compatible version
+    # Android build system expects a version string that can be parsed into numeric components
+    # We need to ensure it's always in a consistent format for parsing
+    android_version = convert_version_to_4part(package_version, always_include_build=True)
+    logger.info(f"Converting version '{package_version}' to Android-compatible version '{android_version}'")
+    
+    # Calculate a reasonable version code for Android
+    # Format: MMNNPP where MM=major, NN=minor, PP=patch
+    # For versions with suffixes, add a small offset to avoid conflicts
+    version_parts = android_version.split('.')
+    major = int(version_parts[0])
+    minor = int(version_parts[1])
+    patch = int(version_parts[2])
+    
+    # Create version code: major * 10000 + minor * 100 + patch
+    # This gives us room for up to 99 minor versions and 99 patch versions
+    version_code = major * 10000 + minor * 100 + patch
+    
+    # If there was a suffix in the original version, add a small offset
+    if '-' in package_version:
+        version_code += 1000  # Add offset for pre-release versions
+    
+    logger.info(f"Calculated Android version code: {version_code}")
+    
     with open(buildozer_spec_path, 'r') as file:
         lines = file.readlines()
     
+    # Update the version field
     for i, line in enumerate(lines):
         if line.startswith('version = '):
-            lines[i] = f'version = {package_version}\n'
+            lines[i] = f'version = {android_version}\n'
+            break
+    
+    # Update the android.numeric_version field
+    for i, line in enumerate(lines):
+        if line.startswith('android.numeric_version = '):
+            lines[i] = f'android.numeric_version = {version_code}\n'
+            break
+        elif line.startswith('# android.numeric_version = '):
+            # If it's commented out, uncomment and set the value
+            lines[i] = f'android.numeric_version = {version_code}\n'
             break
     
     with open(buildozer_spec_path, 'w') as file:
@@ -351,7 +495,7 @@ def main():
         metavar="version",
         required=True,
         type=version_type,
-        help="Version string to use for build."
+        help="Version string to use for build. Supports X.Y.Z[-SUFFIX] format (e.g., 1.2.3, 2.0.0-RC1, v2.0.0-BETA2)."
     )
 
     args = parser.parse_args()
@@ -367,7 +511,7 @@ def main():
     backup_codegen_files(ROOT_PATH, PROJECT_PATH)
 
     logger.info("Revising files by codegen")
-    codegen_version_string(package_version, PROJECT_PATH, ROOT_PATH)
+    codegen_version_string(package_version, PROJECT_PATH, ROOT_PATH, target_os=os_name)
 
     # Compile translation files
     compile_mo()
@@ -381,10 +525,14 @@ def main():
         # For iOS we need some special handling as it is not supported by pyinstaller
         # Execute the build_ios.sh script
         command = f"{BUILD_PATH}/build_ios.sh {package_version}"
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
-        if result.stderr:
-            logger.error(f"Error from build_ios.sh: {result.stderr}")
-        logger.info(f"Stdout from build_ios.sh: {result.stdout}")
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Stdout from build_ios.sh: {e.stdout}")
+            logger.error(f"Error from build_ios.sh: {e.stderr}")
+            sys.exit(1)
+        else:
+            logger.info(f"Stdout from build_ios.sh: {result.stdout}")
 
     if os_name == "android":
         # For Android we need some special handling as it is not supported by pyinstaller
@@ -440,7 +588,7 @@ def main():
         remove_shared_libraries(frozen_dir, 'libstdc++.so.*', 'libtinfo.so.*', 'libreadline.so.*', 'libdrm.so.*')
 
         if appimage:
-            run_appimage_builder(package_version)
+            run_linuxdeploy_appimage(package_version)
     
     if os_name == "macos":
         # Need to manually revise the version string due to

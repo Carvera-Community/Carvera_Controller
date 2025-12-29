@@ -14,6 +14,7 @@ class SingleAxisProbeSettings(BoxLayout):
 
     def __init__(self, **kwargs):
         self.config = ConfigUtils.load_config(self.config_filename)
+        self.config = self.order_config(self.config)
         super(SingleAxisProbeSettings, self).__init__(**kwargs)
 
     def setting_changed(self, key: str, value: float):
@@ -22,7 +23,16 @@ class SingleAxisProbeSettings(BoxLayout):
             raise KeyError(f"Invalid key '{key}'")
 
         self.config[param.code] = value
+        self.config = self.order_config(self.config)
         ConfigUtils.save_config(self.config, self.config_filename)
+
+    def order_config(self, config: dict[str, float]):
+        order = ["X", "Y", "Z", "J", "D", "H", "F", "K", "L", "R", "C", "Q", "E", "S", "I"]
+        temp_config = {}
+        for key in order:
+            if key in config:
+                temp_config[key] = config[key]
+        return temp_config
 
     def get_setting(self, key: str) -> str:
         param = getattr(SingleAxisProbeParameterDefinitions, key, None)

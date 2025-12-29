@@ -1,23 +1,130 @@
 [unreleased]
+- Enhancement: Support connecting to hidden wifi networks
+- Enhancement: Upload and select a file when it's double clicked in the local file browser
+- Enhancement: Select a file when it's double clicked in the remote file browser
+- Enhancement: Automatically connect to the machine on startup if its wifi address is configured
+- Enhancement: CI workflow for building iOS app
+- Enhancement: Added support sending multiple MDI commands at once
+- Enhancement: Pressing the up arrow when in the MDI input box re-populates the input with the last send command
+- Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
+- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
+- Enhancement: Previewing gcode files synchronises the line selection in the file view with the progress slider 
+- Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
+- Fixed: MDI scrolling behavior was sometimes quirky when new text was added
+- Fixed: Prevent keyboard jog when MDI text box has focus
+- Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
+- Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
+
+[2.0.0]
+- Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
+- Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
+- Fixed: Probing popup shouldn't be accessible when playback is suspended
+- Fixed: UI state for manual MDI text box and the Send button can be incorrect and make MDI seem broken
+- Fixed: Hard-coded search paths in Xcode project for iOS app
+- Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
+- Fixed: Scaling of the UI in Android no longer cuts off menu button on displays with 5:3 aspect ratio
+- Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
+- Change: Intel MacOS minimum version increased to MacOS-14 (Sonoma). Previous versions might work, but will be unsupported
+
+[2.0.0-RC2]
+- Enhancement: Controller option "Allow Jogging When Machine is Running". This allows advanced users to jog the spindle manually while it is spinning enabling manual milling operations.
+- Enhancement: Max FPS can now be configured in the Controller settings
+- Enhancement: Tooltips can be turned on and off in the Controller settings
+- Enhancement: Tooltip delay before displaying can be configured in the controller settings
+- Enhancement: Probe Tip Calibration screens complete and functional
+- Enhancement: Probing popup confirm dialog now says close instead of cancel
+- Enhancement: Probing popup confirm dialog now displays relavent information from the MDI
+- Enhancement: Added more info button to probing popup that directs the user to the relavent gitbook page
+- Enhancement: Added machine position calibration screen
+- Fixed: Probing jog buttons follow same behavior for on_press and on_release as main jogging buttons
+- Fixed: Keyboard jogging of Z-axis in Step Mode uses the selected Z step size, accidently selecting X/Y previously.
+- Fixed: 3D Visualization now rendered based on the configured target from the Max FPS setting instead of hard coded to 60.
+- Fixed: Tooltips are now disabled when the source object is not in the active screen or popup
+- Fixed: Autoreconnection failure dialog now only shown on failure of last attempt, previously was shown on every attempt
+- Fixed: The probing start dialog can now be closed if the machine halts while probing
+- Fixed: Top bar buttons minimum size increased to ensure sufficient space for position values up to 999.999 without truncating
+- Fixed: Including win32timezone for Windows builds. Fixes Play background images custom folder
+- Fixed: New installs would crash when no previous folder available to open in file browser
+- Fixed: Autoreconnect attempted to connect over network for dropped USB-Serial connections, for now we have made autoreconnect a network connection only feature
+- Fixed: HIDAPI Library for MacOS now embedded into MacOS releases, this enables the use of the WiXHC WHB04B Pendant on MacOS using the .dmg release artifacts
+- Fixed: Simulated multitouch (red dots) disabled if running controller on non-mobile OS
+- Fixed: crash in recycle view when the data is updated at the same time as being read
+
+[2.0.0-RC1]
+- Enhancement: Continuous jog mode support. Community firmware > 2.0.0c is required for this feature.
+- Enhancement: Configurable Macro buttons added to the Control UI screen. Configure the macros in Controller Settings
+- Enhancement: Auto-Reconnect functionality with configurable delay, and attempts
+- Enhancement: Add Online Documentation link to Function dropdown
+- Enhancement: WBH04 Pendant step size option "Lead" scales the feedrate to the rotational wheel speed of the pendant
+- Enhancement: MDI sent/recived now logged to log file (if enabled)
+- Enhancement: New HALT message when a 3D probe crash was detected
+- Change: Jogging option buttons consolidated and always displayed
+- Change: Default jog speed is "max" (10k mm/min). Pendant Jog speed uses configured the global jog speed
+- Change: Jog buttons act now on_press instead of on_release
+- Change: Probing cancel button becomes halt button if machine is moving
+- Change: Machine heartbeat is now 5s to be a bit more responsive on disconnects
+- Change: Light toggle button initial state is set on connect
+- Change: Controller logging options now available in settings. Default log_level is info and log to file is enabled.
+- Change: SafeZ positions are now 2mm from the home positions to provide clearence for users of x-sag compensation
+- Change: Pushing Cancel on the Changing Tool popup stops g-code playback. Community firmware > 2.0.0c is required for this feature.
+- Change: Added config item to skip moving to path origin on gcode playback start. Community firmware > 2.0.0c is required for this feature.
+- Fix: Upload-and-Select button is now disabled until a file is selected
+- Fix: WBH04 Pendant Macro-10 should be treated as an action button
+- Fix: Better handling of machine diagnostic output to support analogue mode spindles
+- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3 
+
+[0.10.1]
+- Change: Added input validation to catch empty values on input boxes
+- Fix: Sometimes the machine doesn't response to the initial machine "model" or "version" queries. Attempt to query this machine metadata periodically until it's determined
+- Fix: Fixed single axis z probing
+
+[0.10.0]
+- Enhancement: Support for controlling the machine via WHB04 pendant devices
+- Enhancement: Added WCS Management functionality. WCS workspace is displayed in top status bar, and can be used to change between different workspaces (G54-G59.3 etc). Note: Community firmware v1.0.3c1.0.7 is required for full functionality. Community firmware v1.0.3c1.0.6 does support editing the offsets but doesn't track manual G5* commands in the MDI. Makera firmware will not persist non-G54 offsets across machine resets.
+- Enhancement: Ability to rotate the WCS workspace. This is done via the WCS Management options. WCS rotation requires Community firmware 1.0.3c.1.0.7 or higher to function
+- Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently
+- Enhancement: Android apk now supports armv7 (32-bit), armv8 (64-bit), and x86_64 processors
+- Change: Functionality that requires community firmware will be disabled in the Controller if using Makera firmware. Previously it would just not work.
+- Change: Clear the WCS rotation if the Gcode file loaded has 4th axis rotation movements
+- Change: 4th axis module shape in the preview visualisation in config-and-run screen was for non-harmonic model, now is the correct shape for harmonic version
+- Change: Unlocking the machine after a halt gives you the option to move to SafeZ
+- Change: Graphics and behavior of the probe boss command are now updated to use diameter and a J parameter instead of radius.
+- Change: Show machine model based specific config options
+- Fix: Add 3D Probe tool option to Change/Set if CA1. Previously only added for C1
+- Fix: Resolve the keyboard_mode config load error that occurs when reconnecting the Controller after it loses connection
+- Fix: Red origin dot in preview visualisation on config-and-run screen returned
+- Fix: Last open folder was using temp directory instead of actual user selected location
+- Fix: Set origin popup now properly shows the current offset to the anchors when switching options. When set to 'current pos' the offset default to 0.
+- Fix: A Axis: WCS coordinate display now shows the correct value
+- Fix: A Axis: Set A and A = 0 use the correct commands now (e.g. G10L20A0P0 instead of G92.4 A0)
+- Fix: Increase the number of forced window renderings to workaround the Android blank screen issue
+- Fix: Set ordering of parameters in probing screens to use the existing ordering instead of first changed
+- Fix: Including Q parameter in probe corners
+- Fix: Order of probing parameters is the same on every page (E on angle probing page is special)
+
+[0.9.1]
+- Fix: 3D Probe tool number missing a "9". Should be 999990 not 99990
+- Fix: Python package builds missing a dep
+
+[0.9.0]
 - Enhancement: Initial support for rotated WCS in visualizations
-- Change: Minimum Python version increased to 3.9
-- Change: Controller no longer warns about missing config key values in MDI because it's assumed that firmware defaults are used instead
-- Enhancement: Controller support for updating setting definition if machine model is CA1 (via config_ca1_diff.json)
-- Enhancement: Support for controller Carvera Air beeper through controller settings
-- Change: Better wording on the xyz probe screen about block thickness
+- Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual
+- Enhancement: Default values on the Set Origin screen uses the current origin offsets
+- Enhancement: Switch to File view after starting gcode playback
+- Enhancement: 3D visualisation for endmill now is transparent and conical to improve visability
 - Enhancement: Added Ext Control switch to centre control panel
 - Enhancement: Initial Android builds
+- Enhancement: Support for Carvera Air specific settings
+- Enhancement: Support for the Carvera Air beeper through controller settings
+- Change: Minimum Python version increased to 3.9
+- Change: Controller no longer warns about missing config key values in MDI because it's assumed that firmware defaults are used instead
+- Change: Better wording on the xyz probe screen about block thickness
+- Change: Add UI to select X/Y or X/Y/Z WCS zeroing during 3D probing of corners and boss
+- Change: 3D Probe is an option in the "Set" Tool menu. This sets the tool to number 99990
 - Fix: Compressed gcode now stored in temp directory if source directory isn't writable
 - Fix: Fix MDI window showing the keyboard for onscreen keyboard devices on iOS
 - Fix: Invisible jog control panel buttons clickable when panel disabled.
-- Change: Add UI to select X/Y or X/Y/Z WCS zeroing during 3D probing of corners and boss
-- Enhancement: Controller config option to select what kind of keyboard to use, physical/virtual/both with options for different size virtual
-- Enhancement: Default the values in the Set Origin screen to the current origin offsets
-- Enhancement: Switch to File view after starting gcode playback
-- Enhancement: 3D visualisation for endmill now is transparent and conical to improve visability
 - Fix: Movements around the A axis were incorrectly visualised as straight lines between points instead of arcs around the rotational axis
-- Change: 3D Probe is an option in the "Set" Tool menu. This sets the tool to number 99990
-- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
 
 [0.8.2]
 - Fix: Linux ARM64 appimage builds

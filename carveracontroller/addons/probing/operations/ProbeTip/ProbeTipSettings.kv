@@ -1,0 +1,188 @@
+<ProbeTipSettings>:
+    ScrollView:
+        do_scroll_x: False
+        size_hint: 1,1
+        bar_width: 4
+        bar_inactive_color: [.7,.7,.7,.9]
+        StackLayout:
+            height: self.minimum_height
+            size_hint_y: None
+            spacing:dp(3)
+            padding:dp(1)
+            halign:'right'
+
+            ProbeSettingLabel:
+                label_text: 'X:'
+                ToolTipTextInput:
+                    id: XAxisDistance
+                    tooltip_txt: tr._('Distance from center along X to move before probing back toward part')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('XAxisDistance')
+                    on_text: root.setting_changed('XAxisDistance', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'Y:'
+                ToolTipTextInput:
+                    id: YAxisDistance
+                    tooltip_txt: tr._('Distance from center along Y to move before probing back toward part')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('YAxisDistance')
+                    on_text: root.setting_changed('YAxisDistance', self.text)
+            
+            ProbeSettingLabel:
+                label_text: 'J:'
+                ToolTipTextInput:
+                    id: ProbeClearance
+                    tooltip_txt: tr._('When Probing a boss, this is added to the X and Y values when moving outside the bore or boss. Defaults to 4mm')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('ProbeClearance')
+                    on_text: root.setting_changed('ProbeClearance', self.text)
+            
+            ProbeSettingLabel:
+                label_text: 'E Probe Depth'
+                ToolTipTextInput:
+                    id: ProbeDepth
+                    tooltip_txt: tr._('How far below the start height to move down for probing the sides of the ProbeTip/block')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('ProbeDepth')
+                    on_text: root.setting_changed('ProbeDepth', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'H Pocket Depth:'
+                tooltip_txt: 'test'
+                ToolTipTextInput:
+                    id: PocketProbeDepth
+                    tooltip_txt: tr._('Distance to probe straight down before performing remainder of probing operations')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('PocketProbeDepth')
+                    on_text: root.setting_changed('PocketProbeDepth', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'F Feed Rate:'
+                ToolTipTextInput:
+                    id: FastFeedRate
+                    tooltip_txt: tr._('Optional probing feed rate override')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('FastFeedRate')
+                    on_text: root.setting_changed('FastFeedRate', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'K Rapid:'
+                ToolTipTextInput:
+                    id: RapidFeedRate
+                    tooltip_txt: tr._('Optional rapid feed rate override')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('RapidFeedRate')
+                    on_text: root.setting_changed('RapidFeedRate', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'L Repeat:'
+                ToolTipTextInput:
+                    id: RepeatOperationCount
+                    tooltip_txt: tr._('Number of times to repeat the probing operation')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('RepeatOperationCount')
+                    on_text: root.setting_changed('RepeatOperationCount', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'R Edge Retract:'
+                ToolTipTextInput:
+                    id: EdgeRetractDistance
+                    tooltip_txt: tr._('Distance away from surface to retract before double tapping the probe')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('EdgeRetractDistance')
+                    on_text: root.setting_changed('EdgeRetractDistance', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'C Btm Retract:'
+                ToolTipTextInput:
+                    id: BottomSurfaceRetract
+                    tooltip_txt: tr._('If Pocket Depth is enabled, how far above the surface to raise before continuing the operation')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('BottomSurfaceRetract')
+                    on_text: root.setting_changed('BottomSurfaceRetract', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'Q ProbeTip:'
+                ToolTipTextInput:
+                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
+                    tooltip_image: 'addons/probing/data/icons_1024x768/angle/probe_angle_arbitrary_negative.png'
+                    tooltip_image_size: 200,200
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('QProbeTip')
+                    on_text: root.setting_changed('QProbeTip', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'S Save to Config:'
+                size_hint: 0,0
+                opacity: 0
+                hint_text: 'Currently not working'
+                ToolTipSwitch:
+                    id: ZeroXYPosition
+                    tooltip_txt: tr._('You must manually save the value to the config file for now')
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    active: root.get_setting('ZeroXYPosition') == "1"
+                    on_active: root.setting_changed('ZeroXYPosition', "1" if self.active else "0")
+
+            ProbeSettingLabel:
+                label_text: 'I Normally Closed:'
+                hint_text: ''
+                ToolTipSwitch:
+                    id: UseProbeNormallyClosed
+                    tooltip_txt: tr._('Enable this switch if you have a normally closed probe instead of a normally open one')
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    active: root.get_setting('UseProbeNormallyClosed') == "1"
+                    on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")

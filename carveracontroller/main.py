@@ -19,7 +19,7 @@ if is_android():
         activity = PythonActivity.mActivity
         metrics = DisplayMetrics()
         activity.getWindowManager().getDefaultDisplay().getMetrics(metrics)
-        screen_width_density  = int(metrics.widthPixels  * 10 / 960) / 10
+        screen_width_density  = int(metrics.widthPixels  * 10 / 1000) / 10
         screen_height_density = int(metrics.heightPixels * 10 / 550) / 10
 
         os.environ["KIVY_METRICS_DENSITY"] = str(min(screen_width_density, screen_height_density))
@@ -27,10 +27,9 @@ if is_android():
     except ImportError:
         print("Pyjnius Import Fail.")
 
-import gettext
-import locale
-from kivy.lang import Observable
-from os.path import dirname, join
+from . import translation
+from .translation import tr
+
 # os.environ['KIVY_GL_DEBUG'] = '1'
 from kivy.core.clipboard import Clipboard
 
@@ -41,6 +40,7 @@ import time
 import datetime
 import threading
 import logging
+logger = logging.getLogger(__name__)
 
 # Add Android imports
 if kivy_platform == 'android':
@@ -57,7 +57,7 @@ def has_all_files_access():
         try:
             return Environment.isExternalStorageManager()
         except Exception as e:
-            print(f"Error checking storage manager status: {e}")
+            logger.error(f"Error checking storage manager status: {e}")
             return False
     return True
 
@@ -66,59 +66,18 @@ def request_android_permissions():
         try:
             # Check if we already have all files access
             if has_all_files_access():
-                print("Already have all files access permission")
+                logger.info("Already have all files access permission")
                 return
 
             # Request all files access permission
             intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             mActivity.startActivity(intent)
         except Exception as e:
-            print(f"Error requesting permissions: {e}")
+            logger.error(f"Error requesting permissions: {e}")
 
 from .addons.probing.ProbingPopup import ProbingPopup
-class Lang(Observable):
-    observers = []
-    lang = None
-
-    def __init__(self, defaultlang):
-        super(Lang, self).__init__()
-        self.ugettext = None
-        self.lang = defaultlang
-        self.switch_lang(self.lang)
-
-    def _(self, text):
-        return self.ugettext(text)
-
-    def fbind(self, name, func, args, **kwargs):
-        if name == "_":
-            self.observers.append((func, args, kwargs))
-        else:
-            return super(Lang, self).fbind(name, func, *args, **kwargs)
-
-    def funbind(self, name, func, args, **kwargs):
-        if name == "_":
-            key = (func, args, kwargs)
-            if key in self.observers:
-                self.observers.remove(key)
-        else:
-            return super(Lang, self).funbind(name, func, *args, **kwargs)
-
-    def switch_lang(self, lang):
-        # get the right locales directory, and instanciate a gettext
-        locale_dir = join(dirname(__file__), 'locales')
-        locales = None
-        try:
-            locales = gettext.translation(lang, locale_dir, languages=[lang])
-        except:
-            pass
-        if locales == None:
-            locales = gettext.NullTranslations()
-        self.ugettext = locales.gettext
-        self.lang = lang
-
-        # update all the kv rules attached to this text
-        for func, largs, kwargs in self.observers:
-            func(largs, None, None)
+from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController
 
 import json
 import re
@@ -143,6 +102,7 @@ from kivy.properties import StringProperty
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
@@ -150,7 +110,30 @@ from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
-from kivy.metrics import Metrics
+from kivy.metrics import Metrics, dp
+
+# Custom Property to monitor CNC.vars["sw_light"] changes
+class LightProperty(BooleanProperty):
+    """Custom property that monitors CNC.vars['sw_light'] and converts it to a boolean"""
+    
+    def __init__(self, defaultvalue=False, **kwargs):
+        super().__init__(defaultvalue=defaultvalue, **kwargs)
+        self._light_value = 0
+        # Don't call update_from_state in __init__ since we don't have an obj yet
+    
+    def update_from_state(self, obj):
+        """Update the property value from CNC.vars['sw_light']"""
+        try:
+            current_value = CNC.vars.get("sw_light", 0)
+            if current_value != self._light_value:
+                self._light_value = current_value
+                # Convert to boolean: 1 = True (down), 0 = False (normal)
+                new_bool_value = current_value == 1
+                BooleanProperty.set(self, obj, new_bool_value)
+
+        except Exception as e:
+            # If CNC.vars is not available yet, default to False
+            BooleanProperty.set(self, obj, False)
 
 try:
     from serial.tools.list_ports import comports
@@ -194,6 +177,7 @@ import string
 import subprocess
 
 from . import Utils
+from . import ui
 from kivy.config import ConfigParser
 from .CNC import CNC
 from .GcodeViewer import GCodeViewer
@@ -202,10 +186,10 @@ from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
 from .__version__ import __version__
 
 from kivy.lang import Builder
-from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown 
+from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown
 from .addons.probing.ProbingControls import ProbeButton
 
-def load_halt_translations(tr: Lang):
+def load_halt_translations(tr: translation.Lang):
     """Loads the appropriate language translation"""
     HALT_REASON = {
         # Just need to unlock the mahchine
@@ -222,6 +206,7 @@ def load_halt_translations(tr: Lang):
         11: tr._("Cover opened when playing"),
         12: tr._("Wireless probe dead or not set"),
         13: tr._("Emergency stop button pressed"),
+        16: tr._("3D probe crash detected"),
         # Need to reset the machine
         21: tr._("Hard Limit Triggered, reset needed"),
         22: tr._("X Axis Motor Error, reset needed"),
@@ -233,24 +218,6 @@ def load_halt_translations(tr: Lang):
         41: tr._("Spindle Alarm, power off/on needed"),
     }
     return HALT_REASON
-
-def init_lang():
-    # init language
-    default_lang = 'en'
-    if Config.has_option('carvera', 'language'):
-        default_lang = Config.get('carvera', 'language')
-    else:
-        try:
-            default_locale = locale.getdefaultlocale()
-            if default_locale != None:
-                for lang_key in LANGS.keys():
-                    if default_locale[0][0:2] in lang_key:
-                        default_lang = lang_key
-                        break
-        except:
-            pass
-
-    return default_lang
 
 def app_base_path():
     """
@@ -277,6 +244,35 @@ def register_images(base_path):
     icons_path = os.path.join(base_path)
     resource_add_path(icons_path)
 
+class MDITextInput(TextInput):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_mdi_command = ''
+        self.bind(focus=self.on_focus)
+
+    def on_focus(self, instance, have_focus):
+        if have_focus:
+            Window.bind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+
+    def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
+        ENTER_KEY = 13
+        UP_ARROW_KEY = 273
+        if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
+            self.send_mdi_command()
+            return True
+        if self.focus and key == UP_ARROW_KEY:
+            # If the input box is empty, and the user presses the up arrow
+            # Repopulate the inbox box with the last MDI command
+            if not self.text.strip() and self.last_mdi_command:
+                self.text = self.last_mdi_command
+                return True
+        return False
+
+    def send_mdi_command(self):
+        app = App.get_running_app()
+        app.root.send_cmd()
 
 class GcodePlaySlider(Slider):
     def on_touch_down(self, touch):
@@ -338,9 +334,96 @@ class ConfirmPopup(ModalView):
         self.showing = False
 
 
+class UnlockPopup(ModalView):
+    showing = False
+
+    def __init__(self, **kwargs):
+        super(UnlockPopup, self).__init__(**kwargs)
+
+    def on_open(self):
+        self.showing = True
+
+    def on_dismiss(self):
+        self.showing = False
+
+
 class MessagePopup(ModalView):
     def __init__(self, **kwargs):
         super(MessagePopup, self).__init__(**kwargs)
+
+class ReconnectionPopup(ModalView):
+    auto_reconnect_mode = BooleanProperty(False)
+    
+    def __init__(self, **kwargs):
+        super(ReconnectionPopup, self).__init__(**kwargs)
+        self.countdown = 0
+        self.max_attempts = 0
+        self.current_attempt = 0
+        self.wait_time = 10
+        self.cancel_callback = None
+        self.reconnect_callback = None
+
+    def start_countdown(self, max_attempts, wait_time, reconnect_callback, cancel_callback):
+        """Start auto-reconnect countdown mode"""
+        self.auto_reconnect_mode = True
+        self.max_attempts = max_attempts
+        self.current_attempt = 0
+        self.wait_time = wait_time
+        self.reconnect_callback = reconnect_callback
+        self.cancel_callback = cancel_callback
+        self.countdown = wait_time
+        self.update_display()
+
+    def show_manual_reconnect(self, reconnect_callback):
+        """Show manual reconnect mode (no countdown)"""
+        self.auto_reconnect_mode = False
+        self.reconnect_callback = reconnect_callback
+        self.update_display()
+
+    def update_display(self):
+        if hasattr(self, 'lb_content'):
+            if self.auto_reconnect_mode:
+                remaining_attempts = self.max_attempts - self.current_attempt
+                self.lb_content.text = tr._('Connection lost. Attempting to reconnect...\n\nAttempt {} of {}\nReconnecting in {} seconds'.format(
+                    self.current_attempt + 1, self.max_attempts, self.countdown))
+            else:
+                self.lb_content.text = tr._('Connection to machine lost.')
+
+    def countdown_tick(self, dt=None):
+        if not self.auto_reconnect_mode:
+            return
+            
+        if self.countdown > 0:
+            self.countdown -= 1
+            self.update_display()
+        else:
+            self.countdown = self.wait_time
+            self.current_attempt += 1
+            if self.current_attempt <= self.max_attempts:
+                if self.reconnect_callback:
+                    self.reconnect_callback()
+                # Only call cancel_callback after the last attempt has been made
+                if self.current_attempt >= self.max_attempts:
+                    self.dismiss()
+                    if self.cancel_callback:
+                        self.cancel_callback()
+
+    def cancel_reconnect(self):
+        self.dismiss()
+        if self.cancel_callback:
+            self.cancel_callback()
+
+    def reconnect(self):
+        """Handle reconnect button press"""
+        if self.reconnect_callback:
+            self.reconnect_callback()
+        self.dismiss()
+
+    def on_dismiss(self):
+        """Called when popup is dismissed"""
+        super().on_dismiss()
+        # Stop the countdown timer
+        Clock.unschedule(self.countdown_tick)
 
 class InputPopup(ModalView):
     cache_var1 = StringProperty('')
@@ -348,6 +431,13 @@ class InputPopup(ModalView):
     cache_var3 = StringProperty('')
     def __init__(self, **kwargs):
         super(InputPopup, self).__init__(**kwargs)
+
+class ManualWifiPopup(ModalView):
+    cache_var1 = StringProperty('')
+    cache_var2 = StringProperty('')
+    cache_var3 = StringProperty('')
+    def __init__(self, **kwargs):
+        super(ManualWifiPopup, self).__init__(**kwargs)
 
 class ProgressPopup(ModalView):
     progress_text = StringProperty('')
@@ -374,11 +464,16 @@ class OriginPopup(ModalView):
             if self.coord_popup.config['origin']['anchor'] == 2:
                 x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
                 y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
-            else:
+            elif self.coord_popup.config['origin']['anchor'] == 1:
                 x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4)
                 y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)
+            else:
+                x = 0
+                y = 0
         self.txt_x_offset.text = str(x)
+        Utils.bind_auto_select_to_text_input(self.txt_x_offset)
         self.txt_y_offset.text = str(y)
+        Utils.bind_auto_select_to_text_input(self.txt_y_offset)
 
     def selected_anchor(self):
         if self.cbx_anchor2.active:
@@ -388,15 +483,156 @@ class OriginPopup(ModalView):
         elif self.cbx_current_position.active:
             return 4
         return 1
+    
+    def update_offsets(self):
+        # Use the same logic as CoordPopup.load_origin_label to set offsets
+        app = App.get_running_app()
+        x = 0
+        y = 0
+        if app.has_4axis:
+            x = round(CNC.vars["wcox"] - CNC.vars['anchor1_x'] - CNC.vars['rotation_offset_x'], 4)
+            y = round(CNC.vars['wcoy'] - CNC.vars['anchor1_y'] - CNC.vars['rotation_offset_y'], 4)
+        else:
+            laser_x = CNC.vars['laser_module_offset_x'] if CNC.vars['lasermode'] else 0.0
+            laser_y = CNC.vars['laser_module_offset_y'] if CNC.vars['lasermode'] else 0.0
+            if self.cbx_anchor1.active:
+                x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4)
+                y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)
+            elif self.cbx_anchor2.active:
+                x = round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
+                y = round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
+            elif self.cbx_current_position.active:
+                x = 0
+                y = 0
+        self.txt_x_offset.text = str(x)
+        self.txt_y_offset.text = str(y)
+
+    def validate_inputs(self):
+        """Validate inputs based on the active tab."""
+        # Check which tab is active using the ID
+        tabbed_panel = self.ids.tabbed_panel
+        
+        if tabbed_panel and tabbed_panel.current_tab:
+            current_tab = tabbed_panel.current_tab
+            if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
+                # Validate XYZ Probe tab inputs
+                probe_height_text = self.ids.txt_probe_height.text.strip()
+                tool_diameter_text = self.ids.txt_tool_diameter.text.strip()
+                
+                if not probe_height_text or not tool_diameter_text:
+                    return False, tr._("Please enter values for both block thickness and tool diameter.")
+                
+                try:
+                    float(probe_height_text)
+                    float(tool_diameter_text)
+                    return True, ""
+                except ValueError:
+                    return False, tr._("Please enter valid numbers for block thickness and tool diameter.")
+        
+        # Default to validating X/Y offsets (Auto-Set By Offset tab)
+        x_offset_text = self.ids.txt_x_offset.text.strip()
+        y_offset_text = self.ids.txt_y_offset.text.strip()
+        
+        if not x_offset_text or not y_offset_text:
+            return False, tr._("Please enter values for both X and Y offsets.")
+        
+        try:
+            float(x_offset_text)
+            float(y_offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for X and Y offsets.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        app = App.get_running_app()
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            # Check which tab is active using the ID
+            tabbed_panel = self.ids.tabbed_panel
+
+            if tabbed_panel and tabbed_panel.current_tab:
+                current_tab = tabbed_panel.current_tab
+                
+                if hasattr(current_tab, 'text') and 'XYZ Probe' in current_tab.text:
+                    # Handle XYZ Probe tab
+                    app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
+                    self.dismiss()
+                    return
+            
+            # Handle Auto-Set By Offset tab (default)
+            self.coord_popup.set_config('origin', 'anchor', self.selected_anchor())
+            self.coord_popup.set_config('origin', 'x_offset', float(self.ids.txt_x_offset.text))
+            self.coord_popup.set_config('origin', 'y_offset', float(self.ids.txt_y_offset.text))
+            app.root.set_work_origin()
+            self.dismiss()
+        else:
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False),0)
+            
 
 class ZProbePopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(ZProbePopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that X and Y offset inputs are not empty and are valid numbers."""
+        x_offset_text = self.ids.txt_x_offset.text.strip()
+        y_offset_text = self.ids.txt_y_offset.text.strip()
+        
+        if not x_offset_text or not y_offset_text:
+            return False, tr._("Please enter values for both X and Y offsets.")
+        
+        try:
+            float(x_offset_text)
+            float(y_offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for X and Y offsets.")
+
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            self.coord_popup.set_config('zprobe', 'origin', 1 if self.ids.cbx_origin1.active else 2)
+            self.coord_popup.set_config('zprobe', 'x_offset', float(self.ids.txt_x_offset.text))
+            self.coord_popup.set_config('zprobe', 'y_offset', float(self.ids.txt_y_offset.text))
+            self.coord_popup.load_zprobe_label()
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class XYZProbePopup(ModalView):
     def __init__(self, **kwargs):
         super(XYZProbePopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that probe height and tool diameter inputs are not empty and are valid numbers."""
+        probe_height_text = self.ids.txt_probe_height.text.strip()
+        tool_diameter_text = self.ids.txt_tool_diameter.text.strip()
+        
+        if not probe_height_text or not tool_diameter_text:
+            return False, tr._("Please enter values for both probe height and tool diameter.")
+        
+        try:
+            float(probe_height_text)
+            float(tool_diameter_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for probe height and tool diameter.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            logger.debug(f"XYZProbePopup.on_ok_pressed: probe height={self.ids.txt_probe_height.text}, tool diameter={self.ids.txt_tool_diameter.text}")
+            app.root.controller.xyzProbe(float(self.ids.txt_probe_height.text), float(self.ids.txt_tool_diameter.text))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class LanguagePopup(ModalView):
     def __init__(self, **kwargs):
@@ -457,6 +693,46 @@ class AutoLevelPopup(ModalView):
         self.execute = execute
         self.init()
         self.open()
+    
+    def validate_inputs(self):
+        """Validate that height, x_points, and y_points inputs are not empty and are valid numbers."""
+        height_text = self.ids.sp_height.text.strip()
+        x_points_text = self.ids.sp_x_points.text.strip()
+        y_points_text = self.ids.sp_y_points.text.strip()
+        
+        if not height_text or not x_points_text or not y_points_text:
+            return False, tr._("Please enter values for height, X points, and Y points.")
+        
+        try:
+            int(height_text)
+            int(x_points_text)
+            int(y_points_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter valid numbers for height, X points, and Y points.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            self.coord_popup.set_config('leveling', 'height', int(self.ids.sp_height.text))
+            self.coord_popup.set_config('leveling', 'x_points', int(self.ids.sp_x_points.text))
+            self.coord_popup.set_config('leveling', 'y_points', int(self.ids.sp_y_points.text))
+            self.coord_popup.set_config('leveling', 'xn_offset', float(self.ids.txt_auto_xn_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_xn_offset.text.strip() and self.ids.txt_auto_xn_offset.text != '.' else 0.0)
+            self.coord_popup.set_config('leveling', 'xp_offset', float(self.ids.txt_auto_xp_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_xp_offset.text.strip() and self.ids.txt_auto_xp_offset.text != '.' else 0.0)
+            self.coord_popup.set_config('leveling', 'yn_offset', float(self.ids.txt_auto_yn_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_yn_offset.text.strip() and self.ids.txt_auto_yn_offset.text != '.' else 0.0)
+            self.coord_popup.set_config('leveling', 'yp_offset', float(self.ids.txt_auto_yp_offset.text) if self.ids.cbx_autolevelOffsets.active and self.ids.txt_auto_yp_offset.text.strip() and self.ids.txt_auto_yp_offset.text != '.' else 0.0)
+            if self.ids.cbx_autolevelOffsets.active: self.coord_popup.set_config('zprobe', 'x_offset', float(self.ids.txt_auto_xn_offset.text) if self.ids.txt_auto_xn_offset.text.strip() and self.ids.txt_auto_xn_offset.text != '.' else 0.0)
+            if self.ids.cbx_autolevelOffsets.active: self.coord_popup.set_config('zprobe', 'y_offset', float(self.ids.txt_auto_yn_offset.text) if self.ids.txt_auto_yn_offset.text.strip() and self.ids.txt_auto_yn_offset.text != '.' else 0.0)
+            
+            self.coord_popup.load_leveling_label()
+            if self.execute: 
+                app = App.get_running_app()
+                app.root.execute_autolevel(int(self.ids.sp_x_points.text), int(self.ids.sp_y_points.text), False)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
@@ -538,10 +814,10 @@ class CoordPopup(ModalView):
         self.background_image_files = []
 
         default_bkg_images = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds')
-        
+
         if os.path.exists(self.user_play_file_image_dir):
             self.background_image_files = [
-                f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")            
+                f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")
             ]
 
         for f in os.listdir(default_bkg_images):
@@ -570,14 +846,14 @@ class CoordPopup(ModalView):
         else:
             cnc_workspace = self.ids.cnc_workspace
             cnc_workspace.update_background_image("None")
-    
+
     def open_bkg_img_dir(self):
         app = App.get_running_app()
         folder_path = app.ids.coord_popup.user_play_file_image_dir
 
         # Ensure the folder exists
         if not os.path.exists(folder_path):
-            print(f"Folder '{folder_path}' does not exist!")
+            logger.warning(f"Folder '{folder_path}' does not exist!")
             return
 
         # Open based on OS
@@ -587,12 +863,12 @@ class CoordPopup(ModalView):
             subprocess.Popen(["open", folder_path])
         else:  # Linux
             subprocess.Popen(["xdg-open", folder_path])
-        
+
         folder_path = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds')
 
         # Ensure the folder exists
         if not os.path.exists(folder_path):
-            print(f"Folder '{folder_path}' does not exist!")
+            logger.warning(f"Folder '{folder_path}' does not exist!")
             return
 
         # Open based on OS
@@ -661,6 +937,7 @@ class CoordPopup(ModalView):
                                                                  round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)) + tr._('from Anchor2')
             else:
                 self.lb_origin.text = '(%g, %g) ' % (round(CNC.vars['wcox'] + laser_x - CNC.vars["anchor1_x"], 4), round(CNC.vars['wcoy'] + laser_y - CNC.vars["anchor1_y"], 4)) + tr._('from Anchor1')
+        self.lb_origin.text = CNC.wcs_names[CNC.vars["active_coord_system"]] + ': ' + self.lb_origin.text
 
     def load_zprobe_label(self):
         app = App.get_running_app()
@@ -679,7 +956,7 @@ class CoordPopup(ModalView):
         for offset_type in ['xn_offset', 'xp_offset', 'yn_offset', 'yp_offset']:
             if self.config['leveling'][offset_type] != 0:
                 any_offsets_set = True
-        
+
         if any_offsets_set:
             self.lb_leveling.text += tr._(' Offsets: ') \
                                 + tr._(' -X: ') + '%g ' % (round(self.config['leveling']['xn_offset'],4)) \
@@ -718,37 +995,446 @@ class SetXPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetXPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for X offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for X offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.wcsSet(float(self.ids.txt_offset.text), None, None, None)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetYPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetYPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for Y offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for Y offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.wcsSet(None, float(self.ids.txt_offset.text), None, None)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetZPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetZPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for Z offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for Z offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.wcsSet(None, None, float(self.ids.txt_offset.text), None)
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetAPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that offset input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for A offset.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for A offset.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.RapMoveA(float(self.ids.txt_offset.text.strip()))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
 
 class SetToolPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(SetToolPopup, self).__init__(**kwargs)
 
+    def on_open(self):
+        super().on_open()
+        Utils.bind_auto_select_to_text_input(self.txt_offset)
+
+
 class ChangeToolPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(ChangeToolPopup, self).__init__(**kwargs)
 
+    def on_open(self):
+        super().on_open()
+        Utils.bind_auto_select_to_text_input(self.txt_offset)
+
 class MoveAPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
         self.coord_popup = coord_popup
         super(MoveAPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that A position input is not empty and is a valid number."""
+        offset_text = self.ids.txt_offset.text.strip()
+        
+        if not offset_text:
+            return False, tr._("Please enter a value for A position.")
+        
+        try:
+            float(offset_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for A position.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.RapMoveA(float(self.ids.txt_offset.text.strip()))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
+
+class WCSSettingsPopup(ModalView):
+    def __init__(self, controller, wcs_names, **kwargs):
+        super(WCSSettingsPopup, self).__init__(**kwargs)
+        self.controller = controller
+        self.original_values = {}  # Store original values for comparison
+        self.wcs_names = wcs_names
+        self.current_active_wcs = None  # Track current active WCS
+        self.has_changes = False  # Track if any values have changed
+    
+    def on_open(self):
+        """Parse WCS values from machine and populate fields when popup opens"""
+        if self.controller:
+            # Register callback for WCS data
+            self.controller.wcs_popup_callback = self.populate_wcs_values
+            # Request parameters from machine
+            self.controller.viewWCS()
+            # Update UI based on firmware type
+            Clock.schedule_once(lambda dt: self.update_ui_for_firmware_type(), 0.2)
+    
+    def on_dismiss(self):
+        """Clean up callback when popup is dismissed"""
+        if self.controller and hasattr(self.controller, 'wcs_popup_callback'):
+            self.controller.wcs_popup_callback = None
+    
+    def populate_wcs_values(self, wcs_data):
+        """Populate the WCS fields with parsed data from machine"""
+        
+        def update_ui(dt):
+            # wcs_data format: {'G54': [x, y, z, a, rotation], 'G55': [...], ...}
+            
+            for wcs, values in wcs_data.items():
+                if len(values) >= 5:  # Ensure we have X, Y, Z, A, rotation
+                    x, y, z, a, b, rotation = values
+                    
+                    # Store original values for comparison
+                    self.original_values[wcs] = {
+                        'X': x, 'Y': y, 'Z': z, 'A': a, 'B': b, 'R': rotation
+                    }
+                    wcs = wcs.replace('.', '_')
+                    # Update the corresponding text input fields
+                    if hasattr(self.ids, f'{wcs.lower()}_x'):
+                        self.ids[f'{wcs.lower()}_x'].text = f"{x:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_y'):
+                        self.ids[f'{wcs.lower()}_y'].text = f"{y:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_z'):
+                        self.ids[f'{wcs.lower()}_z'].text = f"{z:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_a'):
+                        self.ids[f'{wcs.lower()}_a'].text = f"{a:.3f}"
+                    if hasattr(self.ids, f'{wcs.lower()}_r'):
+                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.2f}"
+        
+        Clock.schedule_once(update_ui, 0)
+        
+        # Update active WCS button after populating values
+        active_coord_system = self.controller.cnc.vars.get("active_coord_system", 0)
+        if active_coord_system < len(self.wcs_names):
+            active_wcs = self.wcs_names[active_coord_system]
+            self.update_active_wcs_button(active_wcs)
+    
+    def apply_changes(self):
+        """Apply all changed values when OK is pressed"""
+        if not self.controller:
+            return
+            
+        # Get coordinate system index mapping
+        for wcs in self.wcs_names:
+            if wcs not in self.original_values:
+                continue
+                
+            original = self.original_values[wcs]
+            changed_values = {}
+            
+            wcs_txt = wcs.replace('.', '_')
+            # Check each axis for changes
+            for axis in ['X', 'Y', 'Z', 'A']:
+                try:
+                    current_value = float(getattr(self.ids, f'{wcs_txt.lower()}_{axis.lower()}').text)
+                    if abs(current_value - original[axis]) > 0.001:  # Allow small floating point differences
+                        changed_values[axis] = current_value
+                except (ValueError, AttributeError):
+                    continue
+
+            # Check rotation for changes
+            try:
+                current_rotation = float(getattr(self.ids, f'{wcs_txt.lower()}_r').text)
+                if abs(current_rotation - original['R']) > 0.001:
+                    changed_values['R'] = current_rotation
+            except (ValueError, AttributeError):
+                pass
+            
+            # Send commands for changed values
+            if changed_values:
+                coord_index = self.wcs_names.index(wcs) + 1  # G54=1, G55=2, etc.
+                cmd = f"G10L2P{coord_index}"
+                # Build offset command if any offsets changed
+                offset_changes = {k: v for k, v in changed_values.items() if k in ['X', 'Y', 'Z', 'A']}
+                if offset_changes:
+                    for axis, value in offset_changes.items():
+                        cmd += f"{axis}{value:.3f}"
+                # Send rotation command if rotation changed
+                if 'R' in changed_values:
+                    cmd += f"R{changed_values['R']:.1f}"
+                self.controller.executeCommand(cmd)
+                
+                
+    
+    def clear_wcs_offsets(self, wcs):
+        """Clear all offsets (X, Y, Z, A) for the specified WCS"""
+        # Set all offset fields to 0.000
+        wcs = wcs.replace('.', '_')
+        if hasattr(self.ids, f'{wcs.lower()}_x'):
+            self.ids[f'{wcs.lower()}_x'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_y'):
+            self.ids[f'{wcs.lower()}_y'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_z'):
+            self.ids[f'{wcs.lower()}_z'].text = '0.000'
+        if hasattr(self.ids, f'{wcs.lower()}_a'):
+            self.ids[f'{wcs.lower()}_a'].text = '0.000'
+        self.check_for_changes()
+    
+    def clear_wcs_rotation(self, wcs):
+        """Clear rotation for the specified WCS"""
+        # Set rotation field to 0.000
+        wcs = wcs.replace('.', '_')
+        if hasattr(self.ids, f'{wcs.lower()}_r'):
+            self.ids[f'{wcs.lower()}_r'].text = '0.000'
+        self.check_for_changes()
+    
+    def clear_all_wcs(self):
+        """Clear all offsets and rotations for all WCS systems"""
+        for wcs in self.wcs_names:
+            self.clear_wcs_offsets(wcs)
+            self.clear_wcs_rotation(wcs)
+        self.check_for_changes()
+    
+    def update_active_wcs_button(self, active_wcs):
+        """Update the active WCS button to show 'ACTIVE' and blue color"""
+        self.current_active_wcs = active_wcs
+        
+        # Update all activate buttons
+        for wcs in self.wcs_names:
+            wcs_txt = wcs.replace('.', '_')
+            button_id = f'{wcs_txt.lower()}_activate'
+            if hasattr(self.ids, button_id):
+                button = getattr(self.ids, button_id)
+                if wcs == active_wcs:
+                    button.text = 'ACTIVE'
+                    button.color = (0/255, 255/255, 255/255, 1)  # Blue color
+                else:
+                    button.text = 'Activate'
+                    button.color = (1, 1, 1, 1)  # Default color
+    
+    def activate_wcs(self, wcs):
+        """Activate the specified WCS and update the active coordinate system index"""
+        try:
+            if not self.controller:
+                return
+                
+            # Execute the G-code command to activate the WCS
+            self.controller.executeCommand(wcs)
+            
+            # done if community firmware
+            if self.controller.is_community_firmware and CNC.can_rotate_wcs:
+                return
+            
+            # Update the active coordinate system index
+            if wcs in self.wcs_names:
+                coord_index = self.wcs_names.index(wcs)
+                self.controller.cnc.vars["active_coord_system"] = coord_index
+            
+            # Update the button display
+            self.update_active_wcs_button(wcs)
+        except Exception as e:
+            logger.error(f"Error activating WCS {wcs}: {e}")
+    
+    def update_ui_for_firmware_type(self):
+        """Update UI elements based on firmware type"""
+        try:
+            app = App.get_running_app()
+            is_community = app.is_community_firmware
+            
+            # Update all text inputs
+            for wcs in self.wcs_names:
+                wcs_txt = wcs.replace('.', '_')
+                for axis in ['x', 'y', 'z', 'a', 'r']:
+                    input_id = f'{wcs_txt.lower()}_{axis}'
+                    if hasattr(self.ids, input_id):
+                        text_input = getattr(self.ids, input_id)
+                        if axis == 'r':
+                            text_input.disabled = not is_community or not CNC.can_rotate_wcs
+                        else:
+                            text_input.disabled = not is_community
+            
+            # Update clear all button
+            if hasattr(self.ids, 'btn_clear_all'):
+                self.ids.btn_clear_all.disabled = not is_community
+        except Exception as e:
+            logger.error(f"Error updating UI for firmware type: {e}")
+    
+    def check_for_changes(self):
+        """Check if any values have changed and update the OK button text"""
+        if not self.original_values:
+            return
+            
+        has_changes = False
+        for wcs in self.wcs_names:
+            if wcs not in self.original_values:
+                continue
+                
+            original = self.original_values[wcs]
+            wcs_txt = wcs.replace('.', '_')
+            
+            # Check each axis for changes
+            for axis in ['X', 'Y', 'Z', 'A']:
+                try:
+                    current_value = float(getattr(self.ids, f'{wcs_txt.lower()}_{axis.lower()}').text)
+                    if abs(current_value - original[axis]) > 0.001:
+                        has_changes = True
+                        break
+                except (ValueError, AttributeError):
+                    continue
+            
+            if has_changes:
+                break
+                
+            # Check rotation for changes
+            try:
+                current_rotation = float(getattr(self.ids, f'{wcs_txt.lower()}_r').text)
+                if abs(current_rotation - original['R']) > 0.001:
+                    has_changes = True
+            except (ValueError, AttributeError):
+                pass
+        
+        self.has_changes = has_changes
+        if hasattr(self.ids, 'btn_ok'):
+            self.ids.btn_ok.text = tr._('Save Changes') if has_changes else tr._('Ok')
+        if hasattr(self.ids, 'btn_close'):
+            self.ids.btn_close.text = tr._('Close without saving') if has_changes else tr._('Close')
+
+class SetRotationPopup(ModalView):
+    def __init__(self, controller, cnc, **kwargs):
+        self.controller = controller
+        self.cnc = cnc
+        super(SetRotationPopup, self).__init__(**kwargs)
+    
+    def validate_inputs(self):
+        """Validate that rotation input is not empty and is a valid number."""
+        rotation_text = self.ids.txt_rotation.text.strip()
+        
+        if not rotation_text:
+            return False, tr._("Please enter a value for rotation angle.")
+        
+        try:
+            float(rotation_text)
+            return True, ""
+        except ValueError:
+            return False, tr._("Please enter a valid number for rotation angle.")
+    
+    def on_ok_pressed(self):
+        """Handle OK button press with validation."""
+        is_valid, error_message = self.validate_inputs()
+        if is_valid:
+            app = App.get_running_app()
+            app.root.controller.setRotation(float(self.ids.txt_rotation.text))
+            self.dismiss()
+        else:
+            app = App.get_running_app()
+            Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
+    
+    def on_open(self):
+        """Set the default rotation value when popup opens"""
+        rotation_angle = self.cnc.vars.get("rotation_angle", 0.0)
+        self.ids.txt_rotation.text = f"{rotation_angle:.1f}"
+
 class MakeraConfigPanel(SettingsWithSidebar):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.register_type('pendant', SettingPendantSelector)
+        self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
+
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
         if not app.root.config_loading:
@@ -764,6 +1450,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
                 app.root.open_setting_default_confirm_popup()
 
 class JogSpeedDropDown(ToolTipDropDown):
+    def __init__(self, controller, **kwargs):
+        super().__init__(**kwargs)
+        self.controller = controller
     pass
 
 class XDropDown(ToolTipDropDown):
@@ -802,6 +1491,15 @@ class LaserDropDown(ToolTipDropDown):
     def on_dismiss(self):
         self.opened = False
 
+class CoordinateSystemDropDown(ToolTipDropDown):
+    opened = False
+
+    def on_dismiss(self):
+        self.opened = False
+        
+    def update_ui(self):
+        if not CNC.can_rotate_wcs:
+            self.ids.set_rotation_popup_button.disabled = True
 
 class FuncDropDown(ToolTipDropDown):
     pass
@@ -943,26 +1641,32 @@ class CNCWorkspace(Widget):
             Color(0, 0.8, 0, 1)
             PushMatrix()
             Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-            Rotate(angle=CNC.vars['rotation_angle'])  # Use degrees directly
-            Line(width=(2 if self.config['margin']['active'] else 1), 
+            if not app.has_4axis:
+                Rotate(angle=CNC.vars['rotation_angle'])  # Use degrees directly
+            Line(width=(2 if self.config['margin']['active'] else 1),
                  rectangle=(CNC.vars['xmin'] * zoom, CNC.vars['ymin'] * zoom,
-                           (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom, 
+                           (CNC.vars['xmax'] - CNC.vars['xmin']) * zoom,
                            (CNC.vars['ymax'] - CNC.vars['ymin']) * zoom))
             PopMatrix()
 
             # z probe
             if self.config['zprobe']['active']:
                 Color(231 / 255, 76 / 255, 60 / 255, 1)
+                PushMatrix()
                 if app.has_4axis:
-                    zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
-                    zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    Translate(self.x, self.y)
+                    # a axis home enabled
+                    if CNC.vars['FuncSetting'] & 1:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 7.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
+                    else:
+                        zprobe_x = CNC.vars['rotation_offset_x'] + CNC.vars['anchor_width'] - 3.0
+                        zprobe_y = CNC.vars['rotation_offset_y'] + CNC.vars['anchor_width']
                 else:
+                    Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
+                    Rotate(angle=CNC.vars['rotation_angle'])
                     zprobe_x = self.config['zprobe']['x_offset'] + (0 if self.config['zprobe']['origin'] == 1 else CNC.vars['xmin'])
                     zprobe_y = self.config['zprobe']['y_offset'] + (0 if self.config['zprobe']['origin'] == 1 else CNC.vars['ymin'])
-                
-                PushMatrix()
-                Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-                Rotate(angle=CNC.vars['rotation_angle'])
                 Ellipse(pos=(zprobe_x * zoom - 7.5, zprobe_y * zoom - 7.5), size=(15, 15))
                 PopMatrix()
 
@@ -971,7 +1675,8 @@ class CNCWorkspace(Widget):
                 Color(244/255, 208/255, 63/255, 1)
                 PushMatrix()
                 Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-                Rotate(angle=CNC.vars['rotation_angle'])
+                if not app.has_4axis:
+                    Rotate(angle=CNC.vars['rotation_angle'])
                 for x in Utils.xfrange(self.config['leveling']['xn_offset'], CNC.vars['xmax'] - CNC.vars['xmin'] - self.config['leveling']['xp_offset'], self.config['leveling']['x_points']):
                     for y in Utils.xfrange(self.config['leveling']['yn_offset'], CNC.vars['ymax'] - CNC.vars['ymin']-self.config['leveling']['yp_offset'], self.config['leveling']['y_points']):
                         Ellipse(pos=((CNC.vars['xmin'] + x) * zoom - 5, (CNC.vars['ymin'] + y) * zoom - 5), size=(10, 10))
@@ -1060,6 +1765,8 @@ class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
                 rv = self.parent.recycleview
                 if rv.data[self.index]['is_dir']:
                     rv.child_dir(rv.data[self.index]['filename'])
+                else:
+                    rv.dispatch('on_double_tap')
                 return True
             return self.parent.select_with_touch(self.index, touch)
 
@@ -1101,9 +1808,13 @@ class DataRV(RecycleView):
     def __init__(self, **kwargs):
         super(DataRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
     # -----------------------------------------------------------------------
     def on_select(self):
+        pass
+        
+    def on_double_tap(self):
         pass
 
     # -----------------------------------------------------------------------
@@ -1157,9 +1868,12 @@ class DataRV(RecycleView):
         self.data = []
         rv_key = 0
         for file in filtered_list:
-            self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
-                              'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
-                              'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            try:
+                self.data.append({'rv_key': rv_key, 'filename': file['name'], 'intsize': file['size'],
+                                  'filesize': '--' if file['is_dir'] else Utils.humansize(file['size']),
+                                  'filedate': Utils.humandate(file['date']), 'is_dir': file['is_dir']})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             rv_key += 1
         # trigger
         self.dispatch('on_select')
@@ -1189,6 +1903,7 @@ class RemoteRV(DataRV):
     def __init__(self, **kwargs):
         super(RemoteRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
         self.base_dir = '/sd/gcodes'
         self.base_dir_win = '\\sd\\gcodes'
@@ -1220,6 +1935,10 @@ class RemoteRV(DataRV):
         app.root.loadRemoteDir(new_dir)
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        app.root.check_and_download()
 
 # -----------------------------------------------------------------------
 # Local Recycle View
@@ -1229,6 +1948,7 @@ class LocalRV(DataRV):
     def __init__(self, **kwargs):
         super(LocalRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
         if kivy_platform == 'android':
             self.curr_dir = os.path.abspath('.carveracontroller/gcodes')
             if not os.path.exists(self.curr_dir):
@@ -1309,6 +2029,13 @@ class LocalRV(DataRV):
 
         if self.curr_path_list[0] == self.base_dir:
             self.curr_path_list[0] = 'root'
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        if app.root.file_popup.firmware_mode:
+            app.root.check_and_upload()
+        else:
+            app.root.check_upload_and_select()
 
 # -----------------------------------------------------------------------
 # GCode Recycle View
@@ -1420,6 +2147,7 @@ class Makera(RelativeLayout):
     y_drop_down = ObjectProperty()
     z_drop_down = ObjectProperty()
     a_drop_down = ObjectProperty()
+    coordinate_system_drop_down = ObjectProperty()
 
     feed_drop_down = ObjectProperty()
     spindle_drop_down = ObjectProperty()
@@ -1431,12 +2159,14 @@ class Makera(RelativeLayout):
     operation_drop_down = ObjectProperty()
 
     confirm_popup = ObjectProperty()
+    unlock_popup = ObjectProperty()
     message_popup = ObjectProperty()
+    reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
+    manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
-    jog_speed = NumericProperty(0)
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -1473,13 +2203,16 @@ class Makera(RelativeLayout):
 
     used_tools = ListProperty()
     upcoming_tool = 0
+    
+    # Custom property to monitor CNC light state
+    light_state = LightProperty(False)
 
     played_lines = 0
 
     show_update = True
     fw_upd_text = ''
     fw_version_new = ''
-    fw_version_old = ''
+    fw_version = ''
     fw_version_checking = False
     fw_version_checked = False
 
@@ -1494,7 +2227,7 @@ class Makera(RelativeLayout):
 
     ctl_upd_text = ''
     ctl_version_new = ''
-    ctl_version_old = ''
+    ctl_version = ''
 
     common_local_dir_list = []
     recent_local_dir_list = []
@@ -1528,16 +2261,22 @@ class Makera(RelativeLayout):
     status_index = 0
     past_machine_addr = None
     allow_mdi_while_machine_running = "0"
+    allow_jogging_while_machine_running = "0"
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
 
+        Window.bind(on_request_close=self.on_request_close)
+
         self.temp_dir = tempfile.mkdtemp()
-        self.ctl_version_old = ctl_version
+        self.ctl_version = ctl_version
         self.file_popup = FilePopup()
 
         self.cnc = CNC()
+        self.wcs_names = self.cnc.getWCSNames()
         self.controller = Controller(self.cnc, self.execCallback)
+        # Set up reconnection callbacks
+        self.controller.set_reconnection_callbacks(self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success)
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
@@ -1549,10 +2288,10 @@ class Makera(RelativeLayout):
                 'y_offset': 0.0
             },
             'margin': {
-                'active': True
+                'active': False
             },
             'zprobe': {
-                'active': True,
+                'active': False,
                 'origin': 2,
                 'x_offset': 5.0,
                 'y_offset': 5.0
@@ -1574,11 +2313,11 @@ class Makera(RelativeLayout):
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
         self.language_popup = LanguagePopup()
-        self.language_popup.sp_language.values = LANGS.values()
+        self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
-        for lang_key in LANGS.keys():
-            if lang_key == default_lang:
-                self.language_popup.sp_language.text = LANGS[lang_key]
+        for lang_key in translation.LANGS.keys():
+            if lang_key == translation.tr.lang:
+                self.language_popup.sp_language.text = translation.LANGS[lang_key]
                 break
 
         self.diagnose_popup = DiagnosePopup()
@@ -1587,6 +2326,7 @@ class Makera(RelativeLayout):
         self.y_drop_down = YDropDown()
         self.z_drop_down = ZDropDown()
         self.a_drop_down = ADropDown()
+        self.coordinate_system_drop_down = CoordinateSystemDropDown()
         self.feed_drop_down = FeedDropDown()
         self.spindle_drop_down = SpindleDropDown()
         self.tool_drop_down = ToolDropDown()
@@ -1594,14 +2334,19 @@ class Makera(RelativeLayout):
         self.func_drop_down = FuncDropDown()
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
-        self.jog_speed_drop_down = JogSpeedDropDown()
+        self.jog_speed_drop_down = JogSpeedDropDown(self.controller)
 
         self.confirm_popup = ConfirmPopup()
+        self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
+        self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
+        self.manual_wifi_popup = ManualWifiPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
+        self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
+        self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
         self.wifi_conn_drop_down = DropDown(auto_width=False, width='250dp')
 
@@ -1631,6 +2376,7 @@ class Makera(RelativeLayout):
         self.setting_default_list = {}
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_pendant_config()
 
         self.usb_event = lambda instance, x: self.openUSB(x)
         self.wifi_event = lambda instance, x: self.openWIFI(x)
@@ -1649,10 +2395,29 @@ class Makera(RelativeLayout):
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
+        if Config.has_option('carvera', 'allow_jogging_while_machine_running'):
+           self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
+
+        # Setup pendant
+        self.setup_pendant()
+        self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
+        self.pendant_probe_z_alt_cmd = Config.get('carvera', 'pendant_probe_z_alt_cmd')
+
+        if Config.has_option('carvera', 'tooltip_delay'):
+            delay_value = Config.getfloat('carvera','tooltip_delay')
+            App.get_running_app().tooltip_delay = delay_value if delay_value>=0 else 0.5
+        
+        if Config.has_option('carvera', 'show_tooltips'):
+            default_show_tooltips = Config.get('carvera', 'show_tooltips') != '0'
+            App.get_running_app().show_tooltips = default_show_tooltips
+
+            
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
         Clock.schedule_interval(self.switch_status, 8)
+        # model metadata check timer
+        Clock.schedule_interval(self.check_model_metadata, 10)
 
         self.has_onscreen_keyboard = False
         if sys.platform == "ios":
@@ -1661,22 +2426,31 @@ class Makera(RelativeLayout):
         #
         threading.Thread(target=self.monitorSerial).start()
 
-    def __del__(self):
+        # try to connect over wifi if we've used it before
+        Clock.schedule_once(self.reconnect_wifi_conn_quietly)
+
+    def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
         try:
             shutil.rmtree(self.temp_dir)
         except Exception as e:
-            print(f"Error cleaning up temporary directory: {e}")
-        
-        # Save the last window size. 
-        # Seems that kivvy uses the window size before dpi scaling in the config, 
+            logger.error(f"Error cleaning up temporary directory: {e}")
+
+        try:
+            self.pendant.close()
+        except Exception as e:
+            logger.error(f"Error closing pendant: {e}")
+
+        # Save the last window size.
+        # Seems that kivvy uses the window size before dpi scaling in the config,
         # but after dp scaling in Window.size
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
-    
+        return False # Allow the window to close
+
     def load_controller_config(self):
-        config_def_file = os.path.join(os.path.dirname(__file__),'controller_config.json')
+        config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
         with open(config_def_file) as file:
             controller_config_definition = json.load(file)
         controller_config = []
@@ -1688,12 +2462,63 @@ class Makera(RelativeLayout):
                 setting.pop('default', None)
             controller_config.append(setting)
 
-        self.config_popup.settings_panel.add_json_panel('Controller', Config, data=json.dumps(controller_config))
+        self.config_popup.settings_panel.add_json_panel(tr._('Controller'), Config, data=json.dumps(controller_config))
 
+        self._update_macro_button_text()
+
+    def load_pendant_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), 'pendant_config.json')
+        with open(config_def_file) as file:
+            pendant_config_definition = json.load(file)
+        pendant_config = []
+
+        # Set default pendant config values
+        for setting in pendant_config_definition:
+            if 'default' in setting:
+                Config.setdefault(setting['section'], setting['key'], setting['default'])
+                setting.pop('default', None)
+            pendant_config.append(setting)
+
+        self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
+
+    def _update_macro_button_text(self):
+
+        for macro_config_key in ['touch_macro_1', 'touch_macro_2', 'touch_macro_3']:
+
+            macro_value = Config.get("carvera", macro_config_key)
+            if macro_value:
+                logger.debug(f"{macro_config_key} set to: {macro_value=}")
+                macro_name = json.loads(macro_value).get("name", False)
+                if macro_name:
+                    self.ids[macro_config_key + "_btn"].text = macro_name  # the button ids for the macro UI buttons are suffixed with _btn
+
+
+    def run_macro(self, macro_id: int) -> None:
+        macro_key = f"touch_macro_{macro_id}"
+        macro_value = Config.get("carvera", macro_key)
+
+        if not macro_value:
+            logger.warning(f"No macro defined for ID {macro_id}")
+            return
+
+        macro_value = json.loads(macro_value)
+
+        if not macro_value.get("gcode"):
+            Clock.schedule_once(partial(self.loadError, tr._('No Macro defined. Configure one in Settings-> Controller')), 0)
+
+        try:
+            lines = macro_value.get("gcode", "").splitlines()
+            for l in lines:
+                l = l.strip()
+                if l == "":
+                    continue
+                self.controller.sendGCode(l)
+        except Exception as e:
+            logger.error(f"Failed to run macro {macro_id}: {e}")
 
     def open_download(self):
         webbrowser.open(DOWNLOAD_ADDRESS, new = 2)
-    
+
     def open_fw_download(self):
         webbrowser.open(FW_DOWNLOAD_ADDRESS, new = 2)
 
@@ -1707,13 +2532,16 @@ class Makera(RelativeLayout):
             self.file_popup.popup_manager.current = 'local_page'
             self.file_popup.open()
             self.file_popup.local_rv.child_dir('')
-    
+
+    def open_online_docs(self):
+        webbrowser.open('https://carvera-community.gitbook.io/docs/controller/')
+
     def send_bug_report(self):
-        webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues')
-        webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues')
+        webbrowser.open('https://github.com/Carvera-Community/Carvera_Controller/issues/new')
+        webbrowser.open('https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/new')
         log_dir = Path.home() / ".kivy" / "logs"
-        
-        # Open the log directory with whatever native file browser is availiable
+
+        # Open the log directory with whatever native file browser is available
         if sys.platform == "win32":
             os.startfile(log_dir)
         else:
@@ -1722,6 +2550,12 @@ class Makera(RelativeLayout):
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
                 subprocess.Popen([opener, log_dir])
 
+    def open_probing_popup(self):
+        if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
+            self.probing_popup.open()
+        else:
+            self.message_popup.lb_content.text = tr._('Probing tool not selected. Please set tool to Probe or 3D probe')
+            self.message_popup.open()
     def open_update_popup(self):
         self.upgrade_popup.check_button.disabled = False
         self.upgrade_popup.open(self)
@@ -1747,17 +2581,17 @@ class Makera(RelativeLayout):
     def check_fw_version(self):
         self.upgrade_popup.fw_upd_text.text = self.fw_upd_text
         self.upgrade_popup.fw_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
+        versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.fw_upd_text)
         if versions != None:
             self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
-            if self.fw_version_old != '':
+            if self.fw_version != '':
                 app = App.get_running_app()
-                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version_old):
+                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version):
                     app.fw_has_update = True
-                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(' New version detected: v') + self.fw_version_new + tr._(' Current: v') + self.fw_version
                 else:
                     app.fw_has_update = False
-                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version_old
+                    self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version
         self.fw_version_checked = False
 
     def ctl_upd_loaded(self, req, result):
@@ -1765,8 +2599,8 @@ class Makera(RelativeLayout):
         Clock.schedule_once(self.check_ctl_version, 0)
 
     def change_language(self, lang_desc):
-        for lang_key in LANGS.keys():
-            if LANGS[lang_key] == lang_desc:
+        for lang_key in translation.LANGS.keys():
+            if translation.LANGS[lang_key] == lang_desc:
                 if tr.lang != lang_key:
                     tr.switch_lang(lang_key)
                     Config.set('carvera', 'language', lang_key)
@@ -1780,16 +2614,16 @@ class Makera(RelativeLayout):
     def check_ctl_version(self, *args):
         self.upgrade_popup.ctl_upd_text.text = self.ctl_upd_text
         self.upgrade_popup.ctl_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search('\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
+        versions = re.search(r'\[[0-9]+\.[0-9]+\.[0-9]+\]', self.ctl_upd_text)
         if versions != None:
             self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
             app = App.get_running_app()
-            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version_old):
+            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version):
                 app.ctl_has_update = True
-                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(' New version detected: v') + self.ctl_version_new + tr._(' Current: v') + self.ctl_version
             else:
                 app.ctl_has_update = False
-                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version_old
+                self.upgrade_popup.ctl_version_txt.text = tr._(' Current version: v') + self.ctl_version
         self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
@@ -1809,6 +2643,9 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def apply(self, buffer = False):
         app = App.get_running_app()
+
+        if app.has_4axis:
+            self.controller.wcsClearRotation()
 
         goto_origin = False
         apply_margin = self.coord_config['margin']['active']
@@ -1835,7 +2672,7 @@ class Makera(RelativeLayout):
         self.controller.autoCommand(apply_margin, apply_zprobe,
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
-                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer, 
+                                    self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer,
                                     [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']])
 
         # change back to last tool if needed
@@ -1875,8 +2712,6 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def blink_state(self, *args):
         app = App.get_running_app()
-        # print(app.root.size)
-        # print(self.status_data_view.size)
         if self.uploading or self.downloading:
             return
         if self.holding == 1:
@@ -1916,8 +2751,33 @@ class Makera(RelativeLayout):
             return
 
         if time.time() - self.heartbeat_time > HEARTBEAT_TIMEOUT and self.controller.stream:
+            # Check reconnection configuration (only if not a manual disconnect and not already reconnecting)
+            if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
+                reconnect_wait_time = Config.getint('carvera', 'reconnect_wait_time', fallback=10)
+                reconnect_attempts = Config.getint('carvera', 'reconnect_attempts', fallback=3)
+                
+                # Update controller reconnection settings
+                self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
+                
+                if auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI:
+                    # Show reconnection popup with countdown
+                    self.reconnection_popup.start_countdown(
+                        reconnect_attempts, 
+                        reconnect_wait_time, 
+                        self.attempt_reconnect, 
+                        self.on_reconnect_failed
+                    )
+                    self.reconnection_popup.open()
+                    
+                    # Start countdown timer
+                    Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
+                else:
+                    # Show reconnection popup in manual mode
+                    self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
+                    self.reconnection_popup.open()
+            
             self.controller.close()
-            self.controller.log.put((Controller.MSG_ERROR, 'ALARM: ' + tr._('Timeout, Connection lost!')))
             self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -1925,6 +2785,24 @@ class Makera(RelativeLayout):
         self.status_index = self.status_index + 1
         if self.status_index >= 6:
             self.status_index = 0
+
+    # -----------------------------------------------------------------------
+    def check_model_metadata(self, *args):
+        app = App.get_running_app()
+        
+        # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
+        if app is None:
+            return
+            
+        # Check if model has been set and if not, query for it
+        if not app.model or app.model == "":
+            if self.controller.stream is not None:
+                self.controller.queryModel()
+        
+        # Check if version has been set and if not, query for it
+        if not self.fw_version or self.fw_version == "":
+            if self.controller.stream is not None:
+                self.controller.queryVersion()
 
     # -----------------------------------------------------------------------
     def open_comports_drop_down(self, button):
@@ -1952,18 +2830,18 @@ class Makera(RelativeLayout):
 
         # android storage
         if kivy_platform == 'android':
-            print('Android storage permission check')
+            logger.info('Android storage permission check')
             try:
                 # Request permissions first
                 request_android_permissions()
-                
+
                 # Add primary storage path
                 android_storage_path = primary_external_storage_path()
                 if android_storage_path and os.path.exists(android_storage_path):
                     self.common_local_dir_list.append(
                         {'name': tr._('Storage'), 'path': str(android_storage_path), 'icon': 'data/folder-home.png'})
             except Exception as e:
-                print(f'Get Android Storage Error: {e}')
+                logger.error(f'Get Android Storage Error: {e}')
 
         # windows disks
         available_drives = ['%s:' % d for d in string.ascii_uppercase if os.path.exists('%s:' % d)]
@@ -2070,15 +2948,46 @@ class Makera(RelativeLayout):
         self.remote_dir_drop_down.open(button)
 
     # -----------------------------------------------------------------------
+    def reconnect_wifi_conn_quietly(self, button):
+        if self.past_machine_addr:
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
+
+    # -----------------------------------------------------------------------
     def reconnect_wifi_conn(self, button):
         if self.past_machine_addr:
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
                 self.openWIFI(self.past_machine_addr)
-            else: 
-                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not availiable."), False), 0)
+            else:
+                Clock.schedule_once(partial(self.show_message_popup, tr._("Cannot connect, machine is busy or not available."), False), 0)
         else:
             Clock.schedule_once(partial(self.show_message_popup, tr._("No previous machine network address stored."), False), 0)
             self.manually_input_ip()
+
+    # -----------------------------------------------------------------------
+    def attempt_reconnect(self):
+        """Attempt to reconnect to the last known connection"""
+        if self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+            # Try to reconnect to WiFi
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
+                # Stop the countdown timer if reconnection popup is open
+                if self.reconnection_popup._is_open:
+                    Clock.unschedule(self.reconnection_popup.countdown_tick)
+                    self.reconnection_popup.dismiss()
+
+
+    def on_reconnect_failed(self):
+        """Called when all reconnection attempts have failed"""
+        # Only show the message if we're actually disconnected and not in the process of connecting
+        app = App.get_running_app()
+        if app and app.state == NOT_CONNECTED and self.controller.stream is None:
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Auto-reconnection failed. Please connect manually."), False), 0)
+
+    def on_reconnect_success(self):
+        """Called when reconnection succeeds"""
+        # Stop any ongoing reconnection attempts
+        self.controller.cancel_reconnection()
 
     def open_wifi_conn_drop_down(self, button):
         self.wifi_conn_drop_down.clear_widgets()
@@ -2129,11 +3038,31 @@ class Makera(RelativeLayout):
             return False
         self.store_machine_address(ip)
         self.openWIFI(ip)
-    
+
     def store_machine_address(self, address):
         Config.set('carvera', 'address', address)
         Config.write()
         self.past_machine_addr = address
+
+    def manually_input_ssid(self):
+        self.manual_wifi_popup.lb_title1.text = tr._('Input Wi-Fi network name (SSID):')
+        self.manual_wifi_popup.lb_title2.text = tr._('Input Wi-Fi password (leave blank if open network):')
+        self.manual_wifi_popup.txt_content1.password = False
+        self.manual_wifi_popup.txt_content2.password = True
+        self.manual_wifi_popup.confirm = self.manually_open_ssid
+        self.manual_wifi_popup.open(self)
+        self.wifi_ap_drop_down.dismiss()
+        self.status_drop_down.dismiss()
+
+    def manually_open_ssid(self):
+        ssid = self.manual_wifi_popup.txt_content1.text.strip()
+        password = self.manual_wifi_popup.txt_content2.text.strip()
+        self.manual_wifi_popup.dismiss()
+        if not ssid:
+            return False
+        self.input_popup.cache_var1 = ssid
+        self.input_popup.txt_content.text = password
+        self.connectToWiFi()
 
     # -----------------------------------------------------------------------
     def update_coord_config(self):
@@ -2158,16 +3087,30 @@ class Makera(RelativeLayout):
                     if remote_time != None:
                         if abs(int(time.time()) - time.timezone - int(remote_time[0].split('=')[1])) > 10:
                             self.controller.syncTime()
-
-                    remote_version = re.search('version = [0-9]+\.[0-9]+\.[0-9]+', line)
+                
+                    remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9\-_]*', line)
+                    app = App.get_running_app()
                     if remote_version != None:
-                        self.fw_version_old = remote_version[0].split('=')[1]
+                        if 'c' in remote_version[0]:
+                            app.is_community_firmware = True
+                            self.controller.is_community_firmware = True
+                        else:
+                            app.is_community_firmware = False
+                            self.controller.is_community_firmware = False
+                        if not app.is_community_firmware or not CNC.can_rotate_wcs:
+                            self.controller.viewWCS()
+                        remote_version = re.search(r'version = [0-9]+\.[0-9]+\.[0-9]+', remote_version[0])
+                    if remote_version != None:
+                        self.fw_version = remote_version[0].split('=')[1].strip()
+                        app.fw_version_digitized = Utils.digitize_v(self.fw_version)
+                        logger.debug(f"Firmware Version detected as {self.fw_version}")
                         if self.fw_version_new != '':
                             self.check_fw_version()
-
+                    
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
-                        Clock.schedule_once(partial(self.setUIForModel, remote_model[0].split('=')[1]), 0)
+                        detected_model = remote_model[0].split('=')[1]
+                        Clock.schedule_once(partial(self.setUIForModel, detected_model), 0)
 
                     remote_filetype = re.search('ftype = [a-zA-Z0-9]+', line)
                     if remote_filetype != None:
@@ -2177,16 +3120,22 @@ class Makera(RelativeLayout):
                     if remote_decompercent != None:
                         self.decompercent = int(remote_decompercent[0].split('=')[1])
 
-                    # hanlde specific messages
+                    # handle specific messages
                     if 'WP PAIR SUCCESS' in line:
                         self.pairing_popup.pairing_success = True
 
                     if msg == Controller.MSG_NORMAL:
+                        logger.info(f"MDI Received: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
+                        if line not in [' ', 'ok', 'Done ATC' ]:
+                            App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
+                        logger.error(f"MDI Received: {line}")
                         self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
+                        if line not in [' ', 'ok', 'Done ATC' ]:
+                            App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
-                    print(sys.exc_info()[1])
+                    logger.error(sys.exc_info()[1])
                     break
             # Update Decompress status bar
             if self.decompstatus == True:
@@ -2284,14 +3233,32 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def open_halt_confirm_popup(self):
+        app = App.get_running_app()
+
+        # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
+        if CNC.vars["halt_reason"] < 20:
+            if self.unlock_popup.showing:
+                return
+            
+            if CNC.vars["halt_reason"] in HALT_REASON:
+                self.unlock_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
+            else:
+                self.unlock_popup.lb_title.text = tr._('Machine Is Halted!')
+            
+            self.unlock_popup.unlock_stay = partial(self.unlockMachine)
+            self.unlock_popup.unlock_safe_z = partial(self.unlockMachineAndMoveToSafeZ)
+            self.unlock_popup.open(self)
+            return
+
+        # Use ConfirmPopup for halt_reason >= 20 (machine requires reset)
         if self.confirm_popup.showing:
             return
-        app = App.get_running_app()
 
         if CNC.vars["halt_reason"] in HALT_REASON:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
         else:
             self.confirm_popup.lb_title.text = tr._('Machine Is Halted!')
+        
         self.confirm_popup.cancel = None
         if CNC.vars["halt_reason"] > 40:
             self.confirm_popup.lb_content.text = tr._('Please manually switch off/on the machine!')
@@ -2325,7 +3292,7 @@ class Makera(RelativeLayout):
             target_tool = 'Laser'
         self.confirm_popup.lb_title.text = tr._('Changing Tool')
         self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
-        self.confirm_popup.cancel = None
+        self.confirm_popup.cancel = partial(self.controller.abortCommand)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
 
@@ -2342,16 +3309,22 @@ class Makera(RelativeLayout):
     def unlockMachine(self):
         self.controller.unlock()
 
+    def unlockMachineAndMoveToSafeZ(self):
+        self.controller.unlock()
+        self.controller.gotoSafeZ()
+
     # -----------------------------------------------------------------------
     def set_local_folder_to_last_opened(self):
         self.fetch_recent_local_dir_list()
 
+        # Find the most recent directory that is still present
         local_path = ''
-        # Find more recent directory that is still present
         for dir in self.recent_local_dir_list:
             if os.path.isdir(dir):
+                local_path = dir
                 break
-        self.file_popup.local_rv.child_dir(dir)
+        
+        self.file_popup.local_rv.child_dir(local_path)
 
     def open_rename_input_popup(self):
         self.input_popup.lb_title.text = tr._('Change name') +'\'%s\' to:' % (self.file_popup.remote_rv.curr_selected_file)
@@ -2404,7 +3377,7 @@ class Makera(RelativeLayout):
             if self.file_popup.firmware_mode:
                 # show message popup
                 self.confirm_popup.lb_title.text = tr._('Updating Firmware')
-                self.confirm_popup.lb_content.text = tr._('Reset the machine when uploading is complete.')
+                self.confirm_popup.lb_content.text = tr._('Are you sure you want to update the firmware? A machine reset will be required to apply the new firmware.')
                 self.confirm_popup.cancel = None
                 self.confirm_popup.confirm = partial(self.uploadLocalFile, filepath)
                 self.confirm_popup.open(self)
@@ -2501,7 +3474,7 @@ class Makera(RelativeLayout):
                         self.setting_list[key.strip()] = value.strip()
                     except AttributeError:
                         Clock.schedule_once(partial(self.load_error, tr._('Error loading machine config setting. Possibly malformed value.\nSkipping setting key: ') + str(key)), 0)
-            
+
             self.load_coordinates()
             self.load_laser_offsets()
             self.setting_change_list = {}
@@ -2539,7 +3512,7 @@ class Makera(RelativeLayout):
             self.controller.pauseStream(0.2)
             download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
             self.downloading = False
 
@@ -2575,6 +3548,8 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.controller.queryVersion, 0.3)
                 self.filetype = ''
                 Clock.schedule_once(self.controller.queryFtype, 0.4)
+                # Schedule a one off diagnostic command to get the machine's extended state
+                Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
                 Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
                 # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
@@ -2595,16 +3570,39 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
         app = App.get_running_app()
+        model_changed = False
         if model != app.model:
             app.model = model.strip()
-            if app.model == 'CA1':
-                self.tool_drop_down.set_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                           'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                              'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
-                CNC.vars['rotation_base_width'] = 300
-                CNC.vars['rotation_head_width'] = 38
-
+            model_changed = True
+        if app.model == 'CA1':
+            if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+            CNC.vars['rotation_base_width'] = 300
+            CNC.vars['rotation_head_width'] = 56.5
+        elif app.model == 'C1':
+            if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+            if CNC.vars['FuncSetting'] & 1:
+                CNC.vars['rotation_base_width'] = 330
+                CNC.vars['rotation_head_width'] = 18.5
+            else:
+                CNC.vars['rotation_base_width'] = 330
+                CNC.vars['rotation_head_width'] = 7
+        
+        # Load or reload machine config when model is detected/changed
+        if model_changed:
+            if self.config_loaded:
+                # Reload if already loaded
+                Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
+            else:
+                # Load for the first time when model is detected
+                Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
     def downloadCallback(self, packet_size, success_count, error_count):
@@ -2663,6 +3661,9 @@ class Makera(RelativeLayout):
             btn = WiFiButton(connected = ap['connected'], ssid = ap['ssid'], encrypted = ap['encrypted'], strength = ap['strength'])
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(btn.ssid))
             self.wifi_ap_drop_down.add_widget(btn)
+        btn = WiFiButton(ssid = tr._('Other...'))
+        btn.bind(on_release=lambda btn: self.manually_input_ssid())
+        self.wifi_ap_drop_down.add_widget(btn)
 
     # -----------------------------------------------------------------------
     def loadWiFiError(self, error_msg, *args):
@@ -2783,7 +3784,7 @@ class Makera(RelativeLayout):
             # Check if the filename.lz is writeable
             can_write_in_lz = os.access(input_filename + '.lz', os.W_OK)
             if not can_write_in_lz:
-                print(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
+                logger.warning(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
                 # First copy the file to the temp dir
                 shutil.copy(input_filename, self.temp_dir)
                 input_filename = os.path.join(self.temp_dir, os.path.basename(input_filename))
@@ -2819,11 +3820,11 @@ class Makera(RelativeLayout):
                 sumdata = struct.pack('>H', sum & 0xffff)
                 f_out.write(sumdata)
 
-            print(f"Compression completed. Compressed file saved as '{output_filename}'.")
+            logger.info(f"Compression completed. Compressed file saved as '{output_filename}'.")
             return output_filename
 
         except Exception as e:
-            print(f"Compression failed: {e}")
+            logger.error(f"Compression failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return None
@@ -2862,14 +3863,14 @@ class Makera(RelativeLayout):
             sumdata = sum & 0xffff
 
             if(sumfile != sumdata):
-                print(f"deCompress failed: sum checksum mismatch")
+                logger.error(f"deCompress failed: sum checksum mismatch")
                 return False
 
-            print(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
+            logger.info(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
             return True
 
         except Exception as e:
-            print(f"deCompress failed: {e}")
+            logger.error(f"deCompress failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return False
@@ -2877,6 +3878,7 @@ class Makera(RelativeLayout):
     def uploadLocalFile(self, filepath, callback=None):
         self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
+        self.original_upload_filepath = filepath  # Store original path for recent directory tracking
         if 'lz' in self.filetype:               #如果固件支持的上传文件类型为.lz，则进行压缩
             qlzfilename = self.compress_file(filepath)
             if qlzfilename:
@@ -2957,7 +3959,7 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.confirm_reset, 0)
             # update recent folder
             if not self.file_popup.firmware_mode:
-                self.update_recent_local_dir_list(os.path.dirname(self.uploading_file))
+                self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
 
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith('.lz'):
@@ -3094,6 +4096,11 @@ class Makera(RelativeLayout):
             now = time.time()
             self.heartbeat_time = now
             app = App.get_running_app()
+            
+            # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
+            if app is None:
+                return
+                
             if app.state != CNC.vars["state"]:
                 app.state = CNC.vars["state"]
                 CNC.vars["color"] = STATECOLOR[app.state]
@@ -3112,11 +4119,54 @@ class Makera(RelativeLayout):
                     self.config_loaded = False
                     self.config_loading = False
                     self.fw_version_checked = False
+                    
+                    # Clean up light toggle binding when disconnected
+                    if hasattr(self, '_light_toggle_bound'):
+                        self.unbind(light_state=self._on_light_state_changed)
+                        delattr(self, '_light_toggle_bound')
+                    
+                    # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting)
+                    if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                        auto_reconnect_enabled = Config.getboolean('carvera', 'auto_reconnect_enabled', fallback=True)
+                        if auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+                            # Show reconnection popup
+                            reconnect_wait_time = Config.getint('carvera', 'reconnect_wait_time', fallback=10)
+                            reconnect_attempts = Config.getint('carvera', 'reconnect_attempts', fallback=3)
+                            
+                            self.reconnection_popup.start_countdown(
+                                reconnect_attempts, 
+                                reconnect_wait_time, 
+                                self.attempt_reconnect, 
+                                self.on_reconnect_failed
+                            )
+                            self.reconnection_popup.open()
+                            
+                            # Start countdown timer
+                            Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
+                            
+                            # Also trigger the controller reconnection logic
+                            self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
+                            self.controller.start_reconnection()
+                        elif not auto_reconnect_enabled and self.controller.connection_type == CONN_WIFI and self.past_machine_addr:
+                            # Show reconnection popup in manual mode
+                            self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
+                            self.reconnection_popup.open()
                 else:
                     self.status_data_view.minr_text = 'WiFi' if self.controller.connection_type == CONN_WIFI else 'USB'
                     self.status_drop_down.btn_connect_usb.disabled = True
                     self.status_drop_down.btn_connect_wifi.disabled = True
                     self.status_drop_down.btn_disconnect.disabled = False
+                    
+                    # If we just reconnected, stop any reconnection popup and timer
+                    if self.reconnection_popup._is_open:
+                        Clock.unschedule(self.reconnection_popup.countdown_tick)
+                        self.reconnection_popup.dismiss()
+                    
+                    # Notify that reconnection succeeded
+                    self.controller.notify_reconnection_success()
+                    
+                    # Reset manual disconnect flag since we're now connected
+                    self.controller._manual_disconnect = False
 
                 self.status_drop_down.btn_unlock.disabled = (app.state != "Alarm" and app.state != "Sleep")
                 if (CNC.vars["halt_reason"] in HALT_REASON and CNC.vars["halt_reason"] > 20) or app.state == "Sleep":
@@ -3128,6 +4178,11 @@ class Makera(RelativeLayout):
             if not app.playing and not self.config_loaded and not self.config_loading and app.state == "Idle":
                 self.config_loading = True
                 self.download_config_file()
+                
+                # Bind light toggle button to LightProperty (only once per connection)
+                if not hasattr(self, '_light_toggle_bound'):
+                    self.bind_light_toggle_to_property()
+                    self._light_toggle_bound = True
 
             # show update
             if not app.playing and self.fw_upd_text != '' and not self.fw_version_checked and app.state == "Idle":
@@ -3146,8 +4201,11 @@ class Makera(RelativeLayout):
                     self.tool_triggered = True
                     self.open_tool_confirm_popup()
             else:
-                if (self.alarm_triggered or self.tool_triggered) and self.confirm_popup.showing:
-                    self.confirm_popup.dismiss()
+                if (self.alarm_triggered or self.tool_triggered) and (self.confirm_popup.showing or self.unlock_popup.showing):
+                    if self.confirm_popup.showing:
+                        self.confirm_popup.dismiss()
+                    if self.unlock_popup.showing:
+                        self.unlock_popup.dismiss()
                 self.tool_triggered = False
                 self.alarm_triggered = False
 
@@ -3171,7 +4229,7 @@ class Makera(RelativeLayout):
                 digi_len = 0
             if digi_len > 3:
                 digi_len = 3
-            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["ma"])
+            self.a_data_view.main_text = str("{:." + str(digi_len) + "f}").format(CNC.vars["wa"])
             self.a_data_view.minr_text = "{:.3f}".format(CNC.vars["ma"])
 
             #update feed data
@@ -3257,7 +4315,7 @@ class Makera(RelativeLayout):
                     self.tool_data_view.main_text = tr._("Probe")
                 elif CNC.vars["tool"] == 8888:
                     self.tool_data_view.main_text = tr._("Laser")
-                elif CNC.vars["tool"] == 99990:
+                elif CNC.vars["tool"] == 999990:
                     self.tool_data_view.main_text = tr._("3DProb")
                 else:
                     self.tool_data_view.main_text = "{:.0f}".format(CNC.vars["tool"])
@@ -3283,6 +4341,17 @@ class Makera(RelativeLayout):
             self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
+            # update coordinate system data
+            coord_system_index = CNC.vars["active_coord_system"]
+            coord_system_name = self.wcs_names[coord_system_index]
+            rotation_angle = CNC.vars["rotation_angle"]
+            self.coord_system_data_view.main_text = coord_system_name
+            self.coord_system_data_view.minr_text = "{:.3f}°".format(rotation_angle)
+            self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
+            
+            # Update WCS Settings popup if it's open
+            if hasattr(self, 'wcs_settings_popup') and self.wcs_settings_popup.parent:
+                self.wcs_settings_popup.update_active_wcs_button(coord_system_name)
 
             elapsed = now - self.control_list['laser_mode'][0]
             if elapsed < 2:
@@ -3379,7 +4448,7 @@ class Makera(RelativeLayout):
                     self.wpb_leveling.value = 84
 
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
 
     # -----------------------------------------------------------------------
     def updateDiagnose(self, *args):
@@ -3468,6 +4537,10 @@ class Makera(RelativeLayout):
                 if self.diagnose_popup.sw_light.switch.active != CNC.vars["sw_light"]:
                     self.diagnose_popup.sw_light.set_flag = True
                     self.diagnose_popup.sw_light.switch.active = CNC.vars["sw_light"]
+            
+            # Update the custom light property to trigger UI updates
+            property_obj = self.__class__.__dict__['light_state']
+            property_obj.update_from_state(self)
 
             # control tool sensor power
             elapsed = now - self.control_list['tool_sensor_switch'][0]
@@ -3515,7 +4588,7 @@ class Makera(RelativeLayout):
             self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
             self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
 
     def update_control(self, name, value):
         if name in self.control_list:
@@ -3532,15 +4605,20 @@ class Makera(RelativeLayout):
         self.gcode_rv.set_selected_line(self.test_line - 1)
 
     def execCallback(self, line):
-        self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
-
+        logger.info(f"MDI Sent: {line}")
+        try:
+            Clock.schedule_once(lambda dt: setattr(self.manual_rv, 'scroll_y', 0), 0)
+            for cmd in line.strip().split('\n'):
+                self.manual_rv.data.append({'text': cmd, 'color': (200/255, 200/255, 200/255, 1)})
+        except IndexError:
+            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
            self.controller.open(CONN_USB, device)
            self.controller.connection_type = CONN_USB
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
 
@@ -3551,7 +4629,7 @@ class Makera(RelativeLayout):
             self.controller.connection_type = CONN_WIFI
             self.store_machine_address(address.split(':')[0])
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
 
@@ -3567,9 +4645,9 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def close(self):
         try:
-            self.controller.close()
+            self.controller.close_manual()
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
         self.updateStatus()
 
     # -----------------------------------------------------------------------
@@ -3580,8 +4658,10 @@ class Makera(RelativeLayout):
         controller_config_panels = 0
         for panel in panels.values():
             if panel.title == 'Controller':
-                controller_config_panels = 1
-        
+                controller_config_panels += 1
+            if panel.title == 'Pendant':
+                controller_config_panels += 1
+
         if len(panels.values()) - controller_config_panels > 0:
             # already have panels, update data
             for panel in panels.values():
@@ -3596,53 +4676,44 @@ class Makera(RelativeLayout):
                                 elif self.setting_type_list[child.key] == 'numeric':
                                     new_value = new_value + '.0' if new_value.isdigit() else new_value
                             if new_value != child.value:
-                                # print(child.key, child.value, new_value)
                                 child.value = new_value
                         elif child.key in self.setting_default_list:
                             new_value = self.setting_default_list[child.key]
                             self.setting_change_list[child.key] = new_value
                             if new_value != child.value:
-                                # print(child.key, child.value, new_value)
                                 child.value = new_value
                             self.controller.log.put(
                                 (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(child.key)))
-                            
+
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
-                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics']:
+                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
                             self.controller.close()
                             self.updateStatus()
                             return False
         else:
-            # no panels, create new
-            config_file = 'config.json'
-            if not os.path.exists(config_file):
-                config_file = os.path.join(os.path.dirname(__file__), config_file)
-            if not os.path.exists(config_file):
-                self.controller.log.put(
-                    (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
-                self.controller.close()
-                self.updateStatus()
-                return False
-            with open(config_file, 'r') as fd:
-                data = json.loads(fd.read())
-
             app = App.get_running_app()
-            if app.model == 'CA1':
-                # The Carvera Air generally uses the same default values as the original Carvera
-                # However if there are any differences we store them in a seperate config file
+            data = None
             
-                ca1_config_diff_file = os.path.join(os.path.dirname(__file__), "config_ca1_diff.json")
-                with open(ca1_config_diff_file, 'r') as fd:
-                    ca1_diff_data = json.loads(fd.read())
+            # If model is not set yet, don't load any config
+            if not app.model or app.model == "":
+                return True
+            
+            if app.model == 'C1':
+                # Load C1 specific config
+                c1_config_file = os.path.join(os.path.dirname(__file__), "config_c1.json")
+                if os.path.exists(c1_config_file):
+                    with open(c1_config_file, 'r') as fd:
+                        data = json.loads(fd.read())
+            elif app.model == 'CA1':
+                # Load CA1 specific config
+                ca1_config_file = os.path.join(os.path.dirname(__file__), "config_ca1.json")
+                if os.path.exists(ca1_config_file):
+                    with open(ca1_config_file, 'r') as fd:
+                        data = json.loads(fd.read())
 
-                for ca1_diff_setting in ca1_diff_data:
-                    for setting in data:
-                        if (ca1_diff_setting.get("key") == setting.get("key")) and (ca1_diff_setting.get("section") == setting.get("section")):
-                            setting.update(ca1_diff_setting)
-            
             basic_config = []
             advanced_config = []
             restore_config = []
@@ -3704,54 +4775,198 @@ class Makera(RelativeLayout):
         return True
 
     # -----------------------------------------------------------------------
-    def toggle_jog_control_ui(self):
-        app = App.get_running_app()
-        app.root.show_advanced_jog_controls = not app.root.show_advanced_jog_controls  # toggle the boolean
+    def toggle_jog_mode(self):
+        if self.controller.jog_mode == Controller.JOG_MODE_STEP:
+            self.update_ui_for_jog_mode_cont()
 
-        # Don't let the kb jog work if the advanced jog control bar is closed
-        if not app.root.show_advanced_jog_controls:
-            app.root.keyboard_jog_control = False
-            app.root.ids.kb_jog_btn.state = 'normal'
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)    
+        elif self.controller.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            self.update_ui_for_jog_mode_step()
     
+    def update_ui_for_jog_mode_step(self):
+        self.controller.setJogMode(Controller.JOG_MODE_STEP)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        self.ids.step_xy.disabled = False
+        self.ids.step_a.disabled = False
+        self.ids.step_z.disabled = False
+    
+
+    def update_ui_for_jog_mode_cont(self):
+        self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
+        self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continuous')
+        self.ids.step_xy.disabled = True
+        self.ids.step_a.disabled = True
+        self.ids.step_z.disabled = True
+
+
+    def is_jogging_enabled(self):
+        app = App.get_running_app()
+        
+        # Allow jogging when machine is running if the setting is enabled
+        if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
+            return not self._is_popup_open()
+        
+        return \
+            not app.playing and \
+            (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
+            not self._is_popup_open()
+
+    def is_pendant_jogging_enabled(self):
+        # If the user disabled pendant, respect it.
+        if self.ids.pendant_jogging_en_btn.state != 'down':
+            return False
+        # ...otherwise behave as any other jogging except when probing screen is
+        # open. We want to use the pendant as a convenient way to get to the
+        # initial probing location
+        return self.is_jogging_enabled() or self.probing_popup._is_open
+
     def toggle_keyboard_jog_control(self):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
 
         if app.root.keyboard_jog_control:
-            Window.bind(on_key_down=self._keyboard_jog_keydown)
+            Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
         else:
-            Window.unbind(on_key_down=self._keyboard_jog_keydown)
-    
+            Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+
+    def setup_pendant(self):
+        self.handle_pendant_disconnected()
+
+        type_name = Config.get('carvera', 'pendant_type')
+        pendant_type = SUPPORTED_PENDANTS.get(type_name, SUPPORTED_PENDANTS["None"])
+
+        def get_feed():
+            return self.feed_drop_down.scale_slider.value
+
+        def set_feed(val):
+            self.feed_drop_down.scale_slider.value = val
+
+        feed_override = OverrideController(
+            get_feed, set_feed,
+            min_limit = 10, max_limit = 300, step = 10
+        )
+
+        def get_spindle():
+            return self.spindle_drop_down.scale_slider.value
+
+        def set_spindle(val):
+            self.spindle_drop_down.scale_slider.value = val
+
+        spindle_override = OverrideController(
+            get_spindle, set_spindle,
+            min_limit = 10, max_limit = 300, step = 10)
+
+        self.pendant = pendant_type(self.controller, self.cnc,
+                                feed_override, spindle_override,
+                                self.is_pendant_jogging_enabled,
+                                self.handle_pendat_run_pause_resume,
+                                self.handle_pendant_probe_z,
+                                self.handle_pendant_open_probing_popup,
+                                self.handle_pendant_connected,
+                                self.handle_pendant_disconnected,
+                                self.handle_pendant_button_press)
+
+    def handle_pendant_connected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
+        self.ids.pendant_jogging_en_btn.disabled = False
+        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
+
+    def handle_pendant_disconnected(self):
+        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
+        self.ids.pendant_jogging_en_btn.disabled = True
+
+    def handle_pendat_run_pause_resume(self):
+        app = App.get_running_app()
+        if app.state == 'Pause':
+            self.controller.resumeCommand()
+        elif app.state == 'Alarm':
+            self.unlockMachine()
+        else:
+            self.controller.suspendCommand()
+
+    def handle_pendant_open_probing_popup(self):
+        self.probing_popup.open()
+
+    def handle_pendant_probe_z(self):
+        if self.pendant_probe_z_alt_cmd == "1":
+            if self.controller.is_community_firmware:
+                self.controller.executeCommand("M466 Z-200 S2")
+            else:
+                self.controller.executeCommand("G38.2 Z-200")
+        else:
+            self.probing_popup.open()
+
+    def handle_pendant_button_press(self, button_action: str):
+        """
+        Handle UI updates when pendant buttons are pressed.
+        This method can be customized to update specific UI elements
+        based on the button action.
+        """
+        app = App.get_running_app()
+        
+        # Update jog mode button text if jog mode changed
+        if button_action in ["mode_continuous", "mode_step"]:
+            if button_action == "mode_continuous":
+                self.update_ui_for_jog_mode_cont()
+            elif button_action == "mode_step":
+                self.update_ui_for_jog_mode_step()
+
+
     def _is_popup_open(self):
         """Checks to see if any of the popups objects are open."""
         popups_to_check = [self.file_popup._is_open, self.coord_popup._is_open, self.xyz_probe_popup._is_open,
                            self.pairing_popup._is_open,
                            self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open,
-                           self.confirm_popup._is_open,
+                           self.confirm_popup._is_open, self.unlock_popup._is_open,
                            self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open,
                            self.config_popup._is_open, self.probing_popup._is_open]
 
         return any(popups_to_check)
     
+    def bind_light_toggle_to_property(self):
+        """Bind the light toggle button state to the LightProperty"""
+        self.bind(light_state=self._on_light_state_changed)
+
+        # Trigger an initial update by accessing the property object directly
+        property_obj = self.__class__.__dict__['light_state']
+        property_obj.update_from_state(self)
+    
+    def _on_light_state_changed(self, instance, value):
+        """Handle changes in the LightProperty and update the light toggle button"""
+        new_state = 'down' if value else 'normal'
+        self.ids.light_toggle.state = new_state
+    
+    def refresh_light_state(self):
+        """Manually refresh the light state from CNC.vars"""
+        if hasattr(self, 'light_state'):
+            property_obj = self.__class__.__dict__['light_state']
+            property_obj.update_from_state(self)
+            logger.debug("Light state manually refreshed from CNC.vars")
+
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and not self._is_popup_open():
+        if self.is_jogging_enabled() and not self.manual_cmd.focus:
             key = args[1]  # keycode
+
             if key == 274:  # down button
-                app.root.controller.jog_with_speed("Y{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"Y{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog_with_speed("Y-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
             elif key == 275:  # right button
-                app.root.controller.jog_with_speed("X{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
-                app.root.controller.jog_with_speed("X-{}".format(app.root.step_xy.text), app.root.jog_speed)
+                app.root.controller.jog(f"X-{app.root.step_xy.text}")
             elif key == 280:  # page up
-                app.root.controller.jog_with_speed("Z{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog(f"Z{app.root.step_z.text}")
             elif key == 281:  # page down
-                app.root.controller.jog_with_speed("Z-{}".format(app.root.step_z.text), app.root.jog_speed)
+                app.root.controller.jog(f"Z-{app.root.step_z.text}")
+    
+    def _keyboard_jog_keyup(self, *args):
+        app = App.get_running_app()
+        key = args[1]  # keycode
+        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+            app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
         if self.setting_change_list:
@@ -3769,16 +4984,39 @@ class Makera(RelativeLayout):
         self.message_popup.lb_content.text = tr._('Settings applied, need machine reset to take effect !')
         self.message_popup.open()
 
-    
+
     def apply_controller_setting_changes(self):
         if self.controller_setting_change_list.get("ui_density_override") or self.controller_setting_change_list.get("ui_density"):
             self.message_popup.lb_content.text = tr._('UI Density changed, restart application to apply.')
             self.message_popup.open()
-        
+
         if self.controller_setting_change_list.get("allow_mdi_while_machine_running") != self.allow_mdi_while_machine_running:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list.get("allow_mdi_while_machine_running")
 
+        if self.controller_setting_change_list.get("allow_jogging_while_machine_running") != self.allow_jogging_while_machine_running:
+            self.allow_jogging_while_machine_running = self.controller_setting_change_list.get("allow_jogging_while_machine_running")
+
+        if self.controller_setting_change_list.get('show_tooltips'):
+            App.get_running_app().show_tooltips = self.controller_setting_change_list.get('show_tooltips') != '0'
+
+        if self.controller_setting_change_list.get('tooltip_delay'):
+            delay_value = float(self.controller_setting_change_list.get('tooltip_delay'))
+            App.get_running_app().tooltip_delay = delay_value if delay_value>0 else 0.5
+
+        if "pendant_type" in self.controller_setting_change_list:
+            self.pendant.close()
+            self.setup_pendant()
+
+        self._update_macro_button_text()
+
         self.config_popup.btn_apply.disabled = True
+
+        # Configure logging level from config
+        if "log_level" in self.controller_setting_change_list:
+            log_level = Config.get('kivy', 'log_level').upper()
+            if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+                logging.getLogger().setLevel(getattr(logging, log_level))
+                logger.info(f"Log level set to {log_level}")
 
 
     # -----------------------------------------------------------------------
@@ -3809,7 +5047,7 @@ class Makera(RelativeLayout):
         self.confirm_popup.pos_hint={'center_x': 0.5, 'center_y': 0.5}
         self.confirm_popup.lb_title.text = tr._('Entering Laser Mode')
         self.confirm_popup.lb_title.size_hint_y = None
-        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you read to proceed ?')
+        self.confirm_popup.lb_content.text = tr._('You are about to enable laser mode. \n\nWhen enabled the current tool will be dropped, the spindle fan locked to 90%, \nand the empty spindle nose will be set as the tool and length probed.\n\n It\'s recommended to remove the laser dust cap, and put on safety glasses now.\n\nAre you ready to proceed ?')
         self.confirm_popup.confirm = partial(self.enter_laser_mode)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
@@ -3898,8 +5136,11 @@ class Makera(RelativeLayout):
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line[:-1].replace("\x0d", "")
-            self.gcode_rv.data.append(
-                {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            try:
+                self.gcode_rv.data.append(
+                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+            except IndexError:
+                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
         self.gcode_rv.data_length = len(self.gcode_rv.data)
         app.curr_page = page_no
@@ -4037,7 +5278,7 @@ class Makera(RelativeLayout):
             # with open("laser.txt", "w") as output:
             #     output.write(str(temp_list))
         except:
-            print(sys.exc_info()[1])
+            logger.error(sys.exc_info()[1])
             self.heartbeat_time = time.time()
             self.loading_file = False
             if f:
@@ -4086,11 +5327,15 @@ class Makera(RelativeLayout):
     def send_cmd(self):
         to_send = self.manual_cmd.text.strip()
         if to_send:
+            self.manual_cmd.last_mdi_command = to_send
             self.manual_rv.scroll_y = 0
             if to_send.lower() == "clear":
                 self.manual_rv.data = []
             else:
-                self.controller.executeCommand(to_send)
+                sanitized_to_send = '\n'.join([line for line in to_send.split('\n') if line.strip().lower() != "clear"])
+                if sanitized_to_send != to_send:
+                    self.manual_rv.data.append({'text': 'clear command can\'t be used together with other commands', 'color': (250/255, 105/255, 102/255, 1)})
+                self.controller.executeCommand(sanitized_to_send)
         self.manual_cmd.text = ''
         Clock.schedule_once(self.refocus_cmd)
 
@@ -4100,7 +5345,13 @@ class Makera(RelativeLayout):
 
     def stop_run(self):
         self.stop.set()
-        self.controller.stop.set()
+        if hasattr(self, 'controller') and self.controller:
+            self.controller.stop.set()
+            # Cancel any ongoing reconnection attempts
+            self.controller.cancel_reconnection()
+        # Dismiss reconnection popup if it's open
+        if hasattr(self, 'reconnection_popup') and self.reconnection_popup and self.reconnection_popup._is_open:
+            self.reconnection_popup.dismiss()
 
 
 class MakeraApp(App):
@@ -4117,9 +5368,25 @@ class MakeraApp(App):
     curr_page = NumericProperty(1)
     total_pages = NumericProperty(1)
     loading_page = BooleanProperty(False)
-    model = StringProperty('C1')
+    model = StringProperty("")
+    is_community_firmware = BooleanProperty(False)
+    fw_version_digitized = NumericProperty(0)
+    show_tooltips = BooleanProperty(True)
+    tooltip_delay = NumericProperty(0.5)
+    mdi_data = ListProperty([])
 
     def on_stop(self):
+        # Cancel any ongoing reconnection attempts to prevent hanging
+        if hasattr(self.root, 'controller') and self.root.controller:
+            self.root.controller.cancel_reconnection()
+        # Stop all scheduled Clock events
+        if hasattr(self.root, 'blink_state'):
+            Clock.unschedule(self.root.blink_state)
+        if hasattr(self.root, 'switch_status'):
+            Clock.unschedule(self.root.switch_status)
+        if hasattr(self.root, 'check_model_metadata'):
+            Clock.unschedule(self.root.check_model_metadata)
+        # Stop the main run loop
         self.root.stop_run()
 
     def build(self):
@@ -4128,10 +5395,21 @@ class MakeraApp(App):
         self.title = tr._('Carvera Controller Community') + ' v' + __version__
         self.icon = os.path.join(os.path.dirname(__file__), 'icon.png')
 
-        return Makera(ctl_version=__version__) 
-    
+        return Makera(ctl_version=__version__)
+
     def on_start(self):
-        Window.update_viewport()
+        # Workaround for Android blank screen issue
+        # https://github.com/kivy/python-for-android/issues/2720
+        viewport_update_count = 0
+        
+        def update_viewport_with_counter(dt):
+            nonlocal viewport_update_count
+            Window.update_viewport()
+            viewport_update_count += 1
+            if viewport_update_count >= 20:  # Stop after 5 seconds (5/0.25=20)
+                return False  # This will unschedule the event
+        
+        Clock.schedule_interval(update_viewport_with_counter, 0.25)
 
 
     def on_pause(self):
@@ -4141,9 +5419,22 @@ def load_app_configs():
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
 
+    # Configure logging level from config
+    if Config.has_option('kivy', 'log_level'):
+        log_level = Config.get('kivy', 'log_level').upper()
+        if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+            logging.getLogger().setLevel(getattr(logging, log_level))
+            logger.info(f"Log level set to {log_level}")
+
 def set_config_defaults(default_lang):
     if not Config.has_section('carvera'):
         Config.add_section('carvera')
+    
+    if not Config.has_section('input'):
+        Config.add_section('input')
+
+    if not kivy_platform in ['android', 'ios']:
+        Config.set('input', 'mouse', "mouse,multitouch_on_demand") # disable multitouch simulation on non-mobile platforms
 
     # Only update config if running new version
     if not Config.has_option('carvera', 'version') or Config.get('carvera', 'version') != __version__:
@@ -4155,6 +5446,8 @@ def set_config_defaults(default_lang):
 
     # Configurable config options. Don't change if they are already set
     if not Config.has_option('carvera', 'show_update'): Config.set('carvera', 'show_update', '1')
+    if not Config.has_option('carvera', 'show_tooltips'): Config.set('carvera', 'show_tooltips' , '1')
+    if not Config.has_option('carvera', 'tooltip_delay'): Config.set('carvera', 'tooltip_delay','1.5')
     if not Config.has_option('carvera', 'language'): Config.set('carvera', 'language', default_lang)
     if not Config.has_option('carvera', 'local_folder_1'): Config.set('carvera', 'local_folder_1', '')
     if not Config.has_option('carvera', 'local_folder_2'): Config.set('carvera', 'local_folder_2', '')
@@ -4168,8 +5461,8 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
-    if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width', '1440')
-    if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '900')
+    if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
+    if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')
 
     Config.write()
 
@@ -4194,22 +5487,14 @@ def load_constants():
     global DOWNLOAD_ADDRESS
     global FW_DOWNLOAD_ADDRESS
 
-    global LANGS
-
     FW_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_community_firmware/master/version.txt'
     CTL_UPD_ADDRESS = 'https://raw.githubusercontent.com/carvera-community/carvera_controller/main/CHANGELOG.md'
     DOWNLOAD_ADDRESS = 'https://github.com/carvera-community/carvera_controller/releases/latest'
     FW_DOWNLOAD_ADDRESS = 'https://github.com/Carvera-Community/Carvera_Community_Firmware/releases/latest'
 
-
-    LANGS = {
-        'en':  'English',
-        'zh-CN': '中文简体(Simplified Chinese)',
-    }
-
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30 # s
-    HEARTBEAT_TIMEOUT = 10
+    HEARTBEAT_TIMEOUT = 5
     MAX_TOUCH_INTERVAL = 0.15
     GCODE_VIEW_SPEED = 1
 
@@ -4222,18 +5507,20 @@ def load_constants():
 
 
 def main():
+    langname = None
+    if Config.has_option('carvera', 'language'):
+        langname = Config.get('carvera', 'language')
+    translation.init(langname)
 
     # load the global constants
     load_constants()
 
-    # Language translation needs to be globally accessiable
-    global default_lang
-    global tr
+    # Language translation needs to be globally accessible
     global HALT_REASON
-    default_lang = init_lang()
-    tr = Lang(default_lang)
-    set_config_defaults(default_lang)
+
+    set_config_defaults(tr.lang)
     load_app_configs()
+    
     HALT_REASON = load_halt_translations(tr)
 
     base_path = app_base_path()

@@ -16,7 +16,7 @@
                 label_text: 'X:'
                 ToolTipTextInput:
                     id: XAxisDistance
-                    tooltip_txt: tr._('Distance from center along X to move before probing back toward part')
+                    tooltip_txt: tr._('Boss Diameter in X')
                     tooltip_image: ''
                     multiline: False
                     halign:'right'
@@ -29,7 +29,7 @@
                 label_text: 'Y:'
                 ToolTipTextInput:
                     id: YAxisDistance
-                    tooltip_txt: tr._('Distance from center along Y to move before probing back toward part')
+                    tooltip_txt: tr._('Boss Diameter in Y')
                     tooltip_image: ''
                     multiline: False
                     halign:'right'
@@ -37,6 +37,19 @@
                     input_filter: 'float'
                     text: root.get_setting('YAxisDistance')
                     on_text: root.setting_changed('YAxisDistance', self.text)
+
+            ProbeSettingLabel:
+                label_text: 'J:'
+                ToolTipTextInput:
+                    id: ProbeClearance
+                    tooltip_txt: tr._('When Probing a boss, this is added to the X and Y values when moving outside the boss. Defaults to 4mm')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('ProbeClearance')
+                    on_text: root.setting_changed('ProbeClearance', self.text)
 
             ProbeSettingLabel:
                 label_text: 'D Tip Dia:'
@@ -166,12 +179,6 @@
                     # In the below get_setting() returns an int, so doing an inline mapping to the display text here
                     text: ["Disabled", "X/Y", "X/Y/Z"][int(root.get_setting('ZeroXYPosition') or '0')]
                     tooltip_txt: tr._('This switch will set your current WCS to the center of the bore/pocket you are probing')
-                    canvas.before:
-                        Color:
-                            rgba: 50/255, 50/255, 50/255, 1
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
                     on_parent: wcs_drop_content.dismiss()
                     on_release: wcs_drop_content.open(self)
                 

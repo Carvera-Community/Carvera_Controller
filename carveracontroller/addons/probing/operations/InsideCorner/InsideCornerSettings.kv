@@ -104,7 +104,7 @@
                     input_filter: 'float'
                     text: root.get_setting('RepeatOperationCount')
                     on_text: root.setting_changed('RepeatOperationCount', self.text)
-
+                    
             ProbeSettingLabel:
                 label_text: 'R Edge Retract:'
                 ToolTipTextInput:
@@ -132,6 +132,19 @@
                     on_text: root.setting_changed('BottomSurfaceRetract', self.text)
 
             ProbeSettingLabel:
+                label_text: 'Q Angle:'
+                ToolTipTextInput:
+                    tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
+                    tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
+                    tooltip_image_size: 200,200
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('QAngle')
+                    on_text: root.setting_changed('QAngle', self.text)
+
+            ProbeSettingLabel:
                 label_text: 'S Zero WCS Axis:'
                 hint_text: 'Zero X/Y/Z Position'
 
@@ -140,12 +153,6 @@
                     # In the below get_setting() returns an int, so doing an inline mapping to the display text here
                     text: ["Disabled", "X/Y", "X/Y/Z"][int(root.get_setting('ZeroXYPosition') or '0')]
                     tooltip_txt: tr._('This switch will set your current WCS to the corner you are probing')
-                    canvas.before:
-                        Color:
-                            rgba: 50/255, 50/255, 50/255, 1
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
                     on_parent: wcs_drop_content.dismiss()
                     on_release: wcs_drop_content.open(self)
                 

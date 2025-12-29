@@ -24,4 +24,4 @@ Thank you for your interest in contributing to our project! We welcome contribut
 6. **Make Changes:** Implement your changes.
 7. **Test Your Changes:** Ensure your changes don’t break existing functionality or introduce new bugs.
 8. **Commit Your Changes:** Write a concise and descriptive commit message.
-9. **Push and Open a Pull Request:** Push your branch to your fork and open a pull request from your branch. In the Pull Request please describe what issue you are resolving, and summarize the changes.
+9. **Push and Open a Pull Request:** Push your branch to your fork and open a pull request from your branch and use the `develop` branch as the destination. In the Pull Request please describe what issue you are resolving, and summarize the changes.

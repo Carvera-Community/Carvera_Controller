@@ -32,6 +32,7 @@ except:
 	serial = None
 
 from datetime import datetime
+from kivy.clock import Clock
 
 __prg__     = "bCNC"
 __tool__    = "TOOL"
@@ -422,6 +423,30 @@ def to_config(type, value_string):
         return value_string
 
 def digitize_v(version):
+    # Clean version string by removing non-numeric suffixes like 'c', 'rc', etc.
     v_list = version.split('.')
-    return int(v_list[0]) * 1000 * 1000 + int(v_list[1]) * 1000 + int(v_list[2])
+    cleaned_parts = []
+    for part in v_list:
+        # Extract only the numeric portion at the beginning
+        numeric_part = ""
+        for char in part:
+            if char.isdigit():
+                numeric_part += char
+            else:
+                break
+        cleaned_parts.append(int(numeric_part if numeric_part else "0"))
+    
+    # Ensure we have at least 3 parts (major.minor.patch)
+    while len(cleaned_parts) < 3:
+        cleaned_parts.append(0)
 
+    return cleaned_parts[0] * 1000 * 1000 + cleaned_parts[1] * 1000 + cleaned_parts[2]
+
+#------------------------------------------------------------------------------
+# Auto selection for text inputs
+#------------------------------------------------------------------------------
+def bind_auto_select_to_text_input(widget):
+	def focus_handler(input, value):
+		if value:
+			Clock.schedule_once(lambda _: widget.select_all(), 0.1)
+	widget.bind(focus=focus_handler)

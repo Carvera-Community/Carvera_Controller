@@ -1,5 +1,13 @@
 from kivy.properties import StringProperty
 from kivy.uix.modalview import ModalView
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.recycleview.layout import LayoutSelectionBehavior
+
+import logging
+logger = logging.getLogger(__name__)
 
 from carveracontroller.addons.probing.operations.OperationsBase import OperationsBase
 
@@ -24,7 +32,12 @@ class ProbingPreviewPopup(ModalView):
 
     def  start_probing(self):
         if len(self.gcode) > 0:
-            print("running gcode: " + self.gcode)
+            logger.debug("running gcode: " + self.gcode)
             self.controller.executeCommand(self.gcode + "\n")
         else:
-            print("no gcode")
+            logger.error("no gcode")
+
+class PopupMDI(RecycleView):
+
+    def __init__(self, **kwargs):
+        super(PopupMDI, self).__init__(**kwargs)

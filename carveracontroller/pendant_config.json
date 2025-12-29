@@ -1,0 +1,116 @@
+[
+    {
+        "type": "pendant",
+        "title": "Use Hardware Pendant",
+        "desc": "Select a hardware pendant to use with Carvera.",
+        "section": "carvera",
+        "key": "pendant_type",
+        "default": "None"
+    },
+    {
+        "type": "bool",
+        "title": "Jogging Via Pendant Is Default",
+        "desc": "This defines if the pendant jogging is automatically active on the jog screen",
+        "section": "carvera",
+        "key": "pendant_jogging_default",
+        "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Change the \"Probe Z\" button to directly probe Z",
+        "desc": "Directly probe Z instead of opening the probing screen",
+        "section": "carvera",
+        "key": "pendant_probe_z_alt_cmd",
+        "default": "false"
+    },
+    {
+        "type": "options",
+        "title": "Primary button action is",
+        "desc": "Buttons on pendant have a secondary action when combined with Fn key. You can either set the primary button action to be a user macro or a key-specific action",
+        "section": "carvera",
+        "key": "pendant_primary_button_action",
+        "default": "Macro",
+        "options": [
+            "Macro",
+            "Key-specific Action"]
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 1",
+        "desc": "GCode to trigger when pressing the Macro 1 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_1",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 2",
+        "desc": "GCode to trigger when pressing the Macro 2 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_2",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 3",
+        "desc": "GCode to trigger when pressing the Macro 3 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_3",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 4",
+        "desc": "GCode to trigger when pressing the Macro 4 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_4",
+        "default": {}
+    },
+    {"type": "gcodesnippet",
+        "title": "Macro 5",
+        "desc": "GCode to trigger when pressing the Macro 5 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_5",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 6",
+        "desc": "GCode to trigger when pressing the Macro 6 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_6",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 7",
+        "desc": "GCode to trigger when pressing the Macro 7 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_7",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 8",
+        "desc": "GCode to trigger when pressing the Macro 8 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_8",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 9",
+        "desc": "GCode to trigger when pressing the Macro 9 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_9",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 10",
+        "desc": "GCode to trigger when pressing the Macro 10 button on the pendant.",
+        "section": "carvera",
+        "key": "pendant_macro_10",
+        "default": {}
+    }
+]

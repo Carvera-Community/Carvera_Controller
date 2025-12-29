@@ -17,11 +17,43 @@
     },
     {
         "type": "bool",
+        "title": "Show Tooltips",
+        "desc": "Should the controller display tooltips?",
+        "section": "carvera",
+        "key": "show_tooltips",
+        "default": "1"
+    },
+    {
+        "type": "numeric",
+        "title": "Tooltip Hover Delay",
+        "desc": "How long to hover before showing the tooltip.",
+        "section": "carvera",
+        "key": "tooltip_delay",
+        "default": "1.5"
+    },
+    {
+        "type": "bool",
         "title": "Allow Screensaver",
         "desc": "Should the screensaver be allowed to run?",
         "section": "graphics",
         "key": "allow_screensaver",
         "default": "false"
+    },
+    {
+        "type": "bool",
+        "title": "Allows on top",
+        "desc": "Should the application window be always ontop?",
+        "section": "graphics",
+        "key": "always_on_top",
+        "default": "false"
+    },
+    {
+        "type": "numeric",
+        "title": "Max FPS",
+        "desc": "What maximum FPS to use for rendering? Reduce this if you are experiencing performance issues.",
+        "section": "graphics",
+        "key": "maxfps",
+        "default": "60"
     },
     {
         "type": "bool",
@@ -56,12 +88,85 @@
         "default": "false"
     },
     {
+        "type": "bool",
+        "title": "Allow Jogging When Machine Running",
+        "desc": "This option allows for manual movement while spindle is running. Use this functionality with caution.",
+        "section": "carvera",
+        "key": "allow_jogging_while_machine_running",
+        "default": "false"
+    },
+    {
         "type": "options",
         "title": "Keyboard Mode",
         "desc": "Specifies the keyboard mode to use. \nblank - choose the best option based on platform\nsystem - keyboard from OS\ndock - one virtual keyboard docked to a screen side\nmulti - one virtual keyboard for every widget request\nsystemanddock - virtual docked keyboard plus input from OS keyboard\nsystemandmulti - virtual docked keyboard per widget plus input from OS keyboard ",
         "section": "kivy",
         "key": "keyboard_mode",
         "default": "",
-        "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"] 
+        "options": ["", "system", "dock", "multi", "systemanddock", "systemandmulti"]
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 1",
+        "desc": "GCode to trigger when pressing the Macro 1 button on the control screen.",
+        "section": "carvera",
+        "key": "touch_macro_1",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 2",
+        "desc": "GCode to trigger when pressing the Macro 2 button on the control screen.",
+        "section": "carvera",
+        "key": "touch_macro_2",
+        "default": {}
+    },
+    {
+        "type": "gcodesnippet",
+        "title": "Macro 3",
+        "desc": "GCode to trigger when pressing the Macro 3 button on the control screen.",
+        "section": "carvera",
+        "key": "touch_macro_3",
+        "default": {}
+    },
+    {
+        "type": "bool",
+        "title": "Auto-Reconnection",
+        "desc": "Automatically attempt to reconnect when connection is lost",
+        "section": "carvera",
+        "key": "auto_reconnect_enabled",
+        "default": "true"
+    },
+    {
+        "type": "numeric",
+        "title": "Reconnection Wait Time",
+        "desc": "How many seconds to wait between reconnection attempts",
+        "section": "carvera",
+        "key": "reconnect_wait_time",
+        "default": "10"
+    },
+    {
+        "type": "numeric",
+        "title": "Reconnection Attempts",
+        "desc": "Maximum number of reconnection attempts",
+        "section": "carvera",
+        "key": "reconnect_attempts",
+        "default": "3"
+    },
+    {
+        "type": "options",
+        "title": "Log Level",
+        "desc": "Sets the logging level for the application. Higher levels include all lower levels.",
+        "section": "kivy",
+        "key": "log_level",
+        "default": "info",
+        "options": ["debug", "info", "warning", "error"]
+    },
+    {
+        "type": "bool",
+        "title": "Log to file",
+        "desc": "Store logs to file",
+        "section": "kivy",
+        "key": "log_enable",
+        "default": "true"
     }
 ]

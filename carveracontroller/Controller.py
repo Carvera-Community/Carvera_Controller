@@ -9,6 +9,8 @@ import time
 import threading
 import webbrowser
 import math
+import logging
+logger = logging.getLogger(__name__)
 
 from datetime import datetime
 
@@ -77,6 +79,9 @@ class Controller:
     MSG_ERROR = 1
     MSG_INTERIOR = 2
 
+    JOG_MODE_STEP = 0
+    JOG_MODE_CONTINUOUS = 1
+
     stop = threading.Event()
     usb_stream = None
     wifi_stream = None
@@ -87,6 +92,16 @@ class Controller:
     def __init__(self, cnc, callback):
         self.usb_stream = USBStream()
         self.wifi_stream = WIFIStream()
+        
+        # Reconnection properties
+        self.reconnect_enabled = True
+        self.reconnect_wait_time = 10
+        self.reconnect_attempts = 3
+        self.reconnect_countdown = 0
+        self.reconnect_timer = None
+        self.reconnect_callback = None
+        self.cancel_reconnect_callback = None
+        self._manual_disconnect = False
 
         # Global variables
         self.history = []
@@ -139,6 +154,13 @@ class Controller:
         self.pausing = False
 
         self.diagnosing = False
+
+        self.is_community_firmware = False
+
+        # Jog related variables
+        self.jog_mode = Controller.JOG_MODE_STEP
+        self.jog_speed = 10000  # mm/min. A value of 0 here would suggest to use last used feed
+        self.continuous_jog_active = False
 
     # ----------------------------------------------------------------------
     def quit(self, event=None):
@@ -200,11 +222,11 @@ class Controller:
                 cmd = "buffer " + cmd
             self.executeCommand(cmd) #run margin command. Has to be two seperate commands to offset the start of the autolevel process
         cmd = "M495 X%gY%g" % (CNC.vars['xmin'] + auto_level_offsets[0], CNC.vars['ymin'] + auto_level_offsets[2]) #reinitialize command with any autolevel offsets
-        if zprobe: 
-            if zprobe_abs: 
+        if zprobe:
+            if zprobe_abs:
                 cmd = "M495 X%gY%g" % (CNC.vars['xmin'], CNC.vars['ymin']) #reset command for 4th axis
                 cmd = cmd + "O0"
-            else: 
+            else:
                 cmd = cmd + "O%gF%g" % (z_probe_offset_x, z_probe_offset_y)
         if leveling:
             cmd = cmd + "A%gB%gI%dJ%dH%d" % (CNC.vars['xmax'] - (CNC.vars['xmin']+auto_level_offsets[1]+ auto_level_offsets[0]) , CNC.vars['ymax'] - (CNC.vars['ymin']+auto_level_offsets[3] + auto_level_offsets[2]), i, j, h)
@@ -259,24 +281,51 @@ class Controller:
     #         cmd = "buffer " + cmd
     #     self.executeCommand(cmd)
 
-    def gotoPosition(self, position, buffer=False):
-        if position is None:
-            return
-        cmd = ""
-        if position == "Clearance":
-            cmd = "M496.1\n"
-        elif position == "Work Origin":
-            cmd = "M496.2\n"
-        elif position == "Anchor1":
-            cmd = "M496.3\n"
-        elif position == "Anchor2":
-            cmd = "M496.4\n"
-        elif position == "Path Origin":
-            if abs(CNC.vars['xmin']) <= CNC.vars['worksize_x'] and abs(CNC.vars['ymin']) <= CNC.vars['worksize_y']:
-                cmd = "M496.5 X%gY%g\n" % (CNC.vars['xmin'], CNC.vars['ymin'])
+    def gotoClearance(self, buffer=False):
+        cmd = "M496.1\n"
         if buffer:
             cmd = "buffer " + cmd
         self.executeCommand(cmd)
+
+    def gotoWorkOrigin(self, buffer=False):
+        cmd = "M496.2\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoAnchor1(self, buffer=False):
+        cmd = "M496.3\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoAnchor2(self, buffer=False):
+        cmd = "M496.4\n"
+        if buffer:
+            cmd = "buffer " + cmd
+        self.executeCommand(cmd)
+
+    def gotoPathOrigin(self, buffer=False):
+        if abs(CNC.vars['xmin']) <= CNC.vars['worksize_x'] and abs(CNC.vars['ymin']) <= CNC.vars['worksize_y']:
+            cmd = "M496.5 X%gY%g\n" % (CNC.vars['xmin'], CNC.vars['ymin'])
+            if buffer:
+                cmd = "buffer " + cmd
+            self.executeCommand(cmd)
+
+    def gotoPosition(self, position, buffer=False):
+        """Legacy method to route to appropriate goto method based on position string"""
+        if position is None:
+            return
+        if position == "Clearance":
+            self.gotoClearance(buffer)
+        elif position == "Work Origin":
+            self.gotoWorkOrigin(buffer)
+        elif position == "Anchor1":
+            self.gotoAnchor1(buffer)
+        elif position == "Anchor2":
+            self.gotoAnchor2(buffer)
+        elif position == "Path Origin":
+            self.gotoPathOrigin(buffer)
 
     def reset(self):
         self.executeCommand("reset\n")
@@ -296,11 +345,14 @@ class Controller:
     def clearAutoLeveling(self):
         self.executeCommand("M370\n")
 
-    def setSpindleSwitch(self, switch, rpm):
-        if switch:
-            self.executeCommand("M3 S%d\n" % (rpm))
+    def setSpindleSwitch(self, switch, rpm=None):
+        if switch and rpm is not None:
+            cmd = f"M3 S{int(rpm)}\n"
+        elif switch and rpm is None:
+            cmd = "M3\n"
         else:
-            self.executeCommand("M5\n")
+           cmd = "M5\n"
+        self.executeCommand(cmd)
 
     def setVacuumPower(self, power=0):
         if power > 0:
@@ -381,7 +433,7 @@ class Controller:
 
     def clampToolCommand(self):
         self.executeCommand("M490.1\n")
-    
+
     def unclampToolCommand(self):
         self.executeCommand("M490.2\n")
 
@@ -552,12 +604,28 @@ class Controller:
         d = {a: [float(y) for y in b.split(',')] for a, b in [x.split(':') for x in l[1:]]}
         if 'R' in d:
             CNC.vars["rotation_angle"] = float(d['R'][0])
+            CNC.can_rotate_wcs = True
         else:
             CNC.vars["rotation_angle"] = 0.0
         if 'G' in d:
             CNC.vars["active_coord_system"] = int(d['G'][0])
+        if 'C' in d:
+            CNC.vars['MachineModel'] = int(d['C'][0])
+            CNC.vars['FuncSetting'] = int(d['C'][1])
+            CNC.vars['inch_mode'] = int(d['C'][2])
+            CNC.vars['absolute_mode'] = int(d['C'][3])
         else:
-            CNC.vars["active_coord_system"] = 0
+            CNC.vars['MachineModel'] = 1
+            CNC.vars['FuncSetting'] = 0
+            CNC.vars['inch_mode'] = 0
+            CNC.vars['absolute_mode'] = 0
+        if CNC.vars['inch_mode'] != 999:
+            if CNC.vars['inch_mode'] == 1:
+                CNC.UnitScale = 25.4
+            else:
+                CNC.UnitScale = 1
+        else:
+            CNC.UnitScale = 1
         CNC.vars["mx"] = float(d['MPos'][0])
         CNC.vars["my"] = float(d['MPos'][1])
         CNC.vars["mz"] = float(d['MPos'][2])
@@ -568,11 +636,14 @@ class Controller:
         CNC.vars["wx"] = float(d['WPos'][0])
         CNC.vars["wy"] = float(d['WPos'][1])
         CNC.vars["wz"] = float(d['WPos'][2])
-        CNC.vars["wa"] = 0.0
+        if len(d['WPos']) > 3:
+            CNC.vars["wa"] = float(d['WPos'][3])
+        else:
+            CNC.vars["wa"] = 0.0
         CNC.vars["wcox"] = round(CNC.vars["mx"] - (math.cos(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wx"] - math.sin(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wy"]), 3)
         CNC.vars["wcoy"] = round(CNC.vars["my"] - (math.sin(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wx"] + math.cos(CNC.vars["rotation_angle"] * math.pi / 180) * CNC.vars["wy"]), 3)
         CNC.vars["wcoz"] = round(CNC.vars["mz"] - CNC.vars["wz"], 3)
-        CNC.vars["wcoa"] = round(CNC.vars["mz"] - CNC.vars["wz"], 3)
+        CNC.vars["wcoa"] = round(CNC.vars["ma"] - CNC.vars["wa"], 3)
         if 'F' in d:
            CNC.vars["curfeed"] = float(d['F'][0])
            CNC.vars["tarfeed"] = float(d['F'][1])
@@ -635,7 +706,15 @@ class Controller:
         l = ln.split('|')
 
         # strip of rest into a dict of name: [values,...,]
-        d = {a: [int(y) for y in b.split(',')] for a, b in [x.split(':') for x in l]}
+        d = {}
+        for x in l:
+            if ':' in x:
+                try:
+                    a, b = x.split(':', 1)  # Split on first colon only
+                    d[a] = [int(y) for y in b.split(',')]
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"parseBigParentheses: Failed to parse line '{x}': {e}")
+                    continue
         if 'S' in d:
             CNC.vars["sw_spindle"] = int(d['S'][0])
             CNC.vars["sl_spindle"] = int(d['S'][1])
@@ -697,6 +776,8 @@ class Controller:
             #self.stream.send(b"\n")
             self._gcount = 0
             self._alarm = True
+            # Reset manual disconnect flag when connection is established
+            self._manual_disconnect = False
             try:
                 self.clearRun()
             except:
@@ -726,6 +807,91 @@ class Controller:
         self.stream = None
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[CNC.vars["state"]]
+        
+        # Start reconnection if enabled
+        if self.reconnect_enabled and self.reconnect_callback and self.connection_type == CONN_WIFI:
+            self.start_reconnection()
+
+    def close_manual(self):
+        """Close connection manually (user initiated) - don't auto-reconnect"""
+        if self.stream is None: return
+        try:
+            self.stopRun()
+        except:
+            self.log.put((self.MSG_ERROR, 'Controller stop thread error!'))
+        self._runLines = 0
+        time.sleep(0.5)
+        self.thread = None
+        try:
+            self.stream.close()
+        except:
+            self.log.put((self.MSG_ERROR, 'Controller close stream error!'))
+        self.stream = None
+        # Set a flag to indicate this was a manual disconnection
+        self._manual_disconnect = True
+        CNC.vars["state"] = NOT_CONNECTED
+        CNC.vars["color"] = STATECOLOR[CNC.vars["state"]]
+
+    def set_reconnection_config(self, enabled, wait_time, attempts):
+        """Set reconnection configuration"""
+        self.reconnect_enabled = enabled
+        self.reconnect_wait_time = wait_time
+        self.reconnect_attempts = attempts
+
+    def set_reconnection_callbacks(self, reconnect_callback, cancel_callback, success_callback=None):
+        """Set reconnection callbacks"""
+        self.reconnect_callback = reconnect_callback
+        self.cancel_reconnect_callback = cancel_callback
+        self.reconnect_success_callback = success_callback
+
+    def start_reconnection(self):
+        """Start the reconnection process"""
+        if not self.reconnect_enabled or not self.reconnect_callback:
+            return
+            
+        self.reconnect_countdown = self.reconnect_wait_time
+        self.reconnect_attempts_remaining = self.reconnect_attempts
+        
+        # Schedule the first reconnection attempt
+        if self.reconnect_timer:
+            self.reconnect_timer.cancel()
+        self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
+        self.reconnect_timer.start()
+
+    def attempt_reconnect(self):
+        """Attempt to reconnect"""
+        self.reconnect_attempts_remaining -= 1
+        
+        # Try to reconnect using the callback
+        if self.reconnect_callback:
+            self.reconnect_callback()
+            
+        # Schedule next attempt if there are more attempts remaining
+        if self.reconnect_attempts_remaining > 0:
+            if self.reconnect_timer:
+                self.reconnect_timer.cancel()
+            self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
+            self.reconnect_timer.start()
+        else:
+            # All attempts exhausted, call the cancel callback
+            if self.cancel_reconnect_callback:
+                self.cancel_reconnect_callback()
+
+    def cancel_reconnection(self):
+        """Cancel the reconnection process"""
+        if self.reconnect_timer:
+            self.reconnect_timer.cancel()
+            self.reconnect_timer = None
+        # Reset reconnection state
+        self.reconnect_countdown = 0
+        self.reconnect_attempts_remaining = 0
+        if self.cancel_reconnect_callback:
+            self.cancel_reconnect_callback()
+
+    def notify_reconnection_success(self):
+        """Notify that reconnection was successful"""
+        if self.reconnect_success_callback:
+            self.reconnect_success_callback()
 
     # ----------------------------------------------------------------------
     def stopRun(self):
@@ -750,11 +916,18 @@ class Controller:
 
     def viewStatusReport(self, sio_status):
         if self.loadNUM == 0 and self.sendNUM == 0:
-            self.stream.send(b"?")
+            if self.stream is None:
+                return
+            if self.continuous_jog_active:
+                self.stream.send(b"?1")
+            else:
+                self.stream.send(b"?")
             self.sio_status = sio_status
 
     def viewDiagnoseReport(self, sio_diagnose):
         if self.loadNUM == 0 and self.sendNUM == 0:
+            if self.stream is None:
+                return
             self.stream.send(b"diagnose\n")
             self.sio_diagnose = sio_diagnose
 
@@ -791,6 +964,9 @@ class Controller:
     def viewParameters(self):
         self.sendGCode("$#")
 
+    def viewWCS(self):
+        self.sendGCode("get wcs")
+
     def viewState(self):
         self.sendGCode("$G")
 
@@ -817,14 +993,54 @@ class Controller:
         pass
 
     # ----------------------------------------------------------------------
-    def jog(self, _dir):
-        self.executeCommand("G91G0{}".format(_dir))
-    
-    def jog_with_speed(self, _dir, speed):
-        if speed > 0:
-            self.executeCommand(f"G91G0{_dir} F{speed}")
+    def setJogMode(self, mode):
+        """Set the jog mode (step or continuous)"""
+        if not self.is_community_firmware:
+            return
+        
+        if mode in [Controller.JOG_MODE_STEP, Controller.JOG_MODE_CONTINUOUS]:
+            self.jog_mode = mode
+            if self.continuous_jog_active:
+                self.stopContinuousJog()
+
+    def startContinuousJog(self, _dir, speed=None, scale_feed_override=None):
+        """Start continuous jogging in the specified direction"""
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS or self.continuous_jog_active:
+            return
+        self.continuous_jog_active = True
+        if speed is None:
+            if self.jog_speed > 0 and self.jog_speed < 10000:
+                self.executeCommand(f"$J -c {_dir} F{self.jog_speed}")
+            else:
+                if scale_feed_override is not None:
+                    self.executeCommand(f"$J -c {_dir} {scale_feed_override}") 
+                else:
+                    self.executeCommand(f"$J -c {_dir}") 
         else:
-            self.executeCommand(f"G91G0{_dir}")
+            self.executeCommand(f"$J -c {_dir} F{speed}")
+        
+    
+    def stopContinuousJog(self):
+        """Stop continuous jogging"""
+
+        if self.jog_mode != Controller.JOG_MODE_CONTINUOUS:
+            return
+        
+        # Send Y^ (Ctrl+Y) to stop continuous jogging
+        if self.stream is not None and self.continuous_jog_active:
+            self.stream.send(b"\031")
+
+    def jog(self, _dir, speed=None):
+        if self.jog_mode == Controller.JOG_MODE_STEP:
+            if speed is None:
+                if self.jog_speed == 0:
+                    self.executeCommand(f"$J {_dir}")
+                else:
+                    self.executeCommand(f"$J {_dir} F{self.jog_speed}")
+            else:
+                self.executeCommand(f"$J {_dir} F{speed}")
+        elif self.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            self.startContinuousJog(_dir)
 
     # ----------------------------------------------------------------------
 
@@ -834,6 +1050,19 @@ class Controller:
         if y is not None: cmd += "Y%g" % (y)
         if z is not None: cmd += "Z%g" % (z)
         self.sendGCode("%s" % (cmd))
+
+    def gotoSafeZ(self):
+        # using 2mm below the homing point as CA1 x-sag compensation could be a whole mm
+        self.sendGCode("G53 G0 Z-2")
+
+    def gotoMachineHome(self):
+        self.gotoSafeZ()
+        # CA1 x-sag compensation could be a whole mm in Y, so use 2mm to be safe. Same for X for consistency
+        self.sendGCode("G53 G0 X-2 Y-2")
+
+    def gotoWCSHome(self):
+        self.gotoSafeZ()
+        self.sendGCode("G53 G0 X%g Y%g" % (CNC.vars['wcox'], CNC.vars['wcoy']))
 
     def wcsSetA(self, a = None):
         cmd = "G92.4"
@@ -876,6 +1105,15 @@ class Controller:
 
         self.sendGCode(cmd)
 
+    def wcsClearRotation(self):
+        cmd = "G10L2R0P0"
+        self.sendGCode(cmd)
+
+    def setRotation(self, rotation):
+        """Set the rotation angle for the current coordinate system"""
+        cmd = f"G10L2R{rotation:.1f}P0"
+        self.sendGCode(cmd)
+
     def feedHold(self, event=None):
         if event is not None and not self.acceptKey(True): return
         if self.stream is None: return
@@ -911,8 +1149,16 @@ class Controller:
             else:
                 self.parseBigParentheses(line)
                 self.sio_diagnose = False
+        elif line[0] == "[" in line:
+            # Log raw WCS parameters before parsing
+            self.log.put((self.MSG_NORMAL, line))
+            # Parse WCS parameters: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+            self.parseWCSParameters(line)
         elif line[0] == "#":
             self.log.put((self.MSG_INTERIOR, line))
+        elif line[0] == "^":
+            if line[1] == "Y":
+                self.continuous_jog_active = False
         elif "error" in line.lower() or "alarm" in line.lower():
             self.log.put((self.MSG_ERROR, line))
         else:
@@ -1020,3 +1266,45 @@ class Controller:
 
             if dynamic_delay > 0:
                 time.sleep(dynamic_delay)
+
+    def parseWCSParameters(self, line):
+        """Parse WCS parameters from machine response"""
+        # Parse format: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+        # Extract all WCS entries from the line
+
+        # parse the current WCS from the "get wcs" command
+        get_wcs_pattern = r'\[current WCS: (G5[4-9][.1-3]*)\]'
+        current_wcs_matches = re.findall(get_wcs_pattern, line)
+        
+        if current_wcs_matches:
+            # if not on community firmware or rotation angle is not set,
+            # the active coordinate system is tracked through the "get wcs" command
+            if not self.is_community_firmware or not CNC.can_rotate_wcs:
+                CNC.vars["active_coord_system"] = CNC.wcs_names.index(current_wcs_matches[0])
+            return
+
+        wcs_pattern = r'\[(G5[4-9][.1-3]*):([^]]+)\]'
+        matches = re.findall(wcs_pattern, line)
+        wcs_data = {}
+        for wcs_code, values_str in matches:
+            # Split the values by comma
+            values = values_str.split(',')
+            if len(values) >= 5:  # X, Y, Z, A, B, Rotation
+                try:
+                    x = float(values[0])
+                    y = float(values[1])
+                    z = float(values[2])
+                    a = float(values[3])
+                    b = float(values[4])  # B is always 0
+                    if self.is_community_firmware and CNC.can_rotate_wcs:
+                        rotation = float(values[5])
+                    else:
+                        rotation = 0.0
+                    wcs_data[wcs_code] = [x, y, z, a, b, rotation]  # Store only X, Y, Z, A, B, Rotation
+                    
+                except (ValueError, IndexError):
+                    logger.error(f"Error parsing WCS values for {wcs_code}: {values_str}")
+        
+        # Send the parsed data to the WCS Settings popup if it's open
+        if hasattr(self, 'wcs_popup_callback') and self.wcs_popup_callback:
+            self.wcs_popup_callback(wcs_data)
