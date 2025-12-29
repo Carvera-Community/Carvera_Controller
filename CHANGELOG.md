@@ -4,11 +4,14 @@
 - Enhancement: Select a file when it's double clicked in the remote file browser
 - Enhancement: Automatically connect to the machine on startup if its wifi address is configured
 - Enhancement: CI workflow for building iOS app
-- Enhancement: Added allows on top Controller config option to keep the application window always ontop of other windows
+- Enhancement: Added support sending multiple MDI commands at once
+- Enhancement: Pressing the up arrow when in the MDI input box re-populates the input with the last send command
+- Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
 - Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
+- Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
