@@ -5247,6 +5247,22 @@ class Makera(RelativeLayout):
         if self.confirm_popup.showing:
             return
         
+        # Check if the file contains G91 (incremental movement) commands
+        app = App.get_running_app()
+        local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+        
+        if local_file_path and os.path.exists(local_file_path):
+            try:
+                with open(local_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    file_content = f.read()
+                    if re.search(r'G91(?:\.\d+)?\b', file_content, re.IGNORECASE):
+                        self.message_popup.lb_content.text = tr._('Resuming gcode with incremental movements (G91) is unsupported.')
+                        self.message_popup.btn_ok.disabled = False
+                        self.message_popup.open()
+                        return
+            except Exception as e:
+                logger.warning(f"Error checking for G91 in file {local_file_path}: {e}")
+        
         # Get command preview from Controller (ensures preview stays in sync with actual implementation)
         commands = self.controller.playStartLineCommand(file_name, start_line, preview=True)
         commands_preview = '\n'.join(commands)
