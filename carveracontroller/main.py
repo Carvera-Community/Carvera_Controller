@@ -247,6 +247,7 @@ def register_images(base_path):
 class MDITextInput(TextInput):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.last_mdi_command = ''
         self.bind(focus=self.on_focus)
 
     def on_focus(self, instance, have_focus):
@@ -257,9 +258,16 @@ class MDITextInput(TextInput):
 
     def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
         ENTER_KEY = 13
+        UP_ARROW_KEY = 273
         if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
             self.send_mdi_command()
             return True
+        if self.focus and key == UP_ARROW_KEY:
+            # If the input box is empty, and the user presses the up arrow
+            # Repopulate the inbox box with the last MDI command
+            if not self.text.strip() and self.last_mdi_command:
+                self.text = self.last_mdi_command
+                return True
         return False
 
     def send_mdi_command(self):
@@ -5316,6 +5324,7 @@ class Makera(RelativeLayout):
     def send_cmd(self):
         to_send = self.manual_cmd.text.strip()
         if to_send:
+            self.manual_cmd.last_mdi_command = to_send
             self.manual_rv.scroll_y = 0
             if to_send.lower() == "clear":
                 self.manual_rv.data = []
