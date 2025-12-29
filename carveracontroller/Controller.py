@@ -635,19 +635,41 @@ class Controller:
         additional_commands = []
         if local_file_path:
             # Search for G20 or G21 (unit mode) - take the last one found
-            g20_cmd, g20_line = self._find_command_line_number(local_file_path, start_line, "G20")
-            g21_cmd, g21_line = self._find_command_line_number(local_file_path, start_line, "G21")
+            _, g20_line = self._find_command_line_number(local_file_path, start_line, "G20")
+            _, g21_line = self._find_command_line_number(local_file_path, start_line, "G21")
             # Determine which was found last by checking which line number is higher
             if g20_line is not None and g21_line is not None:
                 # Both found, take the one with higher line number (more recent)
                 if g20_line > g21_line:
-                    additional_commands.append(g20_cmd)
+                    additional_commands.append("G20")
                 else:
-                    additional_commands.append(g21_cmd)
-            elif g20_cmd:
-                additional_commands.append(g20_cmd)
-            elif g21_cmd:
-                additional_commands.append(g21_cmd)
+                    additional_commands.append("G21")
+            elif g20_line:
+                additional_commands.append("G20")
+            elif g21_line:
+                additional_commands.append("G21")
+
+            # Search for WCS coordinate space - find the last one used
+            wcs_commands = [
+                ("G54", self._find_command_line_number(local_file_path, start_line, "G54")),
+                ("G55", self._find_command_line_number(local_file_path, start_line, "G55")),
+                ("G56", self._find_command_line_number(local_file_path, start_line, "G56")),
+                ("G57", self._find_command_line_number(local_file_path, start_line, "G57")),
+                ("G58", self._find_command_line_number(local_file_path, start_line, "G58")),
+                ("G59", self._find_command_line_number(local_file_path, start_line, "G59")),
+                ("G59.1", self._find_command_line_number(local_file_path, start_line, "G59.1")),
+                ("G59.2", self._find_command_line_number(local_file_path, start_line, "G59.2")),
+                ("G59.3", self._find_command_line_number(local_file_path, start_line, "G59.3")),
+            ]
+            # Find the WCS command with the highest line number (most recent)
+            last_wcs = None
+            last_wcs_line = 0
+            for wcs_cmd, (wcs_cmd_str, wcs_line) in wcs_commands:
+                if wcs_line is not None and wcs_line > last_wcs_line:
+                    last_wcs = wcs_cmd
+                    last_wcs_line = wcs_line
+            if last_wcs:
+                additional_commands.append(last_wcs)
             
             # Search for M3 (spindle on)
             m3_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M3")
@@ -658,6 +680,11 @@ class Controller:
             m6_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M6")
             if m6_cmd:
                 additional_commands.append(m6_cmd)
+
+            # Search for M7 (air assist on)
+            m7_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M7")
+            if m7_cmd:
+                additional_commands.append(m7_cmd)
 
         commands = [
             "buffer M600",
