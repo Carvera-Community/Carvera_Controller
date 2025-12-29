@@ -2280,10 +2280,10 @@ class Makera(RelativeLayout):
                 'y_offset': 0.0
             },
             'margin': {
-                'active': True
+                'active': False
             },
             'zprobe': {
-                'active': True,
+                'active': False,
                 'origin': 2,
                 'x_offset': 5.0,
                 'y_offset': 5.0
