@@ -82,6 +82,8 @@
 - Enhancement: Support for controlling the machine via WHB04 pendant devices
 - Enhancement: Added WCS Management functionality. WCS workspace is displayed in top status bar, and can be used to change between different workspaces (G54-G59.3 etc). Note: Community firmware v1.0.3c1.0.7 is required for full functionality. Community firmware v1.0.3c1.0.6 does support editing the offsets but doesn't track manual G5* commands in the MDI. Makera firmware will not persist non-G54 offsets across machine resets.
 - Enhancement: Ability to rotate the WCS workspace. This is done via the WCS Management options. WCS rotation requires Community firmware 1.0.3c.1.0.7 or higher to function
+- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen. This can be set viewing a gcode file and right clicking or long pressing a line to bring up a menu.
+- Enhancement: Using the gcode preview shows the corresponding line in file. Selecting a line in the file skips the 3d viewer to match.
 - Enhancement: Docker image package. This runs the controller and exposes it over a noVNC web browser, so the controller can be used from multiple locations concurrently
 - Enhancement: Android apk now supports armv7 (32-bit), armv8 (64-bit), and x86_64 processors
 - Change: Functionality that requires community firmware will be disabled in the Controller if using Makera firmware. Previously it would just not work.

@@ -5622,4 +5622,40 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release: root.on_ok_pressed()
+                on_release:
+                    app.root.controller.setRotation(float(txt_rotation.text))
+                    root.dismiss()
+
+<GCodeLineContextMenu>:
+    size_hint: None, None
+    size: dp(250), dp(60)
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 0
+        spacing: 0
+        pos_hint:{'top': 1,'right':1}
+        
+        # Resume playback option
+        Button:
+            id: resume_option
+            text: 'Select this line for resume playback'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: (250/255, 250/255, 250/255, 1)
+            color: (1, 1, 1, 1)
+            pos_hint:{'top': 1,'right':1}
+            on_press: root.resume_at_line()
+        
+        # Cancel option
+        Button:
+            id: cancel_option
+            text: 'Cancel'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: (250/255, 250/255, 250/255, 1)
+            color: (1, 1, 1, 1)
+            pos_hint:{'top': 1,'right':1}
+            on_press: root.dismiss() 
