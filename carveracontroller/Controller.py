@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import re
+import os
 import sys
 import time
 import threading
@@ -557,18 +558,127 @@ class Controller:
             play_command = "play %s\n" % '/'.join(filename.split('\\')).replace(' ', '\x01')
         self.executeCommand(self.escape(play_command))
 
-    def playStartLineCommand(self, filename, start_line, preview=False):
+    def _find_command_line_number(self, local_file_path, start_line, gcode_command):
+        """
+        Search backwards from start_line to find the last occurrence of a gcode command.
+        
+        Args:
+            local_file_path: Path to the gcode file
+            start_line: Line number to search backwards from (1-based)
+            gcode_command: Literal gcode command to search for (e.g., "G20", "G21", "M3", "M6")
+                          Can include parameters (e.g., "M3 S1000", "M6 T1")
+        
+        Returns:
+            Tuple of (command_string, line_number) where command_string is the found command
+            (with parameters if present) and line_number is the 1-based line number, or (None, None) if not found
+        """
+        if not local_file_path or not os.path.exists(local_file_path):
+            return (None, None)
+        
+        try:
+            # Ensure start_line is an integer
+            try:
+                start_line = int(start_line)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid start_line value: {start_line}")
+                return (None, None)
+            
+            with open(local_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+            
+            if start_line < 1 or start_line > len(lines):
+                return (None, None)
+            
+            command_upper = gcode_command.upper().strip()
+            parts = command_upper.split()
+            base_command = parts[0]
+            
+            # Build pattern to match the command with optional parameters
+            if len(parts) > 1:
+                pattern = r'\b' + re.escape(base_command) + r'(?:\s+' + '|'.join(re.escape(p) for p in parts[1:]) + r')?'
+            else:
+                pattern = r'\b' + re.escape(base_command) + r'(?:\s+[A-Z]\d+(?:\.\d+)?)*'
+            
+            for i in range(start_line - 2, -1, -1):
+                original_line = lines[i]
+                line = original_line.strip().upper()
+                # Remove comments but keep original for full command extraction
+                if ';' in line:
+                    line = line[:line.index(';')]
+                if '(' in line:
+                    line = re.sub(r'\([^)]*\)', '', line)
+                
+                match = re.search(pattern, line)
+                if match:
+                    # Extract the full command sequence from the original line
+                    # Remove comments and parentheses from original line for extraction
+                    original_clean = original_line.strip()
+                    if ';' in original_clean:
+                        original_clean = original_clean[:original_clean.index(';')]
+                    if '(' in original_clean:
+                        original_clean = re.sub(r'\([^)]*\)', '', original_clean)
+                    
+                    # Find the position of the matched command in the cleaned line
+                    # Then extract everything from the start of the line up to and including the command
+                    # This captures any preceding commands like "T2" before "M6"
+                    original_clean_upper = original_clean.upper()
+                    match_in_upper = re.search(pattern, original_clean_upper)
+                    if match_in_upper:
+                        # Extract from start of line to end of matched command
+                        end_pos = match_in_upper.end()
+                        full_command = original_clean[:end_pos].strip()
+                        return (full_command, i + 1)
+                    else:
+                        # Fallback to just the matched command
+                        return (match.group(0).strip(), i + 1)
+                
+        except Exception as e:
+            logger.warning(f"Error finding command {gcode_command} before line {start_line} in {local_file_path}: {e}")
+        
+        return (None, None)
+
+    def playStartLineCommand(self, filename, start_line, preview=False, local_file_path=None):
         # Build the play command with proper formatting
         play_command = "play %s\n" % filename.replace(' ', '\x01')
         if '\\' in filename:
             play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
+        # Find additional commands to insert after "goto"
+        additional_commands = []
+        if local_file_path:
+            # Search for G20 or G21 (unit mode) - take the last one found
+            g20_cmd, g20_line = self._find_command_line_number(local_file_path, start_line, "G20")
+            g21_cmd, g21_line = self._find_command_line_number(local_file_path, start_line, "G21")
+            # Determine which was found last by checking which line number is higher
+            if g20_line is not None and g21_line is not None:
+                # Both found, take the one with higher line number (more recent)
+                if g20_line > g21_line:
+                    additional_commands.append(g20_cmd)
+                else:
+                    additional_commands.append(g21_cmd)
+            elif g20_cmd:
+                additional_commands.append(g20_cmd)
+            elif g21_cmd:
+                additional_commands.append(g21_cmd)
+            
+            # Search for M3 (spindle on)
+            m3_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M3")
+            if m3_cmd:
+                additional_commands.append(m3_cmd)
+            
+            # Search for M6 (tool change)
+            m6_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M6")
+            if m6_cmd:
+                additional_commands.append(m6_cmd)
+
         commands = [
             "buffer M600",
             play_command,
             f"goto {start_line}",
-            "resume"
         ]
+        # Insert additional commands after "goto"
+        commands.extend(additional_commands)
+        commands.append("resume")
 
         if preview:
             return commands
