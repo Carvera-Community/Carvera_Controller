@@ -468,6 +468,7 @@ class Controller:
     # escape special characters
     # ------------------------------------------------------------------------------
     def escape(self, value):
+        """Escape special characters for protocol transmission"""
         return value.replace('?', '\x02').replace('&', '\x03').replace('!', '\x04').replace('~', '\x05')
 
     def lsCommand(self, ls_dir):
@@ -549,15 +550,24 @@ class Controller:
             play_command = "play %s\n" % '/'.join(filename.split('\\')).replace(' ', '\x01')
         self.executeCommand(self.escape(play_command))
 
-    def playStartLineCommand(self, filename, start_line):
-        play_command = "play %s\n" % filename.replace(' ', '\x01')
+    def playStartLineCommand(self, filename, start_line, preview=False):
+        # Build the play command with proper formatting
+        play_command = "play %s" % filename
         if '\\' in filename:
-            play_command = "play %s\n" % '/'.join(filename.split('\\')).replace(' ', '\x01')
+            play_command = "play %s" % '/'.join(filename.split('\\'))
 
-        self.executeCommand("buffer M600\n")
-        self.executeCommand(self.escape(play_command))
-        self.executeCommand(f"goto {start_line}\n")
-        self.executeCommand("resume\n")
+        commands = [
+            "buffer M600",
+            play_command,
+            f"goto {start_line}",
+            "resume"
+        ]
+
+        if preview:
+            return commands
+
+        for cmd in commands:
+            self.executeCommand(self.escape(cmd))
 
     def abortCommand(self):
         self.executeCommand("abort\n")
