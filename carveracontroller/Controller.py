@@ -23,6 +23,13 @@ from .CNC import CNC
 from .USBStream import USBStream
 from .WIFIStream import WIFIStream
 from .XMODEM import EOT, CAN
+from functools import partial
+
+try:
+    from kivy.clock import Clock
+except ImportError:
+    # Fallback if kivy is not available (e.g., during testing)
+    Clock = None
 
 STREAM_POLL = 0.2 # s
 DIAGNOSE_POLL = 0.5  # s
@@ -552,9 +559,9 @@ class Controller:
 
     def playStartLineCommand(self, filename, start_line, preview=False):
         # Build the play command with proper formatting
-        play_command = "play %s" % filename
+        play_command = "play %s\n" % filename.replace(' ', '\x01')
         if '\\' in filename:
-            play_command = "play %s" % '/'.join(filename.split('\\'))
+            play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
         commands = [
             "buffer M600",
@@ -566,8 +573,28 @@ class Controller:
         if preview:
             return commands
 
-        for cmd in commands:
+        # Some times the machine seems to have a race condition when pausing before executing the next queued command
+        # and the next command after M600 is run while the machine isn't fully paused, causing it to fail.
+        # To avoid this problem we wait for the machine state to change to pause before executing the commands after "play"
+        play_index = None
+        for i, cmd in enumerate(commands):
             self.executeCommand(self.escape(cmd))
+            if cmd.startswith("play"):
+                play_index = i
+                break
+        
+        if play_index is not None and play_index < len(commands) - 1:
+            remaining_commands = commands[play_index + 1:]
+            self._wait_for_pause_and_continue_cmd_list_execution(remaining_commands)
+
+    def _wait_for_pause_and_continue_cmd_list_execution(self, remaining_commands, dt=None):
+        """Wait for machine to be paused, then execute remaining commands"""
+        if CNC.vars.get("state") == "Pause":
+            for cmd in remaining_commands:
+                self.executeCommand(self.escape(cmd))
+        else:
+            # Not paused yet, check again in 0.1 seconds
+            Clock.schedule_once(partial(self._wait_for_pause_and_continue_cmd_list_execution, remaining_commands), 0.1)
 
     def abortCommand(self):
         self.executeCommand("abort\n")
