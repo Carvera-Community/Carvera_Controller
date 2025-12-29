@@ -675,7 +675,7 @@
             title: tr._('Temp:')
             value: '10 C'
     DropDownHint:
-        text: tr._('Auto Vacuum')
+        text: tr._(' Auto Vacuum')
     BoxLayout:
         padding: '0.5dp'
         size_hint_y: None
@@ -2839,7 +2839,7 @@
                             pos: self.pos
                             size: self.size
                     Label:
-                        text: tr._(" Set Work Origin")
+                        text: tr._(" Work Origin")
                         halign: "left"
                         valign: "middle"
                         font_size: '13sp'
@@ -3037,11 +3037,12 @@
                         hint_text: tr._('Number')
                         multiline: False
                         size_hint_x: None
-                        width: '80dp'  # 10 chars should be enough for anybody :)
+                        width: '80dp'  # 10 chars ought to be enough for anybody :)
                         text: ''
                         halign: "right"
                         input_type: 'number'
                         input_filter: 'int'
+                Label:  # This empty label is needed to keep the right box top aligned
 
         BoxLayout:
             spacing: '5dp'
