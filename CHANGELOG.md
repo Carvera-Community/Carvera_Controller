@@ -8,7 +8,8 @@
 - Enhancement: Pressing the up arrow when in the MDI input box re-populates the input with the last send command
 - Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
 - Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
-- Enhancement: Previewing gcode files synchronises the line selection in the file view with the progress slider 
+- Enhancement: Previewing gcode files synchronises the line selection in the file view with the progress slider
+- Enhancement: If machine is halted during gcode file playback or stopped, populate the last run line number into the resume playback inputbox
 - Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus

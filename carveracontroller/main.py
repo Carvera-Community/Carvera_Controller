@@ -3434,6 +3434,12 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def open_halt_confirm_popup(self):
         app = App.get_running_app()
+        
+        # If playback was interrupted by halt, update resume at line with last executed line
+        # Use playedlines if available, otherwise use the last tracked played_lines
+        last_line = CNC.vars["playedlines"] if CNC.vars["playedlines"] > 0 else self.played_lines
+        if last_line > 0:
+            self.update_resume_at_line_from_played_line(last_line)
 
         # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
         if CNC.vars["halt_reason"] < 20:
@@ -4609,7 +4615,12 @@ class Makera(RelativeLayout):
 
             # update progress bar and set selected
             if CNC.vars["playedlines"] <= 0:
-                # not playing
+                # not playing - check if we were playing before (interrupted playback)
+                if self.played_lines > 0:
+                    # Playback was interrupted, update resume at line with last executed line
+                    self.update_resume_at_line_from_played_line(self.played_lines)
+                    self.played_lines = 0  # Reset after updating
+                
                 app.playing = False
                 self.wpb_margin.value = 0
                 self.wpb_zprobe.value = 0
@@ -5300,6 +5311,12 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
         self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+    
+    # -----------------------------------------------------------------------
+    def update_resume_at_line_from_played_line(self, line_number):
+        """Update the resume at line input with the last executed line number"""
+        if line_number > 0:
+            self.coord_popup.txt_startline.text = str(line_number)
 
     # -----------------------------------------------------------------------
     def defaultSettings(self):
