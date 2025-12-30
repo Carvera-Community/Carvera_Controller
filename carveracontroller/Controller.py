@@ -661,6 +661,88 @@ class Controller:
             logger.warning(f"Error getting line position from gcode_viewer for line {line_number}: {e}")
             return (None, None, None, None)
 
+    def _find_last_feed_rate(self, local_file_path, start_line):
+        """
+        Search backwards from start_line to find the last G1/G01/G2/G02/G3/G03 command
+        and extract its F (feed rate) parameter.
+        
+        Args:
+            local_file_path: Path to the gcode file
+            start_line: Line number to search backwards from (1-based)
+        
+        Returns:
+            Feed rate value as float, or None if not found
+        """
+        if not local_file_path or not os.path.exists(local_file_path):
+            return None
+        
+        try:
+            # Ensure start_line is an integer
+            try:
+                start_line = int(start_line)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid start_line value: {start_line}")
+                return None
+            
+            with open(local_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+            
+            if start_line < 1 or start_line > len(lines):
+                return None
+            
+            # Search backwards for G1/G01/G2/G02/G3/G03 commands
+            for i in range(start_line - 2, -1, -1):
+                original_line = lines[i]
+                line = original_line.strip()
+                
+                # Remove comments using string methods
+                if ';' in line:
+                    line = line[:line.index(';')]
+                # Remove parentheses comments using string methods
+                while '(' in line and ')' in line:
+                    start_paren = line.index('(')
+                    end_paren = line.index(')', start_paren)
+                    line = line[:start_paren] + line[end_paren + 1:]
+                
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Check if line contains G1/G01/G2/G02/G3/G03
+                line_upper = line.upper()
+                # Check for G1/G01/G2/G02/G3/G03 commands
+                # These can appear at start of line or anywhere in the line
+                g_commands = ['G1', 'G01', 'G2', 'G02', 'G3', 'G03']
+                found_g_command = False
+                for cmd in g_commands:
+                    # Check if command appears (at start or after non-alphanumeric char, not followed by digit)
+                    if line_upper.startswith(cmd):
+                        found_g_command = True
+                        break
+                    # Check if command appears in the middle of line (preceded by non-alphanumeric)
+                    cmd_pos = line_upper.find(cmd)
+                    if cmd_pos > 0 and not line_upper[cmd_pos - 1].isalnum():
+                        # Make sure it's not followed by a digit (to avoid matching G10, G20, etc.)
+                        if cmd_pos + len(cmd) >= len(line_upper) or not line_upper[cmd_pos + len(cmd)].isdigit():
+                            found_g_command = True
+                            break
+                
+                if found_g_command:
+                    # Extract F parameter using regex
+                    f_match = re.search(r'[Ff]([+-]?\d+\.?\d*)', line)
+                    if f_match:
+                        try:
+                            feed_rate = float(f_match.group(1))
+                            return feed_rate
+                        except (ValueError, TypeError):
+                            continue
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error finding feed rate before line {start_line} in {local_file_path}: {e}")
+            return None
+
     def _find_command_line_number(self, local_file_path, start_line, gcode_command):
         """
         Search backwards from start_line to find the last occurrence of a gcode command.
@@ -818,10 +900,17 @@ class Controller:
                 g0_cmd += f" A{a:.3f}"
             additional_commands.append(g0_cmd)
 
-        # Add G0 movement into the Z position
+        # Add G1 movement into the Z position with last feed rate
         if z is not None:
-            g0_cmd = f"G0 Z{z:.3f}"
-            additional_commands.append(g0_cmd)
+            # Find the last feed rate from G1/G2/G3 commands
+            feed_rate = None
+            if local_file_path:
+                feed_rate = self._find_last_feed_rate(local_file_path, start_line)
+            
+            g1_cmd = f"G1 Z{z:.3f}"
+            if feed_rate is not None:
+                g1_cmd += f" F{feed_rate:.0f}"
+            additional_commands.append(g1_cmd)
 
         commands = [
             "buffer M600",
