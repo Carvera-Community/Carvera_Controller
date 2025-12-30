@@ -875,15 +875,35 @@ class Controller:
             if m6_cmd:
                 additional_commands.append(m6_cmd)
 
-            # Search for M7 (air assist on)
-            m7_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M7")
-            if m7_cmd:
+            # Search for M7 (air assist on) and M9 (air assist off)
+            m7_cmd, m7_line = self._find_command_line_number(local_file_path, start_line, "M7")
+            m9_cmd, m9_line = self._find_command_line_number(local_file_path, start_line, "M9")
+            if m7_line is not None and m9_line is not None:
+                if m7_line > m9_line:
+                    additional_commands.append(m7_cmd)
+                else:
+                    additional_commands.append(m9_cmd)
+            elif m7_cmd:
                 additional_commands.append(m7_cmd)
+            elif m9_cmd:
+                additional_commands.append(m9_cmd)
 
-            # Search for M3 (spindle on)
-            m3_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M3")
-            if m3_cmd:
-                additional_commands.append(m3_cmd)
+            # Search for M3 (spindle on), M5 (spindle off), M321 (laser mode on), and M322 (laser mode off)
+            m3_cmd, m3_line = self._find_command_line_number(local_file_path, start_line, "M3")
+            m5_cmd, m5_line = self._find_command_line_number(local_file_path, start_line, "M5")
+            m321_cmd, m321_line = self._find_command_line_number(local_file_path, start_line, "M321")
+            m322_cmd, m322_line = self._find_command_line_number(local_file_path, start_line, "M322")
+            
+            # Find the command with the highest line number (most recent)
+            last_spindle_cmd = None
+            last_spindle_line = 0
+            for cmd, line_num in [(m3_cmd, m3_line), (m5_cmd, m5_line), (m321_cmd, m321_line), (m322_cmd, m322_line)]:
+                if line_num is not None and line_num > last_spindle_line:
+                    last_spindle_cmd = cmd
+                    last_spindle_line = line_num
+            
+            if last_spindle_cmd:
+                additional_commands.append(last_spindle_cmd)
         
         # Add SafeZ movement (G53 G0 Z-2)
         # This should come after coordinate system setup but before position movement
