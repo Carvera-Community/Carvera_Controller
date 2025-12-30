@@ -661,6 +661,117 @@ class Controller:
             logger.warning(f"Error getting line position from gcode_viewer for line {line_number}: {e}")
             return (None, None, None, None)
 
+    def _find_m3_spindle_speed(self, local_file_path, start_line):
+        """
+        Search backwards from start_line to find M3 commands and extract S (spindle speed) parameter.
+        First checks the most recent M3 command, then searches backwards if no S parameter found.
+        
+        Args:
+            local_file_path: Path to the gcode file
+            start_line: Line number to search backwards from (1-based)
+        
+        Returns:
+            Spindle speed value as float, or None if not found
+        """
+        if not local_file_path or not os.path.exists(local_file_path):
+            return None
+        
+        try:
+            # Ensure start_line is an integer
+            try:
+                start_line = int(start_line)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid start_line value: {start_line}")
+                return None
+            
+            with open(local_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+            
+            if start_line < 1 or start_line > len(lines):
+                return None
+            
+            # First, find the most recent M3 command and check if it has S parameter
+            most_recent_m3_line = None
+            for i in range(start_line - 2, -1, -1):
+                original_line = lines[i]
+                line = original_line.strip()
+                
+                # Remove comments using string methods
+                if ';' in line:
+                    line = line[:line.index(';')]
+                # Remove parentheses comments using string methods
+                while '(' in line and ')' in line:
+                    start_paren = line.index('(')
+                    end_paren = line.index(')', start_paren)
+                    line = line[:start_paren] + line[end_paren + 1:]
+                
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Check if line contains M3 (not M30, M31, etc.)
+                line_upper = line.upper()
+                # Use regex to find M3 that's not part of M30, M31, etc.
+                # Look for M3 that's not followed by a digit (to avoid M30, M31, etc.)
+                # M3 can be preceded by anything (including digits from other commands like S12000). 
+                # Yes, really! One of the example files (ACRYLIC-R2D2.nc) has "G0X0.000Y0.000S12000M3" wtf is that!!?
+                m3_match = re.search(r'M3(?![0-9])', line_upper)
+                if m3_match:
+                    most_recent_m3_line = i
+                    # Extract S parameter from this line (S can appear before or after M3)
+                    # Use a more robust pattern that handles S parameters anywhere in the line
+                    # Pattern: S followed by optional sign, digits, optional decimal point and more digits
+                    s_match = re.search(r'[Ss]([+-]?\d+(?:\.\d+)?)', line)
+                    if s_match:
+                        try:
+                            spindle_speed = float(s_match.group(1))
+                            return spindle_speed
+                        except (ValueError, TypeError):
+                            pass
+                    # Found M3 but no S parameter, continue searching backwards
+                    break
+            
+            # If we found M3 but no S parameter, search backwards for previous M3 with S
+            if most_recent_m3_line is not None:
+                for i in range(most_recent_m3_line - 1, -1, -1):
+                    original_line = lines[i]
+                    line = original_line.strip()
+                    
+                    # Remove comments using string methods
+                    if ';' in line:
+                        line = line[:line.index(';')]
+                    # Remove parentheses comments using string methods
+                    while '(' in line and ')' in line:
+                        start_paren = line.index('(')
+                        end_paren = line.index(')', start_paren)
+                        line = line[:start_paren] + line[end_paren + 1:]
+                    
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # Check if line contains M3 (not M30, M31, etc.)
+                    line_upper = line.upper()
+                    # Use regex to find M3 that's not part of M30, M31, etc.
+                    # Look for M3 that's not followed by a digit (to avoid M30, M31, etc.)
+                    m3_match = re.search(r'M3(?![0-9])', line_upper)
+                    if m3_match:
+                        # Extract S parameter from this line (S can appear before or after M3)
+                        # Use a more robust pattern that handles S parameters anywhere in the line
+                        s_match = re.search(r'[Ss]([+-]?\d+(?:\.\d+)?)', line)
+                        if s_match:
+                            try:
+                                spindle_speed = float(s_match.group(1))
+                                return spindle_speed
+                            except (ValueError, TypeError):
+                                continue
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error finding M3 spindle speed before line {start_line} in {local_file_path}: {e}")
+            return None
+
     def _find_last_feed_rate(self, local_file_path, start_line):
         """
         Search backwards from start_line to find the last G1/G01/G2/G02/G3/G03 command
@@ -876,34 +987,31 @@ class Controller:
                 additional_commands.append(m6_cmd)
 
             # Search for M7 (air assist on) and M9 (air assist off)
-            m7_cmd, m7_line = self._find_command_line_number(local_file_path, start_line, "M7")
-            m9_cmd, m9_line = self._find_command_line_number(local_file_path, start_line, "M9")
+            _, m7_line = self._find_command_line_number(local_file_path, start_line, "M7")
+            _, m9_line = self._find_command_line_number(local_file_path, start_line, "M9")
             if m7_line is not None and m9_line is not None:
                 if m7_line > m9_line:
-                    additional_commands.append(m7_cmd)
-                else:
-                    additional_commands.append(m9_cmd)
-            elif m7_cmd:
-                additional_commands.append(m7_cmd)
-            elif m9_cmd:
-                additional_commands.append(m9_cmd)
+                    additional_commands.append("M7")
+            elif m7_line:
+                additional_commands.append("M7")
 
             # Search for M3 (spindle on), M5 (spindle off), M321 (laser mode on), and M322 (laser mode off)
             m3_cmd, m3_line = self._find_command_line_number(local_file_path, start_line, "M3")
-            m5_cmd, m5_line = self._find_command_line_number(local_file_path, start_line, "M5")
-            m321_cmd, m321_line = self._find_command_line_number(local_file_path, start_line, "M321")
-            m322_cmd, m322_line = self._find_command_line_number(local_file_path, start_line, "M322")
-            
-            # Find the command with the highest line number (most recent)
-            last_spindle_cmd = None
-            last_spindle_line = 0
-            for cmd, line_num in [(m3_cmd, m3_line), (m5_cmd, m5_line), (m321_cmd, m321_line), (m322_cmd, m322_line)]:
-                if line_num is not None and line_num > last_spindle_line:
-                    last_spindle_cmd = cmd
-                    last_spindle_line = line_num
-            
-            if last_spindle_cmd:
-                additional_commands.append(last_spindle_cmd)
+            _, m5_line = self._find_command_line_number(local_file_path, start_line, "M5")
+            _, m321_line = self._find_command_line_number(local_file_path, start_line, "M321")
+            _, m322_line = self._find_command_line_number(local_file_path, start_line, "M322")
+
+            if (m321_line or 0) > max(m322_line or 0, m5_line or 0, m3_line or 0):  # Yucky way to compare with vars that might be NoneType. Sorry
+                # Laser mode was last used
+                additional_commands.append("M321")
+            elif (m3_line or 0) > max(m321_line or 0, m5_line or 0):
+                # Spindle mode was last used
+                # Need to search for last spindle speed since it could have been set in a different command
+                spindle_speed = self._find_m3_spindle_speed(local_file_path, start_line)
+                if spindle_speed is not None:
+                    additional_commands.append(f"M3 S{spindle_speed:.0f}")
+                else:
+                    additional_commands.append("M3")
         
         # Add SafeZ movement (G53 G0 Z-2)
         # This should come after coordinate system setup but before position movement
