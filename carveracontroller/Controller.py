@@ -670,12 +670,7 @@ class Controller:
                     last_wcs_line = wcs_line
             if last_wcs:
                 additional_commands.append(last_wcs)
-            
-            # Search for M3 (spindle on)
-            m3_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M3")
-            if m3_cmd:
-                additional_commands.append(m3_cmd)
-            
+        
             # Search for M6 (tool change)
             m6_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M6")
             if m6_cmd:
@@ -685,6 +680,11 @@ class Controller:
             m7_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M7")
             if m7_cmd:
                 additional_commands.append(m7_cmd)
+
+            # Search for M3 (spindle on)
+            m3_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M3")
+            if m3_cmd:
+                additional_commands.append(m3_cmd)
 
         commands = [
             "buffer M600",
