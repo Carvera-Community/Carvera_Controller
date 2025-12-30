@@ -28,9 +28,11 @@ from functools import partial
 
 try:
     from kivy.clock import Clock
+    from kivy.app import App
 except ImportError:
     # Fallback if kivy is not available (e.g., during testing)
     Clock = None
+    App = None
 
 STREAM_POLL = 0.2 # s
 DIAGNOSE_POLL = 0.5  # s
@@ -558,6 +560,107 @@ class Controller:
             play_command = "play %s\n" % '/'.join(filename.split('\\')).replace(' ', '\x01')
         self.executeCommand(self.escape(play_command))
 
+    def _binary_find_left(self, array, key):
+        """
+        Binary search to find the leftmost position where key could be inserted.
+        Returns the index of the last element less than key, or -1 if key is smaller than all elements.
+        """
+        length = len(array)
+        ans = length
+        l = 0
+        r = length - 1
+        while l <= r:
+            mid = (l + r) >> 1
+            if array[mid] >= key:
+                ans = mid
+                r = mid - 1
+            else:
+                l = mid + 1
+        return ans - 1
+
+    def _get_line_position_from_gcode_viewer(self, line_number):
+        """
+        Get the X/Y/Z/A position for a specific line number from the loaded gcode file using GcodeViewer.
+        
+        Args:
+            line_number: The line number (1-based) to get position for
+        
+        Returns:
+            Tuple of (x, y, z, a) where x, y, z are floats and a is float or None.
+            Returns (None, None, None, None) if position cannot be determined.
+        """
+        if App is None:
+            return (None, None, None, None)
+        
+        try:
+            app = App.get_running_app()
+            if not app or not hasattr(app.root, 'gcode_viewer') or not app.root.gcode_viewer:
+                return (None, None, None, None)
+            
+            gcode_viewer = app.root.gcode_viewer
+            
+            # Check if gcode_viewer has the necessary data
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return (None, None, None, None)
+            
+            # Convert line_number to float for comparison (raw_linenumbers stores floats)
+            line_num_float = float(line_number)
+            
+            # Find the vertex index for this line number using binary search
+            left_pos = self._binary_find_left(gcode_viewer.raw_linenumbers, line_num_float)
+            
+            # Find the rightmost position with the same line number
+            right_pos = left_pos
+            while right_pos < len(gcode_viewer.raw_linenumbers) - 1 and gcode_viewer.raw_linenumbers[right_pos + 1] == line_num_float:
+                right_pos = right_pos + 1
+            
+            # Use the rightmost position (end of line) to get the final position
+            vertex_idx = right_pos
+            
+            # Validate vertex index
+            if vertex_idx < 0 or vertex_idx >= len(gcode_viewer.raw_linenumbers):
+                return (None, None, None, None)
+            
+            # Get position from meshmanager (use raw_positions for unrotated G-code coordinates)
+            if hasattr(gcode_viewer, 'meshmanager') and gcode_viewer.meshmanager:
+                # Use raw_positions array for unrotated G-code coordinates
+                if hasattr(gcode_viewer.meshmanager, 'raw_positions') and gcode_viewer.meshmanager.raw_positions:
+                    pos_idx = vertex_idx * 3
+                    if pos_idx + 2 < len(gcode_viewer.meshmanager.raw_positions):
+                        x = gcode_viewer.meshmanager.raw_positions[pos_idx]
+                        y = gcode_viewer.meshmanager.raw_positions[pos_idx + 1]
+                        z = gcode_viewer.meshmanager.raw_positions[pos_idx + 2]
+                        
+                        # Get angle if 4-axis
+                        a = None
+                        if hasattr(gcode_viewer.meshmanager, 'angles_of_vertices') and gcode_viewer.meshmanager.angles_of_vertices:
+                            if vertex_idx < len(gcode_viewer.meshmanager.angles_of_vertices):
+                                a = gcode_viewer.meshmanager.angles_of_vertices[vertex_idx]
+                        
+                        return (x, y, z, a)
+            else:
+                # Fallback: use raw_positions array directly from gcode_viewer
+                if hasattr(gcode_viewer, 'raw_positions') and gcode_viewer.raw_positions:
+                    pos_idx = vertex_idx * 3
+                    if pos_idx + 2 < len(gcode_viewer.raw_positions):
+                        x = gcode_viewer.raw_positions[pos_idx]
+                        y = gcode_viewer.raw_positions[pos_idx + 1]
+                        z = gcode_viewer.raw_positions[pos_idx + 2]
+                        
+                        # Get angle if 4-axis
+                        a = None
+                        if hasattr(gcode_viewer, 'angles_of_vertices') and gcode_viewer.angles_of_vertices:
+                            if vertex_idx < len(gcode_viewer.angles_of_vertices):
+                                a = gcode_viewer.angles_of_vertices[vertex_idx]
+                        
+                        return (x, y, z, a)
+            
+            return (None, None, None, None)
+            
+        except Exception as e:
+            logger.warning(f"Error getting line position from gcode_viewer for line {line_number}: {e}")
+            return (None, None, None, None)
+
     def _find_command_line_number(self, local_file_path, start_line, gcode_command):
         """
         Search backwards from start_line to find the last occurrence of a gcode command.
@@ -631,8 +734,22 @@ class Controller:
         if '\\' in filename:
             play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
+        # Get position from GcodeViewer for the line before start_line (start_line - 1)
+        # This is the position where start_line - 1 ends, which is where we want to move to
+        # Convert start_line to int and ensure it's at least 2 (so start_line - 1 >= 1)
+        try:
+            start_line_int = int(start_line)
+            prev_line = max(1, start_line_int - 1)  # Ensure we don't go below line 1
+        except (ValueError, TypeError):
+            prev_line = None
+        
+        # This finds the start position of the start_line using the gcode viewer
+        position = self._get_line_position_from_gcode_viewer(prev_line) if prev_line else (None, None, None, None)
+        x, y, z, a = position
+
         # Find additional commands to insert after "goto"
         additional_commands = []
+        
         if local_file_path:
             # Search for G20 or G21 (unit mode) - take the last one found
             _, g20_line = self._find_command_line_number(local_file_path, start_line, "G20")
@@ -685,6 +802,26 @@ class Controller:
             m3_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M3")
             if m3_cmd:
                 additional_commands.append(m3_cmd)
+        
+        # Add SafeZ movement (G53 G0 Z-2)
+        # This should come after coordinate system setup but before position movement
+        additional_commands.append("G53 G0 Z-2")
+        
+        # Add G0 movement to above the position
+        if x is not None or y is not None or z is not None or a is not None:
+            g0_cmd = "G0"
+            if x is not None:
+                g0_cmd += f" X{x:.3f}"
+            if y is not None:
+                g0_cmd += f" Y{y:.3f}"
+            if a is not None:
+                g0_cmd += f" A{a:.3f}"
+            additional_commands.append(g0_cmd)
+
+        # Add G0 movement into the Z position
+        if z is not None:
+            g0_cmd = f"G0 Z{z:.3f}"
+            additional_commands.append(g0_cmd)
 
         commands = [
             "buffer M600",

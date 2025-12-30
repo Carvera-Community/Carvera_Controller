@@ -131,8 +131,10 @@ class MyMeshManager():
 
         ##data container
 
-        # all pts
+        # all pts (rotated for 4-axis display)
         self.positions = []
+        # raw positions (unrotated G-code coordinates)
+        self.raw_positions = []
         # all lengths
         self.lengths = []
         # vertex type
@@ -163,6 +165,7 @@ class MyMeshManager():
 
     def clear(self):
         self.positions.clear()
+        self.raw_positions.clear()
         # all lengths
         self.lengths.clear()
         # vertex type
@@ -210,8 +213,16 @@ class MyMeshManager():
     def parse_line(self, line):
         arr_pt = line.split(' ')
 
-        # position
-        pos = [float(arr_pt[1]), float(arr_pt[3]), float(arr_pt[5])]
+        # position (raw G-code coordinates)
+        raw_pos = [float(arr_pt[1]), float(arr_pt[3]), float(arr_pt[5])]
+        
+        # Store raw positions before rotation
+        self.raw_positions.append(raw_pos[0])
+        self.raw_positions.append(raw_pos[1])
+        self.raw_positions.append(raw_pos[2])
+        
+        # Rotate position for 4-axis display
+        pos = raw_pos
         if self.is_4_axis:
             angle = float(arr_pt[7])
             pos = rotate_pt_by_x_axis_angle(pos[0], pos[1], pos[2], angle)
@@ -292,12 +303,15 @@ class MyMeshManager():
 
     def parse_line_data(self,linedata):
 
-        # position
-        pos = [linedata[0],linedata[1],linedata[2]]
+        # position (raw G-code coordinates)
+        raw_pos = [linedata[0],linedata[1],linedata[2]]
+        
+        # Store raw positions before rotation
+        self.raw_positions.extend(raw_pos)
 
         #angle
         angle = linedata[3]
-        pos = rotate_pt_by_x_axis_angle(pos[0], pos[1], pos[2], angle)
+        pos = rotate_pt_by_x_axis_angle(raw_pos[0], raw_pos[1], raw_pos[2], angle)
 
         self.positions.extend(pos)
         self.max_pt = vec3_max(self.max_pt, pos)
@@ -830,6 +844,7 @@ class GCodeViewer(Widget):
         self.lengths = self.meshmanager.lengths
         self.vertex_types = self.meshmanager.vertex_types
         self.positions = self.meshmanager.positions
+        self.raw_positions = self.meshmanager.raw_positions
         self.raw_linenumbers = self.meshmanager.raw_linenumbers
         self.angles_of_vertices = self.meshmanager.angles_of_vertices
 
@@ -1020,6 +1035,7 @@ class GCodeViewer(Widget):
             self.lengths = self.meshmanager.lengths
             self.vertex_types = self.meshmanager.vertex_types
             self.positions = self.meshmanager.positions
+            self.raw_positions = self.meshmanager.raw_positions
             self.raw_linenumbers = self.meshmanager.raw_linenumbers
             self.angles_of_vertices = self.meshmanager.angles_of_vertices
 
