@@ -1892,6 +1892,13 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         """Update the 3D viewer and progress slider when a line is selected in the file viewer"""
         app = App.get_running_app()
         if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Check if gcode_viewer has valid data before trying to use it
+            gcode_viewer = app.root.gcode_viewer
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return
+            if not hasattr(gcode_viewer, 'lengths') or not gcode_viewer.lengths:
+                return
+            
             # Calculate the actual line number based on current page and index
             current_page = app.curr_page
             actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
@@ -1901,7 +1908,10 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
                 app.root.gcode_rv.programmatic_selection = True
             
             # Update the 3D viewer to show the selected line
-            app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            try:
+                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            except (IndexError, AttributeError):
+                pass
             
             # Reset the file viewer flag BEFORE setting the slider value to prevent the callback from being blocked
             self._reset_file_viewer_flag()
@@ -3581,6 +3591,13 @@ class Makera(RelativeLayout):
         app.selected_remote_filename = remote_path
         self.wpb_play.value = 0
 
+        # Clear resume at line checkbox and input when file changes
+        if hasattr(self, 'coord_popup') and self.coord_popup:
+            if hasattr(self.coord_popup, 'cbx_startline'):
+                self.coord_popup.cbx_startline.active = False
+            if hasattr(self.coord_popup, 'txt_startline'):
+                self.coord_popup.txt_startline.text = ''
+
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
         self.load_selected_gcode_file()
 
@@ -3602,6 +3619,13 @@ class Makera(RelativeLayout):
         filepath = self.file_popup.local_rv.curr_selected_file
         app = App.get_running_app()
         app.selected_local_filename = filepath
+
+        # Clear resume at line checkbox and input when file changes
+        if hasattr(self, 'coord_popup') and self.coord_popup:
+            if hasattr(self.coord_popup, 'cbx_startline'):
+                self.coord_popup.cbx_startline.active = False
+            if hasattr(self.coord_popup, 'txt_startline'):
+                self.coord_popup.txt_startline.text = ''
 
         self.file_popup.dismiss()
 
@@ -3628,6 +3652,13 @@ class Makera(RelativeLayout):
         app.selected_local_filename = local_path
         app.selected_remote_filename = remote_path
         self.wpb_play.value = 0
+
+        # Clear resume at line checkbox and input when file changes
+        if hasattr(self, 'coord_popup') and self.coord_popup:
+            if hasattr(self.coord_popup, 'cbx_startline'):
+                self.coord_popup.cbx_startline.active = False
+            if hasattr(self.coord_popup, 'txt_startline'):
+                self.coord_popup.txt_startline.text = ''
 
         self.downloading_file = remote_path
         self.downloading_size = remote_size

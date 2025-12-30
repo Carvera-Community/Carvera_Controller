@@ -917,7 +917,7 @@ class Controller:
             if y is not None:
                 g0_cmd += f" Y{y:.3f}"
             if a is not None:
-                a = a * -1  # need to flip positive to negative due to a "right hand rule" rotation
+                a = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
                 g0_cmd += f" A{a:.3f}"
             additional_commands.append(g0_cmd)
 

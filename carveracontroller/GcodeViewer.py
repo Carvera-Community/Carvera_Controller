@@ -1816,8 +1816,13 @@ class GCodeViewer(Widget):
             self.frame_callback(cur_distance, linenumber)
 
     #根据line number 返回实际距离
-    #TODO:need test
     def get_distance_by_lineidx(self,lineidx,ratio):
+        # Validate that we have the necessary data
+        if not hasattr(self, 'raw_linenumbers') or not self.raw_linenumbers:
+            return None
+        if not hasattr(self, 'lengths') or not self.lengths:
+            return None
+        
         left_pos = binary_find_left(self.raw_linenumbers,lineidx)
         while(left_pos>0 and self.raw_linenumbers[left_pos-1] == lineidx):
             left_pos = left_pos - 1
@@ -1837,6 +1842,10 @@ class GCodeViewer(Widget):
             left_pos = 0
         if right_pos < 0:
             right_pos = 0
+        
+        # Ensure we have valid indices
+        if left_pos >= len(self.lengths) or right_pos >= len(self.lengths):
+            return None
             
         #start point
         start_distance = self.lengths[left_pos]
@@ -1846,6 +1855,12 @@ class GCodeViewer(Widget):
 
     #根据line number 返回实际距离
     def set_distance_by_lineidx(self,lineidx,ratio):
+        # Validate that we have the necessary data
+        if not hasattr(self, 'raw_linenumbers') or not self.raw_linenumbers:
+            return
+        if not hasattr(self, 'lengths') or not self.lengths:
+            return
+        
         left_pos = binary_find_left(self.raw_linenumbers,lineidx)
         while(left_pos>0 and self.raw_linenumbers[left_pos-1] == lineidx):
             left_pos = left_pos - 1
@@ -1865,6 +1880,10 @@ class GCodeViewer(Widget):
             left_pos = 0
         if right_pos < 0:
             right_pos = 0
+        
+        # Ensure we have valid indices
+        if left_pos >= len(self.lengths) or right_pos >= len(self.lengths):
+            return
             
         #start point
         start_distance = self.lengths[left_pos]
