@@ -7,6 +7,7 @@
 - Enhancement: Added support sending multiple MDI commands at once
 - Enhancement: Pressing the up arrow when in the MDI input box re-populates the input with the last send command
 - Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
+- Enhancement: Back up the machine's config files to the computer where the Controller is running
 - Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
