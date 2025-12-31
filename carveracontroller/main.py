@@ -3520,6 +3520,11 @@ class Makera(RelativeLayout):
         self.pick_file_popup.dismiss()
         self.pick_file_popup = None
         self.downloading_config = False
+
+        # Workaround so that we don't expose the SD card root directory to the user
+        # next time they open the gcode file browser
+        self.file_popup.remote_rv.curr_dir = self.file_popup.remote_rv.base_dir
+
         Clock.schedule_once(partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0)
         
     # -----------------------------------------------------------------------
