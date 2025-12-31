@@ -5624,8 +5624,7 @@
                 id: btn_ok
                 text: tr._('Ok')
                 on_release:
-                    app.root.controller.setRotation(float(txt_rotation.text))
-                    root.dismiss()
+                    on_release: root.on_ok_pressed()
 
 <GCodeLineContextMenu>:
     size_hint: None, None

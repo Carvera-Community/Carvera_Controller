@@ -5289,7 +5289,6 @@ class Makera(RelativeLayout):
         if self.confirm_popup.showing:
             return
         
-        # Check if the file contains G91 (incremental movement) commands
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
         
@@ -5300,7 +5299,7 @@ class Makera(RelativeLayout):
         self.confirm_popup.size_hint = (0.6, 0.5)
         self.confirm_popup.pos_hint = {"right": 0.75, "top": 0.7}
         self.confirm_popup.lb_title.text = tr._('Beta Feature: Resume Playback')
-        self.confirm_popup.lb_content.text = tr._('The "resume playback at line" functionality is beta. Please be prepared to e-stop your machine if it doesn\'t move correctly.\n\nCommands that will be executed:\n') + commands_preview + tr._('\n\nDo you want to continue?')
+        self.confirm_popup.lb_content.text = tr._('The "resume playback at line" functionality is beta. Please be prepared to e-stop your machine if it doesn\'t move correctly.\n\nCommands that will be executed:\n') + commands_preview
         self.confirm_popup.confirm = partial(self.execute_play_with_start_line, file_name, start_line)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
