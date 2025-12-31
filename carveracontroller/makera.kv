@@ -2222,6 +2222,7 @@
                                 size_hint_x: None
                                 width: '180dp'
                                 text: tr._("Back up machine config")
+                                disabled: kivy.utils.platform in ["android", "ios"]
                                 on_release:
                                     app.root.start_back_up_config()
                             Button:

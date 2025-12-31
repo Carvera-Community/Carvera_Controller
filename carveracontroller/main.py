@@ -4887,7 +4887,8 @@ class Makera(RelativeLayout):
             self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
-            self.config_popup.settings_panel.add_json_panel('Machine - Backup', self.config, data=json.dumps(backup_config))
+            if kivy_platform not in ['android', 'ios']:
+                self.config_popup.settings_panel.add_json_panel('Machine - Backup', self.config, data=json.dumps(backup_config))
         return True
 
     # -----------------------------------------------------------------------
