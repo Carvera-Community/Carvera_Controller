@@ -3469,6 +3469,14 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def start_back_up_config(self):
+        # Workaround for the fact that backup isn't a proper setting. If we don't clear it, the
+        # settings panel will show a selected value like "Back up files now" and won't allow
+        # another backup to run until the controller is restarted.
+        for panel in self.config_popup.settings_panel.interface.content.panels.values():
+            for item in panel.children:
+                if hasattr(item, 'section') and item.section == 'Backup' and hasattr(item, 'key') and item.key == 'backup':
+                    item.value = ''
+
         self.downloading_config = True
         Clock.schedule_once(partial(self.progressStart, tr._('Downloading config files...'), None), 0)
 
