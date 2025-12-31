@@ -4099,7 +4099,7 @@ class Makera(RelativeLayout):
                     except:
                         pass
                     file_list.append({'name': file_infos[0],
-                                     'path': os.path.join(self.file_popup.remote_rv.curr_dir, file_infos[0]),
+                                     'path': f"{self.file_popup.remote_rv.curr_dir}/{file_infos[0]}",
                                      'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
 
         Clock.schedule_once(partial(self.fill_remote_dir, file_list), 0)
