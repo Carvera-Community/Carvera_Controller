@@ -623,5 +623,13 @@
         "desc": "Enter upper case: 'DEFAULT' to save default",
         "section": "Restore",
         "key": "default"
+    },
+    {
+        "type": "options",
+        "title": "Back up configuration files",
+        "desc": "config.txt, flex_compensation.dat, etc. will be backed up to your computer",
+        "section": "Backup",
+        "key": "backup",
+        "options": ["Back up files now"]
     }
 ]

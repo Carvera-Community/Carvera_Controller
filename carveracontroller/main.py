@@ -5,6 +5,14 @@ import struct
 # import os
 # os.environ["KIVY_METRICS_DENSITY"] = '1'
 
+CONFIG_FILES_TO_BACK_UP = [
+    '/sd/cartesian_nm.grid',
+    '/sd/config.default',
+    '/sd/config.txt',
+    '/sd/custom_tool_slots.txt',
+    '/sd/flex_compensation.dat',
+]
+
 def is_android():
     return 'ANDROID_ARGUMENT' in os.environ or 'ANDROID_PRIVATE' in os.environ or 'ANDROID_APP_PATH' in os.environ
 
@@ -106,6 +114,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
@@ -667,6 +676,23 @@ class PairingPopup(ModalView):
             self.pairing = False
             self.pairing_note = self.pairing_string['timeout']
             self.countdown_event.cancel()
+
+class PickFilePopup(FloatLayout):
+    on_select = ObjectProperty(None)
+    on_cancel = ObjectProperty(None)
+
+    def __init__(self, on_select, on_cancel=None, **kwargs):
+        super(PickFilePopup, self).__init__(**kwargs)
+        self.on_select = on_select
+        self.on_cancel = on_cancel
+
+    def on_select_pressed(self, directory, filename):
+        if self.on_select:
+            self.on_select(directory, filename)
+
+    def on_cancel_pressed(self):
+        if self.on_cancel:
+            self.on_cancel()
 
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
@@ -1441,6 +1467,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
             if section in ['carvera', 'graphics', 'kivy']:
                 app.root.controller_setting_change_list[key] = value
                 app.root.config_popup.btn_apply.disabled = False
+            elif section == 'Backup':
+                app.root.start_back_up_config()
+                app.root.config_popup.btn_apply.disabled = True
             elif section != 'Restore':
                 app.root.setting_change_list[key] = Utils.to_config(app.root.setting_type_list[key], value).strip()
                 app.root.config_popup.btn_apply.disabled = False
@@ -1932,7 +1961,7 @@ class RemoteRV(DataRV):
         self.curr_file_list_buff = []
 
         app = App.get_running_app()
-        app.root.loadRemoteDir(new_dir)
+        threading.Thread(target=app.root.loadRemoteDir, args=(new_dir,), daemon=True).start()
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
     
@@ -2312,6 +2341,7 @@ class Makera(RelativeLayout):
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
+        self.pick_file_popup = None
         self.language_popup = LanguagePopup()
         self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
@@ -2383,6 +2413,8 @@ class Makera(RelativeLayout):
 
         self.heartbeat_time = 0
         self.file_just_loaded = False
+
+        self.fill_remote_dir_callback = None
 
         self.show_update = (Config.get('carvera', 'show_update') == '1')
         self.upgrade_popup.cbx_check_at_startup.active = self.show_update
@@ -3166,7 +3198,7 @@ class Makera(RelativeLayout):
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
-                    Clock.schedule_once(self.fillRemoteDir, 0)
+                    self.process_loaded_dir(self.fill_remote_dir)
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
@@ -3389,7 +3421,7 @@ class Makera(RelativeLayout):
         self.wpb_play.value = 0
 
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
-        self.load_selected_gcode_file()
+        self.load_gcode_file(local_cached_file_path)
 
     def check_upload_and_select(self):
         filepath = self.file_popup.local_rv.curr_selected_file
@@ -3417,13 +3449,8 @@ class Makera(RelativeLayout):
         self.progress_popup.progress_text = tr._('Opening local file') + '\n%s' % filepath
         self.progress_popup.open()
 
-        threading.Thread(target=self.load_selected_gcode_file).start()
-        # Clock.schedule_once(self.load_selected_gcode_file, 0)
-
-    # -----------------------------------------------------------------------
-    def load_selected_gcode_file(self, *args):
-        app = App.get_running_app()
-        self.load(app.selected_local_filename)
+        threading.Thread(target=self.load_gcode_file, args=(filepath)).start()
+        # Clock.schedule_once(partial(self.load_gcode_file, filepath), 0)
 
     # -----------------------------------------------------------------------
     def check_and_download(self):
@@ -3436,19 +3463,86 @@ class Makera(RelativeLayout):
         app.selected_remote_filename = remote_path
         self.wpb_play.value = 0
 
-        self.downloading_file = remote_path
         self.downloading_size = remote_size
         self.downloading_config = False
-        threading.Thread(target=self.doDownload).start()
+        threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
+    # -----------------------------------------------------------------------
+    def start_back_up_config(self):
+        # Workaround for the fact that backup isn't a proper setting. If we don't clear it, the
+        # settings panel will show a selected value like "Back up files now" and won't allow
+        # another backup to run until the controller is restarted.
+        for panel in self.config_popup.settings_panel.interface.content.panels.values():
+            for item in panel.children:
+                if hasattr(item, 'section') and item.section == 'Backup' and hasattr(item, 'key') and item.key == 'backup':
+                    item.value = ''
+
+        self.downloading_config = True
+        Clock.schedule_once(partial(self.progressStart, tr._('Downloading config files...'), None), 0)
+
+        self.fill_remote_dir_callback = self.download_config_files
+        self.file_popup.remote_rv.list_dir("/sd")
+
+    # -----------------------------------------------------------------------
+    def download_config_files(self, remote_paths):
+        matching_paths = []
+        for file_info in remote_paths:
+            if file_info['path'] in CONFIG_FILES_TO_BACK_UP:
+                logger.debug(f"Found matching config file: {file_info['path']}")
+                matching_paths.append(file_info['path'])
+
+        local_paths = []
+        progress = 0.0
+        for remote_path in matching_paths:
+            local_path = os.path.join(self.temp_dir, os.path.basename(remote_path))
+            local_paths.append(local_path)
+            logger.debug(f"Downloading config file {remote_path} to {local_path}")
+            Clock.schedule_once(partial(self.progressUpdate, progress, tr._('Downloading') + ' \n%s' % remote_path, True), 0)
+            self.doDownload(remote_path, local_path, False)
+            progress += 100.0/len(matching_paths)
+            Clock.schedule_once(partial(self.progressUpdate, progress, tr._('Downloading') + ' \n%s' % remote_path, True), 0)
+
+            # Delay to avoid breaking communication with the machine
+            time.sleep(1.5)
+
+        Clock.schedule_once(partial(self.choose_back_up_config_destination, local_paths), 0)
+
+    # -----------------------------------------------------------------------
+    def choose_back_up_config_destination(self, local_paths, *args):
+        self.progressFinish()
+        content = PickFilePopup(partial(self.finish_backing_up_config, local_paths))
+        self.pick_file_popup = Popup(title="Choose where to back up your machine configuration", content=content, size_hint=(0.75, 0.75), auto_dismiss=True)
+        content.on_cancel = self.pick_file_popup.dismiss
+        self.pick_file_popup.open()
+
+    # -----------------------------------------------------------------------
+    def finish_backing_up_config(self, downloaded_file_paths, selected_dir, _selected_file):
+        for source_file_path in downloaded_file_paths:
+            dest_file_path = os.path.join(selected_dir, os.path.basename(source_file_path))
+            try:
+                shutil.copyfile(source_file_path, dest_file_path)
+            except Exception as e:
+                Clock.schedule_once(partial(self.show_message_popup, tr._(f"Couldn't back up '{source_file_path}'. The error was:\n\n{e}"), False), 0)
+                print("Error backing up config file:", e)
+        
+        self.pick_file_popup.dismiss()
+        self.pick_file_popup = None
+        self.downloading_config = False
+
+        # Workaround so that we don't expose the SD card root directory to the user
+        # next time they open the gcode file browser
+        self.file_popup.remote_rv.curr_dir = self.file_popup.remote_rv.base_dir
+
+        Clock.schedule_once(partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0)
+        
     # -----------------------------------------------------------------------
     def download_config_file(self):
         app = App.get_running_app()
-        app.selected_local_filename = os.path.join(self.temp_dir, 'config.txt')
-        self.downloading_file = '/sd/config.txt'
         self.downloading_size = 1024 * 5
         self.downloading_config = True
-        threading.Thread(target=self.doDownload).start()
+        remote_path = '/sd/config.txt'
+        local_path = os.path.join(self.temp_dir, 'config.txt')
+        threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
     # -----------------------------------------------------------------------
     def finishLoadConfig(self, success, *args):
@@ -3488,26 +3582,28 @@ class Makera(RelativeLayout):
         self.updateStatus()
 
     # -----------------------------------------------------------------------
-    def doDownload(self):
+    def doDownload(self, remote_path, local_path, show_progress=True):
         app = App.get_running_app()
-        if not self.downloading_config and not os.path.exists(os.path.dirname(app.selected_local_filename)):
-            #os.mkdir(os.path.dirname(app.selected_local_filename))
-            os.makedirs(os.path.dirname(app.selected_local_filename))
-        if os.path.exists(app.selected_local_filename):
-            shutil.copyfile(app.selected_local_filename, app.selected_local_filename + '.tmp')
+        if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
+            #os.mkdir(os.path.dirname(local_path))
+            os.makedirs(os.path.dirname(local_path))
+        if os.path.exists(local_path):
+            shutil.copyfile(local_path, local_path + '.tmp')
 
-        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % app.selected_local_filename), \
-                                    None if self.downloading_config else self.cancelProcessingFile), 0)
+
+        if show_progress:
+            Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % local_path), \
+                                        None if self.downloading_config else self.cancelProcessingFile), 0)
         self.downloading = True
         download_result = False
         try:
-            tmp_filename = app.selected_local_filename + '.tmp'
+            tmp_filename = local_path + '.tmp'
             md5 = ''
             if os.path.exists(tmp_filename):
                 md5 = Utils.md5(tmp_filename)
-            self.controller.downloadCommand(self.downloading_file)
+            self.controller.downloadCommand(remote_path)
             self.controller.pauseStream(0.2)
-            download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
+            download_result = self.controller.stream.download(tmp_filename, md5, partial(self.downloadCallback, remote_path) if show_progress else None)
         except:
             logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
@@ -3519,7 +3615,7 @@ class Makera(RelativeLayout):
         self.heartbeat_time = time.time()
 
         if download_result is None:
-            os.remove(app.selected_local_filename + '.tmp')
+            os.remove(local_path + '.tmp')
             # show message popup
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0.1)
@@ -3529,17 +3625,19 @@ class Makera(RelativeLayout):
         elif download_result >= 0:
             if download_result > 0:
                 # download success
-                if os.path.exists(app.selected_local_filename):
-                    os.remove(app.selected_local_filename)
-                os.rename(app.selected_local_filename + '.tmp', app.selected_local_filename)
+                if os.path.exists(local_path):
+                    os.remove(local_path)
+                os.rename(local_path + '.tmp', local_path)
             else:
                 # MD5 same
-                os.remove(app.selected_local_filename + '.tmp')
+                os.remove(local_path + '.tmp')
             if self.downloading_config:
-                Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
 
-                Clock.schedule_once(partial(self.progressUpdate, 100, tr._('Synchronize version and time...'), True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 100, tr._('Synchronize version and time...'), True), 0)
                 Clock.schedule_once(self.controller.queryTime, 0.1)
                 Clock.schedule_once(self.controller.queryModel, 0.2)
                 Clock.schedule_once(self.controller.queryVersion, 0.3)
@@ -3548,21 +3646,22 @@ class Makera(RelativeLayout):
                 # Schedule a one off diagnostic command to get the machine's extended state
                 Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
-                Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
-                # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
-                self.load_selected_gcode_file()
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % local_path, True), 0)
+                # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
+                self.load_gcode_file(local_path)
 
             if not self.downloading_config:
-                self.update_recent_remote_dir_list(os.path.dirname(self.downloading_file))
-
+                self.update_recent_remote_dir_list(os.path.dirname(remote_path))
 
         elif download_result < 0:
-            os.remove(app.selected_local_filename + '.tmp')
+            os.remove(local_path + '.tmp')
             self.controller.log.put((Controller.MSG_NORMAL, tr._('Downloading is canceled manually.')))
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0)
 
-        Clock.schedule_once(self.progressFinish, 0.1)
+        if show_progress:
+            Clock.schedule_once(self.progressFinish, 0.1)
 
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
@@ -3602,9 +3701,9 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
-    def downloadCallback(self, packet_size, success_count, error_count):
+    def downloadCallback(self, remote_path, packet_size, success_count, error_count):
         packets = self.downloading_size / packet_size + (1 if self.downloading_size % packet_size > 0 else 0)
-        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
+        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % remote_path, False), 0)
 
     # -----------------------------------------------------------------------
     def cancelSelectFile(self):
@@ -3994,9 +4093,9 @@ class Makera(RelativeLayout):
         self.controller.stream.cancel_process()
 
     # -----------------------------------------------------------------------
-    def fillRemoteDir(self, *args):
+    def process_loaded_dir(self, *args):
         is_dir = False
-        self.file_popup.remote_rv.curr_file_list_buff = []
+        file_list = []
         while self.controller.load_buffer.qsize() > 0:
             line = self.controller.load_buffer.get_nowait().strip('\r').strip('\n')
             if len(line) > 0 and line[0] != "<":
@@ -4012,10 +4111,15 @@ class Makera(RelativeLayout):
                         timestamp = time.mktime(datetime.datetime.strptime(file_infos[2], "%Y%m%d%H%M%S").timetuple())
                     except:
                         pass
-                    self.file_popup.remote_rv.curr_file_list_buff.append({'name': file_infos[0],
-                                                     'path': os.path.join(self.file_popup.remote_rv.curr_dir, file_infos[0]),
-                                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
+                    file_list.append({'name': file_infos[0],
+                                     'path': f"{self.file_popup.remote_rv.curr_dir}/{file_infos[0]}",
+                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
 
+        Clock.schedule_once(partial(self.fill_remote_dir, file_list), 0)
+
+    # -----------------------------------------------------------------------
+    def fill_remote_dir(self, file_list, *args):
+        self.file_popup.remote_rv.curr_file_list_buff = file_list
         self.file_popup.remote_rv.fill_dir(switch_reverse = False)
 
         self.file_popup.remote_rv.curr_dir = os.path.normpath(self.file_popup.remote_rv.curr_dir)
@@ -4025,6 +4129,10 @@ class Makera(RelativeLayout):
         if self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir \
                 or self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir_win:
             self.file_popup.remote_rv.curr_path_list = ['root']
+
+            if self.fill_remote_dir_callback:
+                threading.Thread(target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)).start()
+                self.fill_remote_dir_callback = None
             return
         else:
             self.file_popup.remote_rv.curr_path_list = [self.file_popup.remote_rv.curr_dir_name]
@@ -4043,6 +4151,10 @@ class Makera(RelativeLayout):
                 else:
                     self.file_popup.remote_rv.curr_path_list.insert(0, os.path.basename(parent_dir))
                 last_parent_dir = parent_dir
+
+        if self.fill_remote_dir_callback:
+            threading.Thread(target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)).start()
+            self.fill_remote_dir_callback = None
 
     # -----------------------------------------------------------------------
     def loadError(self, error_msg, *args):
@@ -4684,7 +4796,8 @@ class Makera(RelativeLayout):
 
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
-                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics', 'kivy']:
+                        # backup is a one-shot operation and not a setting to be stored
+                        elif child.section.lower() not in ['restore','default', 'backup', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
                             self.controller.close()
@@ -4714,6 +4827,7 @@ class Makera(RelativeLayout):
             basic_config = []
             advanced_config = []
             restore_config = []
+            backup_config = []
             self.setting_type_list.clear()
             for setting in data:
                 if 'key' in setting and 'default' in setting:
@@ -4738,7 +4852,7 @@ class Makera(RelativeLayout):
                             #
                             # self.controller.log.put(
                             #     (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(setting['key'])))
-                        elif setting['key'].lower() != 'restore' and setting['key'].lower() != 'default' :
+                        elif setting['key'].lower() not in ['restore', 'default', 'backup']:
                             self.controller.log.put((Controller.MSG_ERROR, 'Load config error, Key: {}'.format(setting['key'])))
                             self.controller.close()
                             self.updateStatus()
@@ -4755,6 +4869,10 @@ class Makera(RelativeLayout):
                         self.config.setdefaults(setting['section'], {
                             setting['key']: Utils.from_config(setting['type'], '')})
                         restore_config.append(setting)
+                    elif 'section' in setting and setting['section'] == 'Backup':
+                        self.config.setdefaults(setting['section'], {
+                            setting['key']: Utils.from_config(setting['type'], '')})
+                        backup_config.append(setting)
             # clear title section
             for basic in basic_config:
                 if basic['type'] == 'title' and 'section' in basic:
@@ -4769,6 +4887,8 @@ class Makera(RelativeLayout):
             self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
+            if kivy_platform not in ['android', 'ios']:
+                self.config_popup.settings_panel.add_json_panel('Machine - Backup', self.config, data=json.dumps(backup_config))
         return True
 
     # -----------------------------------------------------------------------
@@ -5218,7 +5338,7 @@ class Makera(RelativeLayout):
         self.load_page(0)
 
     # -----------------------------------------------------------------------
-    def load(self, filepath):
+    def load_gcode_file(self, filepath):
         self.load_event.set()
         self.upcoming_tool = 0
         self.used_tools = []
