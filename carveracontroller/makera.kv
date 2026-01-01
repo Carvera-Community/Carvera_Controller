@@ -4775,13 +4775,15 @@
                 id: wcs_grid
                 cols: 8
                 spacing: '5dp'
-                size_hint_y: None
+                size_hint: (None, None)
+                width: self.parent.width
                 height: self.minimum_height
                 
                 # Header row
                 Label:
                     text: 'WCS'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4791,7 +4793,8 @@
                             size: self.size
                 Label:
                     text: 'X Offset'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4801,7 +4804,8 @@
                             size: self.size
                 Label:
                     text: 'Y Offset'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4811,7 +4815,8 @@
                             size: self.size
                 Label:
                     text: 'Z Offset'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4821,7 +4826,8 @@
                             size: self.size
                 Label:
                     text: 'A Offset'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4831,7 +4837,8 @@
                             size: self.size
                 Label:
                     text: 'Rotation'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4841,7 +4848,8 @@
                             size: self.size
                 Label:
                     text: 'Clear Offsets'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4852,7 +4860,7 @@
                 Label:
                     text: 'Description'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '30dp'
                     canvas.before:
                         Color:
@@ -4864,14 +4872,16 @@
                 Button:
                     id: G54
                     text: 'G54'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G54')
                 TextInput:
                     id: g54_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4881,7 +4891,8 @@
                 TextInput:
                     id: g54_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4891,7 +4902,8 @@
                 TextInput:
                     id: g54_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4901,7 +4913,8 @@
                 TextInput:
                     id: g54_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4911,7 +4924,8 @@
                 TextInput:
                     id: g54_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4920,7 +4934,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     on_release: root.clear_wcs_offsets('G54')
                     disabled: app.is_community_firmware == False
@@ -4929,7 +4944,7 @@
                     id: g54_description
                     text: 'G54'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -4940,14 +4955,16 @@
                 Button:
                     id: G55
                     text: 'G55'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G55')
                 TextInput:
                     id: g55_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4957,7 +4974,8 @@
                 TextInput:
                     id: g55_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4967,7 +4985,8 @@
                 TextInput:
                     id: g55_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4977,7 +4996,8 @@
                 TextInput:
                     id: g55_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4987,7 +5007,8 @@
                 TextInput:
                     id: g55_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -4996,7 +5017,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G55')
@@ -5005,7 +5027,7 @@
                     id: g55_description
                     text: 'G55'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5016,14 +5038,16 @@
                 Button:
                     id: G56
                     text: 'G56'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G56')
                 TextInput:
                     id: g56_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5033,7 +5057,8 @@
                 TextInput:
                     id: g56_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5043,7 +5068,8 @@
                 TextInput:
                     id: g56_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5053,7 +5079,8 @@
                 TextInput:
                     id: g56_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5063,7 +5090,8 @@
                 TextInput:
                     id: g56_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5072,7 +5100,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G56')
@@ -5081,7 +5110,7 @@
                     id: g56_description
                     text: 'G56'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5092,14 +5121,16 @@
                 Button:
                     id: G57
                     text: 'G57'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G57')
                 TextInput:
                     id: g57_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5109,7 +5140,8 @@
                 TextInput:
                     id: g57_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5119,7 +5151,8 @@
                 TextInput:
                     id: g57_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5129,7 +5162,8 @@
                 TextInput:
                     id: g57_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5139,7 +5173,8 @@
                 TextInput:
                     id: g57_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5148,7 +5183,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G57')
@@ -5157,7 +5193,7 @@
                     id: g57_description
                     text: 'G57'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5168,14 +5204,16 @@
                 Button:
                     id: G58
                     text: 'G58'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G58')
                 TextInput:
                     id: g58_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5185,7 +5223,8 @@
                 TextInput:
                     id: g58_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5195,7 +5234,8 @@
                 TextInput:
                     id: g58_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5205,7 +5245,8 @@
                 TextInput:
                     id: g58_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5215,7 +5256,8 @@
                 TextInput:
                     id: g58_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5224,7 +5266,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G58')
@@ -5233,7 +5276,7 @@
                     id: g58_description
                     text: 'G58'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5244,14 +5287,16 @@
                 Button:
                     id: G59
                     text: 'G59'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G59')
                 TextInput:
                     id: g59_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5261,7 +5306,8 @@
                 TextInput:
                     id: g59_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5271,7 +5317,8 @@
                 TextInput:
                     id: g59_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5281,7 +5328,8 @@
                 TextInput:
                     id: g59_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5291,7 +5339,8 @@
                 TextInput:
                     id: g59_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5300,7 +5349,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59')
@@ -5309,7 +5359,7 @@
                     id: g59_description
                     text: 'G59'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5320,14 +5370,16 @@
                 Button:
                     id: G59_1
                     text: 'G59.1'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G59.1')
                 TextInput:
                     id: g59_1_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5337,7 +5389,8 @@
                 TextInput:
                     id: g59_1_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5347,7 +5400,8 @@
                 TextInput:
                     id: g59_1_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5357,7 +5411,8 @@
                 TextInput:
                     id: g59_1_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5367,7 +5422,8 @@
                 TextInput:
                     id: g59_1_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5376,7 +5432,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59.1')
@@ -5385,7 +5442,7 @@
                     id: g59_1_description
                     text: 'G59.1'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5396,14 +5453,16 @@
                 Button:
                     id: G59_2
                     text: 'G59.2'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G59.2')
                 TextInput:
                     id: g59_2_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5413,7 +5472,8 @@
                 TextInput:
                     id: g59_2_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5423,7 +5483,8 @@
                 TextInput:
                     id: g59_2_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5433,7 +5494,8 @@
                 TextInput:
                     id: g59_2_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5443,7 +5505,8 @@
                 TextInput:
                     id: g59_2_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5452,7 +5515,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59.2')
@@ -5461,7 +5525,7 @@
                     id: g59_2_description
                     text: 'G59.2'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
@@ -5472,14 +5536,16 @@
                 Button:
                     id: G59_3
                     text: 'G59.3'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '50dp'
                     height: '40dp'
                     on_release: 
                         root.activate_wcs('G59.3')
                 TextInput:
                     id: g59_3_x
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5489,7 +5555,8 @@
                 TextInput:
                     id: g59_3_y
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5499,7 +5566,8 @@
                 TextInput:
                     id: g59_3_z
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5509,7 +5577,8 @@
                 TextInput:
                     id: g59_3_a
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5519,7 +5588,8 @@
                 TextInput:
                     id: g59_3_r
                     text: '0.000'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '70dp'
                     height: '40dp'
                     input_type: 'number'
                     input_filter: 'float'
@@ -5528,7 +5598,8 @@
                     on_text: root.check_for_changes()
                 Button:
                     text: 'Clear'
-                    size_hint_y: None
+                    size_hint: (None, None)
+                    width: '100dp'
                     height: '40dp'
                     disabled: app.is_community_firmware == False
                     on_release: root.clear_wcs_offsets('G59.3')
@@ -5537,7 +5608,7 @@
                     id: g59_3_description
                     text: 'G59.3'
                     size_hint_y: None
-                    size_hint_x: 2
+                    size_hint_x: 1
                     height: '40dp'
                     input_type: 'text'
                     multiline: False
