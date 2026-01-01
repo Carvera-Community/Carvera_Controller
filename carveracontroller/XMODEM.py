@@ -445,7 +445,7 @@ class XMODEM(object):
             # first try CRC mode, if this fails,
             # fall back to checksum mode
             if error_count >= retry:
-                self.log.info('error_count reached %d, aborting.', retry)
+                self.log.error('error_count reached %d, aborting.', retry)
                 self.abort(timeout=timeout)
                 return None
             elif crc_mode and error_count < (retry // 2):
