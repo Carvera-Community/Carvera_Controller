@@ -5313,9 +5313,16 @@ class Makera(RelativeLayout):
     
     # -----------------------------------------------------------------------
     def update_resume_at_line_from_played_line(self, line_number):
-        """Update the resume at line input with the last executed line number"""
+        """Update the resume at line input with the last executed line number
+        
+        The goto command goes to the line AFTER the specified one, so we subtract 2:
+        - 1 for the incompletely executed line
+        - 1 because goto starts on the next line from the specified one
+        """
         if line_number > 0:
-            self.coord_popup.txt_startline.text = str(line_number)
+            # Subtract 2 to account for incompletely executed line and goto behavior
+            resume_line = max(1, line_number - 2)
+            self.coord_popup.txt_startline.text = str(resume_line)
 
     # -----------------------------------------------------------------------
     def defaultSettings(self):
