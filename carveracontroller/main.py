@@ -1189,7 +1189,32 @@ class WCSSettingsPopup(ModalView):
         self.wcs_names = wcs_names
         self.current_active_wcs = None  # Track current active WCS
         self.has_changes = False  # Track if any values have changed
-    
+
+    def load_wcs_descriptions(self):
+        """Update the WCS descriptions when popup opens"""
+        self.ids.g54_description.text = Config.get('carvera', 'g54_description')
+        self.ids.g55_description.text = Config.get('carvera', 'g55_description')
+        self.ids.g56_description.text = Config.get('carvera', 'g56_description')
+        self.ids.g57_description.text = Config.get('carvera', 'g57_description')
+        self.ids.g58_description.text = Config.get('carvera', 'g58_description')
+        self.ids.g59_description.text = Config.get('carvera', 'g59_description')
+
+    def change_wcs_description(self, wcs):
+        """Change the WCS description when the WCS is changed"""
+        if wcs == 'G54':
+            Config.set('carvera', 'g54_description', self.ids.g54_description.text)
+        elif wcs == 'G55':
+            Config.set('carvera', 'g55_description', self.ids.g55_description.text)
+        elif wcs == 'G56':
+            Config.set('carvera', 'g56_description', self.ids.g56_description.text)
+        elif wcs == 'G57':
+            Config.set('carvera', 'g57_description', self.ids.g57_description.text)
+        elif wcs == 'G58':
+            Config.set('carvera', 'g58_description', self.ids.g58_description.text)
+        elif wcs == 'G59':
+            Config.set('carvera', 'g59_description', self.ids.g59_description.text)
+        Config.write()
+
     def on_open(self):
         """Parse WCS values from machine and populate fields when popup opens"""
         if self.controller:
@@ -1197,6 +1222,8 @@ class WCSSettingsPopup(ModalView):
             self.controller.wcs_popup_callback = self.populate_wcs_values
             # Request parameters from machine
             self.controller.viewWCS()
+            # Update WCS descriptions
+            self.load_wcs_descriptions()
             # Update UI based on firmware type
             Clock.schedule_once(lambda dt: self.update_ui_for_firmware_type(), 0.2)
     
@@ -1230,7 +1257,7 @@ class WCSSettingsPopup(ModalView):
                     if hasattr(self.ids, f'{wcs.lower()}_a'):
                         self.ids[f'{wcs.lower()}_a'].text = f"{a:.3f}"
                     if hasattr(self.ids, f'{wcs.lower()}_r'):
-                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.2f}"
+                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.3f}"
         
         Clock.schedule_once(update_ui, 0)
         
@@ -1284,9 +1311,7 @@ class WCSSettingsPopup(ModalView):
                 if 'R' in changed_values:
                     cmd += f"R{changed_values['R']:.1f}"
                 self.controller.executeCommand(cmd)
-                
-                
-    
+               
     def clear_wcs_offsets(self, wcs):
         """Clear all offsets (X, Y, Z, A) for the specified WCS"""
         # Set all offset fields to 0.000
@@ -1299,6 +1324,7 @@ class WCSSettingsPopup(ModalView):
             self.ids[f'{wcs.lower()}_z'].text = '0.000'
         if hasattr(self.ids, f'{wcs.lower()}_a'):
             self.ids[f'{wcs.lower()}_a'].text = '0.000'
+        self.clear_wcs_rotation(wcs)
         self.check_for_changes()
     
     def clear_wcs_rotation(self, wcs):
@@ -1323,14 +1349,12 @@ class WCSSettingsPopup(ModalView):
         # Update all activate buttons
         for wcs in self.wcs_names:
             wcs_txt = wcs.replace('.', '_')
-            button_id = f'{wcs_txt.lower()}_activate'
+            button_id = wcs_txt
             if hasattr(self.ids, button_id):
                 button = getattr(self.ids, button_id)
                 if wcs == active_wcs:
-                    button.text = 'ACTIVE'
                     button.color = (0/255, 255/255, 255/255, 1)  # Blue color
                 else:
-                    button.text = 'Activate'
                     button.color = (1, 1, 1, 1)  # Default color
     
     def activate_wcs(self, wcs):
@@ -1377,6 +1401,7 @@ class WCSSettingsPopup(ModalView):
             # Update clear all button
             if hasattr(self.ids, 'btn_clear_all'):
                 self.ids.btn_clear_all.disabled = not is_community
+            self.check_for_changes()
         except Exception as e:
             logger.error(f"Error updating UI for firmware type: {e}")
     
@@ -1453,7 +1478,7 @@ class SetRotationPopup(ModalView):
     def on_open(self):
         """Set the default rotation value when popup opens"""
         rotation_angle = self.cnc.vars.get("rotation_angle", 0.0)
-        self.ids.txt_rotation.text = f"{rotation_angle:.1f}"
+        self.ids.txt_rotation.text = f"{rotation_angle:.3f}"
 
 class MakeraConfigPanel(SettingsWithSidebar):
     def __init__(self, *args, **kwargs):
