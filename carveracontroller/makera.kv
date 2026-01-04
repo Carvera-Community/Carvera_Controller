@@ -2573,7 +2573,9 @@
                         id: btn_view
                         size_hint_x: None
                         width: '100dp'
-                        text: tr._("Download") if root.firmware_mode else tr._("View")
+                        disabled: root.firmware_mode
+                        opacity: 0 if root.firmware_mode else 1
+                        text: tr._("View")
                         on_release:
                             app.root.view_local_file()
                     Button:
@@ -2589,6 +2591,7 @@
                         width: '130dp'
                         text: tr._("Upload and Select")
                         disabled: root.firmware_mode
+                        opacity: 0 if root.firmware_mode else 1
                         on_release:
                             app.root.check_upload_and_select()
                             root.dismiss()
