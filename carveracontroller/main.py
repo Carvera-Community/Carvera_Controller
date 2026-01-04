@@ -5202,6 +5202,9 @@ class Makera(RelativeLayout):
         self.updateStatus()
         self.loading_file = False
 
+        # Scroll to top of program that we just loaded
+        self.gcode_rv.scroll_y = 1
+
     # -----------------------------------------------------------------------
     def first_page(self):
         self.load_page(1)
