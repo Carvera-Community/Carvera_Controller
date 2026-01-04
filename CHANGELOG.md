@@ -9,6 +9,7 @@
 - Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
 - Enhancement: Back up the machine's config files to the computer where the Controller is running
 - Enhancement: Updated the wcs table page to include a description field for the different wcs
+- Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
 - Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus

@@ -355,6 +355,9 @@ class UnlockPopup(ModalView):
     def on_dismiss(self):
         self.showing = False
 
+class SelectAndCalibrateProbePopup(ModalView):
+    def __init__(self, **kwargs):
+        super(SelectAndCalibrateProbePopup, self).__init__(**kwargs)
 
 class MessagePopup(ModalView):
     def __init__(self, **kwargs):
@@ -2394,6 +2397,7 @@ class Makera(RelativeLayout):
         self.confirm_popup = ConfirmPopup()
         self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
+        self.select_probe_popup = SelectAndCalibrateProbePopup()
         self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
@@ -2611,8 +2615,9 @@ class Makera(RelativeLayout):
         if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
             self.probing_popup.open()
         else:
-            self.message_popup.lb_content.text = tr._('Probing tool not selected. Please set tool to Probe or 3D probe')
-            self.message_popup.open()
+            self.select_probe_popup = SelectAndCalibrateProbePopup()
+            self.select_probe_popup.open()
+
     def open_update_popup(self):
         self.upgrade_popup.check_button.disabled = False
         self.upgrade_popup.open(self)
