@@ -941,6 +941,7 @@ class Controller:
         x, y, z, a = position
 
         # Find additional commands to insert after "goto"
+        # Note the use of buffer is to avoid the firmware bug https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/211
         additional_commands = []
         
         if local_file_path:
@@ -951,13 +952,13 @@ class Controller:
             if g20_line is not None and g21_line is not None:
                 # Both found, take the one with higher line number (more recent)
                 if g20_line > g21_line:
-                    additional_commands.append("G20")
+                    additional_commands.append("buffer G20")
                 else:
-                    additional_commands.append("G21")
+                    additional_commands.append("buffer G21")
             elif g20_line:
-                additional_commands.append("G20")
+                additional_commands.append("buffer G20")
             elif g21_line:
-                additional_commands.append("G21")
+                additional_commands.append("buffer G21")
 
             # Search for WCS coordinate space - find the last one used
             wcs_commands = [
@@ -979,21 +980,21 @@ class Controller:
                     last_wcs = wcs_cmd
                     last_wcs_line = wcs_line
             if last_wcs:
-                additional_commands.append(last_wcs)
+                additional_commands.append(f"buffer {last_wcs}")
         
             # Search for M6 (tool change)
             m6_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M6")
             if m6_cmd:
-                additional_commands.append(m6_cmd)
+                additional_commands.append(f"buffer {m6_cmd}")
 
             # Search for M7 (air assist on) and M9 (air assist off)
             _, m7_line = self._find_command_line_number(local_file_path, start_line, "M7")
             _, m9_line = self._find_command_line_number(local_file_path, start_line, "M9")
             if m7_line is not None and m9_line is not None:
                 if m7_line > m9_line:
-                    additional_commands.append("M7")
+                    additional_commands.append("buffer M7")
             elif m7_line:
-                additional_commands.append("M7")
+                additional_commands.append("buffer M7")
 
             # Search for M3 (spindle on), M5 (spindle off), M321 (laser mode on), and M322 (laser mode off)
             m3_cmd, m3_line = self._find_command_line_number(local_file_path, start_line, "M3")
@@ -1003,19 +1004,19 @@ class Controller:
 
             if (m321_line or 0) > max(m322_line or 0, m5_line or 0, m3_line or 0):  # Yucky way to compare with vars that might be NoneType. Sorry
                 # Laser mode was last used
-                additional_commands.append("M321")
+                additional_commands.append("buffer M321")
             elif (m3_line or 0) > max(m321_line or 0, m5_line or 0):
                 # Spindle mode was last used
                 # Need to search for last spindle speed since it could have been set in a different command
                 spindle_speed = self._find_m3_spindle_speed(local_file_path, start_line)
                 if spindle_speed is not None:
-                    additional_commands.append(f"M3 S{spindle_speed:.0f}")
+                    additional_commands.append(f"buffer M3 S{spindle_speed:.0f}")
                 else:
-                    additional_commands.append("M3")
+                    additional_commands.append("buffer M3")
         
         # Add SafeZ movement (G53 G0 Z-2)
         # This should come after coordinate system setup but before position movement
-        additional_commands.append("G53 G0 Z-2")
+        additional_commands.append("buffer G53 G0 Z-2")
         
         # Add G0 movement to above the position
         if x is not None or y is not None or z is not None or a is not None:
@@ -1027,7 +1028,7 @@ class Controller:
             if a is not None:
                 a = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
                 g0_cmd += f" A{a:.3f}"
-            additional_commands.append(g0_cmd)
+            additional_commands.append(f"buffer {g0_cmd}")
 
         # Add G1 movement into the Z position with last feed rate
         if z is not None:
@@ -1039,7 +1040,7 @@ class Controller:
             g1_cmd = f"G1 Z{z:.3f}"
             if feed_rate is not None:
                 g1_cmd += f" F{feed_rate:.0f}"
-            additional_commands.append(g1_cmd)
+            additional_commands.append(f"buffer {g1_cmd}")
 
         commands = [
             "buffer M600",
