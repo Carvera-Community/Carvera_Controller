@@ -3673,7 +3673,15 @@ class Makera(RelativeLayout):
                 self.coord_popup.txt_startline.text = ''
 
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
-        self.load_gcode_file(local_cached_file_path)
+        # Run load_gcode_file in background thread to avoid blocking UI, especially during decompression
+        # Add a small delay to ensure file is ready, especially when called during decompression
+        def load_file_delayed(dt):
+            if os.path.exists(local_cached_file_path) and os.access(local_cached_file_path, os.R_OK):
+                threading.Thread(target=self.load_gcode_file, args=(local_cached_file_path,), daemon=True).start()
+            else:
+                # Retry after a short delay if file is not ready
+                Clock.schedule_once(load_file_delayed, 0.2)
+        Clock.schedule_once(load_file_delayed, 0.1)
 
     def check_upload_and_select(self):
         filepath = self.file_popup.local_rv.curr_selected_file
