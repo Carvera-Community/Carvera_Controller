@@ -3595,6 +3595,12 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = local_cached_file_path
         app.selected_remote_filename = remote_path
+        
+        Clock.schedule_once(partial(self._select_file_ui_update, remote_path, local_cached_file_path), 0)
+
+    def _select_file_ui_update(self, remote_path, local_cached_file_path, *args):
+        """Update UI elements on main thread"""
+        app = App.get_running_app()
         self.wpb_play.value = 0
 
         # Clear resume at line checkbox and input when file changes
