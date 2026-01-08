@@ -11,11 +11,16 @@
 - Enhancement: Added context menu when right clicking a line in a Gcode file. Current option is only to select the line for resume playback. On touch screen long pressing on a line also brings up this context menu.
 - Enhancement: Previewing gcode files synchronises the line selection in the file view with the progress slider
 - Enhancement: If machine is halted during gcode file playback or stopped, populate the last run line number into the resume playback inputbox
+- Enhancement: Back up the machine's config files to the computer where the Controller is running
+- Enhancement: Updated the wcs table page to include a description field for the different wcs
+- Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
 - Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
+- Fixed: When uploading firmware, the "Download" and "Upload and select" buttons were visible
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
+- Change: After loading a program, the gcode view scrolls to the top of the file
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
