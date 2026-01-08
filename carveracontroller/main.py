@@ -4205,7 +4205,9 @@ class Makera(RelativeLayout):
         self.controller.sendNUM = 0
         if upload_result and callback:  # Only run callback if upload succeeded
             if self.uploading_file.endswith('.lz'):
-                callback(remotename[:-3], origin_path)
+                # Schedule callback to run after decompression completes
+                # The callback will be triggered in updateCompressProgress when decompression finishes
+                self.pending_decompress_callback = partial(callback, remotename[:-3], origin_path)
             else:
                 callback(remotename, local_path)
         # For iOS we display the file list remotely only so we need to refresh it but on main thread
@@ -4322,6 +4324,13 @@ class Makera(RelativeLayout):
             # Refresh the remote dir since upload finished
             Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
             self.decompstatus = False
+            # Call pending callback after decompression completes (for .lz files)
+            if hasattr(self, 'pending_decompress_callback') and self.pending_decompress_callback:
+                # Capture callback before clearing it
+                callback = self.pending_decompress_callback
+                self.pending_decompress_callback = None
+                # Schedule callback with a short delay to ensure decompression is fully complete
+                Clock.schedule_once(lambda dt: callback(), 0.1)
 
     # -----------------------------------------------------------------------
     def updateStatus(self, *args):
