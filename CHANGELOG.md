@@ -14,6 +14,7 @@
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
 - Fixed: When uploading firmware, the "Download" and "Upload and select" buttons were visible
+- Fixed: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file
@@ -73,8 +74,7 @@
 - Change: Added config item to skip moving to path origin on gcode playback start. Community firmware > 2.0.0c is required for this feature.
 - Fix: Upload-and-Select button is now disabled until a file is selected
 - Fix: WBH04 Pendant Macro-10 should be treated as an action button
-- Fix: Better handling of machine diagnostic output to support analogue mode spindles
-- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3 
+- Fix: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
