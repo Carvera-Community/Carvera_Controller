@@ -14,6 +14,7 @@
 - Change: SafeZ positions are now 2mm from the home positions to provide clearence for users of x-sag compensation
 - Fix: Upload-and-Select button is now disabled until a file is selected
 - Fix: WBH04 Pendant Macro-10 should be treated as an action button
+- Fix: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes
