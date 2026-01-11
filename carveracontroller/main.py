@@ -2472,7 +2472,9 @@ class Makera(RelativeLayout):
             default_show_tooltips = Config.get('carvera', 'show_tooltips') != '0'
             App.get_running_app().show_tooltips = default_show_tooltips
 
-            
+        if Config.has_option('carvera', 'invert_y_axis_jogging'):
+            App.get_running_app().invert_y_axis_jogging = Config.get('carvera', 'invert_y_axis_jogging') == '1'
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -5097,9 +5099,9 @@ class Makera(RelativeLayout):
             key = args[1]  # keycode
 
             if key == 274:  # down button
-                app.root.controller.jog(f"Y{app.root.step_xy.text}")
+                app.root.controller.jog(f"Y{'-' if app.invert_y_axis_jogging else ''}{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
+                app.root.controller.jog(f"Y{'' if app.invert_y_axis_jogging else '-'}{app.root.step_xy.text}")
             elif key == 275:  # right button
                 app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
@@ -5142,6 +5144,9 @@ class Makera(RelativeLayout):
 
         if self.controller_setting_change_list.get("allow_jogging_while_machine_running") != self.allow_jogging_while_machine_running:
             self.allow_jogging_while_machine_running = self.controller_setting_change_list.get("allow_jogging_while_machine_running")
+
+        if self.controller_setting_change_list.get("invert_y_axis_jogging"):
+            App.get_running_app().invert_y_axis_jogging = self.controller_setting_change_list.get("invert_y_axis_jogging") == '1'
 
         if self.controller_setting_change_list.get('show_tooltips'):
             App.get_running_app().show_tooltips = self.controller_setting_change_list.get('show_tooltips') != '0'
@@ -5524,6 +5529,7 @@ class MakeraApp(App):
     show_tooltips = BooleanProperty(True)
     tooltip_delay = NumericProperty(0.5)
     mdi_data = ListProperty([])
+    invert_y_axis_jogging = BooleanProperty(False)
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -5610,6 +5616,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_4'): Config.set('carvera', 'remote_folder_4', '')
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
+    if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')

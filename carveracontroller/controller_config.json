@@ -96,6 +96,14 @@
         "default": "false"
     },
     {
+        "type": "bool",
+        "title": "Invert Y-Axis Jogging Buttons and Keyboard Controls",
+        "desc": "When enabled, the up arrow key will move the spindle up (away from user) relative to the work bed and the down arrow key will move the spindle down (towards the user)",
+        "section": "carvera",
+        "key": "invert_y_axis_jogging",
+        "default": "false"
+    },
+    {
         "type": "options",
         "title": "Keyboard Mode",
         "desc": "Specifies the keyboard mode to use. \nblank - choose the best option based on platform\nsystem - keyboard from OS\ndock - one virtual keyboard docked to a screen side\nmulti - one virtual keyboard for every widget request\nsystemanddock - virtual docked keyboard plus input from OS keyboard\nsystemandmulti - virtual docked keyboard per widget plus input from OS keyboard ",
