@@ -41,8 +41,8 @@
     },
     {
         "type": "bool",
-        "title": "Allows on top",
-        "desc": "Should the application window be always ontop?",
+        "title": "Always on top",
+        "desc": "Should the application window be always on top?",
         "section": "graphics",
         "key": "always_on_top",
         "default": "false"
