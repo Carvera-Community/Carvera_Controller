@@ -2454,10 +2454,10 @@ class Makera(RelativeLayout):
             self.past_machine_addr = Config.get('carvera', 'address')
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
-           self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
         if Config.has_option('carvera', 'allow_jogging_while_machine_running'):
-           self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
+            self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
 
         # Setup pendant
         self.setup_pendant()
