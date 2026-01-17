@@ -41,8 +41,8 @@
     },
     {
         "type": "bool",
-        "title": "Allows on top",
-        "desc": "Should the application window be always ontop?",
+        "title": "Always on top",
+        "desc": "Should the application window be always on top?",
         "section": "graphics",
         "key": "always_on_top",
         "default": "false"
@@ -93,6 +93,14 @@
         "desc": "This option allows for manual movement while spindle is running. Use this functionality with caution.",
         "section": "carvera",
         "key": "allow_jogging_while_machine_running",
+        "default": "false"
+    },
+    {
+        "type": "bool",
+        "title": "Invert Y-Axis Jogging Buttons and Keyboard Controls",
+        "desc": "When enabled, the up arrow key will move the spindle up (away from user) relative to the work bed and the down arrow key will move the spindle down (towards the user)",
+        "section": "carvera",
+        "key": "invert_y_axis_jogging",
         "default": "false"
     },
     {
