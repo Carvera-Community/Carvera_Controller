@@ -11,7 +11,8 @@
 - Enhancement: Updated the wcs table page to include a description field for the different wcs
 - Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
-- Bugfix: Improved reliability of the app cleanup/exit handler by swithing to the Kivy on_request_close() hook.
+- Enhancement: Add SMW fixture plate background images for the Carvera Air
+- Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
 - Fixed: When uploading firmware, the "Download" and "Upload and select" buttons were visible
@@ -19,6 +20,7 @@
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file
+- Change: Packaging assets are now in `assets/packaging` to create space for `assets/design` and other types of assets
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
