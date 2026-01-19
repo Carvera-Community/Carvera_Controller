@@ -100,7 +100,7 @@ You can run the Controller software using Poetry's run command without installat
 poetry run python -m carveracontroller
 ```
 
-To run the iOS app, you first need to build its dependencies using the Local Packaging instructions below. The build script will open Xcode for you, or you can open the project manually by finding it in `packaging_assets/ios/carveracontroller-ios`.
+To run the iOS app, you first need to build its dependencies using the Local Packaging instructions below. The build script will open Xcode for you, or you can open the project manually by finding it in `assets/packaging/ios/carveracontroller-ios`.
 
 ### Local Packaging
 

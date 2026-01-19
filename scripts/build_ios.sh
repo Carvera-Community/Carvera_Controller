@@ -40,24 +40,24 @@ fi
 TOP_LEVEL=$(git rev-parse --show-toplevel)
 cd $TOP_LEVEL || exit 1
 
-ln -sf $(pwd)/dist packaging_assets/ios/dist
+ln -sf $(pwd)/dist assets/packaging/ios/dist
 
 # Build the kivy-ios toolchain and needed dpendencies
-python3 -m kivy_ios.toolchain build --add-custom-recipe packaging_assets/ios/recipes/quicklz --add-custom-recipe packaging_assets/ios/recipes/pyserial kivy quicklz pyserial
+python3 -m kivy_ios.toolchain build --add-custom-recipe assets/packaging/ios/recipes/quicklz --add-custom-recipe assets/packaging/ios/recipes/pyserial kivy quicklz pyserial
 
-python3 -m kivy_ios.toolchain update --add-custom-recipe packaging_assets/ios/recipes/quicklz --add-custom-recipe packaging_assets/ios/recipes/pyserial packaging_assets/ios/carveracontroller-ios
+python3 -m kivy_ios.toolchain update --add-custom-recipe assets/packaging/ios/recipes/quicklz --add-custom-recipe assets/packaging/ios/recipes/pyserial assets/packaging/ios/carveracontroller-ios
 
 # Patch version if we given as arg
 if [ -z "$1" ]
 then
     echo "No version given"
 else
-    plutil -replace CFBundleShortVersionString -string "$1" packaging_assets/ios/carveracontroller-ios/carveracontroller-Info.plist
-    plutil -replace CFBundleVersion -string "$1" packaging_assets/ios/carveracontroller-ios/carveracontroller-Info.plist
+    plutil -replace CFBundleShortVersionString -string "$1" assets/packaging/ios/carveracontroller-ios/carveracontroller-Info.plist
+    plutil -replace CFBundleVersion -string "$1" assets/packaging/ios/carveracontroller-ios/carveracontroller-Info.plist
 fi
 
 if [ -n "$CI" ]; then
-    xcodebuild -project packaging_assets/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPad mini (A17 Pro)'
+    xcodebuild -project assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPad mini (A17 Pro)'
 else
-    open packaging_assets/ios/carveracontroller-ios/carveracontroller.xcodeproj
+    open assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj
 fi

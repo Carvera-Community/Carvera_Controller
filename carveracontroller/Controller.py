@@ -210,7 +210,7 @@ class Controller:
                 self.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
 
     # ----------------------------------------------------------------------
-    def autoCommand(self, margin=False, zprobe=False, zprobe_abs=False, leveling=False, goto_origin=False, z_probe_offset_x=0, z_probe_offset_y=0, i=3, j=3, h=5, buffer=False, auto_level_offsets = [0,0,0,0]):
+    def autoCommand(self, margin=False, zprobe=False, zprobe_abs=False, leveling=False, goto_origin=False, z_probe_offset_x=0, z_probe_offset_y=0, i=3, j=3, h=5, buffer=False, auto_level_offsets = [0,0,0,0], upcoming_tool=0):
         if not (margin or zprobe or leveling or goto_origin):
             return
         if abs(CNC.vars['xmin']) > CNC.vars['worksize_x'] or abs(CNC.vars['ymin']) > CNC.vars['worksize_y']:
@@ -232,6 +232,9 @@ class Controller:
             cmd = cmd + "A%gB%gI%dJ%dH%d" % (CNC.vars['xmax'] - (CNC.vars['xmin']+auto_level_offsets[1]+ auto_level_offsets[0]) , CNC.vars['ymax'] - (CNC.vars['ymin']+auto_level_offsets[3] + auto_level_offsets[2]), i, j, h)
         if goto_origin:
             cmd = cmd + "P1"
+            # Include the first tool number so firmware can do tool change/TLO before going to origin
+            if upcoming_tool > 0:
+                cmd = cmd + "T%d" % upcoming_tool
         cmd = cmd + "\n"
         if buffer:
             cmd = "buffer " + cmd
