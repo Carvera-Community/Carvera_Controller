@@ -2734,7 +2734,8 @@ class Makera(RelativeLayout):
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
                                     self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer,
-                                    [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']])
+                                    [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']],
+                                    self.upcoming_tool)
 
         # change back to last tool if needed
         if buffer and self.upcoming_tool == 0 and (apply_margin or apply_zprobe or apply_leveling):
