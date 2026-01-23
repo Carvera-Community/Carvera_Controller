@@ -32,6 +32,14 @@
         "default": "1.5"
     },
     {
+        "type": "colorpicker",
+        "title": "Active Element Highlight Color",
+        "desc": "The color used to highlight active UI elements like buttons and indicators.",
+        "section": "carvera",
+        "key": "active_color",
+        "default": "0,255,255,255"
+    },
+    {
         "type": "bool",
         "title": "Allow Screensaver",
         "desc": "Should the screensaver be allowed to run?",
