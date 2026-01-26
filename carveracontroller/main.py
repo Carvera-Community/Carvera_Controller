@@ -2331,7 +2331,7 @@ class Makera(RelativeLayout):
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
-        self.controller = Controller(self.cnc, self.execCallback)
+        self.controller = Controller(self.cnc, self.execCallback, Config.getboolean('carvera', 'log_sent_receive', fallback=False))
         # Set up reconnection callbacks
         self.controller.set_reconnection_callbacks(self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success)
         # Fill basic global variables
@@ -5170,6 +5170,9 @@ class Makera(RelativeLayout):
             if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
                 logging.getLogger().setLevel(getattr(logging, log_level))
                 logger.info(f"Log level set to {log_level}")
+        
+        if "log_sent_receive" in self.controller_setting_change_list:
+            self.controller.log_sent_receive = self.controller_setting_change_list.get("log_sent_receive")
 
 
     # -----------------------------------------------------------------------

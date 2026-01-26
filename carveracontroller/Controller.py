@@ -89,9 +89,9 @@ class Controller:
     modem = None
     connection_type = CONN_WIFI
 
-    def __init__(self, cnc, callback):
-        self.usb_stream = USBStream()
-        self.wifi_stream = WIFIStream()
+    def __init__(self, cnc, callback, log_sent_receive = False):
+        self.usb_stream = USBStream(log_sent_receive)
+        self.wifi_stream = WIFIStream(log_sent_receive)
         
         # Reconnection properties
         self.reconnect_enabled = True
@@ -1133,29 +1133,33 @@ class Controller:
     def parseLine(self, line):
         if not line:
             return True
-        elif line[0] == "<":
-            self.parseBracketAngle(line)
-            self.sio_status = False
-        elif line[0] == "{":
-            if not self.sio_diagnose:
+        try:
+            if line[0] == "<":
+                self.parseBracketAngle(line)
+                self.sio_status = False
+            elif line[0] == "{":
+                if not self.sio_diagnose:
+                    self.log.put((self.MSG_NORMAL, line))
+                else:
+                    self.parseBigParentheses(line)
+                    self.sio_diagnose = False
+            elif line[0] == "[" in line:
+                # Log raw WCS parameters before parsing
                 self.log.put((self.MSG_NORMAL, line))
+                # Parse WCS parameters: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
+                self.parseWCSParameters(line)
+            elif line[0] == "#":
+                self.log.put((self.MSG_INTERIOR, line))
+            elif line[0] == "^":
+                if line[1] == "Y":
+                    self.continuous_jog_active = False
+            elif "error" in line.lower() or "alarm" in line.lower():
+                self.log.put((self.MSG_ERROR, line))
             else:
-                self.parseBigParentheses(line)
-                self.sio_diagnose = False
-        elif line[0] == "[" in line:
-            # Log raw WCS parameters before parsing
-            self.log.put((self.MSG_NORMAL, line))
-            # Parse WCS parameters: [G54:-123.6800,-123.6800,-123.6800,-50,0.000,25.123]
-            self.parseWCSParameters(line)
-        elif line[0] == "#":
-            self.log.put((self.MSG_INTERIOR, line))
-        elif line[0] == "^":
-            if line[1] == "Y":
-                self.continuous_jog_active = False
-        elif "error" in line.lower() or "alarm" in line.lower():
-            self.log.put((self.MSG_ERROR, line))
-        else:
-            self.log.put((self.MSG_NORMAL, line))
+                self.log.put((self.MSG_NORMAL, line))
+        except (LookupError, ArithmeticError) as e:
+            self.log.put((self.MSG_ERROR, f"Failed to parse machine response: {line}"))
+            logger.error(f"Parser error in parseLine: {e}, line: {line}")
 
     # ----------------------------------------------------------------------
     def g28Command(self):

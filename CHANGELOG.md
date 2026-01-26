@@ -12,6 +12,7 @@
 - Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
 - Enhancement: Add SMW fixture plate background images for the Carvera Air
+- Enhancement: Added debug logging of full sent/recieved content as a config option
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
@@ -21,6 +22,7 @@
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file
 - Change: Packaging assets are now in `assets/packaging` to create space for `assets/design` and other types of assets
+- Change: Improved logging of parser errors of machine responses
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
