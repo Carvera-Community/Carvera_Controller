@@ -89,9 +89,9 @@ class Controller:
     modem = None
     connection_type = CONN_WIFI
 
-    def __init__(self, cnc, callback):
-        self.usb_stream = USBStream()
-        self.wifi_stream = WIFIStream()
+    def __init__(self, cnc, callback, log_sent_receive = False):
+        self.usb_stream = USBStream(log_sent_receive)
+        self.wifi_stream = WIFIStream(log_sent_receive)
         
         # Reconnection properties
         self.reconnect_enabled = True

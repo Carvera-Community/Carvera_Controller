@@ -224,5 +224,13 @@
         "section": "kivy",
         "key": "log_enable",
         "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Log Full Sent/Recieve Communications",
+        "desc": "Be warned that the logs will be very large. Debug level logging is also required.",
+        "section": "carvera",
+        "key": "log_sent_receive",
+        "default": "false"
     }
 ]

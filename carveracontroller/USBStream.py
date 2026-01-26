@@ -16,22 +16,28 @@ class USBStream:
     serial = None
 
     # ----------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self, log_sent_receive = False):
         self.modem = XMODEM(self.getc, self.putc, 'xmodem')
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(logging.WARNING)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.modem.log.addHandler(handler)
+        self.log_sent_receive = log_sent_receive
 
 
     # ----------------------------------------------------------------------
     def send(self, data):
+        if self.log_sent_receive:
+            logger.debug(f"SENT: {data}")
         self.serial.write(data)
 
     # ----------------------------------------------------------------------
     def recv(self):
-        return self.serial.read()
+        data = self.serial.read()
+        if self.log_sent_receive:
+            logger.debug(f"RECIEVED: {data}")
+        return data
 
     # ----------------------------------------------------------------------
     def open(self, address):
