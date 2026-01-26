@@ -1488,6 +1488,7 @@ class MakeraConfigPanel(SettingsWithSidebar):
         super().__init__(*args, **kwargs)
         self.register_type('pendant', SettingPendantSelector)
         self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
+        self.register_type('colorpicker', ui.SettingColorPicker)
 
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
@@ -2475,6 +2476,9 @@ class Makera(RelativeLayout):
         if Config.has_option('carvera', 'invert_y_axis_jogging'):
             App.get_running_app().invert_y_axis_jogging = Config.get('carvera', 'invert_y_axis_jogging') == '1'
 
+        if Config.has_option('carvera', 'active_color'):
+            App.get_running_app().active_color = self._parse_active_color(Config.get('carvera', 'active_color'))
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -2491,6 +2495,19 @@ class Makera(RelativeLayout):
 
         # try to connect over wifi if we've used it before
         Clock.schedule_once(self.reconnect_wifi_conn_quietly)
+
+    def _parse_active_color(self, value):
+        """Parse a color string like '0,255,255,255' into an RGBA list (0-1 range)."""
+        try:
+            if not value:
+                return [0, 1, 1, 1]  # Default cyan
+            parts = [float(x.strip()) for x in value.split(',')]
+            if len(parts) == 3:
+                parts.append(255.0)  # Add alpha if missing
+            # Assume 0-255 range, convert to 0-1
+            return [parts[0]/255, parts[1]/255, parts[2]/255, parts[3]/255 if parts[3] > 1 else parts[3]]
+        except Exception:
+            return [0, 1, 1, 1]  # Default cyan
 
     def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
@@ -5156,6 +5173,9 @@ class Makera(RelativeLayout):
             delay_value = float(self.controller_setting_change_list.get('tooltip_delay'))
             App.get_running_app().tooltip_delay = delay_value if delay_value>0 else 0.5
 
+        if self.controller_setting_change_list.get('active_color'):
+            App.get_running_app().active_color = self._parse_active_color(self.controller_setting_change_list.get('active_color'))
+
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
             self.setup_pendant()
@@ -5534,6 +5554,7 @@ class MakeraApp(App):
     tooltip_delay = NumericProperty(0.5)
     mdi_data = ListProperty([])
     invert_y_axis_jogging = BooleanProperty(False)
+    active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -5608,6 +5629,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'show_update'): Config.set('carvera', 'show_update', '1')
     if not Config.has_option('carvera', 'show_tooltips'): Config.set('carvera', 'show_tooltips' , '1')
     if not Config.has_option('carvera', 'tooltip_delay'): Config.set('carvera', 'tooltip_delay','1.5')
+    if not Config.has_option('carvera', 'active_color'): Config.set('carvera', 'active_color', '0,255,255,255')
     if not Config.has_option('carvera', 'language'): Config.set('carvera', 'language', default_lang)
     if not Config.has_option('carvera', 'local_folder_1'): Config.set('carvera', 'local_folder_1', '')
     if not Config.has_option('carvera', 'local_folder_2'): Config.set('carvera', 'local_folder_2', '')
