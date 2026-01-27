@@ -279,6 +279,7 @@ class MDITextInput(TextInput):
             if cursor_is_at_top_left and can_move_backward_in_history:
                 self.active_past_mdi_index = max(0, self.active_past_mdi_index-1)
                 self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                self.cursor = (0, 0)
                 return True
             else:
                 col, row = self.cursor
