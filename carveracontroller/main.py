@@ -274,7 +274,9 @@ class MDITextInput(TextInput):
             self.send_mdi_command()
             return True
         if self.focus and key == UP_ARROW_KEY:
-            if self.cursor_index() == 0 and len(self.past_mdi_commands) > 0 and self.active_past_mdi_index > 0:
+            cursor_is_at_top_left = self.cursor_index() == 0
+            can_move_backward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index > 0
+            if cursor_is_at_top_left and can_move_backward_in_history:
                 self.active_past_mdi_index = max(0, self.active_past_mdi_index-1)
                 self.text = self.past_mdi_commands[self.active_past_mdi_index]
                 return True
@@ -288,7 +290,9 @@ class MDITextInput(TextInput):
                     return False
             
         if self.focus and key == DOWN_ARROW_KEY:
-            if self.cursor_index() == len(self.text) and len(self.past_mdi_commands) > 0 and self.active_past_mdi_index < len(self.past_mdi_commands)-1:
+            cursor_is_at_bottom_right = self.cursor_index() == len(self.text)
+            can_move_forward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index < len(self.past_mdi_commands)-1
+            if cursor_is_at_bottom_right and can_move_forward_in_history:
                 self.active_past_mdi_index = min(len(self.past_mdi_commands)-1, self.active_past_mdi_index+1)
                 self.text = self.past_mdi_commands[self.active_past_mdi_index]
                 return True
