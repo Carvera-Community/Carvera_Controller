@@ -722,9 +722,7 @@ class Controller:
                 if m3_match:
                     most_recent_m3_line = i
                     # Extract S parameter from this line (S can appear before or after M3)
-                    # Use a more robust pattern that handles S parameters anywhere in the line
-                    # Pattern: S followed by optional sign, digits, optional decimal point and more digits
-                    s_match = re.search(r'[Ss]([+-]?\d+(?:\.\d+)?)', line)
+                    s_match = re.search(r'S(\d+)', line)
                     if s_match:
                         try:
                             spindle_speed = float(s_match.group(1))
@@ -760,8 +758,7 @@ class Controller:
                     m3_match = re.search(r'M3(?![0-9])', line_upper)
                     if m3_match:
                         # Extract S parameter from this line (S can appear before or after M3)
-                        # Use a more robust pattern that handles S parameters anywhere in the line
-                        s_match = re.search(r'[Ss]([+-]?\d+(?:\.\d+)?)', line)
+                        s_match = re.search(r'S(\d+)', line)
                         if s_match:
                             try:
                                 spindle_speed = float(s_match.group(1))
@@ -829,7 +826,7 @@ class Controller:
                 g_commands = ['G1', 'G01', 'G2', 'G02', 'G3', 'G03']
                 found_g_command = False
                 for cmd in g_commands:
-                    # Check if command appears (at start or after non-alphanumeric char, not followed by digit)
+                    # Check if command appears at start
                     if line_upper.startswith(cmd):
                         found_g_command = True
                         break
@@ -843,7 +840,7 @@ class Controller:
                 
                 if found_g_command:
                     # Extract F parameter using regex
-                    f_match = re.search(r'[Ff]([+-]?\d+\.?\d*)', line)
+                    f_match = re.search(r'F(?\d+\.?\d*)', line)
                     if f_match:
                         try:
                             feed_rate = float(f_match.group(1))
