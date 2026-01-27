@@ -24,6 +24,7 @@ from .CNC import CNC
 from .USBStream import USBStream
 from .WIFIStream import WIFIStream
 from .XMODEM import EOT, CAN
+from . import Utils
 from functools import partial
 
 try:
@@ -927,8 +928,18 @@ class Controller:
         if '\\' in filename:
             play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
+        # the goto command in firmware is bugged in versions < 2.1.0c and Makera releases
+        # the bug is that it goes to the end of the line specified instead of start.
+        start_line_comment = ""
+
+        app = App.get_running_app()
+        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
+            start_line = int(start_line)-1
+            start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
+
+
         # Get position from GcodeViewer for the line before start_line (start_line - 1)
-        # This is the position where start_line - 1 ends, which is where we want to move to
+        # This is the position where start_line - 1 ends, which is where we want to move the spindle
         # Convert start_line to int and ensure it's at least 2 (so start_line - 1 >= 1)
         try:
             start_line_int = int(start_line)
@@ -1045,7 +1056,7 @@ class Controller:
         commands = [
             "buffer M600",
             play_command,
-            f"goto {start_line}",
+            f"goto {start_line} {start_line_comment}",
         ]
         # Insert additional commands after "goto"
         commands.extend(additional_commands)
