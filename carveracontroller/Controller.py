@@ -840,7 +840,7 @@ class Controller:
                 
                 if found_g_command:
                     # Extract F parameter using regex
-                    f_match = re.search(r'F(?\d+\.?\d*)', line)
+                    f_match = re.search(r'F(\d+\.?\d*)', line)
                     if f_match:
                         try:
                             feed_rate = float(f_match.group(1))
@@ -1052,7 +1052,8 @@ class Controller:
         commands.append("resume")
 
         if preview:
-            return commands
+            # Replace \x01 with spaces for better readability in preview
+            return [cmd.replace('\x01', ' ') for cmd in commands]
 
         # Some times the machine seems to have a race condition when pausing before executing the next queued command
         # and the next command after M600 is run while the machine isn't fully paused, causing it to fail.
