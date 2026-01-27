@@ -1557,6 +1557,7 @@ class MakeraConfigPanel(SettingsWithSidebar):
         super().__init__(*args, **kwargs)
         self.register_type('pendant', SettingPendantSelector)
         self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
+        self.register_type('colorpicker', ui.SettingColorPicker)
 
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
@@ -2530,7 +2531,7 @@ class Makera(RelativeLayout):
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
-        self.controller = Controller(self.cnc, self.execCallback)
+        self.controller = Controller(self.cnc, self.execCallback, Config.getboolean('carvera', 'log_sent_receive', fallback=False))
         # Set up reconnection callbacks
         self.controller.set_reconnection_callbacks(self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success)
         # Fill basic global variables
@@ -2653,10 +2654,10 @@ class Makera(RelativeLayout):
             self.past_machine_addr = Config.get('carvera', 'address')
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
-           self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
         if Config.has_option('carvera', 'allow_jogging_while_machine_running'):
-           self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
+            self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
 
         # Setup pendant
         self.setup_pendant()
@@ -2671,7 +2672,12 @@ class Makera(RelativeLayout):
             default_show_tooltips = Config.get('carvera', 'show_tooltips') != '0'
             App.get_running_app().show_tooltips = default_show_tooltips
 
-            
+        if Config.has_option('carvera', 'invert_y_axis_jogging'):
+            App.get_running_app().invert_y_axis_jogging = Config.get('carvera', 'invert_y_axis_jogging') == '1'
+
+        if Config.has_option('carvera', 'active_color'):
+            App.get_running_app().active_color = self._parse_active_color(Config.get('carvera', 'active_color'))
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -2688,6 +2694,19 @@ class Makera(RelativeLayout):
 
         # try to connect over wifi if we've used it before
         Clock.schedule_once(self.reconnect_wifi_conn_quietly)
+
+    def _parse_active_color(self, value):
+        """Parse a color string like '0,255,255,255' into an RGBA list (0-1 range)."""
+        try:
+            if not value:
+                return [0, 1, 1, 1]  # Default cyan
+            parts = [float(x.strip()) for x in value.split(',')]
+            if len(parts) == 3:
+                parts.append(255.0)  # Add alpha if missing
+            # Assume 0-255 range, convert to 0-1
+            return [parts[0]/255, parts[1]/255, parts[2]/255, parts[3]/255 if parts[3] > 1 else parts[3]]
+        except Exception:
+            return [0, 1, 1, 1]  # Default cyan
 
     def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
@@ -2935,7 +2954,8 @@ class Makera(RelativeLayout):
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
                                     self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer,
-                                    [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']])
+                                    [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']],
+                                    self.upcoming_tool)
 
         # change back to last tool if needed
         if buffer and self.upcoming_tool == 0 and (apply_margin or apply_zprobe or apply_leveling):
@@ -5349,9 +5369,9 @@ class Makera(RelativeLayout):
             key = args[1]  # keycode
 
             if key == 274:  # down button
-                app.root.controller.jog(f"Y{app.root.step_xy.text}")
+                app.root.controller.jog(f"Y{'-' if app.invert_y_axis_jogging else ''}{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
+                app.root.controller.jog(f"Y{'' if app.invert_y_axis_jogging else '-'}{app.root.step_xy.text}")
             elif key == 275:  # right button
                 app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
@@ -5395,12 +5415,18 @@ class Makera(RelativeLayout):
         if self.controller_setting_change_list.get("allow_jogging_while_machine_running") != self.allow_jogging_while_machine_running:
             self.allow_jogging_while_machine_running = self.controller_setting_change_list.get("allow_jogging_while_machine_running")
 
+        if self.controller_setting_change_list.get("invert_y_axis_jogging"):
+            App.get_running_app().invert_y_axis_jogging = self.controller_setting_change_list.get("invert_y_axis_jogging") == '1'
+
         if self.controller_setting_change_list.get('show_tooltips'):
             App.get_running_app().show_tooltips = self.controller_setting_change_list.get('show_tooltips') != '0'
 
         if self.controller_setting_change_list.get('tooltip_delay'):
             delay_value = float(self.controller_setting_change_list.get('tooltip_delay'))
             App.get_running_app().tooltip_delay = delay_value if delay_value>0 else 0.5
+
+        if self.controller_setting_change_list.get('active_color'):
+            App.get_running_app().active_color = self._parse_active_color(self.controller_setting_change_list.get('active_color'))
 
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
@@ -5416,6 +5442,9 @@ class Makera(RelativeLayout):
             if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
                 logging.getLogger().setLevel(getattr(logging, log_level))
                 logger.info(f"Log level set to {log_level}")
+        
+        if "log_sent_receive" in self.controller_setting_change_list:
+            self.controller.log_sent_receive = self.controller_setting_change_list.get("log_sent_receive")
 
 
     # -----------------------------------------------------------------------
@@ -5822,6 +5851,8 @@ class MakeraApp(App):
     show_tooltips = BooleanProperty(True)
     tooltip_delay = NumericProperty(0.5)
     mdi_data = ListProperty([])
+    invert_y_axis_jogging = BooleanProperty(False)
+    active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -5899,6 +5930,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'show_update'): Config.set('carvera', 'show_update', '1')
     if not Config.has_option('carvera', 'show_tooltips'): Config.set('carvera', 'show_tooltips' , '1')
     if not Config.has_option('carvera', 'tooltip_delay'): Config.set('carvera', 'tooltip_delay','1.5')
+    if not Config.has_option('carvera', 'active_color'): Config.set('carvera', 'active_color', '0,255,255,255')
     if not Config.has_option('carvera', 'language'): Config.set('carvera', 'language', default_lang)
     if not Config.has_option('carvera', 'local_folder_1'): Config.set('carvera', 'local_folder_1', '')
     if not Config.has_option('carvera', 'local_folder_2'): Config.set('carvera', 'local_folder_2', '')
@@ -5911,6 +5943,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_4'): Config.set('carvera', 'remote_folder_4', '')
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
+    if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')

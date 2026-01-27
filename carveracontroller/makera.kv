@@ -84,10 +84,10 @@
     background_color: 0, 0, 0, 0
     Label:
         text: root.text if root.text else ''
-        color: (0/255, 255/255, 255/255, 1) if (root.active and not root.disabled) else ((110/255, 110/255, 110/255, 1) if root.disabled else (250/255, 250/255, 250/255, 1))
+        color: tuple(app.active_color) if (root.active and not root.disabled) else ((110/255, 110/255, 110/255, 1) if root.disabled else (250/255, 250/255, 250/255, 1))
         canvas.before:
             Color:
-                rgba: (0/255, 255/255, 255/255, 1) if (root.active and not root.disabled) else ((110/255, 110/255, 110/255, 1) if root.disabled else (250/255, 250/255, 250/255, 1))
+                rgba: tuple(app.active_color) if (root.active and not root.disabled) else ((110/255, 110/255, 110/255, 1) if root.disabled else (250/255, 250/255, 250/255, 1))
             Rectangle:
                 source: root.icon
                 pos: self.center_x - dp(root.icon_size / 2), self.center_y - dp(root.icon_size / 2)
@@ -1185,7 +1185,7 @@
     Label:
         canvas.before:
             Color:
-                rgba: (0/255, 255/255, 255/255, 1) if (root.active and not root.disabled) else root.color
+                rgba: tuple(app.active_color) if (root.active and not root.disabled) else root.color
             Rectangle:
                 source: root.data_icon
                 pos: self.center_x - dp(10), self.center_y - dp(14)
@@ -1193,12 +1193,12 @@
         text: root.data_text if root.data_text else ''
         size_hint_x: 0.22
         font_size: '23sp'
-        color: (0/255, 255/255, 255/255, 1) if root.active else root.color
+        color: tuple(app.active_color) if root.active else root.color
     BoxLayout:
         orientation: 'vertical'
         Label:
             text: root.main_text
-            color: (0/255, 255/255, 255/255, 1) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
+            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
             font_size: '18sp'
             text_size: self.size
             halign: "right"
@@ -2853,7 +2853,7 @@
                     Spinner:
                         id: background_image_spinner
                         text: "None"
-                        size_hint_x: 1.5
+                        size_hint_x: 1.75
                         on_text: root.update_background_image(self.text)
 
                 BoxLayout:
@@ -3598,10 +3598,10 @@
                                 GridBoxLayout:
                                 GridBoxLayout:
                                     ToolTipButton:
-                                        text: 'Y-'
-                                        on_press: root.controller.jog("Y-{}".format(root.step_xy.text))
+                                        text: 'Y+' if app.invert_y_axis_jogging else "Y-"
+                                        on_press: root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
-                                        tooltip_image: 'data/AxisMotion/AxisMotion_YNeg.png'
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_YPos.png' if app.invert_y_axis_jogging else 'data/AxisMotion/AxisMotion_YNeg.png'
                                         tooltip_image_size: [300,300]
                                         small_icon: True
                                         tooltip_radius: 30     
@@ -3638,10 +3638,10 @@
                                 GridBoxLayout:
                                 GridBoxLayout:
                                     ToolTipButton:
-                                        text: 'Y+'
-                                        on_press: root.controller.jog("Y{}".format(root.step_xy.text))
+                                        text: 'Y-' if app.invert_y_axis_jogging else "Y+"
+                                        on_press: root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
-                                        tooltip_image: 'data/AxisMotion/AxisMotion_YPos.png'
+                                        tooltip_image: 'data/AxisMotion/AxisMotion_YNeg.png' if app.invert_y_axis_jogging else 'data/AxisMotion/AxisMotion_YPos.png'
                                         tooltip_image_size: [300,300]
                                         small_icon: True
                                         tooltip_radius: 30 

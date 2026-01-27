@@ -344,8 +344,8 @@ jobs:
 
       - name: Copy AppImage to Docker build context
         run: |
-          mkdir -p packaging_assets/Docker/artifacts/
-          cp ./artifacts/*.appimage packaging_assets/Docker/artifacts/
+          mkdir -p assets/packaging/Docker/artifacts/
+          cp ./artifacts/*.appimage assets/packaging/Docker/artifacts/
 
       # TODO: Add support for more platforms with QEMU
       # https://github.com/docker/setup-qemu-action
@@ -375,7 +375,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: packaging_assets/Docker
+          context: assets/packaging/Docker
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

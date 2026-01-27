@@ -32,6 +32,14 @@
         "default": "1.5"
     },
     {
+        "type": "colorpicker",
+        "title": "Active Element Highlight Color",
+        "desc": "The color used to highlight active UI elements like buttons and indicators.",
+        "section": "carvera",
+        "key": "active_color",
+        "default": "0,255,255,255"
+    },
+    {
         "type": "bool",
         "title": "Allow Screensaver",
         "desc": "Should the screensaver be allowed to run?",
@@ -41,8 +49,8 @@
     },
     {
         "type": "bool",
-        "title": "Allows on top",
-        "desc": "Should the application window be always ontop?",
+        "title": "Always on top",
+        "desc": "Should the application window be always on top?",
         "section": "graphics",
         "key": "always_on_top",
         "default": "false"
@@ -93,6 +101,14 @@
         "desc": "This option allows for manual movement while spindle is running. Use this functionality with caution.",
         "section": "carvera",
         "key": "allow_jogging_while_machine_running",
+        "default": "false"
+    },
+    {
+        "type": "bool",
+        "title": "Invert Y-Axis Jogging Buttons and Keyboard Controls",
+        "desc": "When enabled, the up arrow key will move the spindle up (away from user) relative to the work bed and the down arrow key will move the spindle down (towards the user)",
+        "section": "carvera",
+        "key": "invert_y_axis_jogging",
         "default": "false"
     },
     {
@@ -216,5 +232,13 @@
         "section": "kivy",
         "key": "log_enable",
         "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Log Full Sent/Recieve Communications",
+        "desc": "Be warned that the logs will be very large. Debug level logging is also required.",
+        "section": "carvera",
+        "key": "log_sent_receive",
+        "default": "false"
     }
 ]
