@@ -57,7 +57,7 @@ else
 fi
 
 if [ -n "$CI" ]; then
-    xcodebuild -project assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator
+    xcodebuild -project assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator -arch arm64
 else
     open assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj
 fi
