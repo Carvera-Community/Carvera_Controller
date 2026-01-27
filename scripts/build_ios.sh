@@ -57,7 +57,7 @@ else
 fi
 
 if [ -n "$CI" ]; then
-    xcodebuild -project assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=Any iOS Simulator Device'
+    xcodebuild -project assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj -scheme CarveraController -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator'
 else
     open assets/packaging/ios/carveracontroller-ios/carveracontroller.xcodeproj
 fi
