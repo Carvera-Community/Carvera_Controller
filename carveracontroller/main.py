@@ -310,7 +310,10 @@ class MDITextInput(TextInput):
         return False
 
     def send_mdi_command(self):
-        self.past_mdi_commands.append(self.text)
+        cmd_to_send = self.text.strip()
+        if not cmd_to_send:
+            return
+        self.past_mdi_commands.append(cmd_to_send)
         self.active_past_mdi_index = len(self.past_mdi_commands)
         app = App.get_running_app()
         app.root.send_cmd()
