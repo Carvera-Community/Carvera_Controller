@@ -5121,6 +5121,16 @@ class Makera(RelativeLayout):
                 self.config_popup.open()
                 return True
 
+        # Ctrl+M to open manual command (MDI) page
+        if key == M_KEY and 'ctrl' in modifiers:
+            self.content.transition.direction = 'right'
+            self.content.current = 'File'
+            self.cmd_manager.transition.direction = 'left'
+            self.cmd_manager.current = 'manual_cmd_page'
+            self.manual_cmd.focus = True
+
+        return False
+
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
 
