@@ -12,7 +12,8 @@
 - Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
 - Enhancement: Add SMW fixture plate background images for the Carvera Air
-- Enhancement: Added debug logging of full sent/recieved content as a config option
+- Enhancement: Added debug logging of full sent/received content as a config option
+- Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
