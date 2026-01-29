@@ -17,6 +17,7 @@
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
 - Enhancement: Add SMW fixture plate background images for the Carvera Air
 - Enhancement: Added debug logging of full sent/recieved content as a config option
+- Enhancement: Time remaining estimate is now based on a estimate of the gcode movement/feeds instead of basing on the number of lines executed/duration
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus

@@ -14,6 +14,7 @@ from kivy.graphics.opengl import *
 from kivy.clock import Clock
 from kivy.utils import platform
 import os
+import threading
 from math import *
 
 import datetime
@@ -789,6 +790,8 @@ class GCodeViewer(Widget):
         self.lengths = []
         self.vertex_types = []
         self.positions = []
+        self.line_times = []
+        self.total_time = 0.0
         self.linemesh.clear()
         self.canvas.remove(self.linemesh)
         self.canvas.remove(self.pointermesh)
@@ -1044,6 +1047,9 @@ class GCodeViewer(Widget):
             self.move_scale_by_positon = self.meshmanager.position_scale
 
             self.is_4_axis = self.meshmanager.is_4_axis
+
+            # Compute per-segment durations from travel distance and feed rate (for time estimate)
+            self._compute_line_times_async()
 
             # get_elapsed("fetch meshdata")
 
@@ -1650,6 +1656,9 @@ class GCodeViewer(Widget):
         self.is_4_axis = is_4_axis
         self.total_line_count = total_line_count
         self.total_distance = lengths[len(lengths) - 1]
+        # No raw gcode file in this path; time estimate will use machine value
+        self.line_times = []
+        self.total_time = 0.0
 
         obj1 = 'pointer.obj'
         obj2 = 'axis.obj'
@@ -1814,6 +1823,117 @@ class GCodeViewer(Widget):
         if hasattr(self, 'frame_callback') and self.frame_callback is not None:
             [cur_distance, linenumber] = self.get_cur_pos_index()
             self.frame_callback(cur_distance, linenumber)
+
+    def _report_time_estimate_progress(self, state, percent):
+        """Call the progress callback on the main thread (call from worker via Clock.schedule_once)."""
+        if getattr(self, 'time_estimate_progress_callback', None):
+            self.time_estimate_progress_callback(state, percent)
+
+    def _apply_line_times_result(self, line_times):
+        """Apply worker result on main thread."""
+        self.line_times = line_times if line_times else []
+        self.total_time = self.line_times[-1] if self.line_times else 0.0
+        self._report_time_estimate_progress('done', 100)
+
+    def _compute_line_times_async(self):
+        """
+        Compute cumulative time (seconds) in a background thread so the UI stays responsive.
+        Shows progress via time_estimate_progress_callback if set ('start', 'progress', 'done').
+        """
+        self.line_times = []
+        self.total_time = 0.0
+        n = len(self.raw_linenumbers) if self.raw_linenumbers else 0
+        if n < 2 or not self.raw_positions or len(self.raw_positions) < n * 3:
+            return
+        try:
+            app = App.get_running_app()
+            filepath = getattr(app, 'selected_local_filename', None) or ''
+            controller = getattr(getattr(app, 'root', None), 'controller', None)
+            if not filepath or not controller or not os.path.exists(filepath):
+                return
+        except Exception:
+            return
+        # Copy data for worker (avoid mutation during thread)
+        raw_positions = list(self.raw_positions)
+        raw_linenumbers = list(self.raw_linenumbers)
+        viewer = self
+        PROGRESS_INTERVAL = 100
+
+        def report(state, percent):
+            Clock.schedule_once(lambda dt: viewer._report_time_estimate_progress(state, percent), 0)
+
+        def worker():
+            line_times = _compute_line_times_worker(
+                filepath, controller, raw_positions, raw_linenumbers,
+                lambda pct: report('progress', pct), PROGRESS_INTERVAL)
+            Clock.schedule_once(lambda dt: viewer._apply_line_times_result(line_times), 0)
+
+        report('start', 0)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _compute_line_times(self):
+        """
+        Compute cumulative time (seconds) at each vertex from segment distance and
+        feed rate in gcode. Uses Controller._find_last_feed_rate for F values.
+        Sets self.line_times (cumulative) and self.total_time.
+        (Synchronous fallback; normal path uses _compute_line_times_async.)
+        """
+        self.line_times = []
+        self.total_time = 0.0
+        n = len(self.raw_linenumbers) if self.raw_linenumbers else 0
+        if n < 2 or not self.raw_positions or len(self.raw_positions) < n * 3:
+            return
+        try:
+            app = App.get_running_app()
+            filepath = getattr(app, 'selected_local_filename', None) or ''
+            controller = getattr(getattr(app, 'root', None), 'controller', None)
+            if not filepath or not controller or not os.path.exists(filepath):
+                return
+        except Exception:
+            return
+        result = _compute_line_times_worker(filepath, controller, self.raw_positions, self.raw_linenumbers, None, 0)
+        self.line_times = result
+        self.total_time = self.line_times[-1] if self.line_times else 0.0
+
+    def get_elapsed_time_by_distance(self, distance):
+        """
+        Return elapsed time (seconds) at the given display distance.
+        Returns None if line_times are not available.
+        """
+        if not getattr(self, 'line_times', None) or not self.line_times or not self.lengths:
+            return None
+        if distance <= 0:
+            return 0.0
+        total_dist = self.lengths[-1]
+        if total_dist <= 0 or distance >= total_dist:
+            return self.total_time
+        n = len(self.lengths)
+        for i in range(n - 1):
+            if self.lengths[i] <= distance <= self.lengths[i + 1]:
+                seg_len = self.lengths[i + 1] - self.lengths[i]
+                if seg_len <= 0:
+                    return self.line_times[i] if i < len(self.line_times) else None
+                fraction = (distance - self.lengths[i]) / seg_len
+                t0 = self.line_times[i] if i < len(self.line_times) else 0.0
+                t1 = self.line_times[i + 1] if i + 1 < len(self.line_times) else t0
+                return t0 + fraction * (t1 - t0)
+        return None
+
+    def get_remaining_time_by_lineidx(self, line_number, ratio=0.5):
+        """
+        Return estimated remaining time (seconds) from the given line number.
+        Uses distance/feed-based estimate when line_times are available.
+        Returns None to fall back to machine estimate.
+        """
+        if not getattr(self, 'line_times', None) or not self.line_times or self.total_time <= 0:
+            return None
+        distance = self.get_distance_by_lineidx(line_number, ratio)
+        if distance is None:
+            return None
+        elapsed = self.get_elapsed_time_by_distance(distance)
+        if elapsed is None:
+            return None
+        return max(0.0, self.total_time - elapsed)
 
     #根据line number 返回实际距离
     def get_distance_by_lineidx(self,lineidx,ratio):
@@ -2171,6 +2291,45 @@ class GCodeViewer(Widget):
 
     def set_orbit(self, orbit = True):
         self.orbit = orbit
+
+
+def _compute_line_times_worker(filepath, controller, raw_positions, raw_linenumbers, progress_callback, progress_interval):
+    """
+    Core logic for line time computation. Can run in a thread.
+    progress_callback(percent) is called every progress_interval segments; use 0 to disable.
+    Returns list of cumulative times (line_times).
+    """
+    n = len(raw_linenumbers)
+    DEFAULT_FEED_MM_MIN = 3000.0
+    MIN_FEED_MM_MIN = 0.001
+    line_times = [0.0]
+    for i in range(1, n):
+        pos1 = [
+            raw_positions[3 * (i - 1)],
+            raw_positions[3 * (i - 1) + 1],
+            raw_positions[3 * (i - 1) + 2],
+        ]
+        pos2 = [
+            raw_positions[3 * i],
+            raw_positions[3 * i + 1],
+            raw_positions[3 * i + 2],
+        ]
+        segment_length_mm = len_3d(pos1, pos2)
+        line_num = raw_linenumbers[i]
+        try:
+            line_num_int = int(line_num)
+        except (ValueError, TypeError):
+            line_num_int = 1
+        feed = controller._find_last_feed_rate(filepath, line_num_int)
+        if feed is None or feed < MIN_FEED_MM_MIN:
+            feed = DEFAULT_FEED_MM_MIN
+        duration_sec = (segment_length_mm * 60.0) / feed
+        line_times.append(line_times[-1] + duration_sec)
+        if progress_callback and progress_interval > 0 and i % progress_interval == 0:
+            progress_callback(100.0 * i / n)
+    if progress_callback and progress_interval > 0 and n > 1:
+        progress_callback(100.0)
+    return line_times
 
 
 #----------------test func----------------------

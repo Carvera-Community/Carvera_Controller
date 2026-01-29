@@ -2744,6 +2744,7 @@ class Makera(RelativeLayout):
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
+        self.gcode_viewer.time_estimate_progress_callback = self._on_time_estimate_progress
 
         # init settings
         self.config = ConfigParser()
@@ -4601,6 +4602,16 @@ class Makera(RelativeLayout):
         self.progress_popup.dismiss()
 
     # --------------------------------------------------------------`---------
+    def _on_time_estimate_progress(self, state, percent):
+        """Callback for GcodeViewer time estimate computation: show progress popup while parsing feed speeds."""
+        if state == 'start':
+            self.progressStart(tr._('Calculating time estimate...'), None)
+        elif state == 'progress':
+            self.progressUpdate(percent, '', True)
+        elif state == 'done':
+            self.progressFinish()
+
+    # --------------------------------------------------------------`---------
     def updateCompressProgress(self, value):
         Clock.schedule_once(partial(self.progressUpdate, value * 100.0 / self.fileCompressionBlocks, '', True), 0)
         if value == self.fileCompressionBlocks:
@@ -4953,7 +4964,16 @@ class Makera(RelativeLayout):
                         self.progress_info = os.path.basename(app.selected_remote_filename if app.selected_remote_filename != '' else app.selected_local_filename) + ' ( {}/{} - {}%, {} elapsed'.format( \
                                                      self.played_lines, self.selected_file_line_count, int(self.wpb_play.value), Utils.second2hour(CNC.vars["playedseconds"]))
                         if self.wpb_play.value > 0:
-                            self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour((100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value))
+                            # Remaining = estimated time for remaining lines (recalc each line), adjusted by feed override
+                            remaining_sec = None
+                            if hasattr(self.gcode_viewer, 'get_remaining_time_by_lineidx'):
+                                remaining_sec = self.gcode_viewer.get_remaining_time_by_lineidx(self.played_lines, 0.5)
+                            if remaining_sec is not None and remaining_sec >= 0:
+                                ov_feed = CNC.vars.get("OvFeed", 100) or 100
+                                remaining_sec = remaining_sec / (ov_feed / 100.0)
+                                self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour(remaining_sec))
+                            else:
+                                self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour((100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value))
                         else:
                             self.progress_info = self.progress_info + ' )'
                 # playing margin
