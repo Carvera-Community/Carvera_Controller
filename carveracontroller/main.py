@@ -2360,6 +2360,7 @@ class Makera(RelativeLayout):
         super(Makera, self).__init__()
 
         Window.bind(on_request_close=self.on_request_close)
+        Window.bind(on_key_down=self._global_keyboard_keydown)
 
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
@@ -5143,6 +5144,27 @@ class Makera(RelativeLayout):
             property_obj = self.__class__.__dict__['light_state']
             property_obj.update_from_state(self)
             logger.debug("Light state manually refreshed from CNC.vars")
+
+    def _global_keyboard_keydown(self, window, key, scancode, codepoint, modifiers):
+        COMMA_KEY = 44
+        M_KEY = 109
+        cmd_mod = 'meta' if sys.platform == 'darwin' else 'ctrl'
+
+        # Cmd+Comma (macOS) or Ctrl+Comma (Windows/Linux) to open settings
+        if key == COMMA_KEY and cmd_mod in modifiers:
+            if not self._is_popup_open() and not self.manual_cmd.focus:
+                self.config_popup.open()
+                return True
+
+        # Ctrl+M to open manual command (MDI) page
+        if key == M_KEY and 'ctrl' in modifiers:
+            self.content.transition.direction = 'right'
+            self.content.current = 'File'
+            self.cmd_manager.transition.direction = 'left'
+            self.cmd_manager.current = 'manual_cmd_page'
+            self.manual_cmd.focus = True
+
+        return False
 
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
