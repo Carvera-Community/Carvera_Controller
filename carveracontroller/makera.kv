@@ -178,6 +178,39 @@
     halign: 'left'
     shorten: True
 
+<GCodeRow>:
+    orientation: 'horizontal'
+    spacing: dp(4)
+    padding: dp(2), 0
+    canvas.before:
+        Color:
+            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Label:
+        size_hint_x: None
+        width: dp(72)
+        text: str(int(root.line_no))
+        color: root.color
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+    Image:
+        size_hint_x: None
+        width: dp(16) if root.is_resume_line else 0
+        opacity: 1 if root.is_resume_line else 0
+        source: 'data/open_iconic_UI/flag-8x.png'
+        allow_stretch: True
+        keep_ratio: True
+    Label:
+        text: root.text
+        color: root.color
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        shorten: True
+
 <DataRow@SelectableBoxLayout>:
     canvas.before:
         Color:
@@ -675,7 +708,7 @@
             title: tr._('Temp:')
             value: '10 C'
     DropDownHint:
-        text: tr._('Auto Vacuum')
+        text: tr._(' Auto Vacuum')
     BoxLayout:
         padding: '0.5dp'
         size_hint_y: None
@@ -2805,6 +2838,8 @@
     cbx_margin: cbx_margin
     cbx_zprobe: cbx_zprobe
     cbx_leveling: cbx_leveling
+    cbx_startline: cbx_startline
+    txt_startline: txt_startline
 
     BoxLayout:
         orientation: 'vertical'
@@ -2898,7 +2933,7 @@
                             pos: self.pos
                             size: self.size
                     Label:
-                        text: tr._(" Set Work Origin")
+                        text: tr._(" Work Origin")
                         halign: "left"
                         valign: "middle"
                         font_size: '13sp'
@@ -3075,38 +3110,33 @@
                         disabled:  (root.mode != 'Run' and root.mode != 'Leveling') or app.has_4axis
                         on_release: root.auto_level_popup.init_and_open(False)
 
-#                BoxLayout:
-#                    size_hint_y: None
-#                    height: '25dp'
-#                    disabled: app.model == 'CA1'
-#                    canvas.before:
-#                        Color:
-#                            rgba: 65/255, 65/255, 65/255, 1
-#                        Rectangle:
-#                            pos: self.pos
-#                            size: self.size
-#                    MCQCheckBox:
-#                        id: cbx_vacuum
-#                        active: False
-#                        on_active:
-#                            #root.set_config('margin', 'active', self.active)
-#                            #root.toggle_config()
-#                            #app.root.update_control('vacuum_mode', self.active)
-#                    MCQLabel:
-#                        on_press: cbx_vacuum._do_press()
-#                        text: tr._('Auto Vacuum')
-#                    Widget:
-#                        size_hint_x: None
-#                        width: '25dp'
-#                        canvas.before:
-#                            Color:
-#                                rgba: 255/255,255/255, 255/255, 1
-#                            Ellipse:
-#                                pos: self.center_x - dp(2.5), self.center_y - dp(5)
-#                                size: dp(10), dp(10)
-
-
-                Label:
+                BoxLayout:
+                    size_hint_y: None
+                    height: '25dp'
+                    padding: '5dp', 0, 0, 0
+                    disabled: root.mode != 'Run'
+                    canvas.before:
+                        Color:
+                            rgba: 65/255, 65/255, 65/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    MCQCheckBox:
+                        id: cbx_startline
+                    MCQLabel:
+                        on_press: cbx_startline._do_press()
+                        text: tr._('  Resume at line:')
+                    TextInput:
+                        id: txt_startline
+                        hint_text: tr._('Number')
+                        multiline: False
+                        size_hint_x: None
+                        width: '80dp'  # 10 chars ought to be enough for anybody :)
+                        text: ''
+                        halign: "right"
+                        input_type: 'number'
+                        input_filter: 'int'
+                Label:  # This empty label is needed to keep the right box top aligned
 
         BoxLayout:
             spacing: '5dp'
@@ -3121,7 +3151,7 @@
                 text: tr._('Run') if root.mode == 'Run' else tr._('Do ') + root.mode
                 on_release: 
                     root.dismiss()
-                    if root.mode == 'Run': app.root.play(app.selected_remote_filename)
+                    if root.mode == 'Run': app.root.play(app.selected_remote_filename, txt_startline.text if cbx_startline.active else None)
                     else: app.root.apply()
                     app.root.content.transition.direction = 'right'
                     app.root.content.current = 'File'
@@ -3953,7 +3983,7 @@
                                                 scroll_type: ['bars', 'content']
                                                 scroll_wheel_distance: dp(114)
                                                 bar_width: dp(20)
-                                                viewclass: 'Row'
+                                                viewclass: 'GCodeRow'
                                                 SelectableRecycleBoxLayout:
                                                     default_size: None, dp(20)
                                                     default_size_hint: 1, None
@@ -5755,4 +5785,39 @@
             Button:
                 id: btn_ok
                 text: tr._('Ok')
-                on_release: root.on_ok_pressed()
+                on_release:
+                    on_release: root.on_ok_pressed()
+
+<GCodeLineContextMenu>:
+    size_hint: None, None
+    size: dp(250), dp(60)
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 0
+        spacing: 0
+        pos_hint:{'top': 1,'right':1}
+        
+        # Resume playback option
+        Button:
+            id: resume_option
+            text: 'Resume at this line on next run'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: (250/255, 250/255, 250/255, 1)
+            color: (1, 1, 1, 1)
+            pos_hint:{'top': 1,'right':1}
+            on_press: root.resume_at_line()
+        
+        # Cancel option
+        Button:
+            id: cancel_option
+            text: 'Cancel'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: (250/255, 250/255, 250/255, 1)
+            color: (1, 1, 1, 1)
+            pos_hint:{'top': 1,'right':1}
+            on_press: root.dismiss() 
