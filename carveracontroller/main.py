@@ -258,7 +258,8 @@ def register_images(base_path):
 class MDITextInput(TextInput):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.last_mdi_command = ''
+        self.past_mdi_commands = []
+        self.active_past_mdi_index = 0
         self.bind(focus=self.on_focus)
 
     def on_focus(self, instance, have_focus):
@@ -270,18 +271,52 @@ class MDITextInput(TextInput):
     def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
         ENTER_KEY = 13
         UP_ARROW_KEY = 273
+        DOWN_ARROW_KEY = 274
         if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
             self.send_mdi_command()
             return True
         if self.focus and key == UP_ARROW_KEY:
-            # If the input box is empty, and the user presses the up arrow
-            # Repopulate the inbox box with the last MDI command
-            if not self.text.strip() and self.last_mdi_command:
-                self.text = self.last_mdi_command
+            cursor_is_at_top_left = self.cursor_index() == 0
+            can_move_backward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index > 0
+            if cursor_is_at_top_left and can_move_backward_in_history:
+                self.active_past_mdi_index = max(0, self.active_past_mdi_index-1)
+                self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                self.cursor = (0, 0)
                 return True
+            else:
+                col, row = self.cursor
+                if row == 0:
+                    self.cursor = (0, 0)
+                    return True
+                else:
+                    # Let the TextInput handle moving up a line
+                    return False
+            
+        if self.focus and key == DOWN_ARROW_KEY:
+            cursor_is_at_bottom_right = self.cursor_index() == len(self.text)
+            can_move_forward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index < len(self.past_mdi_commands)-1
+            if cursor_is_at_bottom_right and can_move_forward_in_history:
+                self.active_past_mdi_index = min(len(self.past_mdi_commands)-1, self.active_past_mdi_index+1)
+                self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                return True
+            else:
+                col, row = self.cursor
+                lines_in_command = self.text.count('\n')
+                if row == lines_in_command:
+                    self.cursor = (len(self.text), row)
+                    return True
+                else:
+                    # Let the TextInput handle moving down a line
+                    return False
+
         return False
 
     def send_mdi_command(self):
+        cmd_to_send = self.text.strip()
+        if not cmd_to_send:
+            return
+        self.past_mdi_commands.append(cmd_to_send)
+        self.active_past_mdi_index = len(self.past_mdi_commands)
         app = App.get_running_app()
         app.root.send_cmd()
 
@@ -2644,6 +2679,7 @@ class Makera(RelativeLayout):
         super(Makera, self).__init__()
 
         Window.bind(on_request_close=self.on_request_close)
+        Window.bind(on_key_down=self._global_keyboard_keydown)
 
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
@@ -5500,6 +5536,27 @@ class Makera(RelativeLayout):
             property_obj = self.__class__.__dict__['light_state']
             property_obj.update_from_state(self)
             logger.debug("Light state manually refreshed from CNC.vars")
+
+    def _global_keyboard_keydown(self, window, key, scancode, codepoint, modifiers):
+        COMMA_KEY = 44
+        M_KEY = 109
+        cmd_mod = 'meta' if sys.platform == 'darwin' else 'ctrl'
+
+        # Cmd+Comma (macOS) or Ctrl+Comma (Windows/Linux) to open settings
+        if key == COMMA_KEY and cmd_mod in modifiers:
+            if not self._is_popup_open() and not self.manual_cmd.focus:
+                self.config_popup.open()
+                return True
+
+        # Ctrl+M to open manual command (MDI) page
+        if key == M_KEY and 'ctrl' in modifiers:
+            self.content.transition.direction = 'right'
+            self.content.current = 'File'
+            self.cmd_manager.transition.direction = 'left'
+            self.cmd_manager.current = 'manual_cmd_page'
+            self.manual_cmd.focus = True
+
+        return False
 
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
