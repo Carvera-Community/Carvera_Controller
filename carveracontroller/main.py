@@ -256,7 +256,8 @@ def register_images(base_path):
 class MDITextInput(TextInput):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.last_mdi_command = ''
+        self.past_mdi_commands = []
+        self.active_past_mdi_index = 0
         self.bind(focus=self.on_focus)
 
     def on_focus(self, instance, have_focus):
@@ -268,18 +269,52 @@ class MDITextInput(TextInput):
     def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
         ENTER_KEY = 13
         UP_ARROW_KEY = 273
+        DOWN_ARROW_KEY = 274
         if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
             self.send_mdi_command()
             return True
         if self.focus and key == UP_ARROW_KEY:
-            # If the input box is empty, and the user presses the up arrow
-            # Repopulate the inbox box with the last MDI command
-            if not self.text.strip() and self.last_mdi_command:
-                self.text = self.last_mdi_command
+            cursor_is_at_top_left = self.cursor_index() == 0
+            can_move_backward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index > 0
+            if cursor_is_at_top_left and can_move_backward_in_history:
+                self.active_past_mdi_index = max(0, self.active_past_mdi_index-1)
+                self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                self.cursor = (0, 0)
                 return True
+            else:
+                col, row = self.cursor
+                if row == 0:
+                    self.cursor = (0, 0)
+                    return True
+                else:
+                    # Let the TextInput handle moving up a line
+                    return False
+            
+        if self.focus and key == DOWN_ARROW_KEY:
+            cursor_is_at_bottom_right = self.cursor_index() == len(self.text)
+            can_move_forward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index < len(self.past_mdi_commands)-1
+            if cursor_is_at_bottom_right and can_move_forward_in_history:
+                self.active_past_mdi_index = min(len(self.past_mdi_commands)-1, self.active_past_mdi_index+1)
+                self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                return True
+            else:
+                col, row = self.cursor
+                lines_in_command = self.text.count('\n')
+                if row == lines_in_command:
+                    self.cursor = (len(self.text), row)
+                    return True
+                else:
+                    # Let the TextInput handle moving down a line
+                    return False
+
         return False
 
     def send_mdi_command(self):
+        cmd_to_send = self.text.strip()
+        if not cmd_to_send:
+            return
+        self.past_mdi_commands.append(cmd_to_send)
+        self.active_past_mdi_index = len(self.past_mdi_commands)
         app = App.get_running_app()
         app.root.send_cmd()
 

@@ -13,6 +13,7 @@
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
 - Enhancement: Add SMW fixture plate background images for the Carvera Air
 - Enhancement: Added debug logging of full sent/received content as a config option
+- Enhancement: Support recalling multiple commands from MDI history with up/down arrow keys
 - Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
