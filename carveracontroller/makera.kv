@@ -178,6 +178,39 @@
     halign: 'left'
     shorten: True
 
+<GCodeRow>:
+    orientation: 'horizontal'
+    spacing: dp(4)
+    padding: dp(2), 0
+    canvas.before:
+        Color:
+            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Label:
+        size_hint_x: None
+        width: dp(72)
+        text: str(int(root.line_no))
+        color: root.color
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+    Image:
+        size_hint_x: None
+        width: dp(16) if root.is_resume_line else 0
+        opacity: 1 if root.is_resume_line else 0
+        source: 'data/open_iconic_UI/flag-8x.png'
+        allow_stretch: True
+        keep_ratio: True
+    Label:
+        text: root.text
+        color: root.color
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        shorten: True
+
 <DataRow@SelectableBoxLayout>:
     canvas.before:
         Color:
@@ -3950,7 +3983,7 @@
                                                 scroll_type: ['bars', 'content']
                                                 scroll_wheel_distance: dp(114)
                                                 bar_width: dp(20)
-                                                viewclass: 'Row'
+                                                viewclass: 'GCodeRow'
                                                 SelectableRecycleBoxLayout:
                                                     default_size: None, dp(20)
                                                     default_size_hint: 1, None

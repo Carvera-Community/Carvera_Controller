@@ -114,11 +114,13 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
+from kivy.uix.image import Image
 from kivy.uix.popup import Popup
 from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
+from kivy.factory import Factory
 from kivy.metrics import Metrics, dp
 
 # Custom Property to monitor CNC.vars["sw_light"] changes
@@ -1974,6 +1976,146 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
                 distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
                 slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
                 Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, 'value', slider_value), 0)
+
+
+class GCodeRow(RecycleDataViewBehavior, BoxLayout):
+    """Single row in GCodeRV: line number, optional resume-flag icon, gcode text."""
+    index = None
+    selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
+    line_no = NumericProperty(0)
+    text = StringProperty('')
+    color = ListProperty([1, 1, 1, 1])
+    is_resume_line = BooleanProperty(False)
+    touch_start_time = 0
+    touch_start_pos = None
+    _resume_bind_uids = None  # [txt_uid, cbx_uid] for unbind on recycle
+
+    def refresh_view_attrs(self, rv, index, data):
+        self.index = index
+        # Unbind previous resume-line updates when recycled
+        if self._resume_bind_uids:
+            app = App.get_running_app()
+            if hasattr(app.root, 'coord_popup') and app.root.coord_popup:
+                cp = app.root.coord_popup
+                if hasattr(cp, 'txt_startline') and cp.txt_startline and self._resume_bind_uids[0] is not None:
+                    cp.txt_startline.funbind('text', self._resume_bind_uids[0])
+                if hasattr(cp, 'cbx_startline') and cp.cbx_startline and self._resume_bind_uids[1] is not None:
+                    cp.cbx_startline.funbind('active', self._resume_bind_uids[1])
+            self._resume_bind_uids = None
+        super(GCodeRow, self).refresh_view_attrs(rv, index, data)
+        self._update_is_resume_line()
+        # Bind so flag updates when user changes resume line in popup
+        app = App.get_running_app()
+        txt_uid = cbx_uid = None
+        if hasattr(app.root, 'coord_popup') and app.root.coord_popup:
+            cp = app.root.coord_popup
+            if hasattr(cp, 'txt_startline') and cp.txt_startline:
+                txt_uid = cp.txt_startline.fbind('text', self._update_is_resume_line)
+            if hasattr(cp, 'cbx_startline') and cp.cbx_startline:
+                cbx_uid = cp.cbx_startline.fbind('active', self._update_is_resume_line)
+        self._resume_bind_uids = [txt_uid, cbx_uid]
+
+    def _update_is_resume_line(self, *args):
+        app = App.get_running_app()
+        if not hasattr(app.root, 'coord_popup') or not app.root.coord_popup:
+            self.is_resume_line = False
+            return
+        cp = app.root.coord_popup
+        if not hasattr(cp, 'cbx_startline') or not cp.cbx_startline or not hasattr(cp, 'txt_startline') or not cp.txt_startline:
+            self.is_resume_line = False
+            return
+        try:
+            self.is_resume_line = bool(cp.cbx_startline.active and str(int(self.line_no)) == cp.txt_startline.text.strip())
+        except (ValueError, TypeError):
+            self.is_resume_line = False
+
+    def on_touch_down(self, touch):
+        if super(GCodeRow, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            self.touch_start_time = time.time()
+            self.touch_start_pos = touch.pos
+            if hasattr(touch, 'button') and touch.button == 'right':
+                self._show_context_menu(touch.pos)
+                return True
+            elif touch.is_double_tap:
+                app = App.get_running_app()
+                app.root.manual_cmd.text = self.text.strip()
+                Clock.schedule_once(app.root.refocus_cmd)
+            return self.parent.select_with_touch(self.index, touch)
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos) and self.selectable:
+            if (self.touch_start_pos and
+                    time.time() - self.touch_start_time >= 0.5 and
+                    abs(touch.pos[0] - self.touch_start_pos[0]) <= 10 and
+                    abs(touch.pos[1] - self.touch_start_pos[1]) <= 10):
+                self._show_context_menu(touch.pos)
+                return True
+        return super(GCodeRow, self).on_touch_up(touch)
+
+    def _show_context_menu(self, pos):
+        app = App.get_running_app()
+        for child in app.root.children:
+            if isinstance(child, GCodeLineContextMenu):
+                child.dismiss()
+        current_page = app.curr_page
+        actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+        context_menu = GCodeLineContextMenu(actual_line_number)
+        app.root.add_widget(context_menu)
+        self._position_context_menu(context_menu, pos)
+
+    def _position_context_menu(self, context_menu, pos):
+        app = App.get_running_app()
+        window_pos = self.to_window(pos[0], pos[1])
+        x = min(max(window_pos[0] + 5, 10), Window.width - context_menu.width - 10)
+        y = min(max(window_pos[1] - context_menu.height - 5, 10), Window.height - context_menu.height - 10)
+        context_menu.pos = (x, y)
+
+    def apply_selection(self, rv, index, is_selected):
+        self.selected = is_selected
+        if not is_selected:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.bind(on_key_down=self.on_keyboard_down)
+            for key in rv.view_adapter.views:
+                view = rv.view_adapter.views[key]
+                if view and hasattr(view, 'selected') and view.selected is not None:
+                    view.selected = (key == index)
+            Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
+
+    def _update_3d_viewer_and_slider(self, selected_index=None):
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            gcode_viewer = app.root.gcode_viewer
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return
+            if not hasattr(gcode_viewer, 'lengths') or not gcode_viewer.lengths:
+                return
+            index = selected_index if selected_index is not None else self.index
+            current_page = app.curr_page
+            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + index + 1
+            app.root._skip_next_set_selected_line_from_callback = True
+            try:
+                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            except (IndexError, AttributeError):
+                pass
+            if hasattr(app.root, 'gcode_play_slider') and app.root.gcode_play_slider:
+                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
+                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, 'value', slider_value), 0)
+
+    def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        mod = "ctrl" if sys.platform == "win32" else "meta"
+        if text == 'c' and self.selected and mod in modifiers:
+            Clipboard.copy(self.text.strip())
+            return True
+        return False
+
+
+Factory.register('GCodeRow', cls=GCodeRow)
+
 
 class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
     ''' Add selection support to the Label '''
@@ -5590,7 +5732,7 @@ class Makera(RelativeLayout):
             line_txt = line[:-1].replace("\x0d", "")
             try:
                 self.gcode_rv.data.append(
-                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+                    {'line_no': line_no, 'text': line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
             except IndexError:
                 logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
