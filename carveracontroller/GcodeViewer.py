@@ -1847,8 +1847,8 @@ class GCodeViewer(Widget):
             return
         try:
             app = App.get_running_app()
-            filepath = getattr(app, 'selected_local_filename', None) or ''
-            controller = getattr(getattr(app, 'root', None), 'controller', None)
+            filepath = app.selected_local_filename or ''
+            controller = app.root.controller if app.root else None
             if not filepath or not controller or not os.path.exists(filepath):
                 return
         except Exception:
@@ -1885,8 +1885,8 @@ class GCodeViewer(Widget):
             return
         try:
             app = App.get_running_app()
-            filepath = getattr(app, 'selected_local_filename', None) or ''
-            controller = getattr(getattr(app, 'root', None), 'controller', None)
+            filepath = app.selected_local_filename or ''
+            controller = app.root.controller if app.root else None
             if not filepath or not controller or not os.path.exists(filepath):
                 return
         except Exception:

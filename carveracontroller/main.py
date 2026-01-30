@@ -2620,6 +2620,9 @@ class Makera(RelativeLayout):
     light_state = LightProperty(False)
 
     played_lines = 0
+    _remaining_anchor_sec = 0.0
+    _remaining_anchor_time = 0.0
+    _progress_smooth_clock = None
 
     show_update = True
     fw_upd_text = ''
@@ -4641,11 +4644,23 @@ class Makera(RelativeLayout):
     def _on_time_estimate_progress(self, state, percent):
         """Callback for GcodeViewer time estimate computation: show progress popup while parsing feed speeds."""
         if state == 'start':
-            self.progressStart(tr._('Calculating time estimate...'), None)
+            self.progressStart(tr._('Calculating run time time estimate...'), None)
         elif state == 'progress':
             self.progressUpdate(percent, '', True)
         elif state == 'done':
             self.progressFinish()
+
+    # --------------------------------------------------------------`---------
+    def _update_progress_smooth(self, dt):
+        """Refresh elapsed/remaining display every second while playing."""
+        app = App.get_running_app()
+        if not app.playing or (not app.selected_remote_filename and not app.selected_local_filename) or not self.selected_file_line_count:
+            return
+        remaining_display = max(0.0, self._remaining_anchor_sec - (time.time() - self._remaining_anchor_time))
+        filename = os.path.basename(app.selected_remote_filename or app.selected_local_filename)
+        self.progress_info = ' {} ( {}/{} - {}%, {} elapsed, {} to go )'.format(
+            filename, self.played_lines, self.selected_file_line_count, int(self.wpb_play.value),
+            Utils.second2hour(CNC.vars["playedseconds"]), Utils.second2hour(int(remaining_display)))
 
     # --------------------------------------------------------------`---------
     def updateCompressProgress(self, value):
@@ -4973,6 +4988,10 @@ class Makera(RelativeLayout):
                 self.wpb_leveling.value = 0
                 self.wpb_play.value = 0
                 self.progress_info = ""
+                # Stop smooth progress updates
+                if self._progress_smooth_clock is not None:
+                    self._progress_smooth_clock.cancel()
+                    self._progress_smooth_clock = None
 
                 last_job_elapsed = ""
                 if CNC.vars["playedseconds"] > 0:
@@ -4986,32 +5005,26 @@ class Makera(RelativeLayout):
                     self.progress_info = tr._(' No Remote File Selected') + last_job_elapsed
             else:
                 app.playing = True
-                # playing file remotely
                 if self.played_lines != CNC.vars["playedlines"]:
                     self.played_lines = CNC.vars["playedlines"]
                     self.wpb_play.value = CNC.vars["playedpercent"]
-                    self.progress_info = ''
                     if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0:
-                        # update gcode list
                         self.gcode_rv.set_selected_line(self.played_lines)
-                        # update gcode viewer
                         self.gcode_viewer.set_distance_by_lineidx(self.played_lines, 0.5)
-                        # update progress info
-                        self.progress_info = os.path.basename(app.selected_remote_filename if app.selected_remote_filename != '' else app.selected_local_filename) + ' ( {}/{} - {}%, {} elapsed'.format( \
-                                                     self.played_lines, self.selected_file_line_count, int(self.wpb_play.value), Utils.second2hour(CNC.vars["playedseconds"]))
                         if self.wpb_play.value > 0:
-                            # Remaining = estimated time for remaining lines (recalc each line), adjusted by feed override
                             remaining_sec = None
                             if hasattr(self.gcode_viewer, 'get_remaining_time_by_lineidx'):
                                 remaining_sec = self.gcode_viewer.get_remaining_time_by_lineidx(self.played_lines, 0.5)
                             if remaining_sec is not None and remaining_sec >= 0:
                                 ov_feed = CNC.vars.get("OvFeed", 100) or 100
-                                remaining_sec = remaining_sec / (ov_feed / 100.0)
-                                self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour(remaining_sec))
+                                self._remaining_anchor_sec = remaining_sec / (ov_feed / 100.0)
                             else:
-                                self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour((100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value))
+                                self._remaining_anchor_sec = (100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value
                         else:
-                            self.progress_info = self.progress_info + ' )'
+                            self._remaining_anchor_sec = 0.0
+                        self._remaining_anchor_time = now
+                if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0 and self._progress_smooth_clock is None:
+                    self._progress_smooth_clock = Clock.schedule_interval(self._update_progress_smooth, 1.0)
                 # playing margin
                 if CNC.vars["atc_state"] == 4:
                     self.wpb_margin.value += 14
