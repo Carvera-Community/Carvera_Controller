@@ -7,6 +7,10 @@
 - Enhancement: Added support sending multiple MDI commands at once
 - Enhancement: Pressing the up arrow when in the MDI input box re-populates the input with the last send command
 - Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
+- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
+- Enhancement: Added context menu when right clicking a line in a Gcode file. Current option is only to select the line for resume playback. On touch screen long pressing on a line also brings up this context menu.
+- Enhancement: Previewing gcode files synchronises the line selection in the file view with the progress slider
+- Enhancement: If machine is halted during gcode file playback or stopped, populate the last run line number into the resume playback inputbox
 - Enhancement: Back up the machine's config files to the computer where the Controller is running
 - Enhancement: Updated the wcs table page to include a description field for the different wcs
 - Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected

@@ -114,11 +114,13 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
+from kivy.uix.image import Image
 from kivy.uix.popup import Popup
 from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
+from kivy.factory import Factory
 from kivy.metrics import Metrics, dp
 
 # Custom Property to monitor CNC.vars["sw_light"] changes
@@ -319,6 +321,10 @@ class MDITextInput(TextInput):
         app.root.send_cmd()
 
 class GcodePlaySlider(Slider):
+    def __init__(self, **kwargs):
+        super(GcodePlaySlider, self).__init__(**kwargs)
+        self._pending_line_update = None  # Track pending scheduled line update
+
     def on_touch_down(self, touch):
         if self.disabled:
             return
@@ -326,6 +332,8 @@ class GcodePlaySlider(Slider):
         if released and self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
+            
+            self._update_line_highlighting() # Add line highlighting when slider is moved
             return True
         return released
 
@@ -336,10 +344,38 @@ class GcodePlaySlider(Slider):
         if self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
-            # float_number = self.value * app.root.selected_file_line_count / 1000
-            # app.root.gcode_viewer.set_distance_by_lineidx(int(float_number), float_number - int(float_number))
+            
+            self._update_line_highlighting() # Add line highlighting when slider is moved
             return True
         return released
+
+    def _update_line_highlighting(self):
+        """Update line highlighting in the file viewer based on current slider position"""
+        # Cancel any pending update
+        if self._pending_line_update is not None:
+            Clock.unschedule(self._pending_line_update)
+            self._pending_line_update = None
+        
+        # Schedule update for next frame
+        self._pending_line_update = Clock.schedule_once(self._do_update_line_highlighting, 0)
+    
+    def _do_update_line_highlighting(self, dt):
+        """Actually perform the line highlighting update on the next frame"""
+        self._pending_line_update = None
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Get current position and line number from gcode viewer
+            current_pos = app.root.gcode_viewer.get_cur_pos_index()
+            if current_pos and len(current_pos) > 1:
+                line_number = current_pos[1]
+                if line_number > 0 and hasattr(app.root, 'gcode_rv'):
+                    app.root.gcode_rv.set_selected_line(line_number)
+        
+    def on_value(self, instance, value):
+        """Called when the slider value changes (both programmatically and manually)"""
+        # Disable this callback to prevent conflicts with programmatic updates
+        # Line highlighting will only be updated through touch methods
+        pass
 
 class FloatBox(FloatLayout):
     touch_interval = 0
@@ -492,6 +528,40 @@ class ProgressPopup(ModalView):
 
     def __init__(self, **kwargs):
         super(ProgressPopup, self).__init__(**kwargs)
+
+class GCodeLineContextMenu(FloatLayout):
+    """Context menu for GCode file viewer lines"""
+    line_number = NumericProperty(0)
+    
+    def __init__(self, line_number, **kwargs):
+        super(GCodeLineContextMenu, self).__init__(**kwargs)
+        self.line_number = line_number
+        
+    def on_touch_down(self, touch):
+        """Handle touch events - dismiss menu if touch is outside"""
+        if not self.collide_point(*touch.pos):
+            # Touch outside the menu - dismiss it
+            self.dismiss()
+            return False
+        
+        # Prevent right-click from opening another context menu
+        if hasattr(touch, 'button') and touch.button == 'right':
+            return True
+        
+        return super(GCodeLineContextMenu, self).on_touch_down(touch)
+        
+    def resume_at_line(self):
+        """Enable resume at line checkbox and set the line number"""
+        app = App.get_running_app()
+
+        app.root.coord_popup.cbx_startline.active = True
+        app.root.coord_popup.txt_startline.text = str(self.line_number)
+        self.parent.remove_widget(self)
+    
+    def dismiss(self):
+        """Close the context menu"""
+        if self.parent:
+            self.parent.remove_widget(self)
 
 class OriginPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
@@ -1801,6 +1871,8 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
+    touch_start_time = 0
+    touch_start_pos = None
 
     def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
         mod = "ctrl" if sys.platform == "win32" else "meta"
@@ -1821,11 +1893,76 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         if super(SelectableLabel, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos) and self.selectable:
-            if touch.is_double_tap:
+            # Store touch start time and position for long press detection
+            self.touch_start_time = time.time()
+            self.touch_start_pos = touch.pos
+            
+            # Check for right click (button == 'right') or long press
+            if hasattr(touch, 'button') and touch.button == 'right':
+                self._show_context_menu(touch.pos)
+                return True
+            elif touch.is_double_tap:
                 app = App.get_running_app()
                 app.root.manual_cmd.text = self.text.strip()
                 Clock.schedule_once(app.root.refocus_cmd)
             return self.parent.select_with_touch(self.index, touch)
+
+    def on_touch_up(self, touch):
+        ''' Handle touch up for long press detection '''
+        if self.collide_point(*touch.pos) and self.selectable:
+            # Check if this was a long press
+            if (self.touch_start_pos and 
+                time.time() - self.touch_start_time >= 0.5 and  # 0.5 seconds for long press
+                self._is_same_position(touch.pos, self.touch_start_pos)):
+                self._show_context_menu(touch.pos)
+                return True
+        return super(SelectableLabel, self).on_touch_up(touch)
+
+    def _is_same_position(self, pos1, pos2, tolerance=10):
+        """Check if two positions are within tolerance of each other"""
+        return abs(pos1[0] - pos2[0]) <= tolerance and abs(pos1[1] - pos2[1]) <= tolerance
+
+    def _show_context_menu(self, pos):
+        """Show the context menu for this line"""
+        app = App.get_running_app()
+        
+        # Check if a context menu is already open and dismiss it
+        for child in app.root.children:
+            if isinstance(child, GCodeLineContextMenu):
+                child.dismiss()
+        
+        current_page = app.curr_page
+        actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+        
+        # Create and show the context menu
+        context_menu = GCodeLineContextMenu(actual_line_number)
+        
+        # Add to the main window first so it gets properly sized
+        app.root.add_widget(context_menu)
+        
+        self._position_context_menu(context_menu, pos)
+    
+    def _position_context_menu(self, context_menu, pos):
+        """Position the context menu after layout is complete"""
+        app = App.get_running_app()
+        
+        window_width = Window.width
+        window_height = Window.height
+        
+        # Get the actual size of the context menu after layout
+        menu_width = context_menu.width
+        menu_height = context_menu.height
+        
+        # For right-click (desktop): position at mouse pointer
+        # Convert touch position to window coordinates
+        window_pos = self.to_window(pos[0], pos[1])
+        
+        # Position the menu slightly offset from the mouse pointer (typical context menu behavior)
+        # Try to position below and to the right of the cursor, but keep it on screen
+        x = min(max(window_pos[0] + 5, 10), window_width - menu_width - 10)
+        y = min(max(window_pos[1] - menu_height - 5, 10), window_height - menu_height - 10)
+        
+        context_menu.pos = (x, y)
 
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
@@ -1834,6 +1971,185 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
             Window.unbind(on_key_down=self.on_keyboard_down)
         else:
             Window.bind(on_key_down=self.on_keyboard_down)
+            # Commit selection immediately so it isn't overwritten by layout/other updates.
+            # Use same iteration as GCodeRV.set_selected_line (views is a dict keyed by index).
+            for key in rv.view_adapter.views:
+                view = rv.view_adapter.views[key]
+                if view and hasattr(view, 'selected') and view.selected is not None:
+                    view.selected = (key == index)
+            # Defer only 3D viewer and slider update to avoid re-entry.
+            Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
+
+    def _update_3d_viewer_and_slider(self, selected_index=None):
+        """Update the 3D viewer and progress slider when a line is selected in the file viewer.
+        selected_index: when provided (e.g. from a scheduled callback), use this instead of self.index
+        since RecycleView may have recycled the widget by the time the callback runs."""
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Check if gcode_viewer has valid data before trying to use it
+            gcode_viewer = app.root.gcode_viewer
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return
+            if not hasattr(gcode_viewer, 'lengths') or not gcode_viewer.lengths:
+                return
+            
+            # Use provided index when from deferred callback (RecycleView reuses views)
+            index = selected_index if selected_index is not None else self.index
+            current_page = app.curr_page
+            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + index + 1
+            
+            # Skip set_selected_line in frame callback: GcodeViewer calls it from set_pos_by_distance
+            # before cur_line_index is updated, so it would overwrite our selection with the old line.
+            app.root._skip_next_set_selected_line_from_callback = True
+            try:
+                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            except (IndexError, AttributeError):
+                pass
+            
+            # Schedule the progress slider update for the next frame
+            if hasattr(app.root, 'gcode_play_slider') and app.root.gcode_play_slider:
+                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
+                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, 'value', slider_value), 0)
+
+
+class GCodeRow(RecycleDataViewBehavior, BoxLayout):
+    """Single row in GCodeRV: line number, optional resume-flag icon, gcode text."""
+    index = None
+    selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
+    line_no = NumericProperty(0)
+    text = StringProperty('')
+    color = ListProperty([1, 1, 1, 1])
+    is_resume_line = BooleanProperty(False)
+    touch_start_time = 0
+    touch_start_pos = None
+    _resume_bind_uids = None  # [txt_uid, cbx_uid] for unbind on recycle
+
+    def refresh_view_attrs(self, rv, index, data):
+        self.index = index
+        # Unbind previous resume-line updates when recycled
+        if self._resume_bind_uids:
+            app = App.get_running_app()
+            if hasattr(app.root, 'coord_popup') and app.root.coord_popup:
+                cp = app.root.coord_popup
+                if hasattr(cp, 'txt_startline') and cp.txt_startline and self._resume_bind_uids[0] is not None:
+                    cp.txt_startline.funbind('text', self._resume_bind_uids[0])
+                if hasattr(cp, 'cbx_startline') and cp.cbx_startline and self._resume_bind_uids[1] is not None:
+                    cp.cbx_startline.funbind('active', self._resume_bind_uids[1])
+            self._resume_bind_uids = None
+        super(GCodeRow, self).refresh_view_attrs(rv, index, data)
+        self._update_is_resume_line()
+        # Bind so flag updates when user changes resume line in popup
+        app = App.get_running_app()
+        txt_uid = cbx_uid = None
+        if hasattr(app.root, 'coord_popup') and app.root.coord_popup:
+            cp = app.root.coord_popup
+            if hasattr(cp, 'txt_startline') and cp.txt_startline:
+                txt_uid = cp.txt_startline.fbind('text', self._update_is_resume_line)
+            if hasattr(cp, 'cbx_startline') and cp.cbx_startline:
+                cbx_uid = cp.cbx_startline.fbind('active', self._update_is_resume_line)
+        self._resume_bind_uids = [txt_uid, cbx_uid]
+
+    def _update_is_resume_line(self, *args):
+        app = App.get_running_app()
+        if not hasattr(app.root, 'coord_popup') or not app.root.coord_popup:
+            self.is_resume_line = False
+            return
+        cp = app.root.coord_popup
+        if not hasattr(cp, 'cbx_startline') or not cp.cbx_startline or not hasattr(cp, 'txt_startline') or not cp.txt_startline:
+            self.is_resume_line = False
+            return
+        try:
+            self.is_resume_line = bool(cp.cbx_startline.active and str(int(self.line_no)) == cp.txt_startline.text.strip())
+        except (ValueError, TypeError):
+            self.is_resume_line = False
+
+    def on_touch_down(self, touch):
+        if super(GCodeRow, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            self.touch_start_time = time.time()
+            self.touch_start_pos = touch.pos
+            if hasattr(touch, 'button') and touch.button == 'right':
+                self._show_context_menu(touch.pos)
+                return True
+            elif touch.is_double_tap:
+                app = App.get_running_app()
+                app.root.manual_cmd.text = self.text.strip()
+                Clock.schedule_once(app.root.refocus_cmd)
+            return self.parent.select_with_touch(self.index, touch)
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos) and self.selectable:
+            if (self.touch_start_pos and
+                    time.time() - self.touch_start_time >= 0.5 and
+                    abs(touch.pos[0] - self.touch_start_pos[0]) <= 10 and
+                    abs(touch.pos[1] - self.touch_start_pos[1]) <= 10):
+                self._show_context_menu(touch.pos)
+                return True
+        return super(GCodeRow, self).on_touch_up(touch)
+
+    def _show_context_menu(self, pos):
+        app = App.get_running_app()
+        for child in app.root.children:
+            if isinstance(child, GCodeLineContextMenu):
+                child.dismiss()
+        current_page = app.curr_page
+        actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+        context_menu = GCodeLineContextMenu(actual_line_number)
+        app.root.add_widget(context_menu)
+        self._position_context_menu(context_menu, pos)
+
+    def _position_context_menu(self, context_menu, pos):
+        app = App.get_running_app()
+        window_pos = self.to_window(pos[0], pos[1])
+        x = min(max(window_pos[0] + 5, 10), Window.width - context_menu.width - 10)
+        y = min(max(window_pos[1] - context_menu.height - 5, 10), Window.height - context_menu.height - 10)
+        context_menu.pos = (x, y)
+
+    def apply_selection(self, rv, index, is_selected):
+        self.selected = is_selected
+        if not is_selected:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.bind(on_key_down=self.on_keyboard_down)
+            for key in rv.view_adapter.views:
+                view = rv.view_adapter.views[key]
+                if view and hasattr(view, 'selected') and view.selected is not None:
+                    view.selected = (key == index)
+            Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
+
+    def _update_3d_viewer_and_slider(self, selected_index=None):
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            gcode_viewer = app.root.gcode_viewer
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return
+            if not hasattr(gcode_viewer, 'lengths') or not gcode_viewer.lengths:
+                return
+            index = selected_index if selected_index is not None else self.index
+            current_page = app.curr_page
+            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + index + 1
+            app.root._skip_next_set_selected_line_from_callback = True
+            try:
+                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            except (IndexError, AttributeError):
+                pass
+            if hasattr(app.root, 'gcode_play_slider') and app.root.gcode_play_slider:
+                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
+                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, 'value', slider_value), 0)
+
+    def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        mod = "ctrl" if sys.platform == "win32" else "meta"
+        if text == 'c' and self.selected and mod in modifiers:
+            Clipboard.copy(self.text.strip())
+            return True
+        return False
+
+
+Factory.register('GCodeRow', cls=GCodeRow)
 
 
 class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
@@ -2146,14 +2462,7 @@ class GCodeRV(RecycleView):
         super(GCodeRV, self).on_scroll_stop(touch)
         self.scroll_time = time.time()
 
-    def select_line(self, *args):
-        old_line = self.view_adapter.get_visible_view(self.old_selected_line)
-        new_line = self.view_adapter.get_visible_view(self.new_selected_line)
-        if old_line:
-            old_line.selected = False
-        if new_line:
-            new_line.selected = True
-            self.old_selected_line = self.new_selected_line
+
 
     def set_selected_line(self, line):
         app = App.get_running_app()
@@ -2161,18 +2470,28 @@ class GCodeRV(RecycleView):
         if aiming_page != app.curr_page:
             app.root.load_page(aiming_page)
         line = line % MAX_LOAD_LINES
-        if line != self.old_selected_line:
-            if self.data_length > 0 and line < self.data_length:
-                page_lines = len(self.view_adapter.views)
-                self.new_selected_line = line - 1
-                Clock.schedule_once(self.select_line, 0)
+        if self.data_length > 0 and line < self.data_length:
+            page_lines = len(self.view_adapter.views)
+            self.new_selected_line = line - 1
+
+            # Schedule all UI attribute updates for the next frame to avoid re-entry loops
+            def update_selection_ui(dt):
+                for key in self.view_adapter.views:
+                    view = self.view_adapter.views[key]
+                    if view and hasattr(view, 'selected') and view.selected is not None:
+                        view.selected = False
+                new_line = self.view_adapter.get_visible_view(self.new_selected_line)
+                if new_line:
+                    new_line.selected = True
+                    self.old_selected_line = self.new_selected_line
                 if time.time() - self.scroll_time > 3:
-                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length -  page_lines / 2 + 1, 1.0, 0.0)
+                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length - page_lines / 2 + 1, 1.0, 0.0)
                     if scroll_value < 0:
                         scroll_value = 0
                     if scroll_value > 1:
                         scroll_value = 1
                     self.scroll_y = scroll_value
+            Clock.schedule_once(update_selection_ui, 0)
 
 # -----------------------------------------------------------------------
 # Manual Recycle View
@@ -2744,7 +3063,7 @@ class Makera(RelativeLayout):
         self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
-    def play(self, file_name):
+    def play(self, file_name, start_line):
         # stop review play first
         self.gcode_playing = False
         self.gcode_viewer.dynamic_display = False
@@ -2752,7 +3071,11 @@ class Makera(RelativeLayout):
         self.apply(True)
         # play file
         CNC.vars["playedseconds"] = 0
-        self.controller.playCommand(file_name)
+        if start_line:
+            # Show confirmation dialog for beta resume playback feature
+            self.open_resume_playback_confirm_popup(file_name, start_line)
+        else:
+            self.controller.playCommand(file_name)
 
     # -----------------------------------------------------------------------
     def apply(self, buffer = False):
@@ -3349,6 +3672,12 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def open_halt_confirm_popup(self):
         app = App.get_running_app()
+        
+        # If playback was interrupted by halt, update resume at line with last executed line
+        # Use playedlines if available, otherwise use the last tracked played_lines
+        last_line = CNC.vars["playedlines"] if CNC.vars["playedlines"] > 0 else self.played_lines
+        if last_line > 0:
+            self.update_resume_at_line_from_played_line(last_line)
 
         # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
         if CNC.vars["halt_reason"] < 20:
@@ -3504,10 +3833,31 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = local_cached_file_path
         app.selected_remote_filename = remote_path
+        
+        Clock.schedule_once(partial(self._select_file_ui_update, remote_path, local_cached_file_path), 0)
+
+    def _select_file_ui_update(self, remote_path, local_cached_file_path, *args):
+        """Update UI elements on main thread"""
+        app = App.get_running_app()
         self.wpb_play.value = 0
 
+        # Clear resume at line checkbox and input when file changes
+        if hasattr(self, 'coord_popup') and self.coord_popup:
+            if hasattr(self.coord_popup, 'cbx_startline'):
+                self.coord_popup.cbx_startline.active = False
+            if hasattr(self.coord_popup, 'txt_startline'):
+                self.coord_popup.txt_startline.text = ''
+
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
-        self.load_gcode_file(local_cached_file_path)
+        # Run load_gcode_file in background thread to avoid blocking UI, especially during decompression
+        # Add a small delay to ensure file is ready, especially when called during decompression
+        def load_file_delayed(dt):
+            if os.path.exists(local_cached_file_path) and os.access(local_cached_file_path, os.R_OK):
+                threading.Thread(target=self.load_gcode_file, args=(local_cached_file_path,), daemon=True).start()
+            else:
+                # Retry after a short delay if file is not ready
+                Clock.schedule_once(load_file_delayed, 0.2)
+        Clock.schedule_once(load_file_delayed, 0.1)
 
     def check_upload_and_select(self):
         filepath = self.file_popup.local_rv.curr_selected_file
@@ -3527,6 +3877,13 @@ class Makera(RelativeLayout):
         filepath = self.file_popup.local_rv.curr_selected_file
         app = App.get_running_app()
         app.selected_local_filename = filepath
+
+        # Clear resume at line checkbox and input when file changes
+        if hasattr(self, 'coord_popup') and self.coord_popup:
+            if hasattr(self.coord_popup, 'cbx_startline'):
+                self.coord_popup.cbx_startline.active = False
+            if hasattr(self.coord_popup, 'txt_startline'):
+                self.coord_popup.txt_startline.text = ''
 
         self.file_popup.dismiss()
 
@@ -3549,6 +3906,7 @@ class Makera(RelativeLayout):
         app.selected_remote_filename = remote_path
         self.wpb_play.value = 0
 
+        self.downloading_file = remote_path
         self.downloading_size = remote_size
         self.downloading_config = False
         threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
@@ -4154,7 +4512,9 @@ class Makera(RelativeLayout):
         self.controller.sendNUM = 0
         if upload_result and callback:  # Only run callback if upload succeeded
             if self.uploading_file.endswith('.lz'):
-                callback(remotename[:-3], origin_path)
+                # Schedule callback to run after decompression completes
+                # The callback will be triggered in updateCompressProgress when decompression finishes
+                self.pending_decompress_callback = partial(callback, remotename[:-3], origin_path)
             else:
                 callback(remotename, local_path)
         # For iOS we display the file list remotely only so we need to refresh it but on main thread
@@ -4284,6 +4644,13 @@ class Makera(RelativeLayout):
             # Refresh the remote dir since upload finished
             Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
             self.decompstatus = False
+            # Call pending callback after decompression completes (for .lz files)
+            if hasattr(self, 'pending_decompress_callback') and self.pending_decompress_callback:
+                # Capture callback before clearing it
+                callback = self.pending_decompress_callback
+                self.pending_decompress_callback = None
+                # Schedule callback with a short delay to ensure decompression is fully complete
+                Clock.schedule_once(lambda dt: callback(), 0.1)
 
     # -----------------------------------------------------------------------
     def updateStatus(self, *args):
@@ -4583,7 +4950,12 @@ class Makera(RelativeLayout):
 
             # update progress bar and set selected
             if CNC.vars["playedlines"] <= 0:
-                # not playing
+                # not playing - check if we were playing before (interrupted playback)
+                if self.played_lines > 0:
+                    # Playback was interrupted, update resume at line with last executed line
+                    self.update_resume_at_line_from_played_line(self.played_lines)
+                    self.played_lines = 0  # Reset after updating
+                
                 app.playing = False
                 self.wpb_margin.value = 0
                 self.wpb_zprobe.value = 0
@@ -5286,6 +5658,43 @@ class Makera(RelativeLayout):
         self.confirm_popup.open(self)
 
     # -----------------------------------------------------------------------
+    def open_resume_playback_confirm_popup(self, file_name, start_line):
+        if self.confirm_popup.showing:
+            return
+        
+        app = App.get_running_app()
+        local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+        
+        # Get command preview from Controller
+        commands = self.controller.playStartLineCommand(file_name, start_line, preview=True, local_file_path=local_file_path)
+        commands_preview = '\n'.join(commands)
+        
+        self.confirm_popup.size_hint = (0.8, 0.8)
+        self.confirm_popup.pos_hint = {"center_x": 0.5, "center_y": 0.5}
+        self.confirm_popup.lb_title.text = tr._('Beta Feature: Resume Playback')
+        self.confirm_popup.lb_content.text = tr._('The "resume playback at line" functionality is beta. Please be prepared to e-stop your machine if it doesn\'t move correctly.\n\nCommands that will be executed:\n') + commands_preview
+        self.confirm_popup.confirm = partial(self.execute_play_with_start_line, file_name, start_line)
+        self.confirm_popup.cancel = None
+        self.confirm_popup.open(self)
+
+    # -----------------------------------------------------------------------
+    def execute_play_with_start_line(self, file_name, start_line):
+        """Execute play command with start_line after user confirmation"""
+        app = App.get_running_app()
+        local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+        self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+    
+    # -----------------------------------------------------------------------
+    def update_resume_at_line_from_played_line(self, line_number):
+        """Update the resume at line input with the last executed line number -1 for the incompletely executed line
+        """
+        # how much to subtract depends
+
+        if line_number > 0:
+            resume_line = max(1, line_number - 1)
+            self.coord_popup.txt_startline.text = str(resume_line)
+
+    # -----------------------------------------------------------------------
     def defaultSettings(self):
         self.controller.defaultConfigCommand()
 
@@ -5293,6 +5702,13 @@ class Makera(RelativeLayout):
     def gcode_play_call_back(self, distance, line_number):
         if not self.loading_file:
             self.gcode_play_slider.value = distance * 1000.0 / self.gcode_viewer_distance
+            # Update line highlighting in file viewer during playback.
+            # Skip when callback was triggered by a user click (set_distance_by_lineidx from click
+            # invokes this before GcodeViewer updates cur_line_index, so line_number would be stale).
+            if getattr(self, '_skip_next_set_selected_line_from_callback', False):
+                self._skip_next_set_selected_line_from_callback = False
+            elif line_number > 0 and hasattr(self, 'gcode_rv'):
+                self.gcode_rv.set_selected_line(line_number)
 
     # -----------------------------------------------------------------------
     def gcode_play_over_call_back(self):
@@ -5354,6 +5770,8 @@ class Makera(RelativeLayout):
         self.gcode_viewer.set_move_speed(GCODE_VIEW_SPEED)
         self.gcode_playing = False
         self.gcode_viewer.dynamic_display = False
+        # Set up frame callback for line highlighting
+        self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
 
     # ------------------------------------------------------------------------
     def load_page(self, page_no, *args):
@@ -5371,7 +5789,7 @@ class Makera(RelativeLayout):
             line_txt = line[:-1].replace("\x0d", "")
             try:
                 self.gcode_rv.data.append(
-                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+                    {'line_no': line_no, 'text': line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
             except IndexError:
                 logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
@@ -5654,6 +6072,9 @@ class MakeraApp(App):
         return True
 
 def load_app_configs():
+    # Disable multitouch simulation (red dots) for right-click
+    Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+    
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
 
