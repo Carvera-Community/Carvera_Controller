@@ -14,9 +14,8 @@ from kivy.graphics.opengl import *
 from kivy.clock import Clock
 from kivy.utils import platform
 import os
+import threading
 from math import *
-import logging
-logger = logging.getLogger(__name__)
 
 import datetime
 start_time = 0
@@ -27,7 +26,7 @@ def get_elapsed(str):
     end_time = datetime.datetime.now()
     elapsed_time = (end_time - start_time).total_seconds()
     start_time = end_time
-    logger.debug(f"{str} -> {elapsed_time}")
+    print(f"{str} -> {elapsed_time}")
 
 from .Objloader import ObjFile
 #arc camera
@@ -48,7 +47,7 @@ def len_2d(pos1,pos2):
 def normalize(dir):
     length = len_3d(dir,[0,0,0])
     if(length < 0.0001):
-        logger.error('normalize failed')
+        print('normalize failed')
         return [1,0,0]
     inv_length = 1.0 / length
     return [dir[0]*inv_length,dir[1]*inv_length,dir[2]*inv_length]
@@ -133,8 +132,10 @@ class MyMeshManager():
 
         ##data container
 
-        # all pts
+        # all pts (rotated for 4-axis display)
         self.positions = []
+        # raw positions (unrotated G-code coordinates)
+        self.raw_positions = []
         # all lengths
         self.lengths = []
         # vertex type
@@ -165,6 +166,7 @@ class MyMeshManager():
 
     def clear(self):
         self.positions.clear()
+        self.raw_positions.clear()
         # all lengths
         self.lengths.clear()
         # vertex type
@@ -212,8 +214,16 @@ class MyMeshManager():
     def parse_line(self, line):
         arr_pt = line.split(' ')
 
-        # position
-        pos = [float(arr_pt[1]), float(arr_pt[3]), float(arr_pt[5])]
+        # position (raw G-code coordinates)
+        raw_pos = [float(arr_pt[1]), float(arr_pt[3]), float(arr_pt[5])]
+        
+        # Store raw positions before rotation
+        self.raw_positions.append(raw_pos[0])
+        self.raw_positions.append(raw_pos[1])
+        self.raw_positions.append(raw_pos[2])
+        
+        # Rotate position for 4-axis display
+        pos = raw_pos
         if self.is_4_axis:
             angle = float(arr_pt[7])
             pos = rotate_pt_by_x_axis_angle(pos[0], pos[1], pos[2], angle)
@@ -294,12 +304,15 @@ class MyMeshManager():
 
     def parse_line_data(self,linedata):
 
-        # position
-        pos = [linedata[0],linedata[1],linedata[2]]
+        # position (raw G-code coordinates)
+        raw_pos = [linedata[0],linedata[1],linedata[2]]
+        
+        # Store raw positions before rotation
+        self.raw_positions.extend(raw_pos)
 
         #angle
         angle = linedata[3]
-        pos = rotate_pt_by_x_axis_angle(pos[0], pos[1], pos[2], angle)
+        pos = rotate_pt_by_x_axis_angle(raw_pos[0], raw_pos[1], raw_pos[2], angle)
 
         self.positions.extend(pos)
         self.max_pt = vec3_max(self.max_pt, pos)
@@ -411,7 +424,7 @@ class MyMeshManager():
         if self.is_4_axis is None:
             self.is_4_axis = is_4_axis
         elif self.is_4_axis != is_4_axis:
-            logger.warning("conflict line type!")
+            print("conflict line type!")
 
         # 2 parse single line
         for line in rawlines:
@@ -453,7 +466,7 @@ def load_data(lines):
     if(len(lines)>0 and 'A:' in lines[0]):
         is_4_axis = True
 
-    logger.info(f"is_4_axis:{is_4_axis}")
+    print(f"is_4_axis:{is_4_axis}")
 
     how_many_meshes = int(len(lines) / 65500) + 1
     line_start = 0
@@ -510,7 +523,7 @@ def load_data(lines):
         line_end = min(line_start+65500,len(lines))
     
     vertices_count = int(len(positions)/3)
-    logger.debug(f"{vertices_count =}")
+    print(vertices_count)
     #apply scale to 2
     max_point = (max(max_pt[0],max(max_pt[1],max_pt[2])))
     scale_invert = (2.0) if max_point == 0 else (2.0 / max_point)
@@ -655,7 +668,7 @@ def load_data(lines):
 
 
         meshes.append([vertices,indices])
-    logger.info("mesh count: %d"%len(meshes))
+    print("mesh count: %d"%len(meshes))
 
 
     #meshes.append([axis_vertices,axis_indices])
@@ -668,7 +681,7 @@ def load_data(lines):
 
 
 def frame_call_back_test(distance,num):
-    logger.info(f'当前line:{num}')
+    print(f'当前line:{num}')
 
 class GCodeViewer(Widget):
     axis = (0,0,1)
@@ -698,10 +711,6 @@ class GCodeViewer(Widget):
     #camera
     m_xRot = 30
     m_yRot = 180
-    m_xLastRot = 30
-    m_yLastRot = 180
-
-    m_lastPos = [0,0,0]
 
     m_xRotTarget = 90
     m_yRotTarget = 0
@@ -773,7 +782,7 @@ class GCodeViewer(Widget):
         #debug
         #self.load(lines)
         #self.set_frame_callback(frame_call_back_test)
-        Clock.schedule_interval(self.increase_angle, 0)  # run at the maxfps configured for kivy
+        Clock.schedule_interval(self.increase_angle, 1/60)
 
 
     #清空渲染
@@ -781,6 +790,8 @@ class GCodeViewer(Widget):
         self.lengths = []
         self.vertex_types = []
         self.positions = []
+        self.line_times = []
+        self.total_time = 0.0
         self.linemesh.clear()
         self.canvas.remove(self.linemesh)
         self.canvas.remove(self.pointermesh)
@@ -836,6 +847,7 @@ class GCodeViewer(Widget):
         self.lengths = self.meshmanager.lengths
         self.vertex_types = self.meshmanager.vertex_types
         self.positions = self.meshmanager.positions
+        self.raw_positions = self.meshmanager.raw_positions
         self.raw_linenumbers = self.meshmanager.raw_linenumbers
         self.angles_of_vertices = self.meshmanager.angles_of_vertices
 
@@ -1026,6 +1038,7 @@ class GCodeViewer(Widget):
             self.lengths = self.meshmanager.lengths
             self.vertex_types = self.meshmanager.vertex_types
             self.positions = self.meshmanager.positions
+            self.raw_positions = self.meshmanager.raw_positions
             self.raw_linenumbers = self.meshmanager.raw_linenumbers
             self.angles_of_vertices = self.meshmanager.angles_of_vertices
 
@@ -1034,6 +1047,9 @@ class GCodeViewer(Widget):
             self.move_scale_by_positon = self.meshmanager.position_scale
 
             self.is_4_axis = self.meshmanager.is_4_axis
+
+            # Compute per-segment durations from travel distance and feed rate (for time estimate)
+            self._compute_line_times_async()
 
             # get_elapsed("fetch meshdata")
 
@@ -1159,7 +1175,7 @@ class GCodeViewer(Widget):
         if(len(lines)>0 and 'A:' in lines[0]):
             is_4_axis = True
 
-        logger.info(f"{is_4_axis =}")
+        print(f"is_4_axis:{is_4_axis}")
 
         how_many_meshes = 1#int(len(lines) / 65500) + 1
         line_start = 0
@@ -1216,7 +1232,7 @@ class GCodeViewer(Widget):
             line_end = min(line_start+65536,len(lines))
         
         vertices_count = int(len(positions)/3)
-        logger.info(f"{vertices_count =}")
+        print(vertices_count)
         #apply scale to 2
         max_point = 50.0#(max(max_pt[0],max(max_pt[1],max_pt[2])))
         scale_invert = (2.0) if max_point == 0 else (2.0 / max_point)
@@ -1373,7 +1389,7 @@ class GCodeViewer(Widget):
 
 
             meshes.append([vertices,indices])
-        logger.info("mesh count: %d"%len(meshes))
+        print("mesh count: %d"%len(meshes))
 
 
         #meshes.append([axis_vertices,axis_indices])
@@ -1467,8 +1483,8 @@ class GCodeViewer(Widget):
                     self.lines_center = [total_sum_position[0]/total_pt_count,total_sum_position[1]/total_pt_count,total_sum_position[2]/total_pt_count]
             
 
-                logger.info(f"{vert_center =}")
-                logger.info(f"{self.lines_center =}")
+                print(vert_center)
+                print(self.lines_center)
                 # print(mmeshes)
                 # print(lengths)
                 self.lengths += lengths
@@ -1627,7 +1643,7 @@ class GCodeViewer(Widget):
             ]
         
         [is_4_axis,meshes,vert_center,total_line_count,lengths,vertex_types,raw_linenumbers,positions,position_scale,angles_of_vertices] = load_data(lines)
-        logger.info("how many meshes:",len(meshes))
+        print("how many meshes:",len(meshes))
 
         self.positions = positions
         self.lengths = lengths
@@ -1640,6 +1656,9 @@ class GCodeViewer(Widget):
         self.is_4_axis = is_4_axis
         self.total_line_count = total_line_count
         self.total_distance = lengths[len(lengths) - 1]
+        # No raw gcode file in this path; time estimate will use machine value
+        self.line_times = []
+        self.total_time = 0.0
 
         obj1 = 'pointer.obj'
         obj2 = 'axis.obj'
@@ -1797,13 +1816,133 @@ class GCodeViewer(Widget):
     #set displaying limit
     def set_pos_by_distance(self,distance):
         if distance > self.get_total_distance():
-            logger.warning("distance is out of bounds")
+            print("distance is out of bounds")
             return
         self.display_count = float(distance)
+        # Trigger frame callback to update line highlighting
+        if hasattr(self, 'frame_callback') and self.frame_callback is not None:
+            [cur_distance, linenumber] = self.get_cur_pos_index()
+            self.frame_callback(cur_distance, linenumber)
+
+    def _report_time_estimate_progress(self, state, percent):
+        """Call the progress callback on the main thread (call from worker via Clock.schedule_once)."""
+        if getattr(self, 'time_estimate_progress_callback', None):
+            self.time_estimate_progress_callback(state, percent)
+
+    def _apply_line_times_result(self, line_times):
+        """Apply worker result on main thread."""
+        self.line_times = line_times if line_times else []
+        self.total_time = self.line_times[-1] if self.line_times else 0.0
+        self._report_time_estimate_progress('done', 100)
+
+    def _compute_line_times_async(self):
+        """
+        Compute cumulative time (seconds) in a background thread so the UI stays responsive.
+        Shows progress via time_estimate_progress_callback if set ('start', 'progress', 'done').
+        """
+        self.line_times = []
+        self.total_time = 0.0
+        n = len(self.raw_linenumbers) if self.raw_linenumbers else 0
+        if n < 2 or not self.raw_positions or len(self.raw_positions) < n * 3:
+            return
+        try:
+            app = App.get_running_app()
+            filepath = app.selected_local_filename or ''
+            controller = app.root.controller if app.root else None
+            if not filepath or not controller or not os.path.exists(filepath):
+                return
+        except Exception:
+            return
+        # Copy data for worker (avoid mutation during thread)
+        raw_positions = list(self.raw_positions)
+        raw_linenumbers = list(self.raw_linenumbers)
+        viewer = self
+        PROGRESS_INTERVAL = 100
+
+        def report(state, percent):
+            Clock.schedule_once(lambda dt: viewer._report_time_estimate_progress(state, percent), 0)
+
+        def worker():
+            line_times = _compute_line_times_worker(
+                filepath, controller, raw_positions, raw_linenumbers,
+                lambda pct: report('progress', pct), PROGRESS_INTERVAL)
+            Clock.schedule_once(lambda dt: viewer._apply_line_times_result(line_times), 0)
+
+        report('start', 0)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _compute_line_times(self):
+        """
+        Compute cumulative time (seconds) at each vertex from segment distance and
+        feed rate in gcode. Uses Controller._find_last_feed_rate for F values.
+        Sets self.line_times (cumulative) and self.total_time.
+        (Synchronous fallback; normal path uses _compute_line_times_async.)
+        """
+        self.line_times = []
+        self.total_time = 0.0
+        n = len(self.raw_linenumbers) if self.raw_linenumbers else 0
+        if n < 2 or not self.raw_positions or len(self.raw_positions) < n * 3:
+            return
+        try:
+            app = App.get_running_app()
+            filepath = app.selected_local_filename or ''
+            controller = app.root.controller if app.root else None
+            if not filepath or not controller or not os.path.exists(filepath):
+                return
+        except Exception:
+            return
+        result = _compute_line_times_worker(filepath, controller, self.raw_positions, self.raw_linenumbers, None, 0)
+        self.line_times = result
+        self.total_time = self.line_times[-1] if self.line_times else 0.0
+
+    def get_elapsed_time_by_distance(self, distance):
+        """
+        Return elapsed time (seconds) at the given display distance.
+        Returns None if line_times are not available.
+        """
+        if not getattr(self, 'line_times', None) or not self.line_times or not self.lengths:
+            return None
+        if distance <= 0:
+            return 0.0
+        total_dist = self.lengths[-1]
+        if total_dist <= 0 or distance >= total_dist:
+            return self.total_time
+        n = len(self.lengths)
+        for i in range(n - 1):
+            if self.lengths[i] <= distance <= self.lengths[i + 1]:
+                seg_len = self.lengths[i + 1] - self.lengths[i]
+                if seg_len <= 0:
+                    return self.line_times[i] if i < len(self.line_times) else None
+                fraction = (distance - self.lengths[i]) / seg_len
+                t0 = self.line_times[i] if i < len(self.line_times) else 0.0
+                t1 = self.line_times[i + 1] if i + 1 < len(self.line_times) else t0
+                return t0 + fraction * (t1 - t0)
+        return None
+
+    def get_remaining_time_by_lineidx(self, line_number, ratio=0.5):
+        """
+        Return estimated remaining time (seconds) from the given line number.
+        Uses distance/feed-based estimate when line_times are available.
+        Returns None to fall back to machine estimate.
+        """
+        if not getattr(self, 'line_times', None) or not self.line_times or self.total_time <= 0:
+            return None
+        distance = self.get_distance_by_lineidx(line_number, ratio)
+        if distance is None:
+            return None
+        elapsed = self.get_elapsed_time_by_distance(distance)
+        if elapsed is None:
+            return None
+        return max(0.0, self.total_time - elapsed)
 
     #根据line number 返回实际距离
-    #TODO:need test
     def get_distance_by_lineidx(self,lineidx,ratio):
+        # Validate that we have the necessary data
+        if not hasattr(self, 'raw_linenumbers') or not self.raw_linenumbers:
+            return None
+        if not hasattr(self, 'lengths') or not self.lengths:
+            return None
+        
         left_pos = binary_find_left(self.raw_linenumbers,lineidx)
         while(left_pos>0 and self.raw_linenumbers[left_pos-1] == lineidx):
             left_pos = left_pos - 1
@@ -1813,6 +1952,21 @@ class GCodeViewer(Widget):
             right_pos = right_pos + 1
         #skip to next pos(lineidx+1)
         right_pos = right_pos + 1
+        
+        # Ensure bounds are valid since not all lines are movements
+        if left_pos >= len(self.lengths):
+            left_pos = len(self.lengths) - 1
+        if right_pos >= len(self.lengths):
+            right_pos = len(self.lengths) - 1
+        if left_pos < 0:
+            left_pos = 0
+        if right_pos < 0:
+            right_pos = 0
+        
+        # Ensure we have valid indices
+        if left_pos >= len(self.lengths) or right_pos >= len(self.lengths):
+            return None
+            
         #start point
         start_distance = self.lengths[left_pos]
         end_distance = self.lengths[right_pos]
@@ -1821,6 +1975,12 @@ class GCodeViewer(Widget):
 
     #根据line number 返回实际距离
     def set_distance_by_lineidx(self,lineidx,ratio):
+        # Validate that we have the necessary data
+        if not hasattr(self, 'raw_linenumbers') or not self.raw_linenumbers:
+            return
+        if not hasattr(self, 'lengths') or not self.lengths:
+            return
+        
         left_pos = binary_find_left(self.raw_linenumbers,lineidx)
         while(left_pos>0 and self.raw_linenumbers[left_pos-1] == lineidx):
             left_pos = left_pos - 1
@@ -1830,6 +1990,21 @@ class GCodeViewer(Widget):
             right_pos = right_pos + 1
         #skip to next pos(lineidx+1)
         right_pos = right_pos + 1
+        
+        # Ensure bounds are valid since not all lines are movements
+        if left_pos >= len(self.lengths):
+            left_pos = len(self.lengths) - 1
+        if right_pos >= len(self.lengths):
+            right_pos = len(self.lengths) - 1
+        if left_pos < 0:
+            left_pos = 0
+        if right_pos < 0:
+            right_pos = 0
+        
+        # Ensure we have valid indices
+        if left_pos >= len(self.lengths) or right_pos >= len(self.lengths):
+            return
+            
         #start point
         start_distance = self.lengths[left_pos]
         end_distance = self.lengths[right_pos]
@@ -1922,8 +2097,8 @@ class GCodeViewer(Widget):
 
         self.cur_line_index = line_index_withratio
 
-        #逐帧回调
-        if(hasattr(self,'frame_callback') and self.frame_callback is not None):
+        #逐帧回调 - only when in dynamic display mode (playing)
+        if(hasattr(self,'frame_callback') and self.frame_callback is not None and self.dynamic_display):
             [cur_distance,linenumber]= self.get_cur_pos_index()
             self.frame_callback(cur_distance,linenumber)
             #debug
@@ -2063,7 +2238,7 @@ class GCodeViewer(Widget):
                     self.restore_default_view()
 
             except:
-                logger.error(sys.exc_info()[1])
+                print(sys.exc_info()[1])
 
     def on_touch_move(self, touch):
         if self.collide_point(*touch.pos):
@@ -2093,14 +2268,14 @@ class GCodeViewer(Widget):
 
                 self.g_cursor = [touch.pos[0], touch.pos[1]]
             except:
-                logger.error(sys.exc_info()[1])
+                print(sys.exc_info()[1])
 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             try:
                 self.g_old_curosr = self.g_cursor = [touch.pos[0], touch.pos[1]]
             except:
-                logger.error(sys.exc_info()[1])
+                print(sys.exc_info()[1])
 
     def zoom_in(self):
         if (self.m_zoom > 0.1):
@@ -2116,6 +2291,45 @@ class GCodeViewer(Widget):
 
     def set_orbit(self, orbit = True):
         self.orbit = orbit
+
+
+def _compute_line_times_worker(filepath, controller, raw_positions, raw_linenumbers, progress_callback, progress_interval):
+    """
+    Core logic for line time computation. Can run in a thread.
+    progress_callback(percent) is called every progress_interval segments; use 0 to disable.
+    Returns list of cumulative times (line_times).
+    """
+    n = len(raw_linenumbers)
+    DEFAULT_FEED_MM_MIN = 3000.0
+    MIN_FEED_MM_MIN = 0.001
+    line_times = [0.0]
+    for i in range(1, n):
+        pos1 = [
+            raw_positions[3 * (i - 1)],
+            raw_positions[3 * (i - 1) + 1],
+            raw_positions[3 * (i - 1) + 2],
+        ]
+        pos2 = [
+            raw_positions[3 * i],
+            raw_positions[3 * i + 1],
+            raw_positions[3 * i + 2],
+        ]
+        segment_length_mm = len_3d(pos1, pos2)
+        line_num = raw_linenumbers[i]
+        try:
+            line_num_int = int(line_num)
+        except (ValueError, TypeError):
+            line_num_int = 1
+        feed = controller._find_last_feed_rate(filepath, line_num_int)
+        if feed is None or feed < MIN_FEED_MM_MIN:
+            feed = DEFAULT_FEED_MM_MIN
+        duration_sec = (segment_length_mm * 60.0) / feed
+        line_times.append(line_times[-1] + duration_sec)
+        if progress_callback and progress_interval > 0 and i % progress_interval == 0:
+            progress_callback(100.0 * i / n)
+    if progress_callback and progress_interval > 0 and n > 1:
+        progress_callback(100.0)
+    return line_times
 
 
 #----------------test func----------------------
