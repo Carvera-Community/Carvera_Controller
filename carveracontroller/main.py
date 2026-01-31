@@ -895,8 +895,15 @@ class CoordPopup(ModalView):
     def populate_spinner(self, dt):
         if "background_image_spinner" in self.ids:
             self.ids.background_image_spinner.values = ["None"] + self.background_image_files
+            saved_image = Config.get('carvera', 'background_image')
+            if saved_image in self.ids.background_image_spinner.values:
+                self.ids.background_image_spinner.text = saved_image
+                self.update_background_image(saved_image)
 
     def update_background_image(self, filename):
+        Config.set('carvera', 'background_image', filename)
+        Config.write()
+
         if filename != "None":
             old_source = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds', filename)
             new_source = os.path.join(self.user_play_file_image_dir, filename)
@@ -5700,6 +5707,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
     if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
+    if not Config.has_option('carvera', 'background_image'): Config.set('carvera', 'background_image', 'None')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')
