@@ -928,16 +928,6 @@ class Controller:
         if '\\' in filename:
             play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
-        # the goto command in firmware is bugged in versions < 2.1.0c and Makera releases
-        # the bug is that it goes to the end of the line specified instead of start.
-        start_line_comment = ""
-
-        app = App.get_running_app()
-        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
-            start_line = int(start_line)-1
-            start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
-
-
         # Get position from GcodeViewer for the line before start_line (start_line - 1)
         # This is the position where start_line - 1 ends, which is where we want to move the spindle
         # Convert start_line to int and ensure it's at least 2 (so start_line - 1 >= 1)
@@ -1052,6 +1042,15 @@ class Controller:
             if feed_rate is not None:
                 g1_cmd += f" F{feed_rate:.0f}"
             additional_commands.append(f"buffer {g1_cmd}")
+
+        # the goto command in firmware is bugged in versions < 2.1.0c and Makera releases
+        # the bug is that it goes to the end of the line specified instead of start.
+        start_line_comment = ""
+
+        app = App.get_running_app()
+        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
+            start_line = int(start_line)-1
+            start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
 
         commands = [
             "buffer M600",
