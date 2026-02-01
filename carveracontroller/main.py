@@ -3805,13 +3805,6 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         self.wpb_play.value = 0
 
-        # Clear resume at line checkbox and input when file changes
-        if hasattr(self, 'coord_popup') and self.coord_popup:
-            if hasattr(self.coord_popup, 'cbx_startline'):
-                self.coord_popup.cbx_startline.active = False
-            if hasattr(self.coord_popup, 'txt_startline'):
-                self.coord_popup.txt_startline.text = ''
-
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
         # Run load_gcode_file in background thread to avoid blocking UI, especially during decompression
         # Add a small delay to ensure file is ready, especially when called during decompression
@@ -3842,12 +3835,6 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = filepath
 
-        # Clear resume at line checkbox and input when file changes
-        if hasattr(self, 'coord_popup') and self.coord_popup:
-            if hasattr(self.coord_popup, 'cbx_startline'):
-                self.coord_popup.cbx_startline.active = False
-            if hasattr(self.coord_popup, 'txt_startline'):
-                self.coord_popup.txt_startline.text = ''
 
         self.file_popup.dismiss()
 
@@ -5777,6 +5764,11 @@ class Makera(RelativeLayout):
         if len(self.gcode_viewer.lengths) > 0:
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
+
+        # Clear resume at line when a (possibly new) gcode file has finished loading
+        if self.coord_popup:
+            self.coord_popup.cbx_startline.active = False
+            self.coord_popup.txt_startline.text = ''
 
         app = App.get_running_app()
         app.has_4axis = self.cnc.has_4axis
