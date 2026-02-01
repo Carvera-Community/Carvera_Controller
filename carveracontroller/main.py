@@ -1653,9 +1653,10 @@ class CNCWorkspace(Widget):
         self.config = config
 
     def update_background_image(self, new_source):
-        if self.bg_rect and new_source != "None":
-            self.bg_rect.source = new_source
+        if new_source != "None":
             self.bg_image = new_source
+            if self.bg_rect:
+                self.bg_rect.source = new_source
         else:
             self.bg_image = ""
         self.draw()
