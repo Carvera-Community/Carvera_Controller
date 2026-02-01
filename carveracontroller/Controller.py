@@ -1208,9 +1208,12 @@ class Controller:
             CNC.vars["playedlines"] = int(d['P'][0])
             CNC.vars["playedpercent"] = int(d['P'][1])
             CNC.vars["playedseconds"] = int(d['P'][2])
+            if len(d['P']) >= 4:
+                CNC.vars["is_playing"] = int(d['P'][3])
         else:
             # not playing file
             CNC.vars["playedlines"] = -1
+            CNC.vars["is_playing"] = 0
 
         if 'A' in d:
             CNC.vars["atc_state"] = int(d['A'][0])

@@ -3641,7 +3641,7 @@ class Makera(RelativeLayout):
         # Use playedlines if available, otherwise use the last tracked played_lines
         last_line = CNC.vars["playedlines"] if CNC.vars["playedlines"] > 0 else self.played_lines
         if last_line > 0:
-            self.update_resume_at_line_from_played_line(last_line)
+            self.update_resume_at_line_from_played_line(last_line, CNC.vars["playedpercent"])
 
         # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
         if CNC.vars["halt_reason"] < 20:
@@ -4900,11 +4900,13 @@ class Makera(RelativeLayout):
                     self.laser_drop_down.scale_slider.value = CNC.vars["laserscale"]
 
             # update progress bar and set selected
-            if CNC.vars["playedlines"] <= 0:
+            use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
+            machine_not_playing = (CNC.vars["is_playing"] == 0 if use_cf_playing_flag else CNC.vars["playedlines"] <= 0)
+            if machine_not_playing:
                 # not playing - check if we were playing before (interrupted playback)
                 if self.played_lines > 0:
                     # Playback was interrupted, update resume at line with last executed line
-                    self.update_resume_at_line_from_played_line(self.played_lines)
+                    self.update_resume_at_line_from_played_line(self.played_lines, CNC.vars["playedpercent"])
                     self.played_lines = 0  # Reset after updating
                 
                 app.playing = False
@@ -5615,10 +5617,13 @@ class Makera(RelativeLayout):
         self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
     
     # -----------------------------------------------------------------------
-    def update_resume_at_line_from_played_line(self, line_number):
+    def update_resume_at_line_from_played_line(self, line_number, percent_complete):
         """Update the resume at line input with the last executed line number -1 for the incompletely executed line
         """
-        # how much to subtract depends
+
+        if percent_complete == 100:
+            self.coord_popup.cbx_startline.active = False
+            self.coord_popup.txt_startline.text = ''
 
         if line_number > 0:
             resume_line = max(1, line_number - 1)
