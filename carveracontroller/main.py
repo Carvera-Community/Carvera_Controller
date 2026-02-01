@@ -5621,7 +5621,7 @@ class Makera(RelativeLayout):
         """Update the resume at line input with the last executed line number -1 for the incompletely executed line
         """
 
-        if percent_complete == 100:
+        if percent_complete >= 98:  # if close enough to end of file consider it as complete and clear resume
             self.coord_popup.cbx_startline.active = False
             self.coord_popup.txt_startline.text = ''
 
