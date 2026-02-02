@@ -244,15 +244,15 @@
     {
         "type": "bool",
         "title": "Increase USB connection speed",
-        "desc": "Requires Community firmware >= v2.1.0. Will negotiate to a higher usb connection speed",
+        "desc": "Requires Community firmware >= v2.1.0. If enabled the controller will negotiate to a higher usb connection speed",
         "section": "carvera",
         "key": "use_higher_baud",
         "default": "false"
     },
     {
         "type": "options",
-        "title": "Increased USB Connection speed",
-        "desc": "Speed to use if machine supports increased USB connection speed",
+        "title": "Increased USB Connection baud rate",
+        "desc": "Baud rate to use if machine supports increased USB connection speed",
         "section": "carvera",
         "key": "usb_baud_rate",
         "default": "1500000",
