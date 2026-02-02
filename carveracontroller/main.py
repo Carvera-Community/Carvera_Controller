@@ -3221,6 +3221,17 @@ class Makera(RelativeLayout):
                         logger.debug(f"Firmware Version detected as {self.fw_version}")
                         if self.fw_version_new != '':
                             self.check_fw_version()
+                        # Request higher USB baud if firmware >= 2.1.0 and user has enabled it
+                        if (app.is_community_firmware and
+                                app.fw_version_digitized >= Utils.digitize_v("2.1.0") and
+                                self.controller.connection_type == CONN_USB and
+                                not self.controller._baud_upgrade_attempted):
+                            use_higher_val = Config.get('carvera', 'use_higher_baud', fallback='0')
+                            use_higher = str(use_higher_val).lower() in ('1', 'true', 'yes', 'on')
+                            baud_str = Config.get('carvera', 'usb_baud_rate', fallback='115200')
+                            if use_higher and baud_str and int(baud_str) != 115200:
+                                self.controller._baud_upgrade_attempted = True
+                                self.controller.request_baud_upgrade(int(baud_str))
                     
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
@@ -4812,10 +4823,28 @@ class Makera(RelativeLayout):
         try:
            self.controller.open(CONN_USB, device)
            self.controller.connection_type = CONN_USB
+           # Fallback: attempt baud upgrade after 10s if version is > 2.1.0c and conditions met
+           Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 10)
         except:
             logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
+
+    def attempt_usb_baud_upgrade_if_eligible(self, dt):
+        """If on USB, firmware >= 2.1.0, and use_higher_baud is on, request higher baud (fallback if version line was missed)."""
+        app = App.get_running_app()
+        if self.controller.connection_type != CONN_USB or self.controller.stream != self.controller.usb_stream:
+            return
+        if self.controller._baud_upgrade_attempted:
+            return
+        if not app.is_community_firmware or not self.fw_version or app.fw_version_digitized < Utils.digitize_v("2.1.0"):
+            return
+        use_higher_val = Config.get('carvera', 'use_higher_baud', fallback='0')
+        use_higher = str(use_higher_val).lower() in ('1', 'true', 'yes', 'on')
+        baud_str = Config.get('carvera', 'usb_baud_rate', fallback='115200')
+        if use_higher and baud_str and int(baud_str) != 115200:
+            self.controller._baud_upgrade_attempted = True
+            self.controller.request_baud_upgrade(int(baud_str))
 
     # -----------------------------------------------------------------------
     def openWIFI(self, address):
@@ -5700,6 +5729,8 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
     if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
+    if not Config.has_option('carvera', 'use_higher_baud'): Config.set('carvera', 'use_higher_baud', '0')
+    if not Config.has_option('carvera', 'usb_baud_rate'): Config.set('carvera', 'usb_baud_rate', '1500000')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')

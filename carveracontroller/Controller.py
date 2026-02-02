@@ -142,6 +142,10 @@ class Controller:
         self._stop = False  # Raise to stop current run
         self._pause = False  # machine is on Hold
         self._alarm = True  # Display alarm message if true
+
+        self._baud_upgrade_attempted = False
+        self._baud_switch_in_progress = False
+
         self._msg = None
         self._sumcline = 0
         self._lastFeed = 0
@@ -757,8 +761,10 @@ class Controller:
     # ----------------------------------------------------------------------
     def open(self, conn_type, address):
         # init connection
+        self.connection_type = conn_type
         if conn_type == CONN_USB:
             self.stream = self.usb_stream
+            self._baud_upgrade_attempted = False
         else:
             self.stream = self.wifi_stream
 
@@ -1130,6 +1136,22 @@ class Controller:
             self.feedHold()
 
     # ----------------------------------------------------------------------
+    def request_baud_upgrade(self, baud):
+        """Send firmware baud command and reopen serial at new baud (machine switches immediately)."""
+        if self.connection_type != CONN_USB or self.stream != self.usb_stream:
+            return
+        self._baud_switch_in_progress = True
+        try:
+            self.stream.send("baud {}\n".format(baud).encode())
+            if hasattr(self.usb_stream, 'reopen_at_baud'):
+                self.usb_stream.reopen_at_baud(baud)
+                self.log.put((self.MSG_NORMAL, 'Serial speed set to {} baud'.format(baud)))
+        except Exception as e:
+            self.log.put((self.MSG_ERROR, 'Failed to change serial speed: {}'.format(e)))
+        finally:
+            self._baud_switch_in_progress = False
+
+    # ----------------------------------------------------------------------
     def parseLine(self, line):
         if not line:
             return True
@@ -1255,11 +1277,15 @@ class Controller:
                     else:
                         dynamic_delay = 0
 
-            except:
+            except Exception:
                 line = b''
-                if last_error != str(sys.exc_info()[1]) :
-                    self.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
-                    last_error = str(sys.exc_info()[1])
+                exc_msg = str(sys.exc_info()[1])
+                if self._baud_switch_in_progress:
+                    last_error = exc_msg
+                    continue
+                if last_error != exc_msg:
+                    self.log.put((Controller.MSG_ERROR, exc_msg))
+                    last_error = exc_msg
 
             if dynamic_delay > 0:
                 time.sleep(dynamic_delay)

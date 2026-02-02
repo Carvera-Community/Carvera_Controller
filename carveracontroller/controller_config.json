@@ -240,5 +240,22 @@
         "section": "carvera",
         "key": "log_sent_receive",
         "default": "false"
+    },
+    {
+        "type": "bool",
+        "title": "Increase USB connection speed",
+        "desc": "Requires Community firmware >= v2.1.0. Will negotiate to a higher usb connection speed",
+        "section": "carvera",
+        "key": "use_higher_baud",
+        "default": "false"
+    },
+    {
+        "type": "options",
+        "title": "Increased USB Connection speed",
+        "desc": "Speed to use if machine supports increased USB connection speed",
+        "section": "carvera",
+        "key": "usb_baud_rate",
+        "default": "1500000",
+        "options": ["115200", "230400", "460800", "921600", "1500000", "2000000", "2500000", "3000000"]
     }
 ]

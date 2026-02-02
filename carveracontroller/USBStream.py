@@ -6,6 +6,7 @@ import sys
 from .XMODEM import XMODEM
 import logging
 
+logger = logging.getLogger(__name__)
 
 SERIAL_TIMEOUT = 0.3  # s
 # ==============================================================================
@@ -24,26 +25,51 @@ class USBStream:
         handler.setFormatter(formatter)
         self.modem.log.addHandler(handler)
         self.log_sent_receive = log_sent_receive
-
+        self._send_log_buffer = b''
+        self._recv_log_buffer = b''
 
     # ----------------------------------------------------------------------
     def send(self, data):
-        if self.log_sent_receive:
-            logger.debug(f"SENT: {data}")
+        if isinstance(data, str):
+            data = data.encode('utf-8', errors='replace')
         self.serial.write(data)
+        if not self.log_sent_receive:
+            return
+        if data == b'?':
+            logger.debug("SENT: ?")
+            return
+        self._send_log_buffer += data
+        while b'\n' in self._send_log_buffer:
+            idx = self._send_log_buffer.index(b'\n') + 1
+            line = self._send_log_buffer[:idx]
+            self._send_log_buffer = self._send_log_buffer[idx:]
+            line_str = line.decode('utf-8', errors='replace').rstrip('\r\n')
+            logger.debug("SENT: %s", line_str)
+        if len(self._send_log_buffer) > 4096:
+            logger.debug("SENT: <%d bytes (no newline)>", len(self._send_log_buffer))
+            self._send_log_buffer = b''
 
     # ----------------------------------------------------------------------
     def recv(self):
         data = self.serial.read()
-        if self.log_sent_receive:
-            logger.debug(f"RECIEVED: {data}")
+        if self.log_sent_receive and data:
+            self._recv_log_buffer += data
+            while b'\n' in self._recv_log_buffer:
+                idx = self._recv_log_buffer.index(b'\n') + 1
+                line = self._recv_log_buffer[:idx]
+                self._recv_log_buffer = self._recv_log_buffer[idx:]
+                logger.debug("RECV: %s", line.decode('utf-8', errors='replace').rstrip('\r\n'))
+            if len(self._recv_log_buffer) > 4096:
+                logger.debug("RECV: <%d bytes (no newline)>", len(self._recv_log_buffer))
+                self._recv_log_buffer = b''
         return data
 
     # ----------------------------------------------------------------------
-    def open(self, address):
+    def open(self, address, baud=115200):
+        self._address = address.replace('\\', '\\\\')
         self.serial = serial.serial_for_url(
-            address.replace('\\', '\\\\'),  # Escape for windows
-            115200,
+            self._address,
+            baud,
             bytesize=serial.EIGHTBITS,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
@@ -68,6 +94,31 @@ class USBStream:
         return True
 
     # ----------------------------------------------------------------------
+    def reopen_at_baud(self, baud):
+        """Close the current serial port and reopen at the given baud rate."""
+        if self.serial is None:
+            return False
+        try:
+            self.serial.close()
+        except Exception:
+            pass
+        self.serial = None
+        self._send_log_buffer = b''
+        self._recv_log_buffer = b''
+        time.sleep(0.1)
+        self.serial = serial.serial_for_url(
+            self._address,
+            baud,
+            bytesize=serial.EIGHTBITS,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            timeout=SERIAL_TIMEOUT,
+            write_timeout=SERIAL_TIMEOUT,
+            xonxoff=False,
+            rtscts=False)
+        return True
+
+    # ----------------------------------------------------------------------
     def close(self):
         if self.serial is None: return
         time.sleep(0.5)
@@ -77,6 +128,8 @@ class USBStream:
         except:
             pass
         self.serial = None
+        self._send_log_buffer = b''
+        self._recv_log_buffer = b''
         return True
 
     # ----------------------------------------------------------------------
