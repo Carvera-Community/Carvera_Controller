@@ -2268,6 +2268,7 @@ class Makera(RelativeLayout):
     manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
+    _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -5181,6 +5182,13 @@ class Makera(RelativeLayout):
         if self.is_jogging_enabled() and not self.manual_cmd.focus:
             key = args[1]  # keycode
 
+            if app.root.controller.jog_mode == Controller.JOG_MODE_STEP:
+                if key in self._held_jog_keys:
+                    # Ignore - only move once per keypress in step mode
+                    return
+                if key in (273, 274, 275, 276, 280, 281):
+                    self._held_jog_keys.add(key)
+
             if key == 274:  # down button
                 app.root.controller.jog(f"Y{'-' if app.invert_y_axis_jogging else ''}{app.root.step_xy.text}")
             elif key == 273:  # up button
@@ -5197,7 +5205,8 @@ class Makera(RelativeLayout):
     def _keyboard_jog_keyup(self, *args):
         app = App.get_running_app()
         key = args[1]  # keycode
-        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+        if key in (273, 274, 275, 276, 280, 281):  # only if a jog button is released
+            self._held_jog_keys.discard(key)
             app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
