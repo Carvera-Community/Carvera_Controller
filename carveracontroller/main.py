@@ -5197,7 +5197,7 @@ class Makera(RelativeLayout):
     def _keyboard_jog_keyup(self, *args):
         app = App.get_running_app()
         key = args[1]  # keycode
-        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+        if key in (273, 274, 275, 276, 280, 281):  # only if a jog button is released
             app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
