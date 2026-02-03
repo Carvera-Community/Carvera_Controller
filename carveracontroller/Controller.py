@@ -922,22 +922,36 @@ class Controller:
         
         return (None, None)
 
+    def _get_last_movement_line_before(self, local_file_path, start_line):
+        """
+        Return the 1-based line number of the last movement command (G0–G3) working backwards from start_line.
+        Uses _find_command_line_number for each movement command and returns the highest line number.
+        Returns None if no movement command found.
+        """
+        last_line = None
+        for cmd in ("G0", "G1", "G2", "G3"):
+            _, line_num = self._find_command_line_number(local_file_path, start_line, cmd)
+            if line_num is not None and (last_line is None or line_num > last_line):
+                last_line = line_num
+        return last_line
+
     def playStartLineCommand(self, filename, start_line, preview=False, local_file_path=None):
         # Build the play command with proper formatting
         play_command = "play %s\n" % filename.replace(' ', '\x01')
         if '\\' in filename:
             play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
-        # Get position from GcodeViewer for the line before start_line (start_line - 1)
-        # This is the position where start_line - 1 ends, which is where we want to move the spindle
-        # Convert start_line to int and ensure it's at least 2 (so start_line - 1 >= 1)
+        # Position to move to before start: last movement line before start_line (from file), then from GcodeViewer
         try:
             start_line_int = int(start_line)
-            prev_line = max(1, start_line_int - 1)  # Ensure we don't go below line 1
         except (ValueError, TypeError):
-            prev_line = None
-        
-        # This finds the start position of the start_line using the gcode viewer
+            start_line_int = None
+        prev_line = None
+        if local_file_path and start_line_int is not None:
+            prev_line = self._get_last_movement_line_before(local_file_path, start_line_int)
+        if prev_line is None and start_line_int is not None:
+            prev_line = max(1, start_line_int - 1)
+        prev_line = max(1, prev_line) if prev_line else None
         position = self._get_line_position_from_gcode_viewer(prev_line) if prev_line else (None, None, None, None)
         x, y, z, a = position
 
@@ -982,11 +996,6 @@ class Controller:
                     last_wcs_line = wcs_line
             if last_wcs:
                 additional_commands.append(f"buffer {last_wcs}")
-        
-            # Search for M6 (tool change)
-            m6_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M6")
-            if m6_cmd:
-                additional_commands.append(f"buffer {m6_cmd}")
 
             # Search for M7 (air assist on) and M9 (air assist off)
             _, m7_line = self._find_command_line_number(local_file_path, start_line, "M7")
@@ -996,6 +1005,14 @@ class Controller:
                     additional_commands.append("buffer M7")
             elif m7_line:
                 additional_commands.append("buffer M7")
+
+
+            # Search for M6 (tool change) 
+            # +1 to start_line because would be silly to change to the previous tool only to change to something else
+            # _find_command_line_number() only searchs backwards
+            m6_cmd, m6_line = self._find_command_line_number(local_file_path, start_line_int + 1, "M6")  
+            if m6_cmd:
+                additional_commands.append(f"buffer {m6_cmd}")
 
             # Search for M3 (spindle on), M5 (spindle off), M321 (laser mode on), and M322 (laser mode off)
             m3_cmd, m3_line = self._find_command_line_number(local_file_path, start_line, "M3")
@@ -1031,17 +1048,17 @@ class Controller:
                 g0_cmd += f" A{a:.3f}"
             additional_commands.append(f"buffer {g0_cmd}")
 
-        # Add G1 movement into the Z position with last feed rate
-        if z is not None:
-            # Find the last feed rate from G1/G2/G3 commands
-            feed_rate = None
-            if local_file_path:
-                feed_rate = self._find_last_feed_rate(local_file_path, start_line)
-            
-            g1_cmd = f"G1 Z{z:.3f}"
-            if feed_rate is not None:
-                g1_cmd += f" F{feed_rate:.0f}"
-            additional_commands.append(f"buffer {g1_cmd}")
+        # Set the G1 feed modal
+        feed_rate = None
+        if local_file_path:
+            feed_rate = self._find_last_feed_rate(local_file_path, start_line)
+        if feed_rate:
+            additional_commands.append(f"buffer G1 F{feed_rate:.0f}")
+
+        # Add G1 movement into the Z position if tool change line is before than any movements
+        # If no movements have occured between tool change and prev_line then the Z position isn't correct
+        if z is not None and (m6_line is None or prev_line > m6_line):
+            additional_commands.append(f"buffer G1 Z{z:.3f}")
 
         # the goto command in firmware is bugged in versions < 2.1.0c and Makera releases
         # the bug is that it goes to the end of the line specified instead of start.
