@@ -958,6 +958,7 @@ class Controller:
         # Find additional commands to insert after "goto"
         # Note the use of buffer is to avoid the firmware bug https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/211
         additional_commands = []
+        m6_line = None
         
         if local_file_path:
             # Search for G20 or G21 (unit mode) - take the last one found
