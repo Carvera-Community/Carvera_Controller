@@ -28,7 +28,7 @@
 - Change: After loading a program, the gcode view scrolls to the top of the file
 - Change: Packaging assets are now in `assets/packaging` to create space for `assets/design` and other types of assets
 - Change: Improved logging of parser errors of machine responses
-- Change: On USB-serial connect, clear machine's recieve buffer by sending "\n;\n"
+- Change: On USB-serial connect, clear machine's receive buffer by sending "\n;\n"
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
