@@ -91,6 +91,9 @@ class USBStream:
             pass
         time.sleep(0.5)
 
+        # Try to clear machine receive buffer from a previous controller session
+        self.serial.write(b"\n;\n")
+
         return True
 
     # ----------------------------------------------------------------------
