@@ -16,6 +16,8 @@
 - Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
 - Enhancement: Add SMW fixture plate background images for the Carvera Air
+- Enhancement: Added debug logging of full sent/recieved content as a config option
+- Enhancement: Time remaining is now based on a estimate of the toolpath movements instead of basing on number of lines executed/duration. This adds extra parsing time after selecting a file. This new functionality can be disabled in Controller settings to return to using the time estimates that come from the machine firmware
 - Enhancement: Added debug logging of full sent/received content as a config option
 - Enhancement: Support recalling multiple commands from MDI history with up/down arrow keys
 - Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)
