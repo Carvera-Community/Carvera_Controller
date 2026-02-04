@@ -708,6 +708,9 @@ class GCodeViewer(Widget):
     #清空数据
     clear_before_new_load = False
 
+    # When True, compute segment-based time estimates (distance/feed); when False, skip extra parsing.
+    high_precision_time_estimate = True
+
     #camera
     m_xRot = 30
     m_yRot = 180
@@ -1049,7 +1052,8 @@ class GCodeViewer(Widget):
             self.is_4_axis = self.meshmanager.is_4_axis
 
             # Compute per-segment durations from travel distance and feed rate (for time estimate)
-            self._compute_line_times_async()
+            if self.high_precision_time_estimate:
+                self._compute_line_times_async()
 
             # get_elapsed("fetch meshdata")
 

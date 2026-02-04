@@ -17,7 +17,7 @@
 - Enhancement: Support inverted y-axis jogging controls to match intuition for some users
 - Enhancement: Add SMW fixture plate background images for the Carvera Air
 - Enhancement: Added debug logging of full sent/recieved content as a config option
-- Enhancement: Time remaining estimate is now based on a estimate of the gcode movement/feeds instead of basing on the number of lines executed/duration
+- Enhancement: Time remaining is now based on a estimate of the toolpath movements instead of basing on simply based on number of lines executed/duration. This adds extra parsing time after selecting a file. This new functionality can be disabled in Controller settings.
 - Enhancement: Added debug logging of full sent/received content as a config option
 - Enhancement: Support recalling multiple commands from MDI history with up/down arrow keys
 - Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)

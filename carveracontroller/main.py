@@ -2789,6 +2789,7 @@ class Makera(RelativeLayout):
 
         # init gcode viewer
         self.gcode_viewer = GCodeViewer()
+        self.gcode_viewer.high_precision_time_estimate = Config.getboolean('carvera', 'high_precision_reamining_time_estimate', fallback=True)
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
@@ -5693,6 +5694,9 @@ class Makera(RelativeLayout):
         if "log_sent_receive" in self.controller_setting_change_list:
             self.controller.log_sent_receive = self.controller_setting_change_list.get("log_sent_receive")
 
+        if "high_precision_reamining_time_estimate" in self.controller_setting_change_list:
+            self.gcode_viewer.high_precision_time_estimate = self.controller_setting_change_list.get("high_precision_reamining_time_estimate")
+
 
     # -----------------------------------------------------------------------
     def open_setting_restore_confirm_popup(self):
@@ -6201,6 +6205,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
     if not Config.has_option('carvera', 'use_higher_baud'): Config.set('carvera', 'use_higher_baud', '0')
     if not Config.has_option('carvera', 'usb_baud_rate'): Config.set('carvera', 'usb_baud_rate', '1500000')
+    if not Config.has_option('carvera', 'high_precision_reamining_time_estimate'): Config.set('carvera', 'high_precision_reamining_time_estimate', '1')
     if not Config.has_option('carvera', 'background_image'): Config.set('carvera', 'background_image', 'None')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
