@@ -1814,14 +1814,22 @@ class GCodeViewer(Widget):
         self.off_y = offy
 
     #set displaying limit
-    def set_pos_by_distance(self,distance):
+    def set_pos_by_distance(self, distance):
         if distance > self.get_total_distance():
             print("distance is out of bounds")
             return
         self.display_count = float(distance)
+        # Sync cur_line_index to display_count so get_cur_pos_index() returns the correct line
+        if self.lengths:
+            cur_display_distance = float(self.display_count)
+            line_index = binary_find_left(self.lengths, cur_display_distance)
+            line_ratio = 0.0
+            if line_index < len(self.lengths) - 1 and self.lengths[line_index + 1] > self.lengths[line_index]:
+                line_ratio = (cur_display_distance - self.lengths[line_index]) / (self.lengths[line_index + 1] - self.lengths[line_index])
+            self.cur_line_index = line_index + line_ratio
         # Trigger frame callback to update line highlighting
         if hasattr(self, 'frame_callback') and self.frame_callback is not None:
-            [cur_distance, linenumber] = self.get_cur_pos_index()
+            cur_distance, linenumber = self.get_cur_pos_index()
             self.frame_callback(cur_distance, linenumber)
 
     def _report_time_estimate_progress(self, state, percent):

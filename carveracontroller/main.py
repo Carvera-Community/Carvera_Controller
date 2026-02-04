@@ -965,8 +965,15 @@ class CoordPopup(ModalView):
     def populate_spinner(self, dt):
         if "background_image_spinner" in self.ids:
             self.ids.background_image_spinner.values = ["None"] + self.background_image_files
+            saved_image = Config.get('carvera', 'background_image')
+            if saved_image in self.ids.background_image_spinner.values:
+                self.ids.background_image_spinner.text = saved_image
+                self.update_background_image(saved_image)
 
     def update_background_image(self, filename):
+        Config.set('carvera', 'background_image', filename)
+        Config.write()
+
         if filename != "None":
             old_source = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds', filename)
             new_source = os.path.join(self.user_play_file_image_dir, filename)
@@ -1716,9 +1723,10 @@ class CNCWorkspace(Widget):
         self.config = config
 
     def update_background_image(self, new_source):
-        if self.bg_rect and new_source != "None":
-            self.bg_rect.source = new_source
+        if new_source != "None":
             self.bg_image = new_source
+            if self.bg_rect:
+                self.bg_rect.source = new_source
         else:
             self.bg_image = ""
         self.draw()
@@ -2579,6 +2587,7 @@ class Makera(RelativeLayout):
     manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
+    _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -3548,6 +3557,17 @@ class Makera(RelativeLayout):
                         logger.debug(f"Firmware Version detected as {self.fw_version}")
                         if self.fw_version_new != '':
                             self.check_fw_version()
+                        # Request higher USB baud if firmware >= 2.1.0 and user has enabled it
+                        if (app.is_community_firmware and
+                                app.fw_version_digitized >= Utils.digitize_v("2.1.0") and
+                                self.controller.connection_type == CONN_USB and
+                                not self.controller._baud_upgrade_attempted):
+                            use_higher_val = Config.get('carvera', 'use_higher_baud', fallback='0')
+                            use_higher = str(use_higher_val).lower() in ('1', 'true', 'yes', 'on')
+                            baud_str = Config.get('carvera', 'usb_baud_rate', fallback='115200')
+                            if use_higher and baud_str and int(baud_str) != 115200:
+                                self.controller._baud_upgrade_attempted = True
+                                self.controller.request_baud_upgrade(int(baud_str))
                     
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
@@ -3681,7 +3701,7 @@ class Makera(RelativeLayout):
         # Use playedlines if available, otherwise use the last tracked played_lines
         last_line = CNC.vars["playedlines"] if CNC.vars["playedlines"] > 0 else self.played_lines
         if last_line > 0:
-            self.update_resume_at_line_from_played_line(last_line)
+            self.update_resume_at_line_from_played_line(last_line, CNC.vars["playedpercent"])
 
         # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
         if CNC.vars["halt_reason"] < 20:
@@ -3845,13 +3865,6 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         self.wpb_play.value = 0
 
-        # Clear resume at line checkbox and input when file changes
-        if hasattr(self, 'coord_popup') and self.coord_popup:
-            if hasattr(self.coord_popup, 'cbx_startline'):
-                self.coord_popup.cbx_startline.active = False
-            if hasattr(self.coord_popup, 'txt_startline'):
-                self.coord_popup.txt_startline.text = ''
-
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
         # Run load_gcode_file in background thread to avoid blocking UI, especially during decompression
         # Add a small delay to ensure file is ready, especially when called during decompression
@@ -3882,12 +3895,6 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = filepath
 
-        # Clear resume at line checkbox and input when file changes
-        if hasattr(self, 'coord_popup') and self.coord_popup:
-            if hasattr(self.coord_popup, 'cbx_startline'):
-                self.coord_popup.cbx_startline.active = False
-            if hasattr(self.coord_popup, 'txt_startline'):
-                self.coord_popup.txt_startline.text = ''
 
         self.file_popup.dismiss()
 
@@ -4975,11 +4982,15 @@ class Makera(RelativeLayout):
                     self.laser_drop_down.scale_slider.value = CNC.vars["laserscale"]
 
             # update progress bar and set selected
-            if CNC.vars["playedlines"] <= 0:
+            # Commented out until merge of https://github.com/Carvera-Community/Carvera_Community_Firmware/pull/227
+            # use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
+            use_cf_playing_flag = False
+            machine_not_playing = (CNC.vars["is_playing"] == 0 if use_cf_playing_flag else CNC.vars["playedlines"] <= 0)
+            if machine_not_playing:
                 # not playing - check if we were playing before (interrupted playback)
                 if self.played_lines > 0:
                     # Playback was interrupted, update resume at line with last executed line
-                    self.update_resume_at_line_from_played_line(self.played_lines)
+                    self.update_resume_at_line_from_played_line(self.played_lines, CNC.vars["playedpercent"])
                     self.played_lines = 0  # Reset after updating
                 
                 app.playing = False
@@ -5217,10 +5228,28 @@ class Makera(RelativeLayout):
         try:
            self.controller.open(CONN_USB, device)
            self.controller.connection_type = CONN_USB
+           # Fallback: attempt baud upgrade after 10s if version is > 2.1.0c and conditions met
+           Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 10)
         except:
             logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
+
+    def attempt_usb_baud_upgrade_if_eligible(self, dt):
+        """If on USB, firmware >= 2.1.0, and use_higher_baud is on, request higher baud (fallback if version line was missed)."""
+        app = App.get_running_app()
+        if self.controller.connection_type != CONN_USB or self.controller.stream != self.controller.usb_stream:
+            return
+        if self.controller._baud_upgrade_attempted:
+            return
+        if not app.is_community_firmware or not self.fw_version or app.fw_version_digitized < Utils.digitize_v("2.1.0"):
+            return
+        use_higher_val = Config.get('carvera', 'use_higher_baud', fallback='0')
+        use_higher = str(use_higher_val).lower() in ('1', 'true', 'yes', 'on')
+        baud_str = Config.get('carvera', 'usb_baud_rate', fallback='115200')
+        if use_higher and baud_str and int(baud_str) != 115200:
+            self.controller._baud_upgrade_attempted = True
+            self.controller.request_baud_upgrade(int(baud_str))
 
     # -----------------------------------------------------------------------
     def openWIFI(self, address):
@@ -5578,6 +5607,13 @@ class Makera(RelativeLayout):
         if self.is_jogging_enabled() and not self.manual_cmd.focus:
             key = args[1]  # keycode
 
+            if app.root.controller.jog_mode == Controller.JOG_MODE_STEP:
+                if key in self._held_jog_keys:
+                    # Ignore - only move once per keypress in step mode
+                    return
+                if key in (273, 274, 275, 276, 280, 281):
+                    self._held_jog_keys.add(key)
+
             if key == 274:  # down button
                 app.root.controller.jog(f"Y{'-' if app.invert_y_axis_jogging else ''}{app.root.step_xy.text}")
             elif key == 273:  # up button
@@ -5594,7 +5630,8 @@ class Makera(RelativeLayout):
     def _keyboard_jog_keyup(self, *args):
         app = App.get_running_app()
         key = args[1]  # keycode
-        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+        if key in (273, 274, 275, 276, 280, 281):  # only if a jog button is released
+            self._held_jog_keys.discard(key)
             app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
@@ -5718,10 +5755,13 @@ class Makera(RelativeLayout):
         self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
     
     # -----------------------------------------------------------------------
-    def update_resume_at_line_from_played_line(self, line_number):
+    def update_resume_at_line_from_played_line(self, line_number, percent_complete):
         """Update the resume at line input with the last executed line number -1 for the incompletely executed line
         """
-        # how much to subtract depends
+
+        if percent_complete >= 98:  # if close enough to end of file consider it as complete and clear resume
+            self.coord_popup.cbx_startline.active = False
+            self.coord_popup.txt_startline.text = ''
 
         if line_number > 0:
             resume_line = max(1, line_number - 1)
@@ -5867,6 +5907,11 @@ class Makera(RelativeLayout):
         if len(self.gcode_viewer.lengths) > 0:
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
+
+        # Clear resume at line when a (possibly new) gcode file has finished loading
+        if self.coord_popup:
+            self.coord_popup.cbx_startline.active = False
+            self.coord_popup.txt_startline.text = ''
 
         app = App.get_running_app()
         app.has_4axis = self.cnc.has_4axis
@@ -6154,6 +6199,9 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
     if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
+    if not Config.has_option('carvera', 'use_higher_baud'): Config.set('carvera', 'use_higher_baud', '0')
+    if not Config.has_option('carvera', 'usb_baud_rate'): Config.set('carvera', 'usb_baud_rate', '1500000')
+    if not Config.has_option('carvera', 'background_image'): Config.set('carvera', 'background_image', 'None')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')

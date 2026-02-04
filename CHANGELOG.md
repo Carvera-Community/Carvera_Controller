@@ -21,16 +21,20 @@
 - Enhancement: Added debug logging of full sent/received content as a config option
 - Enhancement: Support recalling multiple commands from MDI history with up/down arrow keys
 - Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)
+- Enhancement: Restore the previously-loaded background image in Config and Run
+- Enhancement: Support increasing USB connection speed if the firmware is >= 2.1.0c. Enable feature and set baud rate in Controller settings
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
 - Fixed: Prevent keyboard jog when MDI text box has focus
 - Fixed: When uploading firmware, the "Download" and "Upload and select" buttons were visible
 - Fixed: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
+- Fixed: Only move once per keypress in step mode when keyboard jogging
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file
 - Change: Packaging assets are now in `assets/packaging` to create space for `assets/design` and other types of assets
 - Change: Improved logging of parser errors of machine responses
+- Change: On USB-serial connect, clear machine's receive buffer by sending "\n;\n"
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze

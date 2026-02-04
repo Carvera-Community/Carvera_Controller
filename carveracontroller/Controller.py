@@ -153,6 +153,10 @@ class Controller:
         self._stop = False  # Raise to stop current run
         self._pause = False  # machine is on Hold
         self._alarm = True  # Display alarm message if true
+
+        self._baud_upgrade_attempted = False
+        self._baud_switch_in_progress = False
+
         self._msg = None
         self._sumcline = 0
         self._lastFeed = 0
@@ -922,38 +926,43 @@ class Controller:
         
         return (None, None)
 
+    def _get_last_movement_line_before(self, local_file_path, start_line):
+        """
+        Return the 1-based line number of the last movement command (G0–G3) working backwards from start_line.
+        Uses _find_command_line_number for each movement command and returns the highest line number.
+        Returns None if no movement command found.
+        """
+        last_line = None
+        for cmd in ("G0", "G1", "G2", "G3"):
+            _, line_num = self._find_command_line_number(local_file_path, start_line, cmd)
+            if line_num is not None and (last_line is None or line_num > last_line):
+                last_line = line_num
+        return last_line
+
     def playStartLineCommand(self, filename, start_line, preview=False, local_file_path=None):
         # Build the play command with proper formatting
         play_command = "play %s\n" % filename.replace(' ', '\x01')
         if '\\' in filename:
             play_command = "play %s" % '/'.join(filename.split('\\')).replace(' ', '\x01')
 
-        # the goto command in firmware is bugged in versions < 2.1.0c and Makera releases
-        # the bug is that it goes to the end of the line specified instead of start.
-        start_line_comment = ""
-
-        app = App.get_running_app()
-        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
-            start_line = int(start_line)-1
-            start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
-
-
-        # Get position from GcodeViewer for the line before start_line (start_line - 1)
-        # This is the position where start_line - 1 ends, which is where we want to move the spindle
-        # Convert start_line to int and ensure it's at least 2 (so start_line - 1 >= 1)
+        # Position to move to before start: last movement line before start_line (from file), then from GcodeViewer
         try:
             start_line_int = int(start_line)
-            prev_line = max(1, start_line_int - 1)  # Ensure we don't go below line 1
         except (ValueError, TypeError):
-            prev_line = None
-        
-        # This finds the start position of the start_line using the gcode viewer
+            start_line_int = None
+        prev_line = None
+        if local_file_path and start_line_int is not None:
+            prev_line = self._get_last_movement_line_before(local_file_path, start_line_int)
+        if prev_line is None and start_line_int is not None:
+            prev_line = max(1, start_line_int - 1)
+        prev_line = max(1, prev_line) if prev_line else None
         position = self._get_line_position_from_gcode_viewer(prev_line) if prev_line else (None, None, None, None)
         x, y, z, a = position
 
         # Find additional commands to insert after "goto"
         # Note the use of buffer is to avoid the firmware bug https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/211
         additional_commands = []
+        m6_line = None
         
         if local_file_path:
             # Search for G20 or G21 (unit mode) - take the last one found
@@ -992,11 +1001,6 @@ class Controller:
                     last_wcs_line = wcs_line
             if last_wcs:
                 additional_commands.append(f"buffer {last_wcs}")
-        
-            # Search for M6 (tool change)
-            m6_cmd, _ = self._find_command_line_number(local_file_path, start_line, "M6")
-            if m6_cmd:
-                additional_commands.append(f"buffer {m6_cmd}")
 
             # Search for M7 (air assist on) and M9 (air assist off)
             _, m7_line = self._find_command_line_number(local_file_path, start_line, "M7")
@@ -1006,6 +1010,14 @@ class Controller:
                     additional_commands.append("buffer M7")
             elif m7_line:
                 additional_commands.append("buffer M7")
+
+
+            # Search for M6 (tool change) 
+            # +1 to start_line because would be silly to change to the previous tool only to change to something else
+            # _find_command_line_number() only searchs backwards
+            m6_cmd, m6_line = self._find_command_line_number(local_file_path, start_line_int + 1, "M6")  
+            if m6_cmd:
+                additional_commands.append(f"buffer {m6_cmd}")
 
             # Search for M3 (spindle on), M5 (spindle off), M321 (laser mode on), and M322 (laser mode off)
             m3_cmd, m3_line = self._find_command_line_number(local_file_path, start_line, "M3")
@@ -1041,17 +1053,26 @@ class Controller:
                 g0_cmd += f" A{a:.3f}"
             additional_commands.append(f"buffer {g0_cmd}")
 
-        # Add G1 movement into the Z position with last feed rate
-        if z is not None:
-            # Find the last feed rate from G1/G2/G3 commands
-            feed_rate = None
-            if local_file_path:
-                feed_rate = self._find_last_feed_rate(local_file_path, start_line)
-            
-            g1_cmd = f"G1 Z{z:.3f}"
-            if feed_rate is not None:
-                g1_cmd += f" F{feed_rate:.0f}"
-            additional_commands.append(f"buffer {g1_cmd}")
+        # Set the G1 feed modal
+        feed_rate = None
+        if local_file_path:
+            feed_rate = self._find_last_feed_rate(local_file_path, start_line)
+        if feed_rate:
+            additional_commands.append(f"buffer G1 F{feed_rate:.0f}")
+
+        # Add G1 movement into the Z position if tool change line is before than any movements
+        # If no movements have occured between tool change and prev_line then the Z position isn't correct
+        if z is not None and (m6_line is None or prev_line > m6_line):
+            additional_commands.append(f"buffer G1 Z{z:.3f}")
+
+        # the goto command in firmware is bugged in versions < 2.1.0c and Makera releases
+        # the bug is that it goes to the end of the line specified instead of start.
+        start_line_comment = ""
+
+        app = App.get_running_app()
+        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
+            start_line = int(start_line)-1
+            start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
 
         commands = [
             "buffer M600",
@@ -1209,9 +1230,12 @@ class Controller:
             CNC.vars["playedlines"] = int(d['P'][0])
             CNC.vars["playedpercent"] = int(d['P'][1])
             CNC.vars["playedseconds"] = int(d['P'][2])
+            if len(d['P']) >= 4:
+                CNC.vars["is_playing"] = int(d['P'][3])
         else:
             # not playing file
             CNC.vars["playedlines"] = -1
+            CNC.vars["is_playing"] = 0
 
         if 'A' in d:
             CNC.vars["atc_state"] = int(d['A'][0])
@@ -1294,8 +1318,10 @@ class Controller:
     # ----------------------------------------------------------------------
     def open(self, conn_type, address):
         # init connection
+        self.connection_type = conn_type
         if conn_type == CONN_USB:
             self.stream = self.usb_stream
+            self._baud_upgrade_attempted = False
         else:
             self.stream = self.wifi_stream
 
@@ -1667,6 +1693,22 @@ class Controller:
             self.feedHold()
 
     # ----------------------------------------------------------------------
+    def request_baud_upgrade(self, baud):
+        """Send firmware baud command and reopen serial at new baud (machine switches immediately)."""
+        if self.connection_type != CONN_USB or self.stream != self.usb_stream:
+            return
+        self._baud_switch_in_progress = True
+        try:
+            self.stream.send("baud {}\n".format(baud).encode())
+            if hasattr(self.usb_stream, 'reopen_at_baud'):
+                self.usb_stream.reopen_at_baud(baud)
+                self.log.put((self.MSG_NORMAL, 'Serial speed set to {} baud'.format(baud)))
+        except Exception as e:
+            self.log.put((self.MSG_ERROR, 'Failed to change serial speed: {}'.format(e)))
+        finally:
+            self._baud_switch_in_progress = False
+
+    # ----------------------------------------------------------------------
     def parseLine(self, line):
         if not line:
             return True
@@ -1792,11 +1834,15 @@ class Controller:
                     else:
                         dynamic_delay = 0
 
-            except:
+            except Exception:
                 line = b''
-                if last_error != str(sys.exc_info()[1]) :
-                    self.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
-                    last_error = str(sys.exc_info()[1])
+                exc_msg = str(sys.exc_info()[1])
+                if self._baud_switch_in_progress:
+                    last_error = exc_msg
+                    continue
+                if last_error != exc_msg:
+                    self.log.put((Controller.MSG_ERROR, exc_msg))
+                    last_error = exc_msg
 
             if dynamic_delay > 0:
                 time.sleep(dynamic_delay)
