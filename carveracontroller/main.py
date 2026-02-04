@@ -5023,15 +5023,15 @@ class Makera(RelativeLayout):
                     if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0:
                         self.gcode_rv.set_selected_line(self.played_lines)
                         self.gcode_viewer.set_distance_by_lineidx(self.played_lines, 0.5)
-                        if self.wpb_play.value > 0:
-                            remaining_sec = None
-                            if hasattr(self.gcode_viewer, 'get_remaining_time_by_lineidx'):
-                                remaining_sec = self.gcode_viewer.get_remaining_time_by_lineidx(self.played_lines, 0.5)
-                            if remaining_sec is not None and remaining_sec >= 0:
-                                ov_feed = CNC.vars.get("OvFeed", 100) or 100
-                                self._remaining_anchor_sec = remaining_sec / (ov_feed / 100.0)
-                            else:
-                                self._remaining_anchor_sec = (100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value
+                        remaining_sec = self.gcode_viewer.get_remaining_time_by_lineidx(self.played_lines, 0.5)
+                        if remaining_sec is not None and remaining_sec >= 0:
+                            ov_feed = CNC.vars.get("OvFeed", 100) or 100
+                            self._remaining_anchor_sec = remaining_sec / (ov_feed / 100.0)
+                        elif self.wpb_play.value > 0:
+                            self._remaining_anchor_sec = (100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value
+                        elif self.gcode_viewer.total_time > 0:
+                            ov_feed = CNC.vars.get("OvFeed", 100) or 100
+                            self._remaining_anchor_sec = self.gcode_viewer.total_time / (ov_feed / 100.0)
                         else:
                             self._remaining_anchor_sec = 0.0
                         self._remaining_anchor_time = now

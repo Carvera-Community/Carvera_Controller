@@ -142,6 +142,8 @@ class MyMeshManager():
         self.vertex_types = []
         # raw numbers
         self.raw_linenumbers = []
+        # feed rate (mm/min) per vertex, from CNC parser
+        self.raw_feed_rates = []
         # angles of vertices [4 axis]
         self.angles_of_vertices = []
 
@@ -173,6 +175,7 @@ class MyMeshManager():
         self.vertex_types.clear()
         # raw numbers
         self.raw_linenumbers.clear()
+        self.raw_feed_rates.clear()
         # angles of vertices [4 axis]
         self.angles_of_vertices.clear()
         # mesh container
@@ -353,6 +356,9 @@ class MyMeshManager():
         self.vertices.extend(vertex)
         self.vertex_types.append(1.0 if linedata[4] > 0.5 else 2.0)  # line type[red | green]
         self.raw_linenumbers.append(vertex[6])
+        # feed rate (mm/min) from CNC parser; index 7 if present, else default
+        feed = float(linedata[7]) if len(linedata) > 7 and linedata[7] is not None else 3000.0
+        self.raw_feed_rates.append(feed)
         self.angles_of_vertices.append(angle)
 
     def generate_meshes(self):
@@ -711,6 +717,15 @@ class GCodeViewer(Widget):
     # When True, compute segment-based time estimates (distance/feed); when False, skip extra parsing.
     high_precision_time_estimate = True
 
+    line_times = []
+    total_time = 0.0
+    lengths = []
+    raw_linenumbers = []
+    raw_positions = []
+    raw_feed_rates = []
+    frame_callback = None
+    time_estimate_progress_callback = None
+
     #camera
     m_xRot = 30
     m_yRot = 180
@@ -795,6 +810,7 @@ class GCodeViewer(Widget):
         self.positions = []
         self.line_times = []
         self.total_time = 0.0
+        self.raw_feed_rates = []
         self.linemesh.clear()
         self.canvas.remove(self.linemesh)
         self.canvas.remove(self.pointermesh)
@@ -967,8 +983,7 @@ class GCodeViewer(Widget):
             self.meshmanager.clear()
 
 
-    def load_array(self,tmpdataarrs,is_end=True):
-
+    def load_array(self, tmpdataarrs, is_end=True):
         self.clear_loaded_memery()
 
         dataarrs = []
@@ -1043,6 +1058,7 @@ class GCodeViewer(Widget):
             self.positions = self.meshmanager.positions
             self.raw_positions = self.meshmanager.raw_positions
             self.raw_linenumbers = self.meshmanager.raw_linenumbers
+            self.raw_feed_rates = self.meshmanager.raw_feed_rates
             self.angles_of_vertices = self.meshmanager.angles_of_vertices
 
             self.total_line_count = self.meshmanager.get_pt_count()
@@ -1052,7 +1068,7 @@ class GCodeViewer(Widget):
             self.is_4_axis = self.meshmanager.is_4_axis
 
             # Compute per-segment durations from travel distance and feed rate (for time estimate)
-            if self.high_precision_time_estimate:
+            if self.high_precision_time_estimate and len(self.raw_feed_rates) >= len(self.raw_linenumbers or []):
                 self._compute_line_times_async()
 
             # get_elapsed("fetch meshdata")
@@ -1832,13 +1848,13 @@ class GCodeViewer(Widget):
                 line_ratio = (cur_display_distance - self.lengths[line_index]) / (self.lengths[line_index + 1] - self.lengths[line_index])
             self.cur_line_index = line_index + line_ratio
         # Trigger frame callback to update line highlighting
-        if hasattr(self, 'frame_callback') and self.frame_callback is not None:
+        if self.frame_callback is not None:
             cur_distance, linenumber = self.get_cur_pos_index()
             self.frame_callback(cur_distance, linenumber)
 
     def _report_time_estimate_progress(self, state, percent):
         """Call the progress callback on the main thread (call from worker via Clock.schedule_once)."""
-        if getattr(self, 'time_estimate_progress_callback', None):
+        if self.time_estimate_progress_callback is not None:
             self.time_estimate_progress_callback(state, percent)
 
     def _apply_line_times_result(self, line_times):
@@ -1850,24 +1866,20 @@ class GCodeViewer(Widget):
     def _compute_line_times_async(self):
         """
         Compute cumulative time (seconds) in a background thread so the UI stays responsive.
-        Shows progress via time_estimate_progress_callback if set ('start', 'progress', 'done').
+        Uses raw_feed_rates from the CNC parser (no file I/O). Shows progress via
+        time_estimate_progress_callback if set ('start', 'progress', 'done').
         """
         self.line_times = []
         self.total_time = 0.0
         n = len(self.raw_linenumbers) if self.raw_linenumbers else 0
         if n < 2 or not self.raw_positions or len(self.raw_positions) < n * 3:
             return
-        try:
-            app = App.get_running_app()
-            filepath = app.selected_local_filename or ''
-            controller = app.root.controller if app.root else None
-            if not filepath or not controller or not os.path.exists(filepath):
-                return
-        except Exception:
+        if not self.raw_feed_rates or len(self.raw_feed_rates) < n:
             return
         # Copy data for worker (avoid mutation during thread)
         raw_positions = list(self.raw_positions)
         raw_linenumbers = list(self.raw_linenumbers)
+        raw_feed_rates = list(self.raw_feed_rates)
         viewer = self
         PROGRESS_INTERVAL = 100
 
@@ -1876,7 +1888,7 @@ class GCodeViewer(Widget):
 
         def worker():
             line_times = _compute_line_times_worker(
-                filepath, controller, raw_positions, raw_linenumbers,
+                raw_positions, raw_linenumbers, raw_feed_rates,
                 lambda pct: report('progress', pct), PROGRESS_INTERVAL)
             Clock.schedule_once(lambda dt: viewer._apply_line_times_result(line_times), 0)
 
@@ -1886,8 +1898,7 @@ class GCodeViewer(Widget):
     def _compute_line_times(self):
         """
         Compute cumulative time (seconds) at each vertex from segment distance and
-        feed rate in gcode. Uses Controller._find_last_feed_rate for F values.
-        Sets self.line_times (cumulative) and self.total_time.
+        feed rate from CNC parser (raw_feed_rates). Sets self.line_times and self.total_time.
         (Synchronous fallback; normal path uses _compute_line_times_async.)
         """
         self.line_times = []
@@ -1895,15 +1906,10 @@ class GCodeViewer(Widget):
         n = len(self.raw_linenumbers) if self.raw_linenumbers else 0
         if n < 2 or not self.raw_positions or len(self.raw_positions) < n * 3:
             return
-        try:
-            app = App.get_running_app()
-            filepath = app.selected_local_filename or ''
-            controller = app.root.controller if app.root else None
-            if not filepath or not controller or not os.path.exists(filepath):
-                return
-        except Exception:
+        if not self.raw_feed_rates or len(self.raw_feed_rates) < n:
             return
-        result = _compute_line_times_worker(filepath, controller, self.raw_positions, self.raw_linenumbers, None, 0)
+        result = _compute_line_times_worker(
+            self.raw_positions, self.raw_linenumbers, self.raw_feed_rates, None, 0)
         self.line_times = result
         self.total_time = self.line_times[-1] if self.line_times else 0.0
 
@@ -1912,7 +1918,7 @@ class GCodeViewer(Widget):
         Return elapsed time (seconds) at the given display distance.
         Returns None if line_times are not available.
         """
-        if not getattr(self, 'line_times', None) or not self.line_times or not self.lengths:
+        if not self.line_times or not self.lengths:
             return None
         if distance <= 0:
             return 0.0
@@ -1937,7 +1943,7 @@ class GCodeViewer(Widget):
         Uses distance/feed-based estimate when line_times are available.
         Returns None to fall back to machine estimate.
         """
-        if not getattr(self, 'line_times', None) or not self.line_times or self.total_time <= 0:
+        if not self.line_times or self.total_time <= 0:
             return None
         distance = self.get_distance_by_lineidx(line_number, ratio)
         if distance is None:
@@ -1950,11 +1956,9 @@ class GCodeViewer(Widget):
     #根据line number 返回实际距离
     def get_distance_by_lineidx(self,lineidx,ratio):
         # Validate that we have the necessary data
-        if not hasattr(self, 'raw_linenumbers') or not self.raw_linenumbers:
+        if not self.raw_linenumbers or not self.lengths:
             return None
-        if not hasattr(self, 'lengths') or not self.lengths:
-            return None
-        
+
         left_pos = binary_find_left(self.raw_linenumbers,lineidx)
         while(left_pos>0 and self.raw_linenumbers[left_pos-1] == lineidx):
             left_pos = left_pos - 1
@@ -1988,11 +1992,9 @@ class GCodeViewer(Widget):
     #根据line number 返回实际距离
     def set_distance_by_lineidx(self,lineidx,ratio):
         # Validate that we have the necessary data
-        if not hasattr(self, 'raw_linenumbers') or not self.raw_linenumbers:
+        if not self.raw_linenumbers or not self.lengths:
             return
-        if not hasattr(self, 'lengths') or not self.lengths:
-            return
-        
+
         left_pos = binary_find_left(self.raw_linenumbers,lineidx)
         while(left_pos>0 and self.raw_linenumbers[left_pos-1] == lineidx):
             left_pos = left_pos - 1
@@ -2002,7 +2004,7 @@ class GCodeViewer(Widget):
             right_pos = right_pos + 1
         #skip to next pos(lineidx+1)
         right_pos = right_pos + 1
-        
+
         # Ensure bounds are valid since not all lines are movements
         if left_pos >= len(self.lengths):
             left_pos = len(self.lengths) - 1
@@ -2072,7 +2074,7 @@ class GCodeViewer(Widget):
     #repeat this function every 1/60 s
     def increase_angle(self,_):
 
-        if(not hasattr(self,'lengths') or self.lengths is None or len(self.lengths)<=1):
+        if self.lengths is None or len(self.lengths) <= 1:
             #data is not loaded yet
             return
         
@@ -2110,7 +2112,7 @@ class GCodeViewer(Widget):
         self.cur_line_index = line_index_withratio
 
         #逐帧回调 - only when in dynamic display mode (playing)
-        if(hasattr(self,'frame_callback') and self.frame_callback is not None and self.dynamic_display):
+        if self.frame_callback is not None and self.dynamic_display:
             [cur_distance,linenumber]= self.get_cur_pos_index()
             self.frame_callback(cur_distance,linenumber)
             #debug
@@ -2305,9 +2307,10 @@ class GCodeViewer(Widget):
         self.orbit = orbit
 
 
-def _compute_line_times_worker(filepath, controller, raw_positions, raw_linenumbers, progress_callback, progress_interval):
+def _compute_line_times_worker(raw_positions, raw_linenumbers, raw_feed_rates, progress_callback, progress_interval):
     """
     Core logic for line time computation. Can run in a thread.
+    Uses feed rates from raw_feed_rates (from CNC parser); no file I/O.
     progress_callback(percent) is called every progress_interval segments; use 0 to disable.
     Returns list of cumulative times (line_times).
     """
@@ -2327,14 +2330,14 @@ def _compute_line_times_worker(filepath, controller, raw_positions, raw_linenumb
             raw_positions[3 * i + 2],
         ]
         segment_length_mm = len_3d(pos1, pos2)
-        line_num = raw_linenumbers[i]
-        try:
-            line_num_int = int(line_num)
-        except (ValueError, TypeError):
-            line_num_int = 1
-        feed = controller._find_last_feed_rate(filepath, line_num_int)
-        if feed is None or feed < MIN_FEED_MM_MIN:
-            feed = DEFAULT_FEED_MM_MIN
+        feed = DEFAULT_FEED_MM_MIN
+        if raw_feed_rates and i < len(raw_feed_rates):
+            try:
+                f = float(raw_feed_rates[i])
+                if f >= MIN_FEED_MM_MIN:
+                    feed = f
+            except (ValueError, TypeError):
+                pass
         duration_sec = (segment_length_mm * 60.0) / feed
         line_times.append(line_times[-1] + duration_sec)
         if progress_callback and progress_interval > 0 and i % progress_interval == 0:

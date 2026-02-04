@@ -777,21 +777,33 @@ class Controller:
             logger.warning(f"Error finding M3 spindle speed before line {start_line} in {local_file_path}: {e}")
             return None
 
-    def _find_last_feed_rate(self, local_file_path, start_line):
+    def _find_last_feed_rate(self, local_file_path=None, start_line=None, feed_lookup=None):
         """
-        Search backwards from start_line to find the last G1/G01/G2/G02/G3/G03 command
-        and extract its F (feed rate) parameter.
-        
+        Return the feed rate (mm/min) in effect at start_line. Uses either pre-parsed
+        feed data from the CNC parser or reads the gcode file.
+
         Args:
-            local_file_path: Path to the gcode file
+            local_file_path: Path to the gcode file (used when feed_lookup is None)
             start_line: Line number to search backwards from (1-based)
-        
+            feed_lookup: Optional dict mapping line_no (int) -> feed (float) from CNC
+                         coordinates; when provided, file is not read.
+
         Returns:
             Feed rate value as float, or None if not found
         """
+        if feed_lookup is not None and start_line is not None:
+            try:
+                start_line = int(start_line)
+            except (ValueError, TypeError):
+                return None
+            for line_no in range(start_line, 0, -1):
+                if line_no in feed_lookup:
+                    return feed_lookup[line_no]
+            return None
+
         if not local_file_path or not os.path.exists(local_file_path):
             return None
-        
+
         try:
             # Ensure start_line is an integer
             try:
@@ -799,7 +811,7 @@ class Controller:
             except (ValueError, TypeError):
                 logger.warning(f"Invalid start_line value: {start_line}")
                 return None
-            
+
             with open(local_file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 lines = f.readlines()
             
