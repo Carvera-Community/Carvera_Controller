@@ -212,11 +212,12 @@ def load_halt_translations(tr: translation.Lang):
         6:  tr._("ATC Invalid Tool Number"),
         7:  tr._("ATC Drop Tool Fail"),
         8:  tr._("ATC Position Occupied"),
-        9:  tr._("Spindle Overheated"),
+        9:  tr._("Spindle Temp Error"),
         10: tr._("Soft Limit Triggered"),
         11: tr._("Cover opened when playing"),
         12: tr._("Wireless probe dead or not set"),
         13: tr._("Emergency stop button pressed"),
+        14: tr._("Electronics Temp Error"),
         16: tr._("3D probe crash detected"),
         # Need to reset the machine
         21: tr._("Hard Limit Triggered, reset needed"),
