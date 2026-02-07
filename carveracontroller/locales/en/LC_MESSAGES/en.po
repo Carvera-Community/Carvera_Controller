@@ -45,7 +45,7 @@ msgid "ATC Position Occupied"
 msgstr ""
 
 #: main.py:180
-msgid "Spindle Overheated"
+msgid "Spindle Temp Error"
 msgstr ""
 
 #: main.py:181
