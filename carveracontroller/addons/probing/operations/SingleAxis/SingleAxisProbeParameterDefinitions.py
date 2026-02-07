@@ -25,7 +25,7 @@ class SingleAxisProbeParameterDefinitions:
     EdgeRetractDistance = ProbeSettingDefinition('R', "Edge Retract", False,
                                                  "changes the retract distance from the edge of the pocket for the double tap probing")
 
-    ZeroXYPosition = ProbeSettingDefinition('S', "ZeroXY", False, "save corner position as new WCS Zero in X and Y")
+    ZeroXYPosition = ProbeSettingDefinition('S', "ZeroXY", False, "save corner position as new WCS Zero in X and Y","2")
 
 
     UseProbeNormallyClosed = ProbeSettingDefinition('I', "NC", False, "Probe is normally closed")

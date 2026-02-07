@@ -22,7 +22,8 @@ class CalibrationOperationFourthY(OperationsBase):
         config = copy.deepcopy(input_config)
 
         config[CalibrationParameterDefinitions.XAxisDistance.code] = ''
-        config[CalibrationParameterDefinitions.PinDiameter.code] = ''      
+        config[CalibrationParameterDefinitions.PinDiameter.code] = ''
+        config[CalibrationParameterDefinitions.ClearanceY.code] = ''      
 
         return "M469.4 " + self.config_to_gcode(config) + "\n Make sure 4th Axis and 3 axis probe are installed"
 
@@ -62,8 +63,7 @@ class CalibrationOperationFourthZ(OperationsBase):
 
         config[CalibrationParameterDefinitions.YAxisDistance.code] = ''
         config[CalibrationParameterDefinitions.PinDiameter.code] = '' 
-        config[CalibrationParameterDefinitions.SideProbeDepth.code] = '' 
-               
+        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''    
 
         return "M469.5 " + self.config_to_gcode(config) + "\n Make sure 4th Axis in on has a pin in the chuck" 
 
@@ -105,7 +105,8 @@ class CalibrationOperationAnchor1(OperationsBase):
         config[CalibrationParameterDefinitions.XAxisDistance.code] = ''
         config[CalibrationParameterDefinitions.PinDiameter.code] = ''  
         config[CalibrationParameterDefinitions.PocketProbeDepth.code] = '' 
-        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''                  
+        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''
+        config[CalibrationParameterDefinitions.ClearanceY.code] = ''                  
 
         return "M469.1" + self.config_to_gcode(config)+ "\n Make sure Anchor 1 and 3 axis probe are installed" 
 
@@ -148,7 +149,8 @@ class CalibrationOperationAnchor2(OperationsBase):
         config[CalibrationParameterDefinitions.XAxisDistance.code] = ''
         config[CalibrationParameterDefinitions.PinDiameter.code] = ''
         config[CalibrationParameterDefinitions.PocketProbeDepth.code] = '' 
-        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''           
+        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''
+        config[CalibrationParameterDefinitions.ClearanceY.code] = ''           
 
         return "M469.2" + self.config_to_gcode(config) + "\n Make sure Anchor 2 and 3 axis probe are installed" 
 
