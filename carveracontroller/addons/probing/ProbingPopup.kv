@@ -10,6 +10,7 @@
 #:include addons/probing/operations/ProbeTip/ProbeTipSettings.kv
 
 
+
 <ProbingPopup>:
     title:"Probing"
     size_hint: 0.8, 0.8
@@ -32,8 +33,12 @@
             padding: dp(3)
 
             TabbedPanel:
+                id:tabbedpanelid
                 do_default_tab: False
                 tab_width: dp(130)
+                bar_width:8
+                bar_color: 1, 0, 0, 1
+                
                 TabbedPanelItem:
                     text: tr._('Outside Corners')
                     GridLayout:
@@ -43,7 +48,7 @@
                         spacing:dp(10)
                         padding:dp(10)
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -75,7 +80,7 @@
                                 image: 'addons/probing/data/icons_1024x768/outside_corner/X-Y+.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             halign: "right"
                             OutsideCornerSettings:
                                 halign: "right"
@@ -90,7 +95,7 @@
                         spacing:dp(10)
                         padding:dp(10)
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -122,7 +127,7 @@
                                 image: 'addons/probing/data/icons_1024x768/inside_corner/inX-Y+.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             InsideCornerSettings:
                                 id: inside_corner_settings
 
@@ -136,7 +141,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 3
                             rows: 3
                             spacing: dp(8)
@@ -194,7 +199,7 @@
                                 #nothing
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             SingleAxisProbeSettings:
                                 id: single_axis_settings
 
@@ -208,7 +213,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -240,7 +245,7 @@
                                 image: 'addons/probing/data/icons_1024x768/inside_center/inside_center_rectangular_pocket.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             BoreSettings:
                                 id: bore_settings
 
@@ -254,7 +259,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -286,7 +291,7 @@
                                 image: 'addons/probing/data/icons_1024x768/outside_center/outside_center_rect_boss.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             BossSettings:
                                 id: boss_settings
 
@@ -300,7 +305,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -333,7 +338,7 @@
                                 image: 'addons/probing/data/icons_1024x768/angle/probe_angle_y_right.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             AngleSettings:
                                 id: angle_settings
 
@@ -347,7 +352,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -378,7 +383,7 @@
                                 image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_BossY.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             ProbeTipSettings:
                                 id: probeTipSettings
                 TabbedPanelItem:
@@ -391,7 +396,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -424,7 +429,7 @@
                                 image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_Anchor_2.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             CalibrationSettings:
                                 id: calibration_settings_id
 
@@ -433,7 +438,7 @@
         #jogging controls
         BoxLayout:
             spacing: '0dp'
-            size_hint_y: None
+            size_hint_y: 0.3
             height: '120dp'
             GridLayout:
                 cols:5

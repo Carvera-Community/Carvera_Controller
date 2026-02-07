@@ -33,8 +33,11 @@ class InsideCornerSettings(BoxLayout):
 
     def get_setting(self, key: str) -> str:
         param = getattr(InsideCornerParameterDefinitions, key, None)
+        if param.code in self.config:
+            return str(self.config[param.code])
+        self.setting_changed(key, param.default)
+        return param.default
 
-        return str(self.config[param.code] if param.code in self.config else "")
 
     def get_config(self):
         return self.config

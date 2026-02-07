@@ -21,3 +21,5 @@ class CalibrationParameterDefinitions:
     ProbeTipDiameter = ProbeSettingDefinition('D', "Tip Dia", False, "Probe Tip Diameter, stored in config")
 
     UseProbeNormallyClosed = ProbeSettingDefinition('I', "NC", False, "Probe is normally closed")
+
+    ClearanceY = ProbeSettingDefinition('C', "Y Axis Clearance", False, "")

@@ -4,19 +4,28 @@
         size_hint: 1,1
         bar_width: 4
         bar_inactive_color: [.7,.7,.7,.9]
-        StackLayout:
-            height: self.minimum_height
+        GridLayout:
+            cols: 2
             size_hint_y: None
-            spacing:dp(3)
+            height: self.minimum_height
+            spacing:dp(2)
+            row_default_height: dp(28)
+            row_force_default: True
             padding:dp(1)
             halign:'right'
+            valign:'top'
             wcs_drop_content: wcs_drop_content.__self__  # hack to prevent gc from removing object per https://kivy.org/doc/stable/guide/lang.html#referencing-widgets
 
 
-            ProbeSettingLabel:
-                label_text: 'X:'
-                hint_text: 'X Dis'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'X :'
+                    hint_text: 'X Dis'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("required")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('X distance to probe')
                     tooltip_image: ''
                     multiline: False
@@ -26,10 +35,15 @@
                     text: root.get_setting('XAxisDistance')
                     on_text: root.setting_changed('XAxisDistance', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'Y:'
-                hint_text: 'Y Dist'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Y :'
+                    hint_text: 'Y Dist'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("required")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Y distance to probe')
                     tooltip_image: ''
                     multiline: False
@@ -39,10 +53,15 @@
                     text: root.get_setting('YAxisDistance')
                     on_text: root.setting_changed('YAxisDistance', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'Z:'
-                hint_text: 'Z Dist'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Z :'
+                    hint_text: 'Z Dist'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("required")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Z distance to probe')
                     tooltip_image: ''
                     multiline: False
@@ -52,10 +71,15 @@
                     text: root.get_setting('ZAxisDistance')
                     on_text: root.setting_changed('ZAxisDistance', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'D Tip Dia:'
-                hint_text: 'probe tip diameter'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Tip Dia (D):'
+                    hint_text: 'probe tip diameter'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("config")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     id: ProbeTipDiameter
                     tooltip_txt: tr._('Effective Diameter of Probe Tip. Measure with M460')
                     tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_d.png'
@@ -67,10 +91,15 @@
                     text: root.get_setting('ProbeTipDiameter')
                     on_text: root.setting_changed('ProbeTipDiameter', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'F Feed Rate:'
-                hint_text: 'FastFeedRate'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Feed Rate (F):'
+                    hint_text: 'FastFeedRate'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("300")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Optional probing feed rate override')
                     tooltip_image: ''
                     multiline: False
@@ -80,10 +109,15 @@
                     text: root.get_setting('FastFeedRate')
                     on_text: root.setting_changed('FastFeedRate', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'L Repeat:'
-                hint_text: 'RepeatOperationCount'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Repeat (L):'
+                    hint_text: 'RepeatOperationCount'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("0")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Number of times to repeat the probing operation')
                     tooltip_image: ''
                     multiline: False
@@ -93,10 +127,15 @@
                     text: root.get_setting('RepeatOperationCount')
                     on_text: root.setting_changed('RepeatOperationCount', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'R Edge Retract:'
-                hint_text: 'EdgeRetractDistance'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Edge Retract (R):'
+                    hint_text: 'EdgeRetractDistance'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("1.5")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance away from surface to retract before double tapping the probe')
                     tooltip_image: ''
                     multiline: False
@@ -106,9 +145,14 @@
                     text: root.get_setting('EdgeRetractDistance')
                     on_text: root.setting_changed('EdgeRetractDistance', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'Q Angle:'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Angle (Q):'
                 ToolTipTextInput:
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("0")
+					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
                     tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_q.png'
                     tooltip_image_size: 200,200
@@ -119,14 +163,17 @@
                     text: root.get_setting('QAngle')
                     on_text: root.setting_changed('QAngle', self.text)
 
-            ProbeSettingLabel:
-                label_text: 'S Zero WCS Axis:'
-                hint_text: 'Zero X/Y/Z Position'
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Zero WCS Axis (S):'
+                    hint_text: 'Zero X/Y/Z Position'
 
                 ToolTipButton:
                     id: ZeroXYPosition
+                    size_hint_x: 0.4
+                    font_size: '14dp'
                     # In the below get_setting() returns an int, so doing an inline mapping to the display text here
-                    text: ["Disabled", "X or Y", "Z"][int(root.get_setting('ZeroXYPosition') or '0')]
+                    text: ["Disabled", "X or Y", "X/Y/Z"][int(root.get_setting('ZeroXYPosition') or '0')]
                     tooltip_txt: tr._('This switch will set your current WCS to the surface you are probing. It will only set the currently selected axis/axes')
                     on_parent: wcs_drop_content.dismiss()
                     on_release: wcs_drop_content.open(self)
@@ -145,28 +192,22 @@
                                 wcs_drop_content.select(self.text)
                         
                         Button:
-                            id: wcs_btn2
-                            text: tr._('X or Y')
-                            size_hint_y: None
-                            height: '40dp'
-                            on_release:
-                                root.setting_changed('ZeroXYPosition', "1")
-                                wcs_drop_content.select(self.text)
-                        
-                        Button:
                             id: wcs_btn3
-                            text: tr._('Z')
+                            text: tr._('X/Y/Z')
                             size_hint_y: None
                             height: '40dp'
                             on_release:
                                 root.setting_changed('ZeroXYPosition', "2")
                                 wcs_drop_content.select(self.text)
 
-            ProbeSettingLabel:
-                label_text: 'I Normally Closed:'
-                hint_text: ''
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Normally Closed (I):'
+                    hint_text: ''
                 ToolTipSwitch:
                     id: probe_is_nc
+                    size_hint_x: 0.4
+                    font_size: '14dp'
                     tooltip_txt: tr._('Enable this switch if you have a normally closed probe instead of a normally open one')
                     canvas.before:
                         Color:
