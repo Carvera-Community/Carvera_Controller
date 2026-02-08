@@ -37,6 +37,7 @@
 - Change: Improved logging of parser errors of machine responses
 - Change: On USB-serial connect, clear machine's receive buffer by sending "\n;\n"
 - Change: Probing screen overhauled for better visual clarity, defaults to save WCS on all probing operations
+- Change: added keyboard and pendant jogging modes to probing popup. Keyboard jogging is disabled when first opening the popup or clicking into any text field
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
