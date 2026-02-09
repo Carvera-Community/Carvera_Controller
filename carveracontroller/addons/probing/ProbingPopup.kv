@@ -622,6 +622,7 @@
                                     state: app.jog_pendant_enable
                                     disabled: app.jog_pendant_text == tr._('No Pendant')
                                     height: '35dp'
+                                    on_release: app.root.toggle_pendant_jog_control()
 
         BoxLayout:
             spacing: '5dp'

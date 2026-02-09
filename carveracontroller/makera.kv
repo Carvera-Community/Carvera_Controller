@@ -3871,9 +3871,10 @@
                                         GridBoxLayout:
                                             ToggleButton:
                                                 id: pendant_jogging_en_btn
-                                                text: tr._('No Pendant')
+                                                text: app.jog_pendant_text
                                                 state: app.jog_pendant_enable
                                                 height: '35dp'
+                                                on_release: app.root.toggle_pendant_jog_control()
 
                         BoxLayout:
                             disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and root.allow_jogging_while_machine_running == '0')

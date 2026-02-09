@@ -2588,6 +2588,7 @@ class Makera(RelativeLayout):
     manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
+    pendant_jog_control = BooleanProperty(False)
     _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
@@ -5454,12 +5455,12 @@ class Makera(RelativeLayout):
 
     def is_pendant_jogging_enabled(self):
         # If the user disabled pendant, respect it.
-        if self.ids.pendant_jogging_en_btn.state != 'down':
+        if not App.get_running_app().root.pendant_jog_control:
             return False
         # ...otherwise behave as any other jogging except when probing screen is
         # open. We want to use the pendant as a convenient way to get to the
         # initial probing location
-        return (self.is_jogging_enabled() or self.probing_popup._is_open)
+        return (self.is_jogging_enabled())# or self.probing_popup._is_open)
 
     def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
@@ -5468,10 +5469,20 @@ class Makera(RelativeLayout):
 
         if app.root.keyboard_jog_control:
             Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
-            App.get_running_app().jog_keyboard_enable = "down"
+            app.jog_keyboard_enable = "down"
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
-            App.get_running_app().jog_keyboard_enable = "normal"
+            app.jog_keyboard_enable = "normal"
+
+    def toggle_pendant_jog_control(self):
+        app = App.get_running_app()
+        app.root.pendant_jog_control = not app.root.pendant_jog_control
+
+        if app.root.pendant_jog_control:
+            app.jog_pendant_enable = 'down'
+        else:
+            app.jog_pendant_enable = 'normal'
+        #self.ids.pendant_jogging_en_btn.state = app.jog_pendant_enable 
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -5515,11 +5526,14 @@ class Makera(RelativeLayout):
         app =App.get_running_app()
         app.jog_pendant_text = tr._('Pendant Jogging')
         app.jog_pendant_enable = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app.root.pendant_jog_control = True if self.pendant_jogging_default == "1" else False
 
     def handle_pendant_disconnected(self):
         app =App.get_running_app()
         app.jog_pendant_text = tr._('No Pendant')
         app.jog_pendant_enable = 'normal'
+        if app.root:
+            app.root.pendant_jog_control = False
         
         self.ids.pendant_jogging_en_btn.disabled = True
 
