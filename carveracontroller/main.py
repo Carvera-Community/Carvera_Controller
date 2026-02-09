@@ -2220,8 +2220,8 @@ class DataRV(RecycleView):
     default_sort_reverse = {'name': False, 'date': True, 'size' : False}
     search_event = None
 
-    curr_selected_file = ''
-    curr_selected_filesize = 0
+    curr_selected_file = StringProperty('')
+    curr_selected_filesize = NumericProperty(0)
 
     def __init__(self, **kwargs):
         super(DataRV, self).__init__(**kwargs)
