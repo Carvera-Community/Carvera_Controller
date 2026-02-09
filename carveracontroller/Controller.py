@@ -994,6 +994,7 @@ class Controller:
 
             # Search for WCS coordinate space - find the last one used
             wcs_commands = [
+                ("G53", self._find_command_line_number(local_file_path, start_line, "G53")),
                 ("G54", self._find_command_line_number(local_file_path, start_line, "G54")),
                 ("G55", self._find_command_line_number(local_file_path, start_line, "G55")),
                 ("G56", self._find_command_line_number(local_file_path, start_line, "G56")),

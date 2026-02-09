@@ -30,6 +30,8 @@
 - Fixed: When uploading firmware, the "Download" and "Upload and select" buttons were visible
 - Fixed: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
 - Fixed: Only move once per keypress in step mode when keyboard jogging
+- Fixed: Pendant A axis position displayed was in MCS not WCS
+- Fixed: In the file manager, Upload and View buttons should be disabled until a file is selected
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file
