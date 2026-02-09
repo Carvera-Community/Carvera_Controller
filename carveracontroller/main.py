@@ -2590,7 +2590,6 @@ class Makera(RelativeLayout):
     manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
-    any_macro_defined = BooleanProperty(False)
     _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
@@ -2935,36 +2934,15 @@ class Makera(RelativeLayout):
         self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
 
     def _update_macro_button_text(self):
-        any_defined = False
-        for i, macro_config_key in enumerate(['touch_macro_1', 'touch_macro_2', 'touch_macro_3'], start=1):
-            btn = self.ids[macro_config_key + "_btn"]
-            try:
-                macro_value = Config.get("carvera", macro_config_key)
-            except Exception:
-                macro_value = ""
+
+        for macro_config_key in ['touch_macro_1', 'touch_macro_2', 'touch_macro_3']:
+
+            macro_value = Config.get("carvera", macro_config_key)
             if macro_value:
-                try:
-                    data = json.loads(macro_value)
-                    macro_name = data.get("name", "")
-                    if macro_name and data.get("gcode", "").strip():
-                        any_defined = True
-                        btn.text = macro_name
-                        continue
-                except Exception:
-                    pass
-            btn.text = tr._("Macro 1") if i == 1 else (tr._("Macro 2") if i == 2 else tr._("Macro 3"))
-        self.any_macro_defined = any_defined
-        # Update container visibility (can't bind app.root in kv during build - root is None)
-        cont = self.ids.get("macro_buttons_container")
-        if cont:
-            if any_defined:
-                cont.size_hint_y = 0.3
-                cont.size_hint_min_y = dp(41)
-                cont.opacity = 1
-            else:
-                cont.size_hint_y = 0
-                cont.size_hint_min_y = 0
-                cont.opacity = 0
+                logger.debug(f"{macro_config_key} set to: {macro_value=}")
+                macro_name = json.loads(macro_value).get("name", False)
+                if macro_name:
+                    self.ids[macro_config_key + "_btn"].text = macro_name  # the button ids for the macro UI buttons are suffixed with _btn
 
 
     def run_macro(self, macro_id: int) -> None:
