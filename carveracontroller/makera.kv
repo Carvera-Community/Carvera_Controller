@@ -2636,7 +2636,7 @@
                         id: btn_view
                         size_hint_x: None
                         width: '100dp'
-                        disabled: root.firmware_mode or not root.local_rv.curr_selected_file
+                        disabled: root.firmware_mode or not root.local_rv.curr_selected_file or root.local_rv.curr_selected_is_dir
                         opacity: 0 if root.firmware_mode else 1
                         text: tr._("View")
                         on_release:
@@ -2646,7 +2646,7 @@
                         size_hint_x: None
                         width: '100dp'
                         text: tr._("Upload")
-                        disabled: not root.local_rv.curr_selected_file
+                        disabled: not root.local_rv.curr_selected_file or root.local_rv.curr_selected_is_dir
                         on_release:
                             app.root.check_and_upload()
                     Button:
@@ -2654,7 +2654,7 @@
                         size_hint_x: None
                         width: '130dp'
                         text: tr._("Upload and Select")
-                        disabled: root.firmware_mode or not root.local_rv.curr_selected_file
+                        disabled: root.firmware_mode or not root.local_rv.curr_selected_file or root.local_rv.curr_selected_is_dir
                         opacity: 0 if root.firmware_mode else 1
                         on_release:
                             app.root.check_upload_and_select()
