@@ -22,29 +22,86 @@ from carveracontroller.translation import tr
 class ScrollingLabel(ScrollView):
     """
     A horizontal ScrollView with a single Label that scrolls right-to-left
-    (marquee style) when the text overflows. Based on
-    https://stackoverflow.com/a/43051460
+    (marquee style) when the text overflows. If text would fit at 80% font size,
+    uses that instead of scrolling. Based on https://stackoverflow.com/a/43051460
     """
     text = StringProperty('')
     font_size = StringProperty('18sp')
     color = ListProperty([1, 1, 1, 1])
+    effective_font_size = StringProperty('18sp')
 
     def __init__(self, **kwargs):
         self._marquee_anim = None
+        self._marquee_only = False  # skip fit evaluation, go straight to scroll (avoids font flash each cycle)
         super().__init__(**kwargs)
+
+    def _parse_font_size(self, value):
+        try:
+            if isinstance(value, str):
+                return float(value.replace('sp', '').replace('dp', '').strip())
+            return float(value)
+        except (TypeError, ValueError):
+            return 18.0
 
     def _start_marquee(self, dt=None):
         if not self.ids:
             return
+        if self._marquee_only:
+            # Already decided we need to scroll; skip fit/shrink to avoid font flash each cycle
+            self.effective_font_size = self.font_size
+            Clock.schedule_once(self._start_marquee_anim, 0.05)
+            return
+        # Reset to full font size and re-evaluate after label updates
+        self.effective_font_size = self.font_size
+        Clock.schedule_once(self._evaluate_fit, 0.1)
+
+    def _evaluate_fit(self, dt=None):
+        if not self.ids:
+            return
         label = self.ids.scroll_label
         if not label.texture:
-            Clock.schedule_once(self._start_marquee, 0.05)
+            Clock.schedule_once(self._evaluate_fit, 0.05)
             return
         label_width = label.texture_size[0]
-        if label_width <= max(1, self.width):
+        view_width = max(1, self.width)
+        if label_width <= view_width:
+            self._marquee_only = False
             self._stop_marquee()
             self.scroll_x = 0
             return
+        # Try 80% font size to avoid scrolling
+        base = self._parse_font_size(self.font_size)
+        reduced = base * 0.8
+        self.effective_font_size = f"{reduced}sp"
+        Clock.schedule_once(self._check_after_shrink, 0.1)
+
+    def _check_after_shrink(self, dt=None):
+        if not self.ids:
+            return
+        label = self.ids.scroll_label
+        if not label.texture:
+            Clock.schedule_once(self._check_after_shrink, 0.05)
+            return
+        label_width = label.texture_size[0]
+        view_width = max(1, self.width)
+        if label_width <= view_width:
+            self._marquee_only = False
+            self._stop_marquee()
+            self.scroll_x = 0
+            return
+        # Still doesn't fit: restore full size and run marquee; next cycle skip fit eval
+        self._marquee_only = True
+        self.effective_font_size = self.font_size
+        Clock.schedule_once(self._start_marquee_anim, 0.1)
+
+    def _start_marquee_anim(self, dt=None):
+        if not self.ids:
+            return
+        label = self.ids.scroll_label
+        if not label.texture:
+            Clock.schedule_once(self._start_marquee_anim, 0.05)
+            return
+        label_width = label.texture_size[0]
         self._stop_marquee()
         self.scroll_x = 0
         duration = 2.0 + (label_width - self.width) * 0.02
@@ -61,10 +118,15 @@ class ScrollingLabel(ScrollView):
             self._marquee_anim.cancel(self)
             self._marquee_anim = None
 
+    def on_font_size(self, instance, value):
+        self.effective_font_size = value
+
     def on_text(self, instance, value):
+        self._marquee_only = False
         Clock.schedule_once(self._start_marquee, 0.1)
 
     def on_size(self, instance, value):
+        self._marquee_only = False
         Clock.schedule_once(self._start_marquee, 0.1)
 
     def on_touch_down(self, touch):
