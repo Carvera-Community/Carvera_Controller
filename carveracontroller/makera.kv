@@ -1192,6 +1192,23 @@
         on_release:
             root.select('')
 
+<ScrollingLabel>:
+    do_scroll_x: True
+    do_scroll_y: False
+    bar_width: 0
+    BoxLayout:
+        size_hint_x: None
+        width: max(self.minimum_width, root.width)
+        Widget:
+            size_hint_x: 1
+        Label:
+            id: scroll_label
+            size_hint_x: None
+            width: self.texture_size[0]
+            text: root.text
+            font_size: root.font_size
+            color: root.color
+
 <TopDataView>:
     orientation: 'horizontal'
     size_hint_x: 1
@@ -1227,13 +1244,10 @@
         color: tuple(app.active_color) if root.active else root.color
     BoxLayout:
         orientation: 'vertical'
-        Label:
+        ScrollingLabel:
             text: root.main_text
-            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
             font_size: '18sp'
-            text_size: self.size
-            halign: "right"
-            multiline: False
+            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
         Label:
             text: root.minr_text
             color: 160/255, 160/255, 160/255, 1
