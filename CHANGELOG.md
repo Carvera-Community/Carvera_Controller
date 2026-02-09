@@ -41,6 +41,7 @@
 - Change: Probing screen overhauled for better visual clarity, defaults to save WCS on all probing operations
 - Change: Values in the top bar buttons now perform a marquee scroll if they overflow
 - Change: Workspace Descriptions are now shown (if set) instead of G54 etc
+- Change: Laser and Spindle Top Bar buttons are now combined, and laser mode enable button added to Tool drop down to switch between them
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
