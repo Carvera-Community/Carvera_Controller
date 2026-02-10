@@ -3272,6 +3272,14 @@ class Makera(RelativeLayout):
         self.comports_drop_down.bind(on_select=self.usb_event)
         self.comports_drop_down.open(button)
 
+    def open_spindle_or_laser_drop_down(self, button):
+        if CNC.vars.get("lasermode", False):
+            self.laser_drop_down.open(button)
+            self.laser_drop_down.opened = True
+        else:
+            self.spindle_drop_down.open(button)
+            self.spindle_drop_down.opened = True
+
     def fetch_common_local_dir_list(self):
         home_path = Path.home()
         if home_path.exists():
@@ -4852,18 +4860,29 @@ class Makera(RelativeLayout):
                     self.feed_drop_down.scale_slider.set_flag = True
                     self.feed_drop_down.scale_slider.value = CNC.vars["OvFeed"]
 
-            # update spindle data
-            self.spindle_data_view.main_text = "{:.0f}".format(CNC.vars["curspindle"])
-            self.spindle_data_view.scale = CNC.vars["OvSpindle"]
-            self.spindle_data_view.active = CNC.vars["curspindle"] > 0.0
-            if self.status_index % 4 == 0:
-                self.spindle_data_view.minr_text = "{:.0f}".format(CNC.vars["tarspindle"])
-            elif self.status_index % 4 == 1:
-                self.spindle_data_view.minr_text = "{:.0f}".format(CNC.vars["OvSpindle"]) + " %"
-            elif self.status_index % 4 == 2:
-                self.spindle_data_view.minr_text = "{:.1f}".format(CNC.vars["spindletemp"]) + " °C"
+            # update spindle/laser data (single button: icon and content depend on laser mode)
+            v = self.spindle_laser_data_view
+            if CNC.vars["lasermode"]:
+                v.data_icon = 'data/laser.png'
+                v.tooltip_txt = tr._('Laser Settings')
+                v.main_text = "{:.1f}".format(CNC.vars["laserpower"])
+                v.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
+                v.scale = CNC.vars["laserscale"]
+                v.active = CNC.vars["lasermode"]
             else:
-                self.spindle_data_view.minr_text = "Vac: {}".format('On' if CNC.vars["vacuummode"] else 'Off')
+                v.data_icon = 'data/spindle.png'
+                v.tooltip_txt = tr._('Spindle and Vacuum Overrides')
+                v.main_text = "{:.0f}".format(CNC.vars["curspindle"])
+                v.scale = CNC.vars["OvSpindle"]
+                v.active = CNC.vars["curspindle"] > 0.0
+                if self.status_index % 4 == 0:
+                    v.minr_text = "{:.0f}".format(CNC.vars["tarspindle"])
+                elif self.status_index % 4 == 1:
+                    v.minr_text = "{:.0f}".format(CNC.vars["OvSpindle"]) + " %"
+                elif self.status_index % 4 == 2:
+                    v.minr_text = "{:.1f}".format(CNC.vars["spindletemp"]) + " °C"
+                else:
+                    v.minr_text = "Vac: {}".format('On' if CNC.vars["vacuummode"] else 'Off')
 
             elapsed = now - self.control_list['vacuum_mode'][0]
             if elapsed < 2:
@@ -4933,19 +4952,23 @@ class Makera(RelativeLayout):
             else:
                 app.lasering = False
 
-            # update laser data
-            self.laser_data_view.active = CNC.vars["lasermode"]
-            self.laser_data_view.scale = CNC.vars["laserscale"]
-            self.laser_data_view.main_text = "{:.1f}".format(CNC.vars["laserpower"])
-            self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
+            # laser drop down UI (spindle/laser top bar content updated above)
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
             # update coordinate system data
             coord_system_index = CNC.vars["active_coord_system"]
             coord_system_name = self.wcs_names[coord_system_index]
             rotation_angle = CNC.vars["rotation_angle"]
-            self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = "{:.3f}°".format(rotation_angle)
+            desc_key = coord_system_name.lower().replace(".", "_") + "_description"
+            try:
+                wcs_description = Config.get("carvera", desc_key).strip()
+            except Exception:
+                wcs_description = ""
+            if wcs_description:
+                self.coord_system_data_view.main_text = wcs_description
+            else:
+                self.coord_system_data_view.main_text = coord_system_name
+            self.coord_system_data_view.minr_text = coord_system_name
             self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
             
             # Update WCS Settings popup if it's open
@@ -5209,6 +5232,13 @@ class Makera(RelativeLayout):
         if name in self.control_list:
             self.control_list[name][0] = time.time()
             self.control_list[name][1] = value
+        if name == 'laser_mode' and not value:
+            if self.laser_drop_down.opened:
+                self.laser_drop_down.dismiss()
+                self.laser_drop_down.opened = False
+            # Keep ToolDropDown laser switch in sync so it shows off when disabled from LaserDropDown
+            self.tool_drop_down.ids.switch.set_flag = True
+            self.tool_drop_down.ids.switch.active = False
 
     def moveLineIndex(self, up = True):
         if up:

@@ -780,7 +780,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    disabled: app.state != 'Idle' or app.lasering
+    disabled: app.state != 'Idle'
     DropDownHint:
         text: tr._('Tool Status')
     BoxLayout:
@@ -800,10 +800,28 @@
             value: '0.000'
         StatusContent:
             id: status_wpvoltage
-            title: tr._('WP:  ')
+            title: tr._('Probe:  ')
             value: '0.00v'
             disabled: app.model == 'CA1'
-
+    DropDownHint:
+        text: tr._('Laser Mode')
+    BoxLayout:
+        padding: '0.5dp'
+        size_hint_y: None
+        height: '40dp'
+        disabled: app.state != 'Idle'
+        Switch:
+            id: switch
+            canvas.before:
+                Color:
+                    rgba: 50/255, 50/255, 50/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            set_flag: False
+            on_active:
+                if self.set_flag: self.set_flag = False
+                else: app.root.update_control('laser_mode', self.active)
     Spinner:
         size_hint_y: None
         height: '40dp'
@@ -1192,6 +1210,23 @@
         on_release:
             root.select('')
 
+<ScrollingLabel>:
+    do_scroll_x: True
+    do_scroll_y: False
+    bar_width: 0
+    BoxLayout:
+        size_hint_x: None
+        width: max(self.minimum_width, root.width)
+        Widget:
+            size_hint_x: 1
+        Label:
+            id: scroll_label
+            size_hint_x: None
+            width: self.texture_size[0]
+            text: root.text
+            font_size: root.effective_font_size
+            color: root.color
+
 <TopDataView>:
     orientation: 'horizontal'
     size_hint_x: 1
@@ -1227,13 +1262,10 @@
         color: tuple(app.active_color) if root.active else root.color
     BoxLayout:
         orientation: 'vertical'
-        Label:
+        ScrollingLabel:
             text: root.main_text
-            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
             font_size: '18sp'
-            text_size: self.size
-            halign: "right"
-            multiline: False
+            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
         Label:
             text: root.minr_text
             color: 160/255, 160/255, 160/255, 1
@@ -3436,9 +3468,8 @@
     z_data_view: z_data_view
     a_data_view: a_data_view
     feed_data_view: feed_data_view
-    spindle_data_view: spindle_data_view
+    spindle_laser_data_view: spindle_laser_data_view
     tool_data_view: tool_data_view
-    laser_data_view: laser_data_view
     coord_system_data_view: coord_system_data_view
     float_layout: float_layout
     step_a: step_a
@@ -3552,15 +3583,14 @@
                     root.feed_drop_down.opened = True
 
             TopDataView:
-                id: spindle_data_view
+                id: spindle_laser_data_view
                 data_icon: 'data/spindle.png'
                 tooltip_txt: tr._('Spindle and Vacuum Overrides')
                 main_text: "10000"
                 minr_text: "0.0 C"
                 disabled: app.state == 'N/A'
                 on_release:
-                    root.spindle_drop_down.open(self)
-                    root.spindle_drop_down.opened = True
+                    root.open_spindle_or_laser_drop_down(self)
 
             TopDataView:
                 id: tool_data_view
@@ -3572,17 +3602,6 @@
                 on_release:
                     root.tool_drop_down.open(self)
                     root.tool_drop_down.opened = True
-
-            TopDataView:
-                id: laser_data_view
-                data_icon: 'data/laser.png'
-                tooltip_txt: tr._('Laser Settings')
-                main_text: "10000"
-                minr_text: "100%"
-                disabled: app.state == 'N/A'
-                on_release:
-                    root.laser_drop_down.open(self)
-                    root.laser_drop_down.opened = True
 
             
 
