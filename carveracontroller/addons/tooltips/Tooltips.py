@@ -12,6 +12,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.switch import Switch
 from kivy.uix.popup import Popup
 from kivy.uix.modalview import ModalView
+from kivy.app import App
 import sys
 
 class Tooltip(BoxLayout):
@@ -214,7 +215,11 @@ class ToolTipTextInput(TextInput):
         Window.bind(mouse_pos=self.on_mouse_pos)
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
-        
+    
+    def on_input_focus(self, instance, value):
+        if value:
+            App.get_running_app().root.toggle_keyboard_jog_control(True)
+
     def _is_blocked_by_modal(self):
         for child in Window.children:
             if isinstance(child, (Popup, ModalView)):

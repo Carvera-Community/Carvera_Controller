@@ -39,6 +39,7 @@
 - Change: Improved logging of parser errors of machine responses
 - Change: On USB-serial connect, clear machine's receive buffer by sending "\n;\n"
 - Change: Probing screen overhauled for better visual clarity, defaults to save WCS on all probing operations
+- Change: added keyboard and pendant jogging modes to probing popup. Keyboard jogging is disabled when first opening the popup or clicking into any text field
 - Change: Values in the top bar buttons now shrink in font_size if just a bit too big (by up to 20%), and if still overflowing perform a marquee scroll
 - Change: Workspace Descriptions are now shown (if set) instead of G54 etc
 - Change: Laser and Spindle Top Bar buttons are now combined, and laser mode enable button added to Tool drop down to switch between them

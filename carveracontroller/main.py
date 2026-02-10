@@ -2590,6 +2590,7 @@ class Makera(RelativeLayout):
     manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
+    pendant_jog_control = BooleanProperty(False)
     _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
@@ -3004,6 +3005,8 @@ class Makera(RelativeLayout):
 
     def open_probing_popup(self):
         if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
+            app = App.get_running_app() #disable keyboard control to prevent accidents when opening the popup
+            self.toggle_keyboard_jog_control(True)
             self.probing_popup.open()
         else:
             self.select_probe_popup = SelectAndCalibrateProbePopup()
@@ -5456,6 +5459,7 @@ class Makera(RelativeLayout):
     def update_ui_for_jog_mode_step(self):
         self.controller.setJogMode(Controller.JOG_MODE_STEP)
         self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        App.get_running_app().jog_mode_text = tr._('Jog Mode:Step')
         self.ids.step_xy.disabled = False
         self.ids.step_a.disabled = False
         self.ids.step_z.disabled = False
@@ -5464,6 +5468,7 @@ class Makera(RelativeLayout):
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
         self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continuous')
+        App.get_running_app().jog_mode_text = tr._('Jog Mode:Continuous')
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
@@ -5475,29 +5480,41 @@ class Makera(RelativeLayout):
         # Allow jogging when machine is running if the setting is enabled
         if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
             return not self._is_popup_open()
-        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
-            not self._is_popup_open()
+            not (self._is_popup_open() and not self.probing_popup._is_open)
 
     def is_pendant_jogging_enabled(self):
         # If the user disabled pendant, respect it.
-        if self.ids.pendant_jogging_en_btn.state != 'down':
+        if not App.get_running_app().root.pendant_jog_control:
             return False
         # ...otherwise behave as any other jogging except when probing screen is
         # open. We want to use the pendant as a convenient way to get to the
         # initial probing location
-        return self.is_jogging_enabled() or self.probing_popup._is_open
+        return (self.is_jogging_enabled())# or self.probing_popup._is_open)
 
-    def toggle_keyboard_jog_control(self):
+    def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
+        if disable: app.root.keyboard_jog_control = False
 
         if app.root.keyboard_jog_control:
             Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            app.jog_keyboard_enable = "down"
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            app.jog_keyboard_enable = "normal"
+
+    def toggle_pendant_jog_control(self):
+        app = App.get_running_app()
+        app.root.pendant_jog_control = not app.root.pendant_jog_control
+
+        if app.root.pendant_jog_control:
+            app.jog_pendant_enable = 'down'
+        else:
+            app.jog_pendant_enable = 'normal'
+        #self.ids.pendant_jogging_en_btn.state = app.jog_pendant_enable 
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -5537,12 +5554,19 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_button_press)
 
     def handle_pendant_connected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
         self.ids.pendant_jogging_en_btn.disabled = False
-        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app =App.get_running_app()
+        app.jog_pendant_text = tr._('Pendant Jogging')
+        app.jog_pendant_enable = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app.root.pendant_jog_control = True if self.pendant_jogging_default == "1" else False
 
     def handle_pendant_disconnected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
+        app =App.get_running_app()
+        app.jog_pendant_text = tr._('No Pendant')
+        app.jog_pendant_enable = 'normal'
+        if app.root:
+            app.root.pendant_jog_control = False
+        
         self.ids.pendant_jogging_en_btn.disabled = True
 
     def handle_pendat_run_pause_resume(self):
@@ -5555,7 +5579,8 @@ class Makera(RelativeLayout):
             self.controller.suspendCommand()
 
     def handle_pendant_open_probing_popup(self):
-        self.probing_popup.open()
+        self.open_probing_popup()
+        #self.probing_popup.open()
 
     def handle_pendant_probe_z(self):
         if self.pendant_probe_z_alt_cmd == "1":
@@ -5564,7 +5589,8 @@ class Makera(RelativeLayout):
             else:
                 self.controller.executeCommand("G38.2 Z-200")
         else:
-            self.probing_popup.open()
+            #self.probing_popup.open()
+            self.open_probing_popup()
 
     def handle_pendant_button_press(self, button_action: str):
         """
@@ -6145,6 +6171,13 @@ class MakeraApp(App):
     mdi_data = ListProperty([])
     invert_y_axis_jogging = BooleanProperty(False)
     active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
+    jog_mode_text = StringProperty(tr._('Jog Mode:Step'))
+    jog_speed_text = StringProperty(tr._('Jog Speed:Max'))
+    jog_keyboard_enable = StringProperty("normal")
+    jog_pendant_enable = StringProperty("normal")
+    jog_pendant_text = StringProperty(tr._('No Pendant'))
+
+
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
