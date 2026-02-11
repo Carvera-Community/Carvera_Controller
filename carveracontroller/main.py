@@ -5011,11 +5011,11 @@ class Makera(RelativeLayout):
                     self.laser_drop_down.scale_slider.set_flag = True
                     self.laser_drop_down.scale_slider.value = CNC.vars["laserscale"]
 
-            # update progress bar and set selected
-            # Commented out until merge of https://github.com/Carvera-Community/Carvera_Community_Firmware/pull/227
-            # use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
-            use_cf_playing_flag = False
+
+            use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
             machine_not_playing = (CNC.vars["is_playing"] == 0 if use_cf_playing_flag else CNC.vars["playedlines"] <= 0)
+            
+            # update progress bar and set selected
             if machine_not_playing:
                 # not playing - check if we were playing before (interrupted playback)
                 if self.played_lines > 0:
