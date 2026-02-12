@@ -844,8 +844,8 @@
     Button:
         text: tr._('Drop')
         size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
+        height: '40dp' if app.has_atc else '0dp'
+        opacity: 1 if app.has_atc else 0
         on_release:
             root.select('Third Item')
             app.root.controller.dropToolCommand()
@@ -864,16 +864,16 @@
     Button:
         text: tr._('Clamp')
         size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
+        height: '40dp' if app.has_atc else '0dp'
+        opacity: 1 if app.has_atc else 0
         on_release:
             root.select('Third Item')
             app.root.controller.clampToolCommand()
     Button:
         text: tr._('Unclamp')
         size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
+        height: '40dp' if app.has_atc else '0dp'
+        opacity: 1 if app.has_atc else 0
         on_release:
             root.select('Third Item')
             app.root.controller.unclampToolCommand()
@@ -3370,14 +3370,14 @@
                 StateBox:
                     id: st_atc_home
                     label: tr._('ATC Limit')
-                    disabled: app.model == 'CA1'
+                    disabled: not app.has_atc
                 StateBox:
                     id: st_probe
                     label: tr._('Probe')
                 StateBox:
                     id: st_tool_sensor
                     label: tr._('Tool Sensor')
-                    disabled: app.model == 'CA1'
+                    disabled: not app.has_atc
                 StateBox:
                     id: st_e_stop
                     label: tr._('E-Stop')

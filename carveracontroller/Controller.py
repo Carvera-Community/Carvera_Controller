@@ -349,7 +349,11 @@ class Controller:
         self.executeCommand("reset\n")
 
     def change(self):
-        self.executeCommand("M490.2\n")
+        app = App.get_running_app()
+        if app.has_atc:
+            self.executeCommand("M490.4\n")
+        else:
+            self.executeCommand("M490.2\n")
 
     def setFeedScale(self, scale):
         self.executeCommand("M220 S%d\n" % (scale))

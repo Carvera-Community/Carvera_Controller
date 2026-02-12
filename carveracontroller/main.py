@@ -3773,8 +3773,30 @@ class Makera(RelativeLayout):
             target_tool = 'Probe'
         elif CNC.vars['target_tool'] == 8888:
             target_tool = 'Laser'
-        self.confirm_popup.lb_title.text = tr._('Changing Tool')
-        self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        elif CNC.vars['target_tool'] >= 999990 and CNC.vars['target_tool'] <= 999999:
+            target_tool = '3D Probe'
+
+        app = App.get_running_app()
+        if app.has_atc:
+            #target is valid tool
+            if CNC.vars['target_tool'] != -1:
+                if CNC.vars['tool'] == -1:
+                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                    self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._(' Then press \' Confirm\' or main button to clamp.\n')
+                else:
+                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                    self.confirm_popup.lb_content.text = tr._('When the tool is clamped press \' Confirm\' or main button to proceed.\nKeep your hands off the spindle unless you are willing to lose a finger!')
+            else:
+                if CNC.vars['tool'] != -1:
+                    self.confirm_popup.lb_title.text = tr._('Hold tool')
+                    self.confirm_popup.lb_content.text = tr._('Please hold the current tool and press \' Confirm\' or main button to proceed')
+                else:
+                    self.confirm_popup.lb_title.text = tr._('Open clamp')
+                    self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+        else:
+            self.confirm_popup.lb_title.text = tr._('Changing Tool')
+            self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        
         self.confirm_popup.cancel = partial(self.controller.abortCommand)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
@@ -4141,26 +4163,21 @@ class Makera(RelativeLayout):
             app.model = model.strip()
             model_changed = True
         if app.model == 'CA1':
-            if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                            'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             CNC.vars['rotation_base_width'] = 300
             CNC.vars['rotation_head_width'] = 56.5
         elif app.model == 'C1':
-            if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                            'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 18.5
             else:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 7
-        
+        if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+        app.has_atc = bool(CNC.vars['FuncSetting'] & 4)
         # Load or reload machine config when model is detected/changed
         if model_changed:
             if self.config_loaded:
@@ -6153,6 +6170,7 @@ class MakeraApp(App):
     state = StringProperty(NOT_CONNECTED)
     playing = BooleanProperty(False)
     has_4axis = BooleanProperty(False)
+    has_atc = BooleanProperty(False)
     lasering = BooleanProperty(False)
     show_gcode_ctl_bar = BooleanProperty(False)
     fw_has_update = BooleanProperty(False)
