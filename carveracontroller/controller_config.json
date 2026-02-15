@@ -72,6 +72,14 @@
         "default": "true"
     },
     {
+        "type": "bool",
+        "title": "Use Instant Feed And Spindle Overrides",
+        "desc": "Off uses stock commands that wait for the current block to execute",
+        "section": "carvera",
+        "key": "instantFSoverride",
+        "default": "true"
+    },
+    {
         "type": "path",
         "title": "Play Background Images Custom Folder",
         "desc": "The user directory to pull custom background images for the play file screen from",
