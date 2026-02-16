@@ -6092,13 +6092,14 @@ class Makera(RelativeLayout):
             # print('Load time: ' + str(time.time() - now))
             # with open("laser.txt", "w") as output:
             #     output.write(str(temp_list))
-        except:
+        except Exception:
             logger.error(sys.exc_info()[1])
             self.heartbeat_time = time.time()
             self.loading_file = False
             if f:
                 f.close()
-            Clock.schedule_once(partial(self.load_error, tr._('Opening file error:') + '\n\'%s\'\n' % (filepath) + tr._('Please make sure the GCode file is valid')), 0)
+            self.controller.log.put((Controller.MSG_ERROR, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."))
+            Clock.schedule_once(partial(self.load_error, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."), 0)
             return
 
         Clock.schedule_once(self.load_end, 0)
