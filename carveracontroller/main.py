@@ -2638,6 +2638,7 @@ class Makera(RelativeLayout):
     _progress_smooth_clock = None
 
     show_update = True
+    instantFSoverride = True
     fw_upd_text = ''
     fw_version_new = ''
     fw_version = ''
@@ -2818,6 +2819,8 @@ class Makera(RelativeLayout):
         self.file_just_loaded = False
 
         self.fill_remote_dir_callback = None
+
+        self.instantFSoverride = (Config.get('carvera', 'instantFSoverride') == '1')
 
         self.show_update = (Config.get('carvera', 'show_update') == '1')
         self.upgrade_popup.cbx_check_at_startup.active = self.show_update
@@ -6294,6 +6297,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')
+    if not Config.has_option('carvera', 'instantFSoverride'): Config.set('carvera','instantFSoverride','1')
 
     Config.write()
 

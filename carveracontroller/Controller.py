@@ -356,12 +356,20 @@ class Controller:
             self.executeCommand("M490.2\n")
 
     def setFeedScale(self, scale):
+        app = App.get_running_app()
+        if (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")) and app.root.instantFSoverride:
+            self.executeCommand("$F S%d\n" % (scale))
+            return
         self.executeCommand("M220 S%d\n" % (scale))
 
     def setLaserScale(self, scale):
         self.executeCommand("M325 S%d\n" % (scale))
 
     def setSpindleScale(self, scale):
+        app = App.get_running_app()
+        if (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")) and app.root.instantFSoverride:
+            self.executeCommand("$O S%d\n" % (scale))
+            return
         self.executeCommand("M223 S%d\n" % (scale))
 
     def clearAutoLeveling(self):
