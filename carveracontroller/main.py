@@ -2595,6 +2595,7 @@ class Makera(RelativeLayout):
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
+    gcode_cannot_visualise = BooleanProperty(False)
 
     probing_popup = ObjectProperty()
     coord_config = {}
@@ -2739,6 +2740,8 @@ class Makera(RelativeLayout):
         }
         self.update_coord_config()
         self.coord_popup = CoordPopup(self.coord_config)
+        self.bind(gcode_cannot_visualise=self._update_startline_checkbox_disabled)
+        self._update_startline_checkbox_disabled()
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
@@ -2798,6 +2801,7 @@ class Makera(RelativeLayout):
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
+        self.gcode_viewer.set_error_popup_callback(self._on_gcode_cannot_visualise)
         self.gcode_viewer.time_estimate_progress_callback = self._on_time_estimate_progress
 
         # init settings
@@ -5970,6 +5974,18 @@ class Makera(RelativeLayout):
         self.load_event.set()
 
     # ------------------------------------------------------------------------
+    def _update_startline_checkbox_disabled(self, *args):
+        """Keep Resume at line checkbox disabled when gcode cannot be visualised (KV can't bind: app.root is None during CoordPopup build)."""
+        if self.coord_popup and hasattr(self.coord_popup, 'cbx_startline') and self.coord_popup.cbx_startline:
+            self.coord_popup.cbx_startline.disabled = self.gcode_cannot_visualise
+
+    # ------------------------------------------------------------------------
+    def _on_gcode_cannot_visualise(self, msg):
+        """Called when GcodeViewer detects unvisualisable gcode (e.g. zero-length segments). Show popup on next frame."""
+        self.gcode_cannot_visualise = True
+        Clock.schedule_once(partial(self.load_error, msg), 0)
+
+    # ------------------------------------------------------------------------
     def load_error(self, error_msg, *args):
         self.progress_popup.dismiss()
         self.message_popup.lb_content.text = error_msg
@@ -5979,6 +5995,7 @@ class Makera(RelativeLayout):
     def load_end(self, *args):
         if self.load_canceled:
             self.gcode_viewer.load_array([], True)
+            self.gcode_cannot_visualise = False
             self.clear_selection()
             self.load_canceled = False
             self.file_popup.dismiss()
@@ -5988,6 +6005,7 @@ class Makera(RelativeLayout):
             return
 
         if len(self.gcode_viewer.lengths) > 0:
+            self.gcode_cannot_visualise = False
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
 
@@ -6098,6 +6116,7 @@ class Makera(RelativeLayout):
             self.loading_file = False
             if f:
                 f.close()
+            self.gcode_cannot_visualise = True
             self.controller.log.put((Controller.MSG_ERROR, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."))
             Clock.schedule_once(partial(self.load_error, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."), 0)
             return
