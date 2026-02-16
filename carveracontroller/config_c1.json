@@ -556,6 +556,13 @@
     },
     {
         "type": "numeric",
+        "title": "Max RPM",
+        "desc": "Override the Maximum RPM the machine can reach",
+        "section": "Advanced",
+        "key": "spindle.max_rpm"
+    },
+    {
+        "type": "numeric",
         "title": "Cooldown Threshold",
         "desc": "Temperature to turn on or off spindle fan",
         "section": "Advanced",
