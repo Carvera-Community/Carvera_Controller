@@ -5377,7 +5377,8 @@ class Makera(RelativeLayout):
                         elif child.section.lower() not in ['restore','default', 'backup', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
-                            self.controller.close()
+                            logger.warning('Load config error, Key:' + ' {}'.format(child.key))
+                            #self.controller.close()
                             self.updateStatus()
                             return False
         else:
@@ -5431,8 +5432,9 @@ class Makera(RelativeLayout):
                             #     (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(setting['key'])))
                         elif setting['key'].lower() not in ['restore', 'default', 'backup']:
                             self.controller.log.put((Controller.MSG_ERROR, 'Load config error, Key: {}'.format(setting['key'])))
-                            self.controller.close()
                             self.updateStatus()
+                            logger.warning('Load config error, Key: {}'.format(setting['key']))
+                            #self.controller.close()
                             return False
                     else:
                         has_setting = True
