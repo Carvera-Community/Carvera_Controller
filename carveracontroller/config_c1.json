@@ -557,9 +557,10 @@
     {
         "type": "numeric",
         "title": "Max RPM",
-        "desc": "Override the Maximum RPM the machine can reach",
+        "desc": "Maximum RPM value the machine will allow",
         "section": "Advanced",
-        "key": "spindle.max_rpm"
+        "key": "spindle.max_rpm",
+        "default": "15000"
     },
     {
         "type": "numeric",
