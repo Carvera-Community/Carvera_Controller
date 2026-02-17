@@ -3613,6 +3613,7 @@
                 icon_size: 24
                 notify: (app.fw_has_update or app.ctl_has_update) and app.state != 'N/A'
                 on_release:
+                    if root.func_drop_down.parent: root.func_drop_down.parent.remove_widget(root.func_drop_down)
                     root.func_drop_down.open(self)
 
 
