@@ -6261,9 +6261,6 @@ class MakeraApp(App):
         return True
 
 def load_app_configs():
-    # Disable multitouch simulation (red dots) for right-click
-    Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-    
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
 
