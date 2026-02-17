@@ -26,6 +26,7 @@
 - Enhancement: Update UI based on machines feature set not on machine model
 - Enhancement: Added ability to use the toolchange popups of the AIR for manual toolchanges with an ATC
 - Enhancement: Added config settings for spindle Max RPM
+- Enhancement: Added a UI prompt if gcode cannot be visualised. File is still allowed to run but features dependent on visualisation will be disabled.
 - Fixed: Improved Overheat/Too Cold/temp undefined warning text
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added

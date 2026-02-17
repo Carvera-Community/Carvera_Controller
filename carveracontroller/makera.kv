@@ -3613,6 +3613,7 @@
                 icon_size: 24
                 notify: (app.fw_has_update or app.ctl_has_update) and app.state != 'N/A'
                 on_release:
+                    if root.func_drop_down.parent: root.func_drop_down.parent.remove_widget(root.func_drop_down)
                     root.func_drop_down.open(self)
 
 
@@ -5829,6 +5830,7 @@
             background_color: (250/255, 250/255, 250/255, 1)
             color: (1, 1, 1, 1)
             pos_hint:{'top': 1,'right':1}
+            disabled: app.root.gcode_cannot_visualise
             on_press: root.resume_at_line()
         
         # Cancel option

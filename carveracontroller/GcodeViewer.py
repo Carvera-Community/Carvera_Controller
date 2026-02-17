@@ -13,9 +13,12 @@ from kivy.graphics import *
 from kivy.graphics.opengl import *
 from kivy.clock import Clock
 from kivy.utils import platform
+import logging
 import os
 import threading
 from math import *
+
+logger = logging.getLogger(__name__)
 
 import datetime
 start_time = 0
@@ -725,6 +728,8 @@ class GCodeViewer(Widget):
     raw_feed_rates = []
     frame_callback = None
     time_estimate_progress_callback = None
+    log_callback = None
+    error_popup_callback = None
 
     #camera
     m_xRot = 30
@@ -737,6 +742,11 @@ class GCodeViewer(Widget):
 
     m_xPan = 0
     m_yPan = 0
+    m_xLastRot = 30
+    m_yLastRot = 180
+    m_xLastPan = 0
+    m_yLastPan = 0
+    m_lastPos = [0, 0]
     m_distance = 10
 
     m_xLookAt = 0
@@ -806,6 +816,7 @@ class GCodeViewer(Widget):
     #清空渲染
     def clearDisplay(self):
         self.lengths = []
+        self._cannot_visualise = False
         self.vertex_types = []
         self.positions = []
         self.line_times = []
@@ -826,6 +837,11 @@ class GCodeViewer(Widget):
     #回调逐帧
     def set_frame_callback(self, framecallback):
         self.frame_callback = framecallback
+
+
+    def set_error_popup_callback(self, callback):
+        """Set callback(message) to show error in UI (e.g. load_error popup). Called when gcode cannot be visualised."""
+        self.error_popup_callback = callback
 
     def set_play_over_callback(self, playovercallback):
         self.play_over_callback = playovercallback
@@ -1667,6 +1683,7 @@ class GCodeViewer(Widget):
 
         self.positions = positions
         self.lengths = lengths
+        self._cannot_visualise = False
         self.raw_linenumbers = raw_linenumbers
         
         self.vertex_types = vertex_types
@@ -2104,8 +2121,17 @@ class GCodeViewer(Widget):
         line_index = binary_find_left(self.lengths,cur_display_distance)
         line_ratio = 0
         if(line_index < len(self.lengths)-1):
-            line_ratio = (cur_display_distance - self.lengths[int(line_index)]) / \
-                (self.lengths[int(line_index)+1]- self.lengths[int(line_index)])
+            segment_length = self.lengths[int(line_index)+1] - self.lengths[int(line_index)]
+            if segment_length == 0:
+                if not self._cannot_visualise:
+                    msg = "Gcode cannot be visualised due to parser error or gcode complexity.\n\nFeatures of the Controller that depend on visualisations have been disabled.\n\nFile playback can be attempted."
+                    logger.error(msg)
+                    if self.error_popup_callback is not None:
+                        self.error_popup_callback(msg)
+                    self._cannot_visualise = True
+                self.dynamic_display = False
+                return
+            line_ratio = (cur_display_distance - self.lengths[int(line_index)]) / segment_length
             
         line_index_withratio = line_index + line_ratio
 

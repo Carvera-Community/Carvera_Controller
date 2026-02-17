@@ -337,7 +337,7 @@ p4a.commit = c02cf781a0d3d232eb4ffbeaf580cc82cf2bd65f
 #p4a.source_dir =
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
-p4a.local_recipes = ./packaging_assets/android/recipes
+p4a.local_recipes = ./assets/packaging/android/recipes
 
 # (str) Filename to the hook for p4a
 #p4a.hook =
