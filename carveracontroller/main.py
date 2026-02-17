@@ -2590,10 +2590,12 @@ class Makera(RelativeLayout):
     manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
+    pendant_jog_control = BooleanProperty(False)
     _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
+    gcode_cannot_visualise = BooleanProperty(False)
 
     probing_popup = ObjectProperty()
     coord_config = {}
@@ -2637,6 +2639,7 @@ class Makera(RelativeLayout):
     _progress_smooth_clock = None
 
     show_update = True
+    instantFSoverride = True
     fw_upd_text = ''
     fw_version_new = ''
     fw_version = ''
@@ -2737,6 +2740,8 @@ class Makera(RelativeLayout):
         }
         self.update_coord_config()
         self.coord_popup = CoordPopup(self.coord_config)
+        self.bind(gcode_cannot_visualise=self._update_startline_checkbox_disabled)
+        self._update_startline_checkbox_disabled()
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
@@ -2796,6 +2801,7 @@ class Makera(RelativeLayout):
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
+        self.gcode_viewer.set_error_popup_callback(self._on_gcode_cannot_visualise)
         self.gcode_viewer.time_estimate_progress_callback = self._on_time_estimate_progress
 
         # init settings
@@ -2817,6 +2823,8 @@ class Makera(RelativeLayout):
         self.file_just_loaded = False
 
         self.fill_remote_dir_callback = None
+
+        self.instantFSoverride = (Config.get('carvera', 'instantFSoverride') == '1')
 
         self.show_update = (Config.get('carvera', 'show_update') == '1')
         self.upgrade_popup.cbx_check_at_startup.active = self.show_update
@@ -3004,6 +3012,8 @@ class Makera(RelativeLayout):
 
     def open_probing_popup(self):
         if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
+            app = App.get_running_app() #disable keyboard control to prevent accidents when opening the popup
+            self.toggle_keyboard_jog_control(True)
             self.probing_popup.open()
         else:
             self.select_probe_popup = SelectAndCalibrateProbePopup()
@@ -3271,6 +3281,14 @@ class Makera(RelativeLayout):
         self.comports_drop_down.unbind(on_select=self.usb_event)
         self.comports_drop_down.bind(on_select=self.usb_event)
         self.comports_drop_down.open(button)
+
+    def open_spindle_or_laser_drop_down(self, button):
+        if CNC.vars.get("lasermode", False):
+            self.laser_drop_down.open(button)
+            self.laser_drop_down.opened = True
+        else:
+            self.spindle_drop_down.open(button)
+            self.spindle_drop_down.opened = True
 
     def fetch_common_local_dir_list(self):
         home_path = Path.home()
@@ -3762,8 +3780,30 @@ class Makera(RelativeLayout):
             target_tool = 'Probe'
         elif CNC.vars['target_tool'] == 8888:
             target_tool = 'Laser'
-        self.confirm_popup.lb_title.text = tr._('Changing Tool')
-        self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        elif CNC.vars['target_tool'] >= 999990 and CNC.vars['target_tool'] <= 999999:
+            target_tool = '3D Probe'
+
+        app = App.get_running_app()
+        if app.has_atc:
+            #target is valid tool
+            if CNC.vars['target_tool'] != -1:
+                if CNC.vars['tool'] == -1:
+                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                    self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._(' Then press \' Confirm\' or main button to clamp.\n')
+                else:
+                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                    self.confirm_popup.lb_content.text = tr._('When the tool is clamped press \' Confirm\' or main button to proceed.\nKeep your hands off the spindle unless you are willing to lose a finger!')
+            else:
+                if CNC.vars['tool'] != -1:
+                    self.confirm_popup.lb_title.text = tr._('Hold tool')
+                    self.confirm_popup.lb_content.text = tr._('Please hold the current tool and press \' Confirm\' or main button to proceed')
+                else:
+                    self.confirm_popup.lb_title.text = tr._('Open clamp')
+                    self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+        else:
+            self.confirm_popup.lb_title.text = tr._('Changing Tool')
+            self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        
         self.confirm_popup.cancel = partial(self.controller.abortCommand)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
@@ -4130,26 +4170,21 @@ class Makera(RelativeLayout):
             app.model = model.strip()
             model_changed = True
         if app.model == 'CA1':
-            if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                            'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             CNC.vars['rotation_base_width'] = 300
             CNC.vars['rotation_head_width'] = 56.5
         elif app.model == 'C1':
-            if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                            'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 18.5
             else:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 7
-        
+        if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+        app.has_atc = bool(CNC.vars['FuncSetting'] & 4)
         # Load or reload machine config when model is detected/changed
         if model_changed:
             if self.config_loaded:
@@ -4852,18 +4887,29 @@ class Makera(RelativeLayout):
                     self.feed_drop_down.scale_slider.set_flag = True
                     self.feed_drop_down.scale_slider.value = CNC.vars["OvFeed"]
 
-            # update spindle data
-            self.spindle_data_view.main_text = "{:.0f}".format(CNC.vars["curspindle"])
-            self.spindle_data_view.scale = CNC.vars["OvSpindle"]
-            self.spindle_data_view.active = CNC.vars["curspindle"] > 0.0
-            if self.status_index % 4 == 0:
-                self.spindle_data_view.minr_text = "{:.0f}".format(CNC.vars["tarspindle"])
-            elif self.status_index % 4 == 1:
-                self.spindle_data_view.minr_text = "{:.0f}".format(CNC.vars["OvSpindle"]) + " %"
-            elif self.status_index % 4 == 2:
-                self.spindle_data_view.minr_text = "{:.1f}".format(CNC.vars["spindletemp"]) + " °C"
+            # update spindle/laser data (single button: icon and content depend on laser mode)
+            v = self.spindle_laser_data_view
+            if CNC.vars["lasermode"]:
+                v.data_icon = 'data/laser.png'
+                v.tooltip_txt = tr._('Laser Settings')
+                v.main_text = "{:.1f}".format(CNC.vars["laserpower"])
+                v.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
+                v.scale = CNC.vars["laserscale"]
+                v.active = CNC.vars["lasermode"]
             else:
-                self.spindle_data_view.minr_text = "Vac: {}".format('On' if CNC.vars["vacuummode"] else 'Off')
+                v.data_icon = 'data/spindle.png'
+                v.tooltip_txt = tr._('Spindle and Vacuum Overrides')
+                v.main_text = "{:.0f}".format(CNC.vars["curspindle"])
+                v.scale = CNC.vars["OvSpindle"]
+                v.active = CNC.vars["curspindle"] > 0.0
+                if self.status_index % 4 == 0:
+                    v.minr_text = "{:.0f}".format(CNC.vars["tarspindle"])
+                elif self.status_index % 4 == 1:
+                    v.minr_text = "{:.0f}".format(CNC.vars["OvSpindle"]) + " %"
+                elif self.status_index % 4 == 2:
+                    v.minr_text = "{:.1f}".format(CNC.vars["spindletemp"]) + " °C"
+                else:
+                    v.minr_text = "Vac: {}".format('On' if CNC.vars["vacuummode"] else 'Off')
 
             elapsed = now - self.control_list['vacuum_mode'][0]
             if elapsed < 2:
@@ -4933,19 +4979,23 @@ class Makera(RelativeLayout):
             else:
                 app.lasering = False
 
-            # update laser data
-            self.laser_data_view.active = CNC.vars["lasermode"]
-            self.laser_data_view.scale = CNC.vars["laserscale"]
-            self.laser_data_view.main_text = "{:.1f}".format(CNC.vars["laserpower"])
-            self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
+            # laser drop down UI (spindle/laser top bar content updated above)
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
             # update coordinate system data
             coord_system_index = CNC.vars["active_coord_system"]
             coord_system_name = self.wcs_names[coord_system_index]
             rotation_angle = CNC.vars["rotation_angle"]
-            self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = "{:.3f}°".format(rotation_angle)
+            desc_key = coord_system_name.lower().replace(".", "_") + "_description"
+            try:
+                wcs_description = Config.get("carvera", desc_key).strip()
+            except Exception:
+                wcs_description = ""
+            if wcs_description:
+                self.coord_system_data_view.main_text = wcs_description
+            else:
+                self.coord_system_data_view.main_text = coord_system_name
+            self.coord_system_data_view.minr_text = coord_system_name
             self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
             
             # Update WCS Settings popup if it's open
@@ -4985,11 +5035,11 @@ class Makera(RelativeLayout):
                     self.laser_drop_down.scale_slider.set_flag = True
                     self.laser_drop_down.scale_slider.value = CNC.vars["laserscale"]
 
-            # update progress bar and set selected
-            # Commented out until merge of https://github.com/Carvera-Community/Carvera_Community_Firmware/pull/227
-            # use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
-            use_cf_playing_flag = False
+
+            use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
             machine_not_playing = (CNC.vars["is_playing"] == 0 if use_cf_playing_flag else CNC.vars["playedlines"] <= 0)
+            
+            # update progress bar and set selected
             if machine_not_playing:
                 # not playing - check if we were playing before (interrupted playback)
                 if self.played_lines > 0:
@@ -5209,6 +5259,13 @@ class Makera(RelativeLayout):
         if name in self.control_list:
             self.control_list[name][0] = time.time()
             self.control_list[name][1] = value
+        if name == 'laser_mode' and not value:
+            if self.laser_drop_down.opened:
+                self.laser_drop_down.dismiss()
+                self.laser_drop_down.opened = False
+            # Keep ToolDropDown laser switch in sync so it shows off when disabled from LaserDropDown
+            self.tool_drop_down.ids.switch.set_flag = True
+            self.tool_drop_down.ids.switch.active = False
 
     def moveLineIndex(self, up = True):
         if up:
@@ -5426,6 +5483,7 @@ class Makera(RelativeLayout):
     def update_ui_for_jog_mode_step(self):
         self.controller.setJogMode(Controller.JOG_MODE_STEP)
         self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        App.get_running_app().jog_mode_text = tr._('Jog Mode:Step')
         self.ids.step_xy.disabled = False
         self.ids.step_a.disabled = False
         self.ids.step_z.disabled = False
@@ -5434,6 +5492,7 @@ class Makera(RelativeLayout):
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
         self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continuous')
+        App.get_running_app().jog_mode_text = tr._('Jog Mode:Continuous')
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
@@ -5445,29 +5504,41 @@ class Makera(RelativeLayout):
         # Allow jogging when machine is running if the setting is enabled
         if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
             return not self._is_popup_open()
-        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
-            not self._is_popup_open()
+            not (self._is_popup_open() and not self.probing_popup._is_open)
 
     def is_pendant_jogging_enabled(self):
         # If the user disabled pendant, respect it.
-        if self.ids.pendant_jogging_en_btn.state != 'down':
+        if not App.get_running_app().root.pendant_jog_control:
             return False
         # ...otherwise behave as any other jogging except when probing screen is
         # open. We want to use the pendant as a convenient way to get to the
         # initial probing location
-        return self.is_jogging_enabled() or self.probing_popup._is_open
+        return (self.is_jogging_enabled())# or self.probing_popup._is_open)
 
-    def toggle_keyboard_jog_control(self):
+    def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
+        if disable: app.root.keyboard_jog_control = False
 
         if app.root.keyboard_jog_control:
             Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            app.jog_keyboard_enable = "down"
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            app.jog_keyboard_enable = "normal"
+
+    def toggle_pendant_jog_control(self):
+        app = App.get_running_app()
+        app.root.pendant_jog_control = not app.root.pendant_jog_control
+
+        if app.root.pendant_jog_control:
+            app.jog_pendant_enable = 'down'
+        else:
+            app.jog_pendant_enable = 'normal'
+        #self.ids.pendant_jogging_en_btn.state = app.jog_pendant_enable 
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -5507,12 +5578,19 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_button_press)
 
     def handle_pendant_connected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
         self.ids.pendant_jogging_en_btn.disabled = False
-        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app =App.get_running_app()
+        app.jog_pendant_text = tr._('Pendant Jogging')
+        app.jog_pendant_enable = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app.root.pendant_jog_control = True if self.pendant_jogging_default == "1" else False
 
     def handle_pendant_disconnected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
+        app =App.get_running_app()
+        app.jog_pendant_text = tr._('No Pendant')
+        app.jog_pendant_enable = 'normal'
+        if app.root:
+            app.root.pendant_jog_control = False
+        
         self.ids.pendant_jogging_en_btn.disabled = True
 
     def handle_pendat_run_pause_resume(self):
@@ -5525,7 +5603,8 @@ class Makera(RelativeLayout):
             self.controller.suspendCommand()
 
     def handle_pendant_open_probing_popup(self):
-        self.probing_popup.open()
+        self.open_probing_popup()
+        #self.probing_popup.open()
 
     def handle_pendant_probe_z(self):
         if self.pendant_probe_z_alt_cmd == "1":
@@ -5534,7 +5613,8 @@ class Makera(RelativeLayout):
             else:
                 self.controller.executeCommand("G38.2 Z-200")
         else:
-            self.probing_popup.open()
+            #self.probing_popup.open()
+            self.open_probing_popup()
 
     def handle_pendant_button_press(self, button_action: str):
         """
@@ -5894,6 +5974,18 @@ class Makera(RelativeLayout):
         self.load_event.set()
 
     # ------------------------------------------------------------------------
+    def _update_startline_checkbox_disabled(self, *args):
+        """Keep Resume at line checkbox disabled when gcode cannot be visualised (KV can't bind: app.root is None during CoordPopup build)."""
+        if self.coord_popup and hasattr(self.coord_popup, 'cbx_startline') and self.coord_popup.cbx_startline:
+            self.coord_popup.cbx_startline.disabled = self.gcode_cannot_visualise
+
+    # ------------------------------------------------------------------------
+    def _on_gcode_cannot_visualise(self, msg):
+        """Called when GcodeViewer detects unvisualisable gcode (e.g. zero-length segments). Show popup on next frame."""
+        self.gcode_cannot_visualise = True
+        Clock.schedule_once(partial(self.load_error, msg), 0)
+
+    # ------------------------------------------------------------------------
     def load_error(self, error_msg, *args):
         self.progress_popup.dismiss()
         self.message_popup.lb_content.text = error_msg
@@ -5903,6 +5995,7 @@ class Makera(RelativeLayout):
     def load_end(self, *args):
         if self.load_canceled:
             self.gcode_viewer.load_array([], True)
+            self.gcode_cannot_visualise = False
             self.clear_selection()
             self.load_canceled = False
             self.file_popup.dismiss()
@@ -5912,6 +6005,7 @@ class Makera(RelativeLayout):
             return
 
         if len(self.gcode_viewer.lengths) > 0:
+            self.gcode_cannot_visualise = False
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
 
@@ -6016,13 +6110,15 @@ class Makera(RelativeLayout):
             # print('Load time: ' + str(time.time() - now))
             # with open("laser.txt", "w") as output:
             #     output.write(str(temp_list))
-        except:
+        except Exception:
             logger.error(sys.exc_info()[1])
             self.heartbeat_time = time.time()
             self.loading_file = False
             if f:
                 f.close()
-            Clock.schedule_once(partial(self.load_error, tr._('Opening file error:') + '\n\'%s\'\n' % (filepath) + tr._('Please make sure the GCode file is valid')), 0)
+            self.gcode_cannot_visualise = True
+            self.controller.log.put((Controller.MSG_ERROR, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."))
+            Clock.schedule_once(partial(self.load_error, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."), 0)
             return
 
         Clock.schedule_once(self.load_end, 0)
@@ -6097,6 +6193,7 @@ class MakeraApp(App):
     state = StringProperty(NOT_CONNECTED)
     playing = BooleanProperty(False)
     has_4axis = BooleanProperty(False)
+    has_atc = BooleanProperty(False)
     lasering = BooleanProperty(False)
     show_gcode_ctl_bar = BooleanProperty(False)
     fw_has_update = BooleanProperty(False)
@@ -6115,6 +6212,13 @@ class MakeraApp(App):
     mdi_data = ListProperty([])
     invert_y_axis_jogging = BooleanProperty(False)
     active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
+    jog_mode_text = StringProperty(tr._('Jog Mode:Step'))
+    jog_speed_text = StringProperty(tr._('Jog Speed:Max'))
+    jog_keyboard_enable = StringProperty("normal")
+    jog_pendant_enable = StringProperty("normal")
+    jog_pendant_text = StringProperty(tr._('No Pendant'))
+
+
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -6157,9 +6261,6 @@ class MakeraApp(App):
         return True
 
 def load_app_configs():
-    # Disable multitouch simulation (red dots) for right-click
-    Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-    
     if Config.has_option('carvera', 'ui_density_override') and Config.get('carvera', 'ui_density_override') == "1":
         Metrics.set_density(float(Config.get('carvera', 'ui_density')))
 
@@ -6213,6 +6314,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')
+    if not Config.has_option('carvera', 'instantFSoverride'): Config.set('carvera','instantFSoverride','1')
 
     Config.write()
 

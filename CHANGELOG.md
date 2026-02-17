@@ -23,6 +23,9 @@
 - Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)
 - Enhancement: Restore the previously-loaded background image in Config and Run
 - Enhancement: Support increasing USB connection speed if the firmware is >= 2.1.0c. Enable feature and set baud rate in Controller settings
+- Enhancement: Update UI based on machines feature set not on machine model
+- Enhancement: Added ability to use the toolchange popups of the AIR for manual toolchanges with an ATC
+- Enhancement: Added a UI prompt if gcode cannot be visualised. File is still allowed to run but features dependent on visualisation will be disabled.
 - Fixed: Improved Overheat/Too Cold/temp undefined warning text
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
@@ -39,6 +42,11 @@
 - Change: Improved logging of parser errors of machine responses
 - Change: On USB-serial connect, clear machine's receive buffer by sending "\n;\n"
 - Change: Probing screen overhauled for better visual clarity, defaults to save WCS on all probing operations
+- Change: added keyboard and pendant jogging modes to probing popup. Keyboard jogging is disabled when first opening the popup or clicking into any text field
+- Change: Values in the top bar buttons now shrink in font_size if just a bit too big (by up to 20%), and if still overflowing perform a marquee scroll
+- Change: Workspace Descriptions are now shown (if set) instead of G54 etc
+- Change: Laser and Spindle Top Bar buttons are now combined, and laser mode enable button added to Tool drop down to switch between them
+- Change - Added the instant spindle speed and feed rate overrides to the relavent +/- buttons and gated them behind a controller setting and firmware version 2.1.0c
 
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze

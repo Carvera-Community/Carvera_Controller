@@ -335,7 +335,7 @@
         width: '5dp'
 
 <JogSpeedDropDown>:
-    on_select: app.root.ids.jog_speed_btn.text = tr._('Jog Speed:') + args[1]
+    on_select: app.jog_speed_text = tr._('Jog Speed:') + args[1]
     Button:
         text: tr._('Match Feed')
         size_hint_y: None
@@ -780,7 +780,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-    disabled: app.state != 'Idle' or app.lasering
+    disabled: app.state != 'Idle'
     DropDownHint:
         text: tr._('Tool Status')
     BoxLayout:
@@ -800,10 +800,28 @@
             value: '0.000'
         StatusContent:
             id: status_wpvoltage
-            title: tr._('WP:  ')
+            title: tr._('Probe:  ')
             value: '0.00v'
             disabled: app.model == 'CA1'
-
+    DropDownHint:
+        text: tr._('Laser Mode')
+    BoxLayout:
+        padding: '0.5dp'
+        size_hint_y: None
+        height: '40dp'
+        disabled: app.state != 'Idle'
+        Switch:
+            id: switch
+            canvas.before:
+                Color:
+                    rgba: 50/255, 50/255, 50/255, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            set_flag: False
+            on_active:
+                if self.set_flag: self.set_flag = False
+                else: app.root.update_control('laser_mode', self.active)
     Spinner:
         size_hint_y: None
         height: '40dp'
@@ -826,8 +844,8 @@
     Button:
         text: tr._('Drop')
         size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
+        height: '40dp' if app.has_atc else '0dp'
+        opacity: 1 if app.has_atc else 0
         on_release:
             root.select('Third Item')
             app.root.controller.dropToolCommand()
@@ -846,16 +864,16 @@
     Button:
         text: tr._('Clamp')
         size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
+        height: '40dp' if app.has_atc else '0dp'
+        opacity: 1 if app.has_atc else 0
         on_release:
             root.select('Third Item')
             app.root.controller.clampToolCommand()
     Button:
         text: tr._('Unclamp')
         size_hint_y: None
-        height: '40dp' if app.model != 'CA1' else '0dp'
-        opacity: 1 if app.model != 'CA1' else 0
+        height: '40dp' if app.has_atc else '0dp'
+        opacity: 1 if app.has_atc else 0
         on_release:
             root.select('Third Item')
             app.root.controller.unclampToolCommand()
@@ -1192,6 +1210,23 @@
         on_release:
             root.select('')
 
+<ScrollingLabel>:
+    do_scroll_x: True
+    do_scroll_y: False
+    bar_width: 0
+    BoxLayout:
+        size_hint_x: None
+        width: max(self.minimum_width, root.width)
+        Widget:
+            size_hint_x: 1
+        Label:
+            id: scroll_label
+            size_hint_x: None
+            width: self.texture_size[0]
+            text: root.text
+            font_size: root.effective_font_size
+            color: root.color
+
 <TopDataView>:
     orientation: 'horizontal'
     size_hint_x: 1
@@ -1227,13 +1262,10 @@
         color: tuple(app.active_color) if root.active else root.color
     BoxLayout:
         orientation: 'vertical'
-        Label:
+        ScrollingLabel:
             text: root.main_text
-            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
             font_size: '18sp'
-            text_size: self.size
-            halign: "right"
-            multiline: False
+            color: tuple(app.active_color) if root.scale != 100 else (225/255, 225/255, 225/255, 1)
         Label:
             text: root.minr_text
             color: 160/255, 160/255, 160/255, 1
@@ -3338,14 +3370,14 @@
                 StateBox:
                     id: st_atc_home
                     label: tr._('ATC Limit')
-                    disabled: app.model == 'CA1'
+                    disabled: not app.has_atc
                 StateBox:
                     id: st_probe
                     label: tr._('Probe')
                 StateBox:
                     id: st_tool_sensor
                     label: tr._('Tool Sensor')
-                    disabled: app.model == 'CA1'
+                    disabled: not app.has_atc
                 StateBox:
                     id: st_e_stop
                     label: tr._('E-Stop')
@@ -3436,9 +3468,8 @@
     z_data_view: z_data_view
     a_data_view: a_data_view
     feed_data_view: feed_data_view
-    spindle_data_view: spindle_data_view
+    spindle_laser_data_view: spindle_laser_data_view
     tool_data_view: tool_data_view
-    laser_data_view: laser_data_view
     coord_system_data_view: coord_system_data_view
     float_layout: float_layout
     step_a: step_a
@@ -3552,15 +3583,14 @@
                     root.feed_drop_down.opened = True
 
             TopDataView:
-                id: spindle_data_view
+                id: spindle_laser_data_view
                 data_icon: 'data/spindle.png'
                 tooltip_txt: tr._('Spindle and Vacuum Overrides')
                 main_text: "10000"
                 minr_text: "0.0 C"
                 disabled: app.state == 'N/A'
                 on_release:
-                    root.spindle_drop_down.open(self)
-                    root.spindle_drop_down.opened = True
+                    root.open_spindle_or_laser_drop_down(self)
 
             TopDataView:
                 id: tool_data_view
@@ -3573,17 +3603,6 @@
                     root.tool_drop_down.open(self)
                     root.tool_drop_down.opened = True
 
-            TopDataView:
-                id: laser_data_view
-                data_icon: 'data/laser.png'
-                tooltip_txt: tr._('Laser Settings')
-                main_text: "10000"
-                minr_text: "100%"
-                disabled: app.state == 'N/A'
-                on_release:
-                    root.laser_drop_down.open(self)
-                    root.laser_drop_down.opened = True
-
             
 
             Label:
@@ -3594,6 +3613,7 @@
                 icon_size: 24
                 notify: (app.fw_has_update or app.ctl_has_update) and app.state != 'N/A'
                 on_release:
+                    if root.func_drop_down.parent: root.func_drop_down.parent.remove_widget(root.func_drop_down)
                     root.func_drop_down.open(self)
 
 
@@ -3847,7 +3867,7 @@
                                         spacing: '3dp'
                                         GridBoxLayout:
                                             Button:
-                                                text: tr._('Jog Speed:Max')
+                                                text: app.jog_speed_text
                                                 id: jog_speed_btn
                                                 center: 0.5, 0.5
                                                 height: '35dp'
@@ -3866,13 +3886,16 @@
                                                 id: kb_jog_btn
                                                 text: tr._('Keyboard Jogging')
                                                 height: '35dp'
+                                                state: app.jog_keyboard_enable
                                                 on_release: app.root.toggle_keyboard_jog_control()
                                     
                                         GridBoxLayout:
                                             ToggleButton:
                                                 id: pendant_jogging_en_btn
-                                                text: tr._('No Pendant')
+                                                text: app.jog_pendant_text
+                                                state: app.jog_pendant_enable
                                                 height: '35dp'
+                                                on_release: app.root.toggle_pendant_jog_control()
 
                         BoxLayout:
                             disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and root.allow_jogging_while_machine_running == '0')
@@ -5807,6 +5830,7 @@
             background_color: (250/255, 250/255, 250/255, 1)
             color: (1, 1, 1, 1)
             pos_hint:{'top': 1,'right':1}
+            disabled: app.root.gcode_cannot_visualise
             on_press: root.resume_at_line()
         
         # Cancel option
