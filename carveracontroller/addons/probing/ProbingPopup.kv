@@ -8,6 +8,7 @@
 #:include addons/probing/operations/Angle/AngleSettings.kv
 #:include addons/probing/operations/Calibration/CalibrationSettings.kv
 #:include addons/probing/operations/ProbeTip/ProbeTipSettings.kv
+#:include addons/probing/operations/FourthAxis/FourthAxisSettings.kv
 
 
 
@@ -432,6 +433,36 @@
                             size_hint_x: 0.6
                             CalibrationSettings:
                                 id: calibration_settings_id
+
+                TabbedPanelItem:
+                    text: tr._('4th Axis')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        size_hint:1, 1
+                        spacing:dp(10)
+                        padding:dp(10)
+
+                        GridLayout:
+                            size_hint_x: 0.4
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
+
+                            ProbeButton:
+                                tooltip_txt: tr._('Probe 4th Axis (A-Axis) stock to determine angular position (M465.1)')
+                                tooltip_image: ''
+                                on_press: root.on_fourth_axis_probing_pressed("Level")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_4th_Axis_Level_02.png'
+                            EmptySpace:
+                            EmptySpace:
+                            EmptySpace:
+
+                        BoxLayout:
+                            size_hint_x: 0.6
+                            FourthAxisSettings:
+                                id: fourth_axis_settings
 
                 
 
