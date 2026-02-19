@@ -1,0 +1,158 @@
+<FourthAxisSettings>:
+    ScrollView:
+        do_scroll_x: False
+        size_hint: 1,1
+        bar_width: 4
+        bar_inactive_color: [.7,.7,.7,.9]
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: self.minimum_height
+            spacing:dp(2)
+            row_default_height: dp(28)
+            row_force_default: True
+            padding:dp(1)
+            halign:'right'
+            valign:'top'
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Y Probing Distance (Y):'
+                ToolTipTextInput:
+                    id: YTotalDistance
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("required")
+                    hint_text_color: (0.2,0.5,0.5,0.5)
+                    tooltip_txt: tr._('Total probing distance; machine moves to +Y/2 and -Y/2 from current position')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('YTotalDistance')
+                    on_text: root.setting_changed('YTotalDistance', self.text)
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Probe Height (H):'
+                ToolTipTextInput:
+                    id: ProbeHeight
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("required")
+                    hint_text_color: (0.2,0.5,0.5,0.5)
+                    tooltip_txt: tr._('Distance to probe down from current position')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('ProbeHeight')
+                    on_text: root.setting_changed('ProbeHeight', self.text)
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Feed Rate (F):'
+                ToolTipTextInput:
+                    id: FeedRate
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("300")
+                    hint_text_color: (0.2,0.5,0.5,0.5)
+                    tooltip_txt: tr._('Feed rate for probing (mm/min)')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('FeedRate')
+                    on_text: root.setting_changed('FeedRate', self.text)
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Rapid (K):'
+                ToolTipTextInput:
+                    id: RapidFeedRate
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("800")
+                    hint_text_color: (0.2,0.5,0.5,0.5)
+                    tooltip_txt: tr._('Rapid feed rate for positioning (mm/min)')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('RapidFeedRate')
+                    on_text: root.setting_changed('RapidFeedRate', self.text)
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Repeat (L):'
+                ToolTipTextInput:
+                    id: RepeatCount
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("1")
+                    hint_text_color: (0.2,0.5,0.5,0.5)
+                    tooltip_txt: tr._('Number of probe cycles to repeat')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('RepeatCount')
+                    on_text: root.setting_changed('RepeatCount', self.text)
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Retract (R):'
+                ToolTipTextInput:
+                    id: RetractDistance
+                    size_hint_x: 0.4
+                    font_size: '14dp'
+                    hint_text: tr._("1.5")
+                    hint_text_color: (0.2,0.5,0.5,0.5)
+                    tooltip_txt: tr._('Retract distance from touched surface (mm)')
+                    tooltip_image: ''
+                    multiline: False
+                    halign:'right'
+                    input_type: 'number'
+                    input_filter: 'float'
+                    text: root.get_setting('RetractDistance')
+                    on_text: root.setting_changed('RetractDistance', self.text)
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Rotate A to Level (V):'
+                    hint_text: 'Rotate A axis after probe to make it level'
+                ToolTipSwitch:
+                    id: RotateAfterProbe
+                    size_hint_x: 0.4
+                    tooltip_txt: tr._('Rotate A axis after probe to make it level')
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    active: root.get_setting('RotateAfterProbe') == "1"
+                    on_active: root.setting_changed('RotateAfterProbe', "1" if self.active else "0")
+
+            BoxLayout:
+                ProbeSettingLabel:
+                    label_text: 'Save A to WCS (S):'
+                    hint_text: 'Save A angle to current WCS'
+                ToolTipSwitch:
+                    id: SaveAOffset
+                    size_hint_x: 0.4
+                    tooltip_txt: tr._('Save the A axis offset after probing')
+                    canvas.before:
+                        Color:
+                            rgba: 50/255, 50/255, 50/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    active: root.get_setting('SaveAOffset') == "1"
+                    on_active: root.setting_changed('SaveAOffset', "1" if self.active else "0")
