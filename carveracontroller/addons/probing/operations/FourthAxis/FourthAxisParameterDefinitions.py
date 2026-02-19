@@ -16,5 +16,5 @@ class FourthAxisParameterDefinitions:
     RapidFeedRate = ProbeSettingDefinition("K", "Rapid Rate", False, "Rapid feed rate for positioning (mm/min).")
     RepeatCount = ProbeSettingDefinition("L", "Repeat", False, "Number of probe cycles to repeat.")
     RetractDistance = ProbeSettingDefinition("R", "Retract", False, "Retract distance from touched surface (mm).")
-    RotateAfterProbe = ProbeSettingDefinition("V", "Rotate A after probe", False, "Rotate A axis after probing")
-    SaveAOffset = ProbeSettingDefinition("S", "Save A offset", False, "Save the A axis offset after probing",)
+    RotateAfterProbe = ProbeSettingDefinition("V", "Rotate A after probe", False, "Rotate A axis after probing","1")
+    SaveAOffset = ProbeSettingDefinition("S", "Save A offset", False, "Save the A axis offset after probing","1")
