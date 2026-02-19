@@ -35,6 +35,7 @@
 - Fixed: Only move once per keypress in step mode when keyboard jogging
 - Fixed: Pendant A axis position displayed was in MCS not WCS
 - Fixed: In the file manager, Upload and View buttons should be disabled until a file is selected
+- Fixed: Set A was incorrectly performing a RapidA movement instead of setting the WCS
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file
