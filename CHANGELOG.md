@@ -27,6 +27,7 @@
 - Enhancement: Added ability to use the toolchange popups of the AIR for manual toolchanges with an ATC
 - Enhancement: Added config settings for spindle Max RPM
 - Enhancement: Added a UI prompt if gcode cannot be visualised. File is still allowed to run but features dependent on visualisation will be disabled.
+- Enhancement: Added UI probing section for 4th axis. Currently the only option is stock leveling (M465.1)
 - Fixed: Improved Overheat/Too Cold/temp undefined warning text
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added
@@ -37,6 +38,7 @@
 - Fixed: Pendant A axis position displayed was in MCS not WCS
 - Fixed: In the file manager, Upload and View buttons should be disabled until a file is selected
 - Fixed: missing config settings would disconnect the controller, now issues a warning
+- Fixed: Set A was incorrectly performing a RapidA movement instead of setting the WCS
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
 - Change: After loading a program, the gcode view scrolls to the top of the file

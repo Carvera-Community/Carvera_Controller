@@ -1646,7 +1646,7 @@ class Controller:
         self.sendGCode("G53 G0 X%g Y%g" % (CNC.vars['wcox'], CNC.vars['wcoy']))
 
     def wcsSetA(self, a = None):
-        cmd = "G92.4"
+        cmd = "G10L20P0"
         if a is not None and abs(a) < 3600000.0: cmd += "A" + str(round(a, 5))
 
         self.sendGCode(cmd)
