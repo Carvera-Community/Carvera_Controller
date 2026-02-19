@@ -1243,7 +1243,7 @@ class SetAPopup(ModalView):
         is_valid, error_message = self.validate_inputs()
         if is_valid:
             app = App.get_running_app()
-            app.root.controller.RapMoveA(float(self.ids.txt_offset.text.strip()))
+            app.root.controller.wcsSetA(float(self.ids.txt_offset.text.strip()))
             self.dismiss()
         else:
             app = App.get_running_app()
