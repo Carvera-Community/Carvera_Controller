@@ -37,8 +37,9 @@ class ProbeSettingDefinition:
     description: str
     is_required: bool
 
-    def __init__(self, g_code_param: str, label: str, is_required: bool = False, description: str = ""):
+    def __init__(self, g_code_param: str, label: str, is_required: bool = False, description: str = "", default_val: str = ""):
         self.label = label
         self.code = g_code_param
         self.description = description
         self.is_required = is_required
+        self.default = default_val

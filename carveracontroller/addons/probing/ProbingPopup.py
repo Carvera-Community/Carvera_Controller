@@ -28,6 +28,9 @@ from .operations.Calibration.CalibrationSettings import CalibrationSettings
 from .operations.ProbeTip.ProbeTipOperationType import ProbeTipOperationType
 from .operations.ProbeTip.ProbeTipSettings import ProbeTipSettings
 
+from .operations.FourthAxis.FourthAxisOperationType import FourthAxisOperationType
+from .operations.FourthAxis.FourthAxisSettings import FourthAxisSettings
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,7 @@ class ProbingPopup(ModalView):
         self.angle_settings = None
         self.probeTipSettings = None
         self.calibration_settings = None
+        self.fourth_axis_settings = None
         self.controller = controller
 
         self.preview_popup = ProbingPreviewPopup(controller)
@@ -69,6 +73,7 @@ class ProbingPopup(ModalView):
         self.calibration_settings = self.ids.calibration_settings_id
         self.angle_settings = self.ids.angle_settings
         self.probeTipSettings = self.ids.probeTipSettings
+        self.fourth_axis_settings = self.ids.fourth_axis_settings
 
     def delayed_bind_complete(self, dt):
         #self.angle_settings = self.ids.angle_settings
@@ -118,8 +123,12 @@ class ProbingPopup(ModalView):
     def on_callibration_probing_pressed(self, operation_key: str):
         cfg = self.calibration_settings.get_config()
         the_op = CalibrationOperationType[operation_key].value
-        self.show_preview(the_op,cfg)
+        self.show_preview(the_op, cfg)
 
+    def on_fourth_axis_probing_pressed(self, operation_key: str):
+        cfg = self.fourth_axis_settings.get_config()
+        the_op = FourthAxisOperationType[operation_key].value
+        self.show_preview(the_op, cfg)
 
     def show_preview(self, operation: OperationsBase, cfg):
         missing_definition = operation.get_missing_config(cfg)

@@ -8,6 +8,8 @@
 #:include addons/probing/operations/Angle/AngleSettings.kv
 #:include addons/probing/operations/Calibration/CalibrationSettings.kv
 #:include addons/probing/operations/ProbeTip/ProbeTipSettings.kv
+#:include addons/probing/operations/FourthAxis/FourthAxisSettings.kv
+
 
 
 <ProbingPopup>:
@@ -32,8 +34,12 @@
             padding: dp(3)
 
             TabbedPanel:
+                id:tabbedpanelid
                 do_default_tab: False
                 tab_width: dp(130)
+                bar_width:8
+                bar_color: 1, 0, 0, 1
+                
                 TabbedPanelItem:
                     text: tr._('Outside Corners')
                     GridLayout:
@@ -43,7 +49,7 @@
                         spacing:dp(10)
                         padding:dp(10)
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -75,7 +81,7 @@
                                 image: 'addons/probing/data/icons_1024x768/outside_corner/X-Y+.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             halign: "right"
                             OutsideCornerSettings:
                                 halign: "right"
@@ -90,7 +96,7 @@
                         spacing:dp(10)
                         padding:dp(10)
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -122,7 +128,7 @@
                                 image: 'addons/probing/data/icons_1024x768/inside_corner/inX-Y+.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             InsideCornerSettings:
                                 id: inside_corner_settings
 
@@ -136,7 +142,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 3
                             rows: 3
                             spacing: dp(8)
@@ -194,7 +200,7 @@
                                 #nothing
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             SingleAxisProbeSettings:
                                 id: single_axis_settings
 
@@ -208,7 +214,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -240,7 +246,7 @@
                                 image: 'addons/probing/data/icons_1024x768/inside_center/inside_center_rectangular_pocket.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             BoreSettings:
                                 id: bore_settings
 
@@ -254,7 +260,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -286,7 +292,7 @@
                                 image: 'addons/probing/data/icons_1024x768/outside_center/outside_center_rect_boss.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             BossSettings:
                                 id: boss_settings
 
@@ -300,7 +306,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -333,7 +339,7 @@
                                 image: 'addons/probing/data/icons_1024x768/angle/probe_angle_y_right.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             AngleSettings:
                                 id: angle_settings
 
@@ -347,7 +353,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -378,7 +384,7 @@
                                 image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_BossY.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             ProbeTipSettings:
                                 id: probeTipSettings
                 TabbedPanelItem:
@@ -391,7 +397,7 @@
                         padding:dp(10)
 
                         GridLayout:
-                            size_hint_x: 1
+                            size_hint_x: 0.4
                             cols: 2
                             rows: 2
                             spacing: dp(8)
@@ -424,16 +430,46 @@
                                 image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_Anchor_2.png'
 
                         BoxLayout:
-                            size_hint_x: .5
+                            size_hint_x: 0.6
                             CalibrationSettings:
                                 id: calibration_settings_id
+
+                TabbedPanelItem:
+                    text: tr._('4th Axis')
+                    GridLayout:
+                        cols:2
+                        rows:1
+                        size_hint:1, 1
+                        spacing:dp(10)
+                        padding:dp(10)
+
+                        GridLayout:
+                            size_hint_x: 0.4
+                            cols: 2
+                            rows: 2
+                            spacing: dp(8)
+                            padding: 10
+
+                            ProbeButton:
+                                tooltip_txt: tr._('Probe 4th Axis (A-Axis) stock to determine angular position (M465.1)')
+                                tooltip_image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_4th_Axis_Level_03.png'
+                                on_press: root.on_fourth_axis_probing_pressed("Level")
+                                image: 'addons/probing/data/icons_1024x768/calibration/Calibrate_4th_Axis_Level_02.png'
+                            EmptySpace:
+                            EmptySpace:
+                            EmptySpace:
+
+                        BoxLayout:
+                            size_hint_x: 0.6
+                            FourthAxisSettings:
+                                id: fourth_axis_settings
 
                 
 
         #jogging controls
         BoxLayout:
             spacing: '0dp'
-            size_hint_y: None
+            size_hint_y: 0.3
             height: '120dp'
             GridLayout:
                 cols:5
@@ -441,10 +477,6 @@
                 size_hint:1, 1
                 spacing:dp(0)
                 padding:dp(0)
-                BoxLayout:
-                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
-                    padding: '25dp'
-                    orientation: 'horizontal'
                 #X and Y controls
                 BoxLayout:
                     orientation: 'horizontal'
@@ -503,6 +535,7 @@
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                 BoxLayout:
+                    size_hint_x: 0.1
                     disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                     padding: '0dp'
                     orientation: 'horizontal'
@@ -567,9 +600,60 @@
                                 on_press: app.root.controller.jog("Z-{}".format(root.step_z.text))
                                 on_release: app.root.controller.stopContinuousJog()
                 BoxLayout:
+                    size_hint_x: 0.1
                     disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
-                    padding: '25dp'
+                    padding: '0dp'
                     orientation: 'horizontal'
+                BoxLayout:
+                    orientation: 'vertical'
+                    padding: '3dp'
+                    size_hint_y: 0.7
+                    size_hint_min_y: '79dp'  # 35dp button x2 + 3dp spacing between buttons + 3dp padding top + 3dp padding bottom
+                    BoxLayout:
+                        padding: '3dp'
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(12),]
+                        GridLayout:
+                            cols: 2
+                            rows: 2
+                            spacing: '3dp'
+                            GridBoxLayout:
+                                Button:
+                                    text: app.jog_speed_text
+                                    id: jog_speed_btn_probing
+                                    center: 0.5, 0.5
+                                    height: '35dp'
+                                    on_release: app.root.jog_speed_drop_down.open(self)
+
+                            GridBoxLayout:
+                                Button:
+                                    id: jog_mode_btn_probing
+                                    disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
+                                    text: app.jog_mode_text
+                                    height: '35dp'
+                                    on_release: app.root.toggle_jog_mode()
+
+                            GridBoxLayout:
+                                ToggleButton:
+                                    id: kb_jog_btn_probing
+                                    text: tr._('Keyboard Jogging')
+                                    height: '35dp'
+                                    state: app.jog_keyboard_enable
+                                    on_release: app.root.toggle_keyboard_jog_control()
+                        
+                            GridBoxLayout:
+                                ToggleButton:
+                                    id: pendant_jogging_en_btn_probing
+                                    text: app.jog_pendant_text
+                                    state: app.jog_pendant_enable
+                                    disabled: app.jog_pendant_text == tr._('No Pendant')
+                                    height: '35dp'
+                                    on_release: app.root.toggle_pendant_jog_control()
 
         BoxLayout:
             spacing: '5dp'

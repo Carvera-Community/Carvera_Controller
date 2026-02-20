@@ -5,6 +5,14 @@ import struct
 # import os
 # os.environ["KIVY_METRICS_DENSITY"] = '1'
 
+CONFIG_FILES_TO_BACK_UP = [
+    '/sd/cartesian_nm.grid',
+    '/sd/config.default',
+    '/sd/config.txt',
+    '/sd/custom_tool_slots.txt',
+    '/sd/flex_compensation.dat',
+]
+
 def is_android():
     return 'ANDROID_ARGUMENT' in os.environ or 'ANDROID_PRIVATE' in os.environ or 'ANDROID_APP_PATH' in os.environ
 
@@ -102,13 +110,17 @@ from kivy.properties import StringProperty
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
+from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.popup import Popup
 from kivy.properties import BooleanProperty
 from kivy.graphics import Color, Rectangle, Ellipse, Line, PushMatrix, PopMatrix, Translate, Rotate
 from kivy.properties import ObjectProperty, NumericProperty, ListProperty
 from kivy.config import Config
+from kivy.factory import Factory
 from kivy.metrics import Metrics, dp
 
 # Custom Property to monitor CNC.vars["sw_light"] changes
@@ -200,11 +212,12 @@ def load_halt_translations(tr: translation.Lang):
         6:  tr._("ATC Invalid Tool Number"),
         7:  tr._("ATC Drop Tool Fail"),
         8:  tr._("ATC Position Occupied"),
-        9:  tr._("Spindle Overheated"),
+        9:  tr._("Spindle Temp Error"),
         10: tr._("Soft Limit Triggered"),
         11: tr._("Cover opened when playing"),
         12: tr._("Wireless probe dead or not set"),
         13: tr._("Emergency stop button pressed"),
+        14: tr._("Electronics Temp Error"),
         16: tr._("3D probe crash detected"),
         # Need to reset the machine
         21: tr._("Hard Limit Triggered, reset needed"),
@@ -243,8 +256,76 @@ def register_images(base_path):
     icons_path = os.path.join(base_path)
     resource_add_path(icons_path)
 
+class MDITextInput(TextInput):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.past_mdi_commands = []
+        self.active_past_mdi_index = 0
+        self.bind(focus=self.on_focus)
+
+    def on_focus(self, instance, have_focus):
+        if have_focus:
+            Window.bind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+
+    def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
+        ENTER_KEY = 13
+        UP_ARROW_KEY = 273
+        DOWN_ARROW_KEY = 274
+        if self.focus and 'ctrl' in modifiers and key == ENTER_KEY:
+            self.send_mdi_command()
+            return True
+        if self.focus and key == UP_ARROW_KEY:
+            cursor_is_at_top_left = self.cursor_index() == 0
+            can_move_backward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index > 0
+            if cursor_is_at_top_left and can_move_backward_in_history:
+                self.active_past_mdi_index = max(0, self.active_past_mdi_index-1)
+                self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                self.cursor = (0, 0)
+                return True
+            else:
+                col, row = self.cursor
+                if row == 0:
+                    self.cursor = (0, 0)
+                    return True
+                else:
+                    # Let the TextInput handle moving up a line
+                    return False
+            
+        if self.focus and key == DOWN_ARROW_KEY:
+            cursor_is_at_bottom_right = self.cursor_index() == len(self.text)
+            can_move_forward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index < len(self.past_mdi_commands)-1
+            if cursor_is_at_bottom_right and can_move_forward_in_history:
+                self.active_past_mdi_index = min(len(self.past_mdi_commands)-1, self.active_past_mdi_index+1)
+                self.text = self.past_mdi_commands[self.active_past_mdi_index]
+                return True
+            else:
+                col, row = self.cursor
+                lines_in_command = self.text.count('\n')
+                if row == lines_in_command:
+                    self.cursor = (len(self.text), row)
+                    return True
+                else:
+                    # Let the TextInput handle moving down a line
+                    return False
+
+        return False
+
+    def send_mdi_command(self):
+        cmd_to_send = self.text.strip()
+        if not cmd_to_send:
+            return
+        self.past_mdi_commands.append(cmd_to_send)
+        self.active_past_mdi_index = len(self.past_mdi_commands)
+        app = App.get_running_app()
+        app.root.send_cmd()
 
 class GcodePlaySlider(Slider):
+    def __init__(self, **kwargs):
+        super(GcodePlaySlider, self).__init__(**kwargs)
+        self._pending_line_update = None  # Track pending scheduled line update
+
     def on_touch_down(self, touch):
         if self.disabled:
             return
@@ -252,6 +333,8 @@ class GcodePlaySlider(Slider):
         if released and self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
+            
+            self._update_line_highlighting() # Add line highlighting when slider is moved
             return True
         return released
 
@@ -262,10 +345,38 @@ class GcodePlaySlider(Slider):
         if self.collide_point(*touch.pos):
             app = App.get_running_app()
             app.root.gcode_viewer.set_pos_by_distance(self.value * app.root.gcode_viewer_distance / 1000)
-            # float_number = self.value * app.root.selected_file_line_count / 1000
-            # app.root.gcode_viewer.set_distance_by_lineidx(int(float_number), float_number - int(float_number))
+            
+            self._update_line_highlighting() # Add line highlighting when slider is moved
             return True
         return released
+
+    def _update_line_highlighting(self):
+        """Update line highlighting in the file viewer based on current slider position"""
+        # Cancel any pending update
+        if self._pending_line_update is not None:
+            Clock.unschedule(self._pending_line_update)
+            self._pending_line_update = None
+        
+        # Schedule update for next frame
+        self._pending_line_update = Clock.schedule_once(self._do_update_line_highlighting, 0)
+    
+    def _do_update_line_highlighting(self, dt):
+        """Actually perform the line highlighting update on the next frame"""
+        self._pending_line_update = None
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Get current position and line number from gcode viewer
+            current_pos = app.root.gcode_viewer.get_cur_pos_index()
+            if current_pos and len(current_pos) > 1:
+                line_number = current_pos[1]
+                if line_number > 0 and hasattr(app.root, 'gcode_rv'):
+                    app.root.gcode_rv.set_selected_line(line_number)
+        
+    def on_value(self, instance, value):
+        """Called when the slider value changes (both programmatically and manually)"""
+        # Disable this callback to prevent conflicts with programmatic updates
+        # Line highlighting will only be updated through touch methods
+        pass
 
 class FloatBox(FloatLayout):
     touch_interval = 0
@@ -316,6 +427,9 @@ class UnlockPopup(ModalView):
     def on_dismiss(self):
         self.showing = False
 
+class SelectAndCalibrateProbePopup(ModalView):
+    def __init__(self, **kwargs):
+        super(SelectAndCalibrateProbePopup, self).__init__(**kwargs)
 
 class MessagePopup(ModalView):
     def __init__(self, **kwargs):
@@ -402,12 +516,53 @@ class InputPopup(ModalView):
     def __init__(self, **kwargs):
         super(InputPopup, self).__init__(**kwargs)
 
+class ManualWifiPopup(ModalView):
+    cache_var1 = StringProperty('')
+    cache_var2 = StringProperty('')
+    cache_var3 = StringProperty('')
+    def __init__(self, **kwargs):
+        super(ManualWifiPopup, self).__init__(**kwargs)
+
 class ProgressPopup(ModalView):
     progress_text = StringProperty('')
     progress_value = NumericProperty('0')
 
     def __init__(self, **kwargs):
         super(ProgressPopup, self).__init__(**kwargs)
+
+class GCodeLineContextMenu(FloatLayout):
+    """Context menu for GCode file viewer lines"""
+    line_number = NumericProperty(0)
+    
+    def __init__(self, line_number, **kwargs):
+        super(GCodeLineContextMenu, self).__init__(**kwargs)
+        self.line_number = line_number
+        
+    def on_touch_down(self, touch):
+        """Handle touch events - dismiss menu if touch is outside"""
+        if not self.collide_point(*touch.pos):
+            # Touch outside the menu - dismiss it
+            self.dismiss()
+            return False
+        
+        # Prevent right-click from opening another context menu
+        if hasattr(touch, 'button') and touch.button == 'right':
+            return True
+        
+        return super(GCodeLineContextMenu, self).on_touch_down(touch)
+        
+    def resume_at_line(self):
+        """Enable resume at line checkbox and set the line number"""
+        app = App.get_running_app()
+
+        app.root.coord_popup.cbx_startline.active = True
+        app.root.coord_popup.txt_startline.text = str(self.line_number)
+        self.parent.remove_widget(self)
+    
+    def dismiss(self):
+        """Close the context menu"""
+        if self.parent:
+            self.parent.remove_widget(self)
 
 class OriginPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
@@ -631,6 +786,23 @@ class PairingPopup(ModalView):
             self.pairing_note = self.pairing_string['timeout']
             self.countdown_event.cancel()
 
+class PickFilePopup(FloatLayout):
+    on_select = ObjectProperty(None)
+    on_cancel = ObjectProperty(None)
+
+    def __init__(self, on_select, on_cancel=None, **kwargs):
+        super(PickFilePopup, self).__init__(**kwargs)
+        self.on_select = on_select
+        self.on_cancel = on_cancel
+
+    def on_select_pressed(self, directory, filename):
+        if self.on_select:
+            self.on_select(directory, filename)
+
+    def on_cancel_pressed(self):
+        if self.on_cancel:
+            self.on_cancel()
+
 class UpgradePopup(ModalView):
     def __init__(self, **kwargs):
         super(UpgradePopup, self).__init__(**kwargs)
@@ -727,7 +899,7 @@ class FilePopup(ModalView):
             if self.local_rv.view_adapter.views[key].selected and not self.local_rv.view_adapter.views[key].selected_dir:
                has_select = True
                break
-        self.btn_view.disabled = (not self.firmware_mode and not has_select) or (self.firmware_mode and app.state != 'Idle')
+        self.btn_view.disabled = not has_select or self.firmware_mode
         self.btn_upload.disabled = not has_select or app.state != 'Idle'
 
     # -----------------------------------------------------------------------
@@ -794,8 +966,15 @@ class CoordPopup(ModalView):
     def populate_spinner(self, dt):
         if "background_image_spinner" in self.ids:
             self.ids.background_image_spinner.values = ["None"] + self.background_image_files
+            saved_image = Config.get('carvera', 'background_image')
+            if saved_image in self.ids.background_image_spinner.values:
+                self.ids.background_image_spinner.text = saved_image
+                self.update_background_image(saved_image)
 
     def update_background_image(self, filename):
+        Config.set('carvera', 'background_image', filename)
+        Config.write()
+
         if filename != "None":
             old_source = os.path.join(os.path.dirname(__file__), 'data/play_file_image_backgrounds', filename)
             new_source = os.path.join(self.user_play_file_image_dir, filename)
@@ -1064,7 +1243,7 @@ class SetAPopup(ModalView):
         is_valid, error_message = self.validate_inputs()
         if is_valid:
             app = App.get_running_app()
-            app.root.controller.RapMoveA(float(self.ids.txt_offset.text.strip()))
+            app.root.controller.wcsSetA(float(self.ids.txt_offset.text.strip()))
             self.dismiss()
         else:
             app = App.get_running_app()
@@ -1126,7 +1305,32 @@ class WCSSettingsPopup(ModalView):
         self.wcs_names = wcs_names
         self.current_active_wcs = None  # Track current active WCS
         self.has_changes = False  # Track if any values have changed
-    
+
+    def load_wcs_descriptions(self):
+        """Update the WCS descriptions when popup opens"""
+        self.ids.g54_description.text = Config.get('carvera', 'g54_description')
+        self.ids.g55_description.text = Config.get('carvera', 'g55_description')
+        self.ids.g56_description.text = Config.get('carvera', 'g56_description')
+        self.ids.g57_description.text = Config.get('carvera', 'g57_description')
+        self.ids.g58_description.text = Config.get('carvera', 'g58_description')
+        self.ids.g59_description.text = Config.get('carvera', 'g59_description')
+
+    def change_wcs_description(self, wcs):
+        """Change the WCS description when the WCS is changed"""
+        if wcs == 'G54':
+            Config.set('carvera', 'g54_description', self.ids.g54_description.text)
+        elif wcs == 'G55':
+            Config.set('carvera', 'g55_description', self.ids.g55_description.text)
+        elif wcs == 'G56':
+            Config.set('carvera', 'g56_description', self.ids.g56_description.text)
+        elif wcs == 'G57':
+            Config.set('carvera', 'g57_description', self.ids.g57_description.text)
+        elif wcs == 'G58':
+            Config.set('carvera', 'g58_description', self.ids.g58_description.text)
+        elif wcs == 'G59':
+            Config.set('carvera', 'g59_description', self.ids.g59_description.text)
+        Config.write()
+
     def on_open(self):
         """Parse WCS values from machine and populate fields when popup opens"""
         if self.controller:
@@ -1134,6 +1338,8 @@ class WCSSettingsPopup(ModalView):
             self.controller.wcs_popup_callback = self.populate_wcs_values
             # Request parameters from machine
             self.controller.viewWCS()
+            # Update WCS descriptions
+            self.load_wcs_descriptions()
             # Update UI based on firmware type
             Clock.schedule_once(lambda dt: self.update_ui_for_firmware_type(), 0.2)
     
@@ -1167,7 +1373,7 @@ class WCSSettingsPopup(ModalView):
                     if hasattr(self.ids, f'{wcs.lower()}_a'):
                         self.ids[f'{wcs.lower()}_a'].text = f"{a:.3f}"
                     if hasattr(self.ids, f'{wcs.lower()}_r'):
-                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.2f}"
+                        self.ids[f'{wcs.lower()}_r'].text = f"{rotation:.3f}"
         
         Clock.schedule_once(update_ui, 0)
         
@@ -1221,9 +1427,7 @@ class WCSSettingsPopup(ModalView):
                 if 'R' in changed_values:
                     cmd += f"R{changed_values['R']:.1f}"
                 self.controller.executeCommand(cmd)
-                
-                
-    
+               
     def clear_wcs_offsets(self, wcs):
         """Clear all offsets (X, Y, Z, A) for the specified WCS"""
         # Set all offset fields to 0.000
@@ -1236,6 +1440,7 @@ class WCSSettingsPopup(ModalView):
             self.ids[f'{wcs.lower()}_z'].text = '0.000'
         if hasattr(self.ids, f'{wcs.lower()}_a'):
             self.ids[f'{wcs.lower()}_a'].text = '0.000'
+        self.clear_wcs_rotation(wcs)
         self.check_for_changes()
     
     def clear_wcs_rotation(self, wcs):
@@ -1260,14 +1465,12 @@ class WCSSettingsPopup(ModalView):
         # Update all activate buttons
         for wcs in self.wcs_names:
             wcs_txt = wcs.replace('.', '_')
-            button_id = f'{wcs_txt.lower()}_activate'
+            button_id = wcs_txt
             if hasattr(self.ids, button_id):
                 button = getattr(self.ids, button_id)
                 if wcs == active_wcs:
-                    button.text = 'ACTIVE'
                     button.color = (0/255, 255/255, 255/255, 1)  # Blue color
                 else:
-                    button.text = 'Activate'
                     button.color = (1, 1, 1, 1)  # Default color
     
     def activate_wcs(self, wcs):
@@ -1314,6 +1517,7 @@ class WCSSettingsPopup(ModalView):
             # Update clear all button
             if hasattr(self.ids, 'btn_clear_all'):
                 self.ids.btn_clear_all.disabled = not is_community
+            self.check_for_changes()
         except Exception as e:
             logger.error(f"Error updating UI for firmware type: {e}")
     
@@ -1390,13 +1594,14 @@ class SetRotationPopup(ModalView):
     def on_open(self):
         """Set the default rotation value when popup opens"""
         rotation_angle = self.cnc.vars.get("rotation_angle", 0.0)
-        self.ids.txt_rotation.text = f"{rotation_angle:.1f}"
+        self.ids.txt_rotation.text = f"{rotation_angle:.3f}"
 
 class MakeraConfigPanel(SettingsWithSidebar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.register_type('pendant', SettingPendantSelector)
         self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
+        self.register_type('colorpicker', ui.SettingColorPicker)
 
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
@@ -1404,6 +1609,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
             if section in ['carvera', 'graphics', 'kivy']:
                 app.root.controller_setting_change_list[key] = value
                 app.root.config_popup.btn_apply.disabled = False
+            elif section == 'Backup':
+                app.root.start_back_up_config()
+                app.root.config_popup.btn_apply.disabled = True
             elif section != 'Restore':
                 app.root.setting_change_list[key] = Utils.to_config(app.root.setting_type_list[key], value).strip()
                 app.root.config_popup.btn_apply.disabled = False
@@ -1516,9 +1724,10 @@ class CNCWorkspace(Widget):
         self.config = config
 
     def update_background_image(self, new_source):
-        if self.bg_rect and new_source != "None":
-            self.bg_rect.source = new_source
+        if new_source != "None":
             self.bg_image = new_source
+            if self.bg_rect:
+                self.bg_rect.source = new_source
         else:
             self.bg_image = ""
         self.draw()
@@ -1671,6 +1880,8 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
+    touch_start_time = 0
+    touch_start_pos = None
 
     def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
         mod = "ctrl" if sys.platform == "win32" else "meta"
@@ -1691,11 +1902,76 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         if super(SelectableLabel, self).on_touch_down(touch):
             return True
         if self.collide_point(*touch.pos) and self.selectable:
-            if touch.is_double_tap:
+            # Store touch start time and position for long press detection
+            self.touch_start_time = time.time()
+            self.touch_start_pos = touch.pos
+            
+            # Check for right click (button == 'right') or long press
+            if hasattr(touch, 'button') and touch.button == 'right':
+                self._show_context_menu(touch.pos)
+                return True
+            elif touch.is_double_tap:
                 app = App.get_running_app()
                 app.root.manual_cmd.text = self.text.strip()
                 Clock.schedule_once(app.root.refocus_cmd)
             return self.parent.select_with_touch(self.index, touch)
+
+    def on_touch_up(self, touch):
+        ''' Handle touch up for long press detection '''
+        if self.collide_point(*touch.pos) and self.selectable:
+            # Check if this was a long press
+            if (self.touch_start_pos and 
+                time.time() - self.touch_start_time >= 0.5 and  # 0.5 seconds for long press
+                self._is_same_position(touch.pos, self.touch_start_pos)):
+                self._show_context_menu(touch.pos)
+                return True
+        return super(SelectableLabel, self).on_touch_up(touch)
+
+    def _is_same_position(self, pos1, pos2, tolerance=10):
+        """Check if two positions are within tolerance of each other"""
+        return abs(pos1[0] - pos2[0]) <= tolerance and abs(pos1[1] - pos2[1]) <= tolerance
+
+    def _show_context_menu(self, pos):
+        """Show the context menu for this line"""
+        app = App.get_running_app()
+        
+        # Check if a context menu is already open and dismiss it
+        for child in app.root.children:
+            if isinstance(child, GCodeLineContextMenu):
+                child.dismiss()
+        
+        current_page = app.curr_page
+        actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+        
+        # Create and show the context menu
+        context_menu = GCodeLineContextMenu(actual_line_number)
+        
+        # Add to the main window first so it gets properly sized
+        app.root.add_widget(context_menu)
+        
+        self._position_context_menu(context_menu, pos)
+    
+    def _position_context_menu(self, context_menu, pos):
+        """Position the context menu after layout is complete"""
+        app = App.get_running_app()
+        
+        window_width = Window.width
+        window_height = Window.height
+        
+        # Get the actual size of the context menu after layout
+        menu_width = context_menu.width
+        menu_height = context_menu.height
+        
+        # For right-click (desktop): position at mouse pointer
+        # Convert touch position to window coordinates
+        window_pos = self.to_window(pos[0], pos[1])
+        
+        # Position the menu slightly offset from the mouse pointer (typical context menu behavior)
+        # Try to position below and to the right of the cursor, but keep it on screen
+        x = min(max(window_pos[0] + 5, 10), window_width - menu_width - 10)
+        y = min(max(window_pos[1] - menu_height - 5, 10), window_height - menu_height - 10)
+        
+        context_menu.pos = (x, y)
 
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
@@ -1704,6 +1980,185 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
             Window.unbind(on_key_down=self.on_keyboard_down)
         else:
             Window.bind(on_key_down=self.on_keyboard_down)
+            # Commit selection immediately so it isn't overwritten by layout/other updates.
+            # Use same iteration as GCodeRV.set_selected_line (views is a dict keyed by index).
+            for key in rv.view_adapter.views:
+                view = rv.view_adapter.views[key]
+                if view and hasattr(view, 'selected') and view.selected is not None:
+                    view.selected = (key == index)
+            # Defer only 3D viewer and slider update to avoid re-entry.
+            Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
+
+    def _update_3d_viewer_and_slider(self, selected_index=None):
+        """Update the 3D viewer and progress slider when a line is selected in the file viewer.
+        selected_index: when provided (e.g. from a scheduled callback), use this instead of self.index
+        since RecycleView may have recycled the widget by the time the callback runs."""
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            # Check if gcode_viewer has valid data before trying to use it
+            gcode_viewer = app.root.gcode_viewer
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return
+            if not hasattr(gcode_viewer, 'lengths') or not gcode_viewer.lengths:
+                return
+            
+            # Use provided index when from deferred callback (RecycleView reuses views)
+            index = selected_index if selected_index is not None else self.index
+            current_page = app.curr_page
+            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + index + 1
+            
+            # Skip set_selected_line in frame callback: GcodeViewer calls it from set_pos_by_distance
+            # before cur_line_index is updated, so it would overwrite our selection with the old line.
+            app.root._skip_next_set_selected_line_from_callback = True
+            try:
+                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            except (IndexError, AttributeError):
+                pass
+            
+            # Schedule the progress slider update for the next frame
+            if hasattr(app.root, 'gcode_play_slider') and app.root.gcode_play_slider:
+                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
+                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, 'value', slider_value), 0)
+
+
+class GCodeRow(RecycleDataViewBehavior, BoxLayout):
+    """Single row in GCodeRV: line number, optional resume-flag icon, gcode text."""
+    index = None
+    selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
+    line_no = NumericProperty(0)
+    text = StringProperty('')
+    color = ListProperty([1, 1, 1, 1])
+    is_resume_line = BooleanProperty(False)
+    touch_start_time = 0
+    touch_start_pos = None
+    _resume_bind_uids = None  # [txt_uid, cbx_uid] for unbind on recycle
+
+    def refresh_view_attrs(self, rv, index, data):
+        self.index = index
+        # Unbind previous resume-line updates when recycled
+        if self._resume_bind_uids:
+            app = App.get_running_app()
+            if hasattr(app.root, 'coord_popup') and app.root.coord_popup:
+                cp = app.root.coord_popup
+                if hasattr(cp, 'txt_startline') and cp.txt_startline and self._resume_bind_uids[0] is not None:
+                    cp.txt_startline.funbind('text', self._resume_bind_uids[0])
+                if hasattr(cp, 'cbx_startline') and cp.cbx_startline and self._resume_bind_uids[1] is not None:
+                    cp.cbx_startline.funbind('active', self._resume_bind_uids[1])
+            self._resume_bind_uids = None
+        super(GCodeRow, self).refresh_view_attrs(rv, index, data)
+        self._update_is_resume_line()
+        # Bind so flag updates when user changes resume line in popup
+        app = App.get_running_app()
+        txt_uid = cbx_uid = None
+        if hasattr(app.root, 'coord_popup') and app.root.coord_popup:
+            cp = app.root.coord_popup
+            if hasattr(cp, 'txt_startline') and cp.txt_startline:
+                txt_uid = cp.txt_startline.fbind('text', self._update_is_resume_line)
+            if hasattr(cp, 'cbx_startline') and cp.cbx_startline:
+                cbx_uid = cp.cbx_startline.fbind('active', self._update_is_resume_line)
+        self._resume_bind_uids = [txt_uid, cbx_uid]
+
+    def _update_is_resume_line(self, *args):
+        app = App.get_running_app()
+        if not hasattr(app.root, 'coord_popup') or not app.root.coord_popup:
+            self.is_resume_line = False
+            return
+        cp = app.root.coord_popup
+        if not hasattr(cp, 'cbx_startline') or not cp.cbx_startline or not hasattr(cp, 'txt_startline') or not cp.txt_startline:
+            self.is_resume_line = False
+            return
+        try:
+            self.is_resume_line = bool(cp.cbx_startline.active and str(int(self.line_no)) == cp.txt_startline.text.strip())
+        except (ValueError, TypeError):
+            self.is_resume_line = False
+
+    def on_touch_down(self, touch):
+        if super(GCodeRow, self).on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            self.touch_start_time = time.time()
+            self.touch_start_pos = touch.pos
+            if hasattr(touch, 'button') and touch.button == 'right':
+                self._show_context_menu(touch.pos)
+                return True
+            elif touch.is_double_tap:
+                app = App.get_running_app()
+                app.root.manual_cmd.text = self.text.strip()
+                Clock.schedule_once(app.root.refocus_cmd)
+            return self.parent.select_with_touch(self.index, touch)
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos) and self.selectable:
+            if (self.touch_start_pos and
+                    time.time() - self.touch_start_time >= 0.5 and
+                    abs(touch.pos[0] - self.touch_start_pos[0]) <= 10 and
+                    abs(touch.pos[1] - self.touch_start_pos[1]) <= 10):
+                self._show_context_menu(touch.pos)
+                return True
+        return super(GCodeRow, self).on_touch_up(touch)
+
+    def _show_context_menu(self, pos):
+        app = App.get_running_app()
+        for child in app.root.children:
+            if isinstance(child, GCodeLineContextMenu):
+                child.dismiss()
+        current_page = app.curr_page
+        actual_line_number = (current_page - 1) * MAX_LOAD_LINES + self.index + 1
+        context_menu = GCodeLineContextMenu(actual_line_number)
+        app.root.add_widget(context_menu)
+        self._position_context_menu(context_menu, pos)
+
+    def _position_context_menu(self, context_menu, pos):
+        app = App.get_running_app()
+        window_pos = self.to_window(pos[0], pos[1])
+        x = min(max(window_pos[0] + 5, 10), Window.width - context_menu.width - 10)
+        y = min(max(window_pos[1] - context_menu.height - 5, 10), Window.height - context_menu.height - 10)
+        context_menu.pos = (x, y)
+
+    def apply_selection(self, rv, index, is_selected):
+        self.selected = is_selected
+        if not is_selected:
+            Window.unbind(on_key_down=self.on_keyboard_down)
+        else:
+            Window.bind(on_key_down=self.on_keyboard_down)
+            for key in rv.view_adapter.views:
+                view = rv.view_adapter.views[key]
+                if view and hasattr(view, 'selected') and view.selected is not None:
+                    view.selected = (key == index)
+            Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
+
+    def _update_3d_viewer_and_slider(self, selected_index=None):
+        app = App.get_running_app()
+        if hasattr(app.root, 'gcode_viewer') and app.root.gcode_viewer:
+            gcode_viewer = app.root.gcode_viewer
+            if not hasattr(gcode_viewer, 'raw_linenumbers') or not gcode_viewer.raw_linenumbers:
+                return
+            if not hasattr(gcode_viewer, 'lengths') or not gcode_viewer.lengths:
+                return
+            index = selected_index if selected_index is not None else self.index
+            current_page = app.curr_page
+            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + index + 1
+            app.root._skip_next_set_selected_line_from_callback = True
+            try:
+                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
+            except (IndexError, AttributeError):
+                pass
+            if hasattr(app.root, 'gcode_play_slider') and app.root.gcode_play_slider:
+                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
+                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, 'value', slider_value), 0)
+
+    def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        mod = "ctrl" if sys.platform == "win32" else "meta"
+        if text == 'c' and self.selected and mod in modifiers:
+            Clipboard.copy(self.text.strip())
+            return True
+        return False
+
+
+Factory.register('GCodeRow', cls=GCodeRow)
 
 
 class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
@@ -1728,6 +2183,8 @@ class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
                 rv = self.parent.recycleview
                 if rv.data[self.index]['is_dir']:
                     rv.child_dir(rv.data[self.index]['filename'])
+                else:
+                    rv.dispatch('on_double_tap')
                 return True
             return self.parent.select_with_touch(self.index, touch)
 
@@ -1763,21 +2220,27 @@ class DataRV(RecycleView):
     default_sort_reverse = {'name': False, 'date': True, 'size' : False}
     search_event = None
 
-    curr_selected_file = ''
-    curr_selected_filesize = 0
+    curr_selected_file = StringProperty('')
+    curr_selected_filesize = NumericProperty(0)
+    curr_selected_is_dir = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         super(DataRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
     # -----------------------------------------------------------------------
     def on_select(self):
         pass
+        
+    def on_double_tap(self):
+        pass
 
     # -----------------------------------------------------------------------
     def set_curr_selected_file(self, filename, filesize):
-        self.curr_selected_file =  os.path.join(self.curr_dir, filename)
+        self.curr_selected_file = os.path.join(self.curr_dir, filename)
         self.curr_selected_filesize = filesize
+        self.curr_selected_is_dir = os.path.isdir(self.curr_selected_file)
 
     # -----------------------------------------------------------------------
     def clear_selection(self):
@@ -1860,6 +2323,7 @@ class RemoteRV(DataRV):
     def __init__(self, **kwargs):
         super(RemoteRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
 
         self.base_dir = '/sd/gcodes'
         self.base_dir_win = '\\sd\\gcodes'
@@ -1888,9 +2352,13 @@ class RemoteRV(DataRV):
         self.curr_file_list_buff = []
 
         app = App.get_running_app()
-        app.root.loadRemoteDir(new_dir)
+        threading.Thread(target=app.root.loadRemoteDir, args=(new_dir,), daemon=True).start()
         self.curr_dir = str(new_dir)
         # self.curr_dir_name = os.path.normpath(self.curr_dir)
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        app.root.check_and_download()
 
 # -----------------------------------------------------------------------
 # Local Recycle View
@@ -1900,6 +2368,7 @@ class LocalRV(DataRV):
     def __init__(self, **kwargs):
         super(LocalRV, self).__init__(**kwargs)
         self.register_event_type('on_select')
+        self.register_event_type('on_double_tap')
         if kivy_platform == 'android':
             self.curr_dir = os.path.abspath('.carveracontroller/gcodes')
             if not os.path.exists(self.curr_dir):
@@ -1980,6 +2449,13 @@ class LocalRV(DataRV):
 
         if self.curr_path_list[0] == self.base_dir:
             self.curr_path_list[0] = 'root'
+    
+    def on_double_tap(self):
+        app = App.get_running_app()
+        if app.root.file_popup.firmware_mode:
+            app.root.check_and_upload()
+        else:
+            app.root.check_upload_and_select()
 
 # -----------------------------------------------------------------------
 # GCode Recycle View
@@ -1997,14 +2473,7 @@ class GCodeRV(RecycleView):
         super(GCodeRV, self).on_scroll_stop(touch)
         self.scroll_time = time.time()
 
-    def select_line(self, *args):
-        old_line = self.view_adapter.get_visible_view(self.old_selected_line)
-        new_line = self.view_adapter.get_visible_view(self.new_selected_line)
-        if old_line:
-            old_line.selected = False
-        if new_line:
-            new_line.selected = True
-            self.old_selected_line = self.new_selected_line
+
 
     def set_selected_line(self, line):
         app = App.get_running_app()
@@ -2012,18 +2481,28 @@ class GCodeRV(RecycleView):
         if aiming_page != app.curr_page:
             app.root.load_page(aiming_page)
         line = line % MAX_LOAD_LINES
-        if line != self.old_selected_line:
-            if self.data_length > 0 and line < self.data_length:
-                page_lines = len(self.view_adapter.views)
-                self.new_selected_line = line - 1
-                Clock.schedule_once(self.select_line, 0)
+        if self.data_length > 0 and line < self.data_length:
+            page_lines = len(self.view_adapter.views)
+            self.new_selected_line = line - 1
+
+            # Schedule all UI attribute updates for the next frame to avoid re-entry loops
+            def update_selection_ui(dt):
+                for key in self.view_adapter.views:
+                    view = self.view_adapter.views[key]
+                    if view and hasattr(view, 'selected') and view.selected is not None:
+                        view.selected = False
+                new_line = self.view_adapter.get_visible_view(self.new_selected_line)
+                if new_line:
+                    new_line.selected = True
+                    self.old_selected_line = self.new_selected_line
                 if time.time() - self.scroll_time > 3:
-                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length -  page_lines / 2 + 1, 1.0, 0.0)
+                    scroll_value = Utils.translate(line + 1, page_lines / 2 - 1, self.data_length - page_lines / 2 + 1, 1.0, 0.0)
                     if scroll_value < 0:
                         scroll_value = 0
                     if scroll_value > 1:
                         scroll_value = 1
                     self.scroll_y = scroll_value
+            Clock.schedule_once(update_selection_ui, 0)
 
 # -----------------------------------------------------------------------
 # Manual Recycle View
@@ -2108,11 +2587,15 @@ class Makera(RelativeLayout):
     reconnection_popup = ObjectProperty()
     progress_popup = ObjectProperty()
     input_popup = ObjectProperty()
+    manual_wifi_popup = ObjectProperty()
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
+    pendant_jog_control = BooleanProperty(False)
+    _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
+    gcode_cannot_visualise = BooleanProperty(False)
 
     probing_popup = ObjectProperty()
     coord_config = {}
@@ -2151,8 +2634,12 @@ class Makera(RelativeLayout):
     light_state = LightProperty(False)
 
     played_lines = 0
+    _remaining_anchor_sec = 0.0
+    _remaining_anchor_time = 0.0
+    _progress_smooth_clock = None
 
     show_update = True
+    instantFSoverride = True
     fw_upd_text = ''
     fw_version_new = ''
     fw_version = ''
@@ -2209,13 +2696,16 @@ class Makera(RelativeLayout):
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
 
+        Window.bind(on_request_close=self.on_request_close)
+        Window.bind(on_key_down=self._global_keyboard_keydown)
+
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
         self.file_popup = FilePopup()
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
-        self.controller = Controller(self.cnc, self.execCallback)
+        self.controller = Controller(self.cnc, self.execCallback, Config.getboolean('carvera', 'log_sent_receive', fallback=False))
         # Set up reconnection callbacks
         self.controller.set_reconnection_callbacks(self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success)
         # Fill basic global variables
@@ -2229,10 +2719,10 @@ class Makera(RelativeLayout):
                 'y_offset': 0.0
             },
             'margin': {
-                'active': True
+                'active': False
             },
             'zprobe': {
-                'active': True,
+                'active': False,
                 'origin': 2,
                 'x_offset': 5.0,
                 'y_offset': 5.0
@@ -2250,9 +2740,12 @@ class Makera(RelativeLayout):
         }
         self.update_coord_config()
         self.coord_popup = CoordPopup(self.coord_config)
+        self.bind(gcode_cannot_visualise=self._update_startline_checkbox_disabled)
+        self._update_startline_checkbox_disabled()
         self.xyz_probe_popup = XYZProbePopup()
         self.pairing_popup = PairingPopup()
         self.upgrade_popup = UpgradePopup()
+        self.pick_file_popup = None
         self.language_popup = LanguagePopup()
         self.language_popup.sp_language.values = translation.LANGS.values()
         self.language_popup.sp_language.text =  'English'
@@ -2280,9 +2773,11 @@ class Makera(RelativeLayout):
         self.confirm_popup = ConfirmPopup()
         self.unlock_popup = UnlockPopup()
         self.message_popup = MessagePopup()
+        self.select_probe_popup = SelectAndCalibrateProbePopup()
         self.reconnection_popup = ReconnectionPopup()
         self.progress_popup = ProgressPopup()
         self.input_popup = InputPopup()
+        self.manual_wifi_popup = ManualWifiPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
@@ -2302,9 +2797,12 @@ class Makera(RelativeLayout):
 
         # init gcode viewer
         self.gcode_viewer = GCodeViewer()
+        self.gcode_viewer.high_precision_time_estimate = Config.getboolean('carvera', 'high_precision_reamining_time_estimate', fallback=True)
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
+        self.gcode_viewer.set_error_popup_callback(self._on_gcode_cannot_visualise)
+        self.gcode_viewer.time_estimate_progress_callback = self._on_time_estimate_progress
 
         # init settings
         self.config = ConfigParser()
@@ -2324,6 +2822,10 @@ class Makera(RelativeLayout):
         self.heartbeat_time = 0
         self.file_just_loaded = False
 
+        self.fill_remote_dir_callback = None
+
+        self.instantFSoverride = (Config.get('carvera', 'instantFSoverride') == '1')
+
         self.show_update = (Config.get('carvera', 'show_update') == '1')
         self.upgrade_popup.cbx_check_at_startup.active = self.show_update
         if self.show_update:
@@ -2333,10 +2835,10 @@ class Makera(RelativeLayout):
             self.past_machine_addr = Config.get('carvera', 'address')
 
         if Config.has_option('carvera', 'allow_mdi_while_machine_running'):
-           self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
+            self.allow_mdi_while_machine_running = Config.get('carvera', 'allow_mdi_while_machine_running')
 
         if Config.has_option('carvera', 'allow_jogging_while_machine_running'):
-           self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
+            self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
 
         # Setup pendant
         self.setup_pendant()
@@ -2351,7 +2853,12 @@ class Makera(RelativeLayout):
             default_show_tooltips = Config.get('carvera', 'show_tooltips') != '0'
             App.get_running_app().show_tooltips = default_show_tooltips
 
-            
+        if Config.has_option('carvera', 'invert_y_axis_jogging'):
+            App.get_running_app().invert_y_axis_jogging = Config.get('carvera', 'invert_y_axis_jogging') == '1'
+
+        if Config.has_option('carvera', 'active_color'):
+            App.get_running_app().active_color = self._parse_active_color(Config.get('carvera', 'active_color'))
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -2366,7 +2873,23 @@ class Makera(RelativeLayout):
         #
         threading.Thread(target=self.monitorSerial).start()
 
-    def __del__(self):
+        # try to connect over wifi if we've used it before
+        Clock.schedule_once(self.reconnect_wifi_conn_quietly)
+
+    def _parse_active_color(self, value):
+        """Parse a color string like '0,255,255,255' into an RGBA list (0-1 range)."""
+        try:
+            if not value:
+                return [0, 1, 1, 1]  # Default cyan
+            parts = [float(x.strip()) for x in value.split(',')]
+            if len(parts) == 3:
+                parts.append(255.0)  # Add alpha if missing
+            # Assume 0-255 range, convert to 0-1
+            return [parts[0]/255, parts[1]/255, parts[2]/255, parts[3]/255 if parts[3] > 1 else parts[3]]
+        except Exception:
+            return [0, 1, 1, 1]  # Default cyan
+
+    def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
         try:
             shutil.rmtree(self.temp_dir)
@@ -2384,6 +2907,7 @@ class Makera(RelativeLayout):
         Config.set('graphics', 'width', int(Window.size[0]/Metrics.dp))
         Config.set('graphics', 'height', int(Window.size[1]/Metrics.dp))
         Config.write()
+        return False # Allow the window to close
 
     def load_controller_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'controller_config.json')
@@ -2488,10 +3012,13 @@ class Makera(RelativeLayout):
 
     def open_probing_popup(self):
         if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
+            app = App.get_running_app() #disable keyboard control to prevent accidents when opening the popup
+            self.toggle_keyboard_jog_control(True)
             self.probing_popup.open()
         else:
-            self.message_popup.lb_content.text = tr._('Probing tool not selected. Please set tool to Probe or 3D probe')
-            self.message_popup.open()
+            self.select_probe_popup = SelectAndCalibrateProbePopup()
+            self.select_probe_popup.open()
+
     def open_update_popup(self):
         self.upgrade_popup.check_button.disabled = False
         self.upgrade_popup.open(self)
@@ -2563,7 +3090,7 @@ class Makera(RelativeLayout):
         self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
-    def play(self, file_name):
+    def play(self, file_name, start_line):
         # stop review play first
         self.gcode_playing = False
         self.gcode_viewer.dynamic_display = False
@@ -2571,7 +3098,11 @@ class Makera(RelativeLayout):
         self.apply(True)
         # play file
         CNC.vars["playedseconds"] = 0
-        self.controller.playCommand(file_name)
+        if start_line:
+            # Show confirmation dialog for beta resume playback feature
+            self.open_resume_playback_confirm_popup(file_name, start_line)
+        else:
+            self.controller.playCommand(file_name)
 
     # -----------------------------------------------------------------------
     def apply(self, buffer = False):
@@ -2606,7 +3137,8 @@ class Makera(RelativeLayout):
                                     zprobe_abs, apply_leveling, goto_origin,
                                     zprobe_offset_x, zprobe_offset_y, self.coord_config['leveling']['x_points'],
                                     self.coord_config['leveling']['y_points'], self.coord_config['leveling']['height'], buffer,
-                                    [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']])
+                                    [self.coord_config['leveling']['xn_offset'],self.coord_config['leveling']['xp_offset'],self.coord_config['leveling']['yn_offset'],self.coord_config['leveling']['yp_offset']],
+                                    self.upcoming_tool)
 
         # change back to last tool if needed
         if buffer and self.upcoming_tool == 0 and (apply_margin or apply_zprobe or apply_leveling):
@@ -2750,6 +3282,14 @@ class Makera(RelativeLayout):
         self.comports_drop_down.bind(on_select=self.usb_event)
         self.comports_drop_down.open(button)
 
+    def open_spindle_or_laser_drop_down(self, button):
+        if CNC.vars.get("lasermode", False):
+            self.laser_drop_down.open(button)
+            self.laser_drop_down.opened = True
+        else:
+            self.spindle_drop_down.open(button)
+            self.spindle_drop_down.opened = True
+
     def fetch_common_local_dir_list(self):
         home_path = Path.home()
         if home_path.exists():
@@ -2881,6 +3421,12 @@ class Makera(RelativeLayout):
         self.remote_dir_drop_down.open(button)
 
     # -----------------------------------------------------------------------
+    def reconnect_wifi_conn_quietly(self, button):
+        if self.past_machine_addr:
+            if not self.machine_detector.is_machine_busy(self.past_machine_addr):
+                self.openWIFI(self.past_machine_addr)
+
+    # -----------------------------------------------------------------------
     def reconnect_wifi_conn(self, button):
         if self.past_machine_addr:
             if not self.machine_detector.is_machine_busy(self.past_machine_addr):
@@ -2971,6 +3517,26 @@ class Makera(RelativeLayout):
         Config.write()
         self.past_machine_addr = address
 
+    def manually_input_ssid(self):
+        self.manual_wifi_popup.lb_title1.text = tr._('Input Wi-Fi network name (SSID):')
+        self.manual_wifi_popup.lb_title2.text = tr._('Input Wi-Fi password (leave blank if open network):')
+        self.manual_wifi_popup.txt_content1.password = False
+        self.manual_wifi_popup.txt_content2.password = True
+        self.manual_wifi_popup.confirm = self.manually_open_ssid
+        self.manual_wifi_popup.open(self)
+        self.wifi_ap_drop_down.dismiss()
+        self.status_drop_down.dismiss()
+
+    def manually_open_ssid(self):
+        ssid = self.manual_wifi_popup.txt_content1.text.strip()
+        password = self.manual_wifi_popup.txt_content2.text.strip()
+        self.manual_wifi_popup.dismiss()
+        if not ssid:
+            return False
+        self.input_popup.cache_var1 = ssid
+        self.input_popup.txt_content.text = password
+        self.connectToWiFi()
+
     # -----------------------------------------------------------------------
     def update_coord_config(self):
         self.wpb_margin.width = 50 if self.coord_config['margin']['active'] else 0
@@ -3013,6 +3579,17 @@ class Makera(RelativeLayout):
                         logger.debug(f"Firmware Version detected as {self.fw_version}")
                         if self.fw_version_new != '':
                             self.check_fw_version()
+                        # Request higher USB baud if firmware >= 2.1.0 and user has enabled it
+                        if (app.is_community_firmware and
+                                app.fw_version_digitized >= Utils.digitize_v("2.1.0") and
+                                self.controller.connection_type == CONN_USB and
+                                not self.controller._baud_upgrade_attempted):
+                            use_higher_val = Config.get('carvera', 'use_higher_baud', fallback='0')
+                            use_higher = str(use_higher_val).lower() in ('1', 'true', 'yes', 'on')
+                            baud_str = Config.get('carvera', 'usb_baud_rate', fallback='115200')
+                            if use_higher and baud_str and int(baud_str) != 115200:
+                                self.controller._baud_upgrade_attempted = True
+                                self.controller.request_baud_upgrade(int(baud_str))
                     
                     remote_model = re.search('del = [a-zA-Z0-9]+', line)
                     if remote_model != None:
@@ -3033,18 +3610,12 @@ class Makera(RelativeLayout):
 
                     if msg == Controller.MSG_NORMAL:
                         logger.info(f"MDI Received: {line}")
-                        try:
-                            self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
-                        except IndexError:
-                            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
+                        self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
                     elif msg == Controller.MSG_ERROR:
                         logger.error(f"MDI Received: {line}")
-                        try:
-                            self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
-                        except IndexError:
-                            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
+                        self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                         if line not in [' ', 'ok', 'Done ATC' ]:
                             App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
                 except:
@@ -3082,7 +3653,7 @@ class Makera(RelativeLayout):
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
-                    Clock.schedule_once(self.fillRemoteDir, 0)
+                    self.process_loaded_dir(self.fill_remote_dir)
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
@@ -3147,6 +3718,12 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def open_halt_confirm_popup(self):
         app = App.get_running_app()
+        
+        # If playback was interrupted by halt, update resume at line with last executed line
+        # Use playedlines if available, otherwise use the last tracked played_lines
+        last_line = CNC.vars["playedlines"] if CNC.vars["playedlines"] > 0 else self.played_lines
+        if last_line > 0:
+            self.update_resume_at_line_from_played_line(last_line, CNC.vars["playedpercent"])
 
         # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
         if CNC.vars["halt_reason"] < 20:
@@ -3203,8 +3780,30 @@ class Makera(RelativeLayout):
             target_tool = 'Probe'
         elif CNC.vars['target_tool'] == 8888:
             target_tool = 'Laser'
-        self.confirm_popup.lb_title.text = tr._('Changing Tool')
-        self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        elif CNC.vars['target_tool'] >= 999990 and CNC.vars['target_tool'] <= 999999:
+            target_tool = '3D Probe'
+
+        app = App.get_running_app()
+        if app.has_atc:
+            #target is valid tool
+            if CNC.vars['target_tool'] != -1:
+                if CNC.vars['tool'] == -1:
+                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                    self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._(' Then press \' Confirm\' or main button to clamp.\n')
+                else:
+                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                    self.confirm_popup.lb_content.text = tr._('When the tool is clamped press \' Confirm\' or main button to proceed.\nKeep your hands off the spindle unless you are willing to lose a finger!')
+            else:
+                if CNC.vars['tool'] != -1:
+                    self.confirm_popup.lb_title.text = tr._('Hold tool')
+                    self.confirm_popup.lb_content.text = tr._('Please hold the current tool and press \' Confirm\' or main button to proceed')
+                else:
+                    self.confirm_popup.lb_title.text = tr._('Open clamp')
+                    self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+        else:
+            self.confirm_popup.lb_title.text = tr._('Changing Tool')
+            self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
+        
         self.confirm_popup.cancel = partial(self.controller.abortCommand)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
@@ -3302,10 +3901,24 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = local_cached_file_path
         app.selected_remote_filename = remote_path
+        
+        Clock.schedule_once(partial(self._select_file_ui_update, remote_path, local_cached_file_path), 0)
+
+    def _select_file_ui_update(self, remote_path, local_cached_file_path, *args):
+        """Update UI elements on main thread"""
+        app = App.get_running_app()
         self.wpb_play.value = 0
 
         Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Loading file') + ' \n%s' % app.selected_local_filename, True), 0)
-        self.load_selected_gcode_file()
+        # Run load_gcode_file in background thread to avoid blocking UI, especially during decompression
+        # Add a small delay to ensure file is ready, especially when called during decompression
+        def load_file_delayed(dt):
+            if os.path.exists(local_cached_file_path) and os.access(local_cached_file_path, os.R_OK):
+                threading.Thread(target=self.load_gcode_file, args=(local_cached_file_path,), daemon=True).start()
+            else:
+                # Retry after a short delay if file is not ready
+                Clock.schedule_once(load_file_delayed, 0.2)
+        Clock.schedule_once(load_file_delayed, 0.1)
 
     def check_upload_and_select(self):
         filepath = self.file_popup.local_rv.curr_selected_file
@@ -3326,6 +3939,7 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = filepath
 
+
         self.file_popup.dismiss()
 
         self.progress_popup.progress_value = 0
@@ -3333,13 +3947,8 @@ class Makera(RelativeLayout):
         self.progress_popup.progress_text = tr._('Opening local file') + '\n%s' % filepath
         self.progress_popup.open()
 
-        threading.Thread(target=self.load_selected_gcode_file).start()
-        # Clock.schedule_once(self.load_selected_gcode_file, 0)
-
-    # -----------------------------------------------------------------------
-    def load_selected_gcode_file(self, *args):
-        app = App.get_running_app()
-        self.load(app.selected_local_filename)
+        threading.Thread(target=self.load_gcode_file, args=(filepath)).start()
+        # Clock.schedule_once(partial(self.load_gcode_file, filepath), 0)
 
     # -----------------------------------------------------------------------
     def check_and_download(self):
@@ -3355,16 +3964,84 @@ class Makera(RelativeLayout):
         self.downloading_file = remote_path
         self.downloading_size = remote_size
         self.downloading_config = False
-        threading.Thread(target=self.doDownload).start()
+        threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
+    # -----------------------------------------------------------------------
+    def start_back_up_config(self):
+        # Workaround for the fact that backup isn't a proper setting. If we don't clear it, the
+        # settings panel will show a selected value like "Back up files now" and won't allow
+        # another backup to run until the controller is restarted.
+        for panel in self.config_popup.settings_panel.interface.content.panels.values():
+            for item in panel.children:
+                if hasattr(item, 'section') and item.section == 'Backup' and hasattr(item, 'key') and item.key == 'backup':
+                    item.value = ''
+
+        self.downloading_config = True
+        Clock.schedule_once(partial(self.progressStart, tr._('Downloading config files...'), None), 0)
+
+        self.fill_remote_dir_callback = self.download_config_files
+        self.file_popup.remote_rv.list_dir("/sd")
+
+    # -----------------------------------------------------------------------
+    def download_config_files(self, remote_paths):
+        matching_paths = []
+        for file_info in remote_paths:
+            if file_info['path'] in CONFIG_FILES_TO_BACK_UP:
+                logger.debug(f"Found matching config file: {file_info['path']}")
+                matching_paths.append(file_info['path'])
+
+        local_paths = []
+        progress = 0.0
+        for remote_path in matching_paths:
+            local_path = os.path.join(self.temp_dir, os.path.basename(remote_path))
+            local_paths.append(local_path)
+            logger.debug(f"Downloading config file {remote_path} to {local_path}")
+            Clock.schedule_once(partial(self.progressUpdate, progress, tr._('Downloading') + ' \n%s' % remote_path, True), 0)
+            self.doDownload(remote_path, local_path, False)
+            progress += 100.0/len(matching_paths)
+            Clock.schedule_once(partial(self.progressUpdate, progress, tr._('Downloading') + ' \n%s' % remote_path, True), 0)
+
+            # Delay to avoid breaking communication with the machine
+            time.sleep(1.5)
+
+        Clock.schedule_once(partial(self.choose_back_up_config_destination, local_paths), 0)
+
+    # -----------------------------------------------------------------------
+    def choose_back_up_config_destination(self, local_paths, *args):
+        self.progressFinish()
+        content = PickFilePopup(partial(self.finish_backing_up_config, local_paths))
+        self.pick_file_popup = Popup(title="Choose where to back up your machine configuration", content=content, size_hint=(0.75, 0.75), auto_dismiss=True)
+        content.on_cancel = self.pick_file_popup.dismiss
+        self.pick_file_popup.open()
+
+    # -----------------------------------------------------------------------
+    def finish_backing_up_config(self, downloaded_file_paths, selected_dir, _selected_file):
+        for source_file_path in downloaded_file_paths:
+            dest_file_path = os.path.join(selected_dir, os.path.basename(source_file_path))
+            try:
+                shutil.copyfile(source_file_path, dest_file_path)
+            except Exception as e:
+                Clock.schedule_once(partial(self.show_message_popup, tr._(f"Couldn't back up '{source_file_path}'. The error was:\n\n{e}"), False), 0)
+                print("Error backing up config file:", e)
+        
+        self.pick_file_popup.dismiss()
+        self.pick_file_popup = None
+        self.downloading_config = False
+
+        # Workaround so that we don't expose the SD card root directory to the user
+        # next time they open the gcode file browser
+        self.file_popup.remote_rv.curr_dir = self.file_popup.remote_rv.base_dir
+
+        Clock.schedule_once(partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0)
+        
     # -----------------------------------------------------------------------
     def download_config_file(self):
         app = App.get_running_app()
-        app.selected_local_filename = os.path.join(self.temp_dir, 'config.txt')
-        self.downloading_file = '/sd/config.txt'
         self.downloading_size = 1024 * 5
         self.downloading_config = True
-        threading.Thread(target=self.doDownload).start()
+        remote_path = '/sd/config.txt'
+        local_path = os.path.join(self.temp_dir, 'config.txt')
+        threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
     # -----------------------------------------------------------------------
     def finishLoadConfig(self, success, *args):
@@ -3404,26 +4081,28 @@ class Makera(RelativeLayout):
         self.updateStatus()
 
     # -----------------------------------------------------------------------
-    def doDownload(self):
+    def doDownload(self, remote_path, local_path, show_progress=True):
         app = App.get_running_app()
-        if not self.downloading_config and not os.path.exists(os.path.dirname(app.selected_local_filename)):
-            #os.mkdir(os.path.dirname(app.selected_local_filename))
-            os.makedirs(os.path.dirname(app.selected_local_filename))
-        if os.path.exists(app.selected_local_filename):
-            shutil.copyfile(app.selected_local_filename, app.selected_local_filename + '.tmp')
+        if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
+            #os.mkdir(os.path.dirname(local_path))
+            os.makedirs(os.path.dirname(local_path))
+        if os.path.exists(local_path):
+            shutil.copyfile(local_path, local_path + '.tmp')
 
-        Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % app.selected_local_filename), \
-                                    None if self.downloading_config else self.cancelProcessingFile), 0)
+
+        if show_progress:
+            Clock.schedule_once(partial(self.progressStart, tr._('Load config...') if self.downloading_config else (tr._('Checking') + ' \n%s' % local_path), \
+                                        None if self.downloading_config else self.cancelProcessingFile), 0)
         self.downloading = True
         download_result = False
         try:
-            tmp_filename = app.selected_local_filename + '.tmp'
+            tmp_filename = local_path + '.tmp'
             md5 = ''
             if os.path.exists(tmp_filename):
                 md5 = Utils.md5(tmp_filename)
-            self.controller.downloadCommand(self.downloading_file)
+            self.controller.downloadCommand(remote_path)
             self.controller.pauseStream(0.2)
-            download_result = self.controller.stream.download(tmp_filename, md5, self.downloadCallback)
+            download_result = self.controller.stream.download(tmp_filename, md5, partial(self.downloadCallback, remote_path) if show_progress else None)
         except:
             logger.error(sys.exc_info()[1])
             self.controller.resumeStream()
@@ -3435,7 +4114,7 @@ class Makera(RelativeLayout):
         self.heartbeat_time = time.time()
 
         if download_result is None:
-            os.remove(app.selected_local_filename + '.tmp')
+            os.remove(local_path + '.tmp')
             # show message popup
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0.1)
@@ -3445,17 +4124,19 @@ class Makera(RelativeLayout):
         elif download_result >= 0:
             if download_result > 0:
                 # download success
-                if os.path.exists(app.selected_local_filename):
-                    os.remove(app.selected_local_filename)
-                os.rename(app.selected_local_filename + '.tmp', app.selected_local_filename)
+                if os.path.exists(local_path):
+                    os.remove(local_path)
+                os.rename(local_path + '.tmp', local_path)
             else:
                 # MD5 same
-                os.remove(app.selected_local_filename + '.tmp')
+                os.remove(local_path + '.tmp')
             if self.downloading_config:
-                Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 100, '', True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
 
-                Clock.schedule_once(partial(self.progressUpdate, 100, tr._('Synchronize version and time...'), True), 0)
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 100, tr._('Synchronize version and time...'), True), 0)
                 Clock.schedule_once(self.controller.queryTime, 0.1)
                 Clock.schedule_once(self.controller.queryModel, 0.2)
                 Clock.schedule_once(self.controller.queryVersion, 0.3)
@@ -3464,21 +4145,22 @@ class Makera(RelativeLayout):
                 # Schedule a one off diagnostic command to get the machine's extended state
                 Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
             else:
-                Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % app.selected_local_filename, True), 0)
-                # Clock.schedule_once(self.load_selected_gcode_file, 0.1)
-                self.load_selected_gcode_file()
+                if show_progress:
+                    Clock.schedule_once(partial(self.progressUpdate, 0, tr._('Open cached file') + ' \n%s' % local_path, True), 0)
+                # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
+                self.load_gcode_file(local_path)
 
             if not self.downloading_config:
-                self.update_recent_remote_dir_list(os.path.dirname(self.downloading_file))
-
+                self.update_recent_remote_dir_list(os.path.dirname(remote_path))
 
         elif download_result < 0:
-            os.remove(app.selected_local_filename + '.tmp')
+            os.remove(local_path + '.tmp')
             self.controller.log.put((Controller.MSG_NORMAL, tr._('Downloading is canceled manually.')))
             if self.downloading_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0)
 
-        Clock.schedule_once(self.progressFinish, 0.1)
+        if show_progress:
+            Clock.schedule_once(self.progressFinish, 0.1)
 
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
@@ -3488,26 +4170,21 @@ class Makera(RelativeLayout):
             app.model = model.strip()
             model_changed = True
         if app.model == 'CA1':
-            if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                            'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             CNC.vars['rotation_base_width'] = 300
             CNC.vars['rotation_head_width'] = 56.5
         elif app.model == 'C1':
-            if app.is_community_firmware:
-                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
-                                                            'Tool: 6', 'Laser', 'Custom']
-                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
-                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
             if CNC.vars['FuncSetting'] & 1:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 18.5
             else:
                 CNC.vars['rotation_base_width'] = 330
                 CNC.vars['rotation_head_width'] = 7
-        
+        if app.is_community_firmware:
+                self.tool_drop_down.set_dropdown.values = ['Empty', 'Probe','3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4', 'Tool: 5',
+                                                            'Tool: 6', 'Laser', 'Custom']
+                self.tool_drop_down.change_dropdown.values = ['Probe', '3D Probe', 'Tool: 1', 'Tool: 2', 'Tool: 3', 'Tool: 4',
+                                                                'Tool: 5', 'Tool: 6', 'Laser', 'Custom']
+        app.has_atc = bool(CNC.vars['FuncSetting'] & 4)
         # Load or reload machine config when model is detected/changed
         if model_changed:
             if self.config_loaded:
@@ -3518,9 +4195,9 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: self.load_machine_config(), 0.1)
 
     # -----------------------------------------------------------------------
-    def downloadCallback(self, packet_size, success_count, error_count):
+    def downloadCallback(self, remote_path, packet_size, success_count, error_count):
         packets = self.downloading_size / packet_size + (1 if self.downloading_size % packet_size > 0 else 0)
-        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % self.downloading_file, False), 0)
+        Clock.schedule_once(partial(self.progressUpdate, success_count * 100.0 / packets, tr._('Downloading') + ' \n%s' % remote_path, False), 0)
 
     # -----------------------------------------------------------------------
     def cancelSelectFile(self):
@@ -3574,6 +4251,9 @@ class Makera(RelativeLayout):
             btn = WiFiButton(connected = ap['connected'], ssid = ap['ssid'], encrypted = ap['encrypted'], strength = ap['strength'])
             btn.bind(on_release=lambda btn: self.wifi_ap_drop_down.select(btn.ssid))
             self.wifi_ap_drop_down.add_widget(btn)
+        btn = WiFiButton(ssid = tr._('Other...'))
+        btn.bind(on_release=lambda btn: self.manually_input_ssid())
+        self.wifi_ap_drop_down.add_widget(btn)
 
     # -----------------------------------------------------------------------
     def loadWiFiError(self, error_msg, *args):
@@ -3882,7 +4562,9 @@ class Makera(RelativeLayout):
         self.controller.sendNUM = 0
         if upload_result and callback:  # Only run callback if upload succeeded
             if self.uploading_file.endswith('.lz'):
-                callback(remotename[:-3], origin_path)
+                # Schedule callback to run after decompression completes
+                # The callback will be triggered in updateCompressProgress when decompression finishes
+                self.pending_decompress_callback = partial(callback, remotename[:-3], origin_path)
             else:
                 callback(remotename, local_path)
         # For iOS we display the file list remotely only so we need to refresh it but on main thread
@@ -3907,9 +4589,9 @@ class Makera(RelativeLayout):
         self.controller.stream.cancel_process()
 
     # -----------------------------------------------------------------------
-    def fillRemoteDir(self, *args):
+    def process_loaded_dir(self, *args):
         is_dir = False
-        self.file_popup.remote_rv.curr_file_list_buff = []
+        file_list = []
         while self.controller.load_buffer.qsize() > 0:
             line = self.controller.load_buffer.get_nowait().strip('\r').strip('\n')
             if len(line) > 0 and line[0] != "<":
@@ -3925,10 +4607,15 @@ class Makera(RelativeLayout):
                         timestamp = time.mktime(datetime.datetime.strptime(file_infos[2], "%Y%m%d%H%M%S").timetuple())
                     except:
                         pass
-                    self.file_popup.remote_rv.curr_file_list_buff.append({'name': file_infos[0],
-                                                     'path': os.path.join(self.file_popup.remote_rv.curr_dir, file_infos[0]),
-                                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
+                    file_list.append({'name': file_infos[0],
+                                     'path': f"{self.file_popup.remote_rv.curr_dir}/{file_infos[0]}",
+                                     'is_dir': is_dir, 'size': int(file_infos[1]), 'date': timestamp})
 
+        Clock.schedule_once(partial(self.fill_remote_dir, file_list), 0)
+
+    # -----------------------------------------------------------------------
+    def fill_remote_dir(self, file_list, *args):
+        self.file_popup.remote_rv.curr_file_list_buff = file_list
         self.file_popup.remote_rv.fill_dir(switch_reverse = False)
 
         self.file_popup.remote_rv.curr_dir = os.path.normpath(self.file_popup.remote_rv.curr_dir)
@@ -3938,6 +4625,10 @@ class Makera(RelativeLayout):
         if self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir \
                 or self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir_win:
             self.file_popup.remote_rv.curr_path_list = ['root']
+
+            if self.fill_remote_dir_callback:
+                threading.Thread(target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)).start()
+                self.fill_remote_dir_callback = None
             return
         else:
             self.file_popup.remote_rv.curr_path_list = [self.file_popup.remote_rv.curr_dir_name]
@@ -3956,6 +4647,10 @@ class Makera(RelativeLayout):
                 else:
                     self.file_popup.remote_rv.curr_path_list.insert(0, os.path.basename(parent_dir))
                 last_parent_dir = parent_dir
+
+        if self.fill_remote_dir_callback:
+            threading.Thread(target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)).start()
+            self.fill_remote_dir_callback = None
 
     # -----------------------------------------------------------------------
     def loadError(self, error_msg, *args):
@@ -3992,6 +4687,28 @@ class Makera(RelativeLayout):
         self.progress_popup.dismiss()
 
     # --------------------------------------------------------------`---------
+    def _on_time_estimate_progress(self, state, percent):
+        """Callback for GcodeViewer time estimate computation: show progress popup while parsing feed speeds."""
+        if state == 'start':
+            self.progressStart(tr._('Calculating run time time estimate...'), None)
+        elif state == 'progress':
+            self.progressUpdate(percent, '', True)
+        elif state == 'done':
+            self.progressFinish()
+
+    # --------------------------------------------------------------`---------
+    def _update_progress_smooth(self, dt):
+        """Refresh elapsed/remaining display every second while playing."""
+        app = App.get_running_app()
+        if not app.playing or (not app.selected_remote_filename and not app.selected_local_filename) or not self.selected_file_line_count:
+            return
+        remaining_display = max(0.0, self._remaining_anchor_sec - (time.time() - self._remaining_anchor_time))
+        filename = os.path.basename(app.selected_remote_filename or app.selected_local_filename)
+        self.progress_info = ' {} ( {}/{} - {}%, {} elapsed, {} to go )'.format(
+            filename, self.played_lines, self.selected_file_line_count, int(self.wpb_play.value),
+            Utils.second2hour(CNC.vars["playedseconds"]), Utils.second2hour(int(remaining_display)))
+
+    # --------------------------------------------------------------`---------
     def updateCompressProgress(self, value):
         Clock.schedule_once(partial(self.progressUpdate, value * 100.0 / self.fileCompressionBlocks, '', True), 0)
         if value == self.fileCompressionBlocks:
@@ -3999,6 +4716,13 @@ class Makera(RelativeLayout):
             # Refresh the remote dir since upload finished
             Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
             self.decompstatus = False
+            # Call pending callback after decompression completes (for .lz files)
+            if hasattr(self, 'pending_decompress_callback') and self.pending_decompress_callback:
+                # Capture callback before clearing it
+                callback = self.pending_decompress_callback
+                self.pending_decompress_callback = None
+                # Schedule callback with a short delay to ensure decompression is fully complete
+                Clock.schedule_once(lambda dt: callback(), 0.1)
 
     # -----------------------------------------------------------------------
     def updateStatus(self, *args):
@@ -4163,18 +4887,29 @@ class Makera(RelativeLayout):
                     self.feed_drop_down.scale_slider.set_flag = True
                     self.feed_drop_down.scale_slider.value = CNC.vars["OvFeed"]
 
-            # update spindle data
-            self.spindle_data_view.main_text = "{:.0f}".format(CNC.vars["curspindle"])
-            self.spindle_data_view.scale = CNC.vars["OvSpindle"]
-            self.spindle_data_view.active = CNC.vars["curspindle"] > 0.0
-            if self.status_index % 4 == 0:
-                self.spindle_data_view.minr_text = "{:.0f}".format(CNC.vars["tarspindle"])
-            elif self.status_index % 4 == 1:
-                self.spindle_data_view.minr_text = "{:.0f}".format(CNC.vars["OvSpindle"]) + " %"
-            elif self.status_index % 4 == 2:
-                self.spindle_data_view.minr_text = "{:.1f}".format(CNC.vars["spindletemp"]) + " °C"
+            # update spindle/laser data (single button: icon and content depend on laser mode)
+            v = self.spindle_laser_data_view
+            if CNC.vars["lasermode"]:
+                v.data_icon = 'data/laser.png'
+                v.tooltip_txt = tr._('Laser Settings')
+                v.main_text = "{:.1f}".format(CNC.vars["laserpower"])
+                v.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
+                v.scale = CNC.vars["laserscale"]
+                v.active = CNC.vars["lasermode"]
             else:
-                self.spindle_data_view.minr_text = "Vac: {}".format('On' if CNC.vars["vacuummode"] else 'Off')
+                v.data_icon = 'data/spindle.png'
+                v.tooltip_txt = tr._('Spindle and Vacuum Overrides')
+                v.main_text = "{:.0f}".format(CNC.vars["curspindle"])
+                v.scale = CNC.vars["OvSpindle"]
+                v.active = CNC.vars["curspindle"] > 0.0
+                if self.status_index % 4 == 0:
+                    v.minr_text = "{:.0f}".format(CNC.vars["tarspindle"])
+                elif self.status_index % 4 == 1:
+                    v.minr_text = "{:.0f}".format(CNC.vars["OvSpindle"]) + " %"
+                elif self.status_index % 4 == 2:
+                    v.minr_text = "{:.1f}".format(CNC.vars["spindletemp"]) + " °C"
+                else:
+                    v.minr_text = "Vac: {}".format('On' if CNC.vars["vacuummode"] else 'Off')
 
             elapsed = now - self.control_list['vacuum_mode'][0]
             if elapsed < 2:
@@ -4244,19 +4979,23 @@ class Makera(RelativeLayout):
             else:
                 app.lasering = False
 
-            # update laser data
-            self.laser_data_view.active = CNC.vars["lasermode"]
-            self.laser_data_view.scale = CNC.vars["laserscale"]
-            self.laser_data_view.main_text = "{:.1f}".format(CNC.vars["laserpower"])
-            self.laser_data_view.minr_text = "{:.0f}".format(CNC.vars["laserscale"]) + " %"
+            # laser drop down UI (spindle/laser top bar content updated above)
             self.laser_drop_down.status_scale.value = "{:.0f}".format(CNC.vars["laserscale"]) + "%"
 
             # update coordinate system data
             coord_system_index = CNC.vars["active_coord_system"]
             coord_system_name = self.wcs_names[coord_system_index]
             rotation_angle = CNC.vars["rotation_angle"]
-            self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = "{:.3f}°".format(rotation_angle)
+            desc_key = coord_system_name.lower().replace(".", "_") + "_description"
+            try:
+                wcs_description = Config.get("carvera", desc_key).strip()
+            except Exception:
+                wcs_description = ""
+            if wcs_description:
+                self.coord_system_data_view.main_text = wcs_description
+            else:
+                self.coord_system_data_view.main_text = coord_system_name
+            self.coord_system_data_view.minr_text = coord_system_name
             self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
             
             # Update WCS Settings popup if it's open
@@ -4296,15 +5035,28 @@ class Makera(RelativeLayout):
                     self.laser_drop_down.scale_slider.set_flag = True
                     self.laser_drop_down.scale_slider.value = CNC.vars["laserscale"]
 
+
+            use_cf_playing_flag = app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")  # in community firmware > 2.1.0 the machine state has a is_playing attribute
+            machine_not_playing = (CNC.vars["is_playing"] == 0 if use_cf_playing_flag else CNC.vars["playedlines"] <= 0)
+            
             # update progress bar and set selected
-            if CNC.vars["playedlines"] <= 0:
-                # not playing
+            if machine_not_playing:
+                # not playing - check if we were playing before (interrupted playback)
+                if self.played_lines > 0:
+                    # Playback was interrupted, update resume at line with last executed line
+                    self.update_resume_at_line_from_played_line(self.played_lines, CNC.vars["playedpercent"])
+                    self.played_lines = 0  # Reset after updating
+                
                 app.playing = False
                 self.wpb_margin.value = 0
                 self.wpb_zprobe.value = 0
                 self.wpb_leveling.value = 0
                 self.wpb_play.value = 0
                 self.progress_info = ""
+                # Stop smooth progress updates
+                if self._progress_smooth_clock is not None:
+                    self._progress_smooth_clock.cancel()
+                    self._progress_smooth_clock = None
 
                 last_job_elapsed = ""
                 if CNC.vars["playedseconds"] > 0:
@@ -4318,23 +5070,26 @@ class Makera(RelativeLayout):
                     self.progress_info = tr._(' No Remote File Selected') + last_job_elapsed
             else:
                 app.playing = True
-                # playing file remotely
                 if self.played_lines != CNC.vars["playedlines"]:
                     self.played_lines = CNC.vars["playedlines"]
                     self.wpb_play.value = CNC.vars["playedpercent"]
-                    self.progress_info = ''
                     if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0:
-                        # update gcode list
                         self.gcode_rv.set_selected_line(self.played_lines)
-                        # update gcode viewer
                         self.gcode_viewer.set_distance_by_lineidx(self.played_lines, 0.5)
-                        # update progress info
-                        self.progress_info = os.path.basename(app.selected_remote_filename if app.selected_remote_filename != '' else app.selected_local_filename) + ' ( {}/{} - {}%, {} elapsed'.format( \
-                                                     self.played_lines, self.selected_file_line_count, int(self.wpb_play.value), Utils.second2hour(CNC.vars["playedseconds"]))
-                        if self.wpb_play.value > 0:
-                            self.progress_info = self.progress_info + ', {} to go )'.format(Utils.second2hour((100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value))
+                        remaining_sec = self.gcode_viewer.get_remaining_time_by_lineidx(self.played_lines, 0.5)
+                        if remaining_sec is not None and remaining_sec >= 0:
+                            ov_feed = CNC.vars.get("OvFeed", 100) or 100
+                            self._remaining_anchor_sec = remaining_sec / (ov_feed / 100.0)
+                        elif self.wpb_play.value > 0:
+                            self._remaining_anchor_sec = (100 - self.wpb_play.value) * CNC.vars["playedseconds"] / self.wpb_play.value
+                        elif self.gcode_viewer.total_time > 0:
+                            ov_feed = CNC.vars.get("OvFeed", 100) or 100
+                            self._remaining_anchor_sec = self.gcode_viewer.total_time / (ov_feed / 100.0)
                         else:
-                            self.progress_info = self.progress_info + ' )'
+                            self._remaining_anchor_sec = 0.0
+                        self._remaining_anchor_time = now
+                if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0 and self._progress_smooth_clock is None:
+                    self._progress_smooth_clock = Clock.schedule_interval(self._update_progress_smooth, 1.0)
                 # playing margin
                 if CNC.vars["atc_state"] == 4:
                     self.wpb_margin.value += 14
@@ -4504,6 +5259,13 @@ class Makera(RelativeLayout):
         if name in self.control_list:
             self.control_list[name][0] = time.time()
             self.control_list[name][1] = value
+        if name == 'laser_mode' and not value:
+            if self.laser_drop_down.opened:
+                self.laser_drop_down.dismiss()
+                self.laser_drop_down.opened = False
+            # Keep ToolDropDown laser switch in sync so it shows off when disabled from LaserDropDown
+            self.tool_drop_down.ids.switch.set_flag = True
+            self.tool_drop_down.ids.switch.active = False
 
     def moveLineIndex(self, up = True):
         if up:
@@ -4517,7 +5279,9 @@ class Makera(RelativeLayout):
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
         try:
-            self.manual_rv.data.append({'text': line, 'color': (200/255, 200/255, 200/255, 1)})
+            Clock.schedule_once(lambda dt: setattr(self.manual_rv, 'scroll_y', 0), 0)
+            for cmd in line.strip().split('\n'):
+                self.manual_rv.data.append({'text': cmd, 'color': (200/255, 200/255, 200/255, 1)})
         except IndexError:
             logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
     # -----------------------------------------------------------------------
@@ -4525,10 +5289,28 @@ class Makera(RelativeLayout):
         try:
            self.controller.open(CONN_USB, device)
            self.controller.connection_type = CONN_USB
+           # Fallback: attempt baud upgrade after 10s if version is > 2.1.0c and conditions met
+           Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 10)
         except:
             logger.error(sys.exc_info()[1])
         self.updateStatus()
         self.status_drop_down.select('')
+
+    def attempt_usb_baud_upgrade_if_eligible(self, dt):
+        """If on USB, firmware >= 2.1.0, and use_higher_baud is on, request higher baud (fallback if version line was missed)."""
+        app = App.get_running_app()
+        if self.controller.connection_type != CONN_USB or self.controller.stream != self.controller.usb_stream:
+            return
+        if self.controller._baud_upgrade_attempted:
+            return
+        if not app.is_community_firmware or not self.fw_version or app.fw_version_digitized < Utils.digitize_v("2.1.0"):
+            return
+        use_higher_val = Config.get('carvera', 'use_higher_baud', fallback='0')
+        use_higher = str(use_higher_val).lower() in ('1', 'true', 'yes', 'on')
+        baud_str = Config.get('carvera', 'usb_baud_rate', fallback='115200')
+        if use_higher and baud_str and int(baud_str) != 115200:
+            self.controller._baud_upgrade_attempted = True
+            self.controller.request_baud_upgrade(int(baud_str))
 
     # -----------------------------------------------------------------------
     def openWIFI(self, address):
@@ -4595,10 +5377,12 @@ class Makera(RelativeLayout):
 
                         # restore/default are used for default config management
                         # carvera/graphics options are managed via Controller settings (not here)
-                        elif child.section.lower() not in ['restore','default', 'carvera', 'graphics', 'kivy']:
+                        # backup is a one-shot operation and not a setting to be stored
+                        elif child.section.lower() not in ['restore','default', 'backup', 'carvera', 'graphics', 'kivy']:
                             self.controller.log.put(
                                 (Controller.MSG_ERROR, tr._('Load config error, Key:') + ' {}'.format(child.key)))
-                            self.controller.close()
+                            logger.warning('Load config error, Key:' + ' {}'.format(child.key))
+                            #self.controller.close()
                             self.updateStatus()
                             return False
         else:
@@ -4625,6 +5409,7 @@ class Makera(RelativeLayout):
             basic_config = []
             advanced_config = []
             restore_config = []
+            backup_config = []
             self.setting_type_list.clear()
             for setting in data:
                 if 'key' in setting and 'default' in setting:
@@ -4649,10 +5434,11 @@ class Makera(RelativeLayout):
                             #
                             # self.controller.log.put(
                             #     (Controller.MSG_NORMAL, 'Can not load config, Key: {}'.format(setting['key'])))
-                        elif setting['key'].lower() != 'restore' and setting['key'].lower() != 'default' :
+                        elif setting['key'].lower() not in ['restore', 'default', 'backup']:
                             self.controller.log.put((Controller.MSG_ERROR, 'Load config error, Key: {}'.format(setting['key'])))
-                            self.controller.close()
                             self.updateStatus()
+                            logger.warning('Load config error, Key: {}'.format(setting['key']))
+                            #self.controller.close()
                             return False
                     else:
                         has_setting = True
@@ -4666,6 +5452,10 @@ class Makera(RelativeLayout):
                         self.config.setdefaults(setting['section'], {
                             setting['key']: Utils.from_config(setting['type'], '')})
                         restore_config.append(setting)
+                    elif 'section' in setting and setting['section'] == 'Backup':
+                        self.config.setdefaults(setting['section'], {
+                            setting['key']: Utils.from_config(setting['type'], '')})
+                        backup_config.append(setting)
             # clear title section
             for basic in basic_config:
                 if basic['type'] == 'title' and 'section' in basic:
@@ -4680,6 +5470,8 @@ class Makera(RelativeLayout):
             self.config_popup.settings_panel.add_json_panel('Machine - Basic', self.config, data=json.dumps(basic_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Advanced', self.config, data=json.dumps(advanced_config))
             self.config_popup.settings_panel.add_json_panel('Machine - Restore', self.config, data=json.dumps(restore_config))
+            if kivy_platform not in ['android', 'ios']:
+                self.config_popup.settings_panel.add_json_panel('Machine - Backup', self.config, data=json.dumps(backup_config))
         return True
 
     # -----------------------------------------------------------------------
@@ -4693,6 +5485,7 @@ class Makera(RelativeLayout):
     def update_ui_for_jog_mode_step(self):
         self.controller.setJogMode(Controller.JOG_MODE_STEP)
         self.ids.jog_mode_btn.text  = tr._('Jog Mode:Step')
+        App.get_running_app().jog_mode_text = tr._('Jog Mode:Step')
         self.ids.step_xy.disabled = False
         self.ids.step_a.disabled = False
         self.ids.step_z.disabled = False
@@ -4701,6 +5494,7 @@ class Makera(RelativeLayout):
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
         self.ids.jog_mode_btn.text  = tr._('Jog Mode:Continuous')
+        App.get_running_app().jog_mode_text = tr._('Jog Mode:Continuous')
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
@@ -4712,29 +5506,41 @@ class Makera(RelativeLayout):
         # Allow jogging when machine is running if the setting is enabled
         if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
             return not self._is_popup_open()
-        
         return \
             not app.playing and \
             (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
-            not self._is_popup_open()
+            not (self._is_popup_open() and not self.probing_popup._is_open)
 
     def is_pendant_jogging_enabled(self):
         # If the user disabled pendant, respect it.
-        if self.ids.pendant_jogging_en_btn.state != 'down':
+        if not App.get_running_app().root.pendant_jog_control:
             return False
         # ...otherwise behave as any other jogging except when probing screen is
         # open. We want to use the pendant as a convenient way to get to the
         # initial probing location
-        return self.is_jogging_enabled() or self.probing_popup._is_open
+        return (self.is_jogging_enabled())# or self.probing_popup._is_open)
 
-    def toggle_keyboard_jog_control(self):
+    def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
+        if disable: app.root.keyboard_jog_control = False
 
         if app.root.keyboard_jog_control:
             Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            app.jog_keyboard_enable = "down"
         else:
             Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            app.jog_keyboard_enable = "normal"
+
+    def toggle_pendant_jog_control(self):
+        app = App.get_running_app()
+        app.root.pendant_jog_control = not app.root.pendant_jog_control
+
+        if app.root.pendant_jog_control:
+            app.jog_pendant_enable = 'down'
+        else:
+            app.jog_pendant_enable = 'normal'
+        #self.ids.pendant_jogging_en_btn.state = app.jog_pendant_enable 
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
@@ -4774,12 +5580,19 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_button_press)
 
     def handle_pendant_connected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('Pendant Jogging')
         self.ids.pendant_jogging_en_btn.disabled = False
-        self.ids.pendant_jogging_en_btn.state = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app =App.get_running_app()
+        app.jog_pendant_text = tr._('Pendant Jogging')
+        app.jog_pendant_enable = 'down' if self.pendant_jogging_default == "1" else 'normal'
+        app.root.pendant_jog_control = True if self.pendant_jogging_default == "1" else False
 
     def handle_pendant_disconnected(self):
-        self.ids.pendant_jogging_en_btn.text = tr._('No Pendant')
+        app =App.get_running_app()
+        app.jog_pendant_text = tr._('No Pendant')
+        app.jog_pendant_enable = 'normal'
+        if app.root:
+            app.root.pendant_jog_control = False
+        
         self.ids.pendant_jogging_en_btn.disabled = True
 
     def handle_pendat_run_pause_resume(self):
@@ -4792,7 +5605,8 @@ class Makera(RelativeLayout):
             self.controller.suspendCommand()
 
     def handle_pendant_open_probing_popup(self):
-        self.probing_popup.open()
+        self.open_probing_popup()
+        #self.probing_popup.open()
 
     def handle_pendant_probe_z(self):
         if self.pendant_probe_z_alt_cmd == "1":
@@ -4801,7 +5615,8 @@ class Makera(RelativeLayout):
             else:
                 self.controller.executeCommand("G38.2 Z-200")
         else:
-            self.probing_popup.open()
+            #self.probing_popup.open()
+            self.open_probing_popup()
 
     def handle_pendant_button_press(self, button_action: str):
         """
@@ -4850,17 +5665,45 @@ class Makera(RelativeLayout):
             property_obj.update_from_state(self)
             logger.debug("Light state manually refreshed from CNC.vars")
 
+    def _global_keyboard_keydown(self, window, key, scancode, codepoint, modifiers):
+        COMMA_KEY = 44
+        M_KEY = 109
+        cmd_mod = 'meta' if sys.platform == 'darwin' else 'ctrl'
+
+        # Cmd+Comma (macOS) or Ctrl+Comma (Windows/Linux) to open settings
+        if key == COMMA_KEY and cmd_mod in modifiers:
+            if not self._is_popup_open() and not self.manual_cmd.focus:
+                self.config_popup.open()
+                return True
+
+        # Ctrl+M to open manual command (MDI) page
+        if key == M_KEY and 'ctrl' in modifiers:
+            self.content.transition.direction = 'right'
+            self.content.current = 'File'
+            self.cmd_manager.transition.direction = 'left'
+            self.cmd_manager.current = 'manual_cmd_page'
+            self.manual_cmd.focus = True
+
+        return False
+
     def _keyboard_jog_keydown(self, *args):
         app = App.get_running_app()
 
         # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if self.is_jogging_enabled():
+        if self.is_jogging_enabled() and not self.manual_cmd.focus:
             key = args[1]  # keycode
 
+            if app.root.controller.jog_mode == Controller.JOG_MODE_STEP:
+                if key in self._held_jog_keys:
+                    # Ignore - only move once per keypress in step mode
+                    return
+                if key in (273, 274, 275, 276, 280, 281):
+                    self._held_jog_keys.add(key)
+
             if key == 274:  # down button
-                app.root.controller.jog(f"Y{app.root.step_xy.text}")
+                app.root.controller.jog(f"Y{'-' if app.invert_y_axis_jogging else ''}{app.root.step_xy.text}")
             elif key == 273:  # up button
-                app.root.controller.jog(f"Y-{app.root.step_xy.text}")
+                app.root.controller.jog(f"Y{'' if app.invert_y_axis_jogging else '-'}{app.root.step_xy.text}")
             elif key == 275:  # right button
                 app.root.controller.jog(f"X{app.root.step_xy.text}")
             elif key == 276:  # left button
@@ -4873,7 +5716,8 @@ class Makera(RelativeLayout):
     def _keyboard_jog_keyup(self, *args):
         app = App.get_running_app()
         key = args[1]  # keycode
-        if key == 274 or key == 280 or key == 281 or key == 273 or key == 275 or key == 276:  # only if a jog button is released
+        if key in (273, 274, 275, 276, 280, 281):  # only if a jog button is released
+            self._held_jog_keys.discard(key)
             app.root.controller.stopContinuousJog()
 
     def apply_setting_changes(self):
@@ -4904,12 +5748,18 @@ class Makera(RelativeLayout):
         if self.controller_setting_change_list.get("allow_jogging_while_machine_running") != self.allow_jogging_while_machine_running:
             self.allow_jogging_while_machine_running = self.controller_setting_change_list.get("allow_jogging_while_machine_running")
 
+        if self.controller_setting_change_list.get("invert_y_axis_jogging"):
+            App.get_running_app().invert_y_axis_jogging = self.controller_setting_change_list.get("invert_y_axis_jogging") == '1'
+
         if self.controller_setting_change_list.get('show_tooltips'):
             App.get_running_app().show_tooltips = self.controller_setting_change_list.get('show_tooltips') != '0'
 
         if self.controller_setting_change_list.get('tooltip_delay'):
             delay_value = float(self.controller_setting_change_list.get('tooltip_delay'))
             App.get_running_app().tooltip_delay = delay_value if delay_value>0 else 0.5
+
+        if self.controller_setting_change_list.get('active_color'):
+            App.get_running_app().active_color = self._parse_active_color(self.controller_setting_change_list.get('active_color'))
 
         if "pendant_type" in self.controller_setting_change_list:
             self.pendant.close()
@@ -4925,6 +5775,12 @@ class Makera(RelativeLayout):
             if log_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
                 logging.getLogger().setLevel(getattr(logging, log_level))
                 logger.info(f"Log level set to {log_level}")
+        
+        if "log_sent_receive" in self.controller_setting_change_list:
+            self.controller.log_sent_receive = self.controller_setting_change_list.get("log_sent_receive")
+
+        if "high_precision_reamining_time_estimate" in self.controller_setting_change_list:
+            self.gcode_viewer.high_precision_time_estimate = self.controller_setting_change_list.get("high_precision_reamining_time_estimate")
 
 
     # -----------------------------------------------------------------------
@@ -4961,6 +5817,46 @@ class Makera(RelativeLayout):
         self.confirm_popup.open(self)
 
     # -----------------------------------------------------------------------
+    def open_resume_playback_confirm_popup(self, file_name, start_line):
+        if self.confirm_popup.showing:
+            return
+        
+        app = App.get_running_app()
+        local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+        
+        # Get command preview from Controller
+        commands = self.controller.playStartLineCommand(file_name, start_line, preview=True, local_file_path=local_file_path)
+        commands_preview = '\n'.join(commands)
+        
+        self.confirm_popup.size_hint = (0.8, 0.8)
+        self.confirm_popup.pos_hint = {"center_x": 0.5, "center_y": 0.5}
+        self.confirm_popup.lb_title.text = tr._('Beta Feature: Resume Playback')
+        self.confirm_popup.lb_content.text = tr._('The "resume playback at line" functionality is beta. Please be prepared to e-stop your machine if it doesn\'t move correctly.\n\nCommands that will be executed:\n') + commands_preview
+        self.confirm_popup.confirm = partial(self.execute_play_with_start_line, file_name, start_line)
+        self.confirm_popup.cancel = None
+        self.confirm_popup.open(self)
+
+    # -----------------------------------------------------------------------
+    def execute_play_with_start_line(self, file_name, start_line):
+        """Execute play command with start_line after user confirmation"""
+        app = App.get_running_app()
+        local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+        self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+    
+    # -----------------------------------------------------------------------
+    def update_resume_at_line_from_played_line(self, line_number, percent_complete):
+        """Update the resume at line input with the last executed line number -1 for the incompletely executed line
+        """
+
+        if percent_complete >= 98:  # if close enough to end of file consider it as complete and clear resume
+            self.coord_popup.cbx_startline.active = False
+            self.coord_popup.txt_startline.text = ''
+
+        if line_number > 0:
+            resume_line = max(1, line_number - 1)
+            self.coord_popup.txt_startline.text = str(resume_line)
+
+    # -----------------------------------------------------------------------
     def defaultSettings(self):
         self.controller.defaultConfigCommand()
 
@@ -4968,6 +5864,13 @@ class Makera(RelativeLayout):
     def gcode_play_call_back(self, distance, line_number):
         if not self.loading_file:
             self.gcode_play_slider.value = distance * 1000.0 / self.gcode_viewer_distance
+            # Update line highlighting in file viewer during playback.
+            # Skip when callback was triggered by a user click (set_distance_by_lineidx from click
+            # invokes this before GcodeViewer updates cur_line_index, so line_number would be stale).
+            if getattr(self, '_skip_next_set_selected_line_from_callback', False):
+                self._skip_next_set_selected_line_from_callback = False
+            elif line_number > 0 and hasattr(self, 'gcode_rv'):
+                self.gcode_rv.set_selected_line(line_number)
 
     # -----------------------------------------------------------------------
     def gcode_play_over_call_back(self):
@@ -5029,6 +5932,8 @@ class Makera(RelativeLayout):
         self.gcode_viewer.set_move_speed(GCODE_VIEW_SPEED)
         self.gcode_playing = False
         self.gcode_viewer.dynamic_display = False
+        # Set up frame callback for line highlighting
+        self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
 
     # ------------------------------------------------------------------------
     def load_page(self, page_no, *args):
@@ -5046,7 +5951,7 @@ class Makera(RelativeLayout):
             line_txt = line[:-1].replace("\x0d", "")
             try:
                 self.gcode_rv.data.append(
-                    {'text': str(line_no).ljust(12) + line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+                    {'line_no': line_no, 'text': line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
             except IndexError:
                 logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
@@ -5071,6 +5976,18 @@ class Makera(RelativeLayout):
         self.load_event.set()
 
     # ------------------------------------------------------------------------
+    def _update_startline_checkbox_disabled(self, *args):
+        """Keep Resume at line checkbox disabled when gcode cannot be visualised (KV can't bind: app.root is None during CoordPopup build)."""
+        if self.coord_popup and hasattr(self.coord_popup, 'cbx_startline') and self.coord_popup.cbx_startline:
+            self.coord_popup.cbx_startline.disabled = self.gcode_cannot_visualise
+
+    # ------------------------------------------------------------------------
+    def _on_gcode_cannot_visualise(self, msg):
+        """Called when GcodeViewer detects unvisualisable gcode (e.g. zero-length segments). Show popup on next frame."""
+        self.gcode_cannot_visualise = True
+        Clock.schedule_once(partial(self.load_error, msg), 0)
+
+    # ------------------------------------------------------------------------
     def load_error(self, error_msg, *args):
         self.progress_popup.dismiss()
         self.message_popup.lb_content.text = error_msg
@@ -5080,6 +5997,7 @@ class Makera(RelativeLayout):
     def load_end(self, *args):
         if self.load_canceled:
             self.gcode_viewer.load_array([], True)
+            self.gcode_cannot_visualise = False
             self.clear_selection()
             self.load_canceled = False
             self.file_popup.dismiss()
@@ -5089,8 +6007,14 @@ class Makera(RelativeLayout):
             return
 
         if len(self.gcode_viewer.lengths) > 0:
+            self.gcode_cannot_visualise = False
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
+
+        # Clear resume at line when a (possibly new) gcode file has finished loading
+        if self.coord_popup:
+            self.coord_popup.cbx_startline.active = False
+            self.coord_popup.txt_startline.text = ''
 
         app = App.get_running_app()
         app.has_4axis = self.cnc.has_4axis
@@ -5113,6 +6037,9 @@ class Makera(RelativeLayout):
         self.updateStatus()
         self.loading_file = False
 
+        # Scroll to top of program that we just loaded
+        self.gcode_rv.scroll_y = 1
+
     # -----------------------------------------------------------------------
     def first_page(self):
         self.load_page(1)
@@ -5129,7 +6056,7 @@ class Makera(RelativeLayout):
         self.load_page(0)
 
     # -----------------------------------------------------------------------
-    def load(self, filepath):
+    def load_gcode_file(self, filepath):
         self.load_event.set()
         self.upcoming_tool = 0
         self.used_tools = []
@@ -5185,13 +6112,15 @@ class Makera(RelativeLayout):
             # print('Load time: ' + str(time.time() - now))
             # with open("laser.txt", "w") as output:
             #     output.write(str(temp_list))
-        except:
+        except Exception:
             logger.error(sys.exc_info()[1])
             self.heartbeat_time = time.time()
             self.loading_file = False
             if f:
                 f.close()
-            Clock.schedule_once(partial(self.load_error, tr._('Opening file error:') + '\n\'%s\'\n' % (filepath) + tr._('Please make sure the GCode file is valid')), 0)
+            self.gcode_cannot_visualise = True
+            self.controller.log.put((Controller.MSG_ERROR, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."))
+            Clock.schedule_once(partial(self.load_error, "Gcode cannot be visualised (parser error or complexity). Playback is unaffected."), 0)
             return
 
         Clock.schedule_once(self.load_end, 0)
@@ -5235,11 +6164,15 @@ class Makera(RelativeLayout):
     def send_cmd(self):
         to_send = self.manual_cmd.text.strip()
         if to_send:
+            self.manual_cmd.last_mdi_command = to_send
             self.manual_rv.scroll_y = 0
             if to_send.lower() == "clear":
                 self.manual_rv.data = []
             else:
-                self.controller.executeCommand(to_send)
+                sanitized_to_send = '\n'.join([line for line in to_send.split('\n') if line.strip().lower() != "clear"])
+                if sanitized_to_send != to_send:
+                    self.manual_rv.data.append({'text': 'clear command can\'t be used together with other commands', 'color': (250/255, 105/255, 102/255, 1)})
+                self.controller.executeCommand(sanitized_to_send)
         self.manual_cmd.text = ''
         Clock.schedule_once(self.refocus_cmd)
 
@@ -5262,6 +6195,7 @@ class MakeraApp(App):
     state = StringProperty(NOT_CONNECTED)
     playing = BooleanProperty(False)
     has_4axis = BooleanProperty(False)
+    has_atc = BooleanProperty(False)
     lasering = BooleanProperty(False)
     show_gcode_ctl_bar = BooleanProperty(False)
     fw_has_update = BooleanProperty(False)
@@ -5278,6 +6212,15 @@ class MakeraApp(App):
     show_tooltips = BooleanProperty(True)
     tooltip_delay = NumericProperty(0.5)
     mdi_data = ListProperty([])
+    invert_y_axis_jogging = BooleanProperty(False)
+    active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
+    jog_mode_text = StringProperty(tr._('Jog Mode:Step'))
+    jog_speed_text = StringProperty(tr._('Jog Speed:Max'))
+    jog_keyboard_enable = StringProperty("normal")
+    jog_pendant_enable = StringProperty("normal")
+    jog_pendant_text = StringProperty(tr._('No Pendant'))
+
+
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -5352,6 +6295,7 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'show_update'): Config.set('carvera', 'show_update', '1')
     if not Config.has_option('carvera', 'show_tooltips'): Config.set('carvera', 'show_tooltips' , '1')
     if not Config.has_option('carvera', 'tooltip_delay'): Config.set('carvera', 'tooltip_delay','1.5')
+    if not Config.has_option('carvera', 'active_color'): Config.set('carvera', 'active_color', '0,255,255,255')
     if not Config.has_option('carvera', 'language'): Config.set('carvera', 'language', default_lang)
     if not Config.has_option('carvera', 'local_folder_1'): Config.set('carvera', 'local_folder_1', '')
     if not Config.has_option('carvera', 'local_folder_2'): Config.set('carvera', 'local_folder_2', '')
@@ -5364,9 +6308,15 @@ def set_config_defaults(default_lang):
     if not Config.has_option('carvera', 'remote_folder_4'): Config.set('carvera', 'remote_folder_4', '')
     if not Config.has_option('carvera', 'remote_folder_5'): Config.set('carvera', 'remote_folder_5', '')
     if not Config.has_option('carvera', 'custom_bkg_img_dir'): Config.set('carvera', 'custom_bkg_img_dir', '')
+    if not Config.has_option('carvera', 'invert_y_axis_jogging'): Config.set('carvera', 'invert_y_axis_jogging', '0')
+    if not Config.has_option('carvera', 'use_higher_baud'): Config.set('carvera', 'use_higher_baud', '0')
+    if not Config.has_option('carvera', 'usb_baud_rate'): Config.set('carvera', 'usb_baud_rate', '1500000')
+    if not Config.has_option('carvera', 'high_precision_reamining_time_estimate'): Config.set('carvera', 'high_precision_reamining_time_estimate', '1')
+    if not Config.has_option('carvera', 'background_image'): Config.set('carvera', 'background_image', 'None')
     if not Config.has_option('graphics', 'allow_screensaver'): Config.set('graphics', 'allow_screensaver', '0')
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')
+    if not Config.has_option('carvera', 'instantFSoverride'): Config.set('carvera','instantFSoverride','1')
 
     Config.write()
 

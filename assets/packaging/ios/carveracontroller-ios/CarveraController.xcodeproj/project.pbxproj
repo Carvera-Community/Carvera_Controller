@@ -54,11 +54,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		00EA418BA04982772267DF86 /* libSDL2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2.xcframework; path = ../dist/xcframework/libSDL2.xcframework; sourceTree = SOURCE_ROOT; };
-		03E841FA9892EEDE7E244A1D /* libpng16.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpng16.xcframework; path = ../dist/xcframework/libpng16.xcframework; sourceTree = SOURCE_ROOT; };
-		17C445C2A54DAA82C0BBF162 /* libpython3.11.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpython3.11.xcframework; path = ../dist/xcframework/libpython3.11.xcframework; sourceTree = SOURCE_ROOT; };
+		00EA418BA04982772267DF86 /* libSDL2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2.xcframework; path = ../../../../dist/xcframework/libSDL2.xcframework; sourceTree = SOURCE_ROOT; };
+		03E841FA9892EEDE7E244A1D /* libpng16.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpng16.xcframework; path = ../../../../dist/xcframework/libpng16.xcframework; sourceTree = SOURCE_ROOT; };
+		17C445C2A54DAA82C0BBF162 /* libpython3.11.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpython3.11.xcframework; path = ../../../../dist/xcframework/libpython3.11.xcframework; sourceTree = SOURCE_ROOT; };
 		1D6058910D05DD3D006BFB54 /* carveracontroller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = carveracontroller.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		230943B0AFDC9C60CAF6C442 /* libcrypto.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libcrypto.xcframework; path = ../dist/xcframework/libcrypto.xcframework; sourceTree = SOURCE_ROOT; };
+		230943B0AFDC9C60CAF6C442 /* libcrypto.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libcrypto.xcframework; path = ../../../../dist/xcframework/libcrypto.xcframework; sourceTree = SOURCE_ROOT; };
 		240447DF913C90BB541347FC /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; path = libbz2.tbd; sourceTree = DEVELOPER_DIR; };
 		25C8414497F8E6296A597ED7 /* MessageUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MessageUI.framework; sourceTree = DEVELOPER_DIR; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -67,32 +67,32 @@
 		306AABFB2D5A3F65001AE21B /* iconCircle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iconCircle.png; sourceTree = "<group>"; };
 		30F3597C2D7C7B3800D5A803 /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.2.sdk/System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = DEVELOPER_DIR; };
 		31C44A95BA4F2D31DE1C045C /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WebKit.framework; sourceTree = DEVELOPER_DIR; };
-		339B48A886CA761D0A19C3D5 /* libSDL2_ttf.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_ttf.xcframework; path = ../dist/xcframework/libSDL2_ttf.xcframework; sourceTree = SOURCE_ROOT; };
+		339B48A886CA761D0A19C3D5 /* libSDL2_ttf.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_ttf.xcframework; path = ../../../../dist/xcframework/libSDL2_ttf.xcframework; sourceTree = SOURCE_ROOT; };
 		3D0646D283B8832F573E425A /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = GameController.framework; sourceTree = DEVELOPER_DIR; };
-		4A4B440CA87E67B49D875F29 /* libssl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libssl.xcframework; path = ../dist/xcframework/libssl.xcframework; sourceTree = SOURCE_ROOT; };
+		4A4B440CA87E67B49D875F29 /* libssl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libssl.xcframework; path = ../../../../dist/xcframework/libssl.xcframework; sourceTree = SOURCE_ROOT; };
 		4DEA4A81A8F3A569B130BCAA /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = OpenGLES.framework; sourceTree = DEVELOPER_DIR; };
 		4F7140229CC1D236491CB9CA /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreHaptics.framework; sourceTree = DEVELOPER_DIR; };
-		537F42158DFB71F9E32277D8 /* libSDL2_mixer.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_mixer.xcframework; path = ../dist/xcframework/libSDL2_mixer.xcframework; sourceTree = SOURCE_ROOT; };
-		59738AB41A8BB5D8001B2C0C /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../dist/root/python3/lib; sourceTree = "<group>"; };
+		537F42158DFB71F9E32277D8 /* libSDL2_mixer.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_mixer.xcframework; path = ../../../../dist/xcframework/libSDL2_mixer.xcframework; sourceTree = SOURCE_ROOT; };
+		59738AB41A8BB5D8001B2C0C /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../../../../dist/root/python3/lib; sourceTree = "<group>"; };
 		59738ABA1A8E19AA001B2C0C /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
-		59864361B31751B48655D9D2 /* libffi.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libffi.xcframework; path = ../dist/xcframework/libffi.xcframework; sourceTree = SOURCE_ROOT; };
+		59864361B31751B48655D9D2 /* libffi.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libffi.xcframework; path = ../../../../dist/xcframework/libffi.xcframework; sourceTree = SOURCE_ROOT; };
 		59994E3A148E85C800863906 /* carveracontrollerpkg */ = {isa = PBXFileReference; lastKnownFileType = folder; path = carveracontrollerpkg; sourceTree = "<group>"; };
-		59FDEA8A21E7D34E004E6ECE /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../dist/root/python3/include; sourceTree = "<group>"; };
+		59FDEA8A21E7D34E004E6ECE /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../../dist/root/python3/include; sourceTree = "<group>"; };
 		5A7641749B9D44C54E1BBDFE /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Photos.framework; sourceTree = DEVELOPER_DIR; };
-		64F7416AB075A0994023F21B /* libkivy.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libkivy.xcframework; path = ../dist/xcframework/libkivy.xcframework; sourceTree = SOURCE_ROOT; };
+		64F7416AB075A0994023F21B /* libkivy.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libkivy.xcframework; path = ../../../../dist/xcframework/libkivy.xcframework; sourceTree = SOURCE_ROOT; };
 		650D4733935B336C699C93ED /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Accelerate.framework; sourceTree = DEVELOPER_DIR; };
-		69034840BB27C9E3CDF095C5 /* libpyobjus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpyobjus.xcframework; path = ../dist/xcframework/libpyobjus.xcframework; sourceTree = SOURCE_ROOT; };
+		69034840BB27C9E3CDF095C5 /* libpyobjus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpyobjus.xcframework; path = ../../../../dist/xcframework/libpyobjus.xcframework; sourceTree = SOURCE_ROOT; };
 		6C0A4962AE1BE0703D8D42A7 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreVideo.framework; sourceTree = DEVELOPER_DIR; };
 		7AF849BC8B4B05BEC365B924 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreMotion.framework; sourceTree = DEVELOPER_DIR; };
 		8D1107310486CEB800E47090 /* carveracontroller-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "carveracontroller-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
-		9AF44AE9BEFA4C339069C854 /* libios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libios.xcframework; path = ../dist/xcframework/libios.xcframework; sourceTree = SOURCE_ROOT; };
+		9AF44AE9BEFA4C339069C854 /* libios.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libios.xcframework; path = ../../../../dist/xcframework/libios.xcframework; sourceTree = SOURCE_ROOT; };
 		9C1D4231A812C140D00ABCF9 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AudioToolbox.framework; sourceTree = DEVELOPER_DIR; };
 		9F384D92844FA79268A315BD /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVFoundation.framework; sourceTree = DEVELOPER_DIR; };
 		A45949769FBB857AFD4CC2FE /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; path = libsqlite3.tbd; sourceTree = DEVELOPER_DIR; };
 		A5124B098F07AB0CE70E7C0F /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = UIKit.framework; sourceTree = DEVELOPER_DIR; };
 		AC5106F42959EE4E00655416 /* Launch Screen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = "Launch Screen.storyboard"; path = "Storyboards/Launch Screen.storyboard"; sourceTree = "<group>"; };
 		AD544F96AD5EB18FE34CB6F2 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MobileCoreServices.framework; sourceTree = DEVELOPER_DIR; };
-		B16343CABE5245DC84B592C3 /* libquicklz.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libquicklz.xcframework; path = ../../../dist/xcframework/libquicklz.xcframework; sourceTree = SOURCE_ROOT; };
+		B16343CABE5245DC84B592C3 /* libquicklz.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libquicklz.xcframework; path = ../../../../dist/xcframework/libquicklz.xcframework; sourceTree = SOURCE_ROOT; };
 		BB7E40659FD98753F2835610 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; path = libz.tbd; sourceTree = DEVELOPER_DIR; };
 		C62F4F0BAF3EE05CCAA71A80 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreMedia.framework; sourceTree = DEVELOPER_DIR; };
 		C9284233BFFA5F3C3E8B3F60 /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = ImageIO.framework; sourceTree = DEVELOPER_DIR; };
@@ -100,7 +100,7 @@
 		DAA347728ECFEC295FDF6F22 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = QuartzCore.framework; sourceTree = DEVELOPER_DIR; };
 		EBA441B7898864FA55FA614D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
 		F36C451183F607E02CD8B638 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Metal.framework; sourceTree = DEVELOPER_DIR; };
-		F555468F983B0C0C3D8A39E6 /* libSDL2_image.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_image.xcframework; path = ../dist/xcframework/libSDL2_image.xcframework; sourceTree = SOURCE_ROOT; };
+		F555468F983B0C0C3D8A39E6 /* libSDL2_image.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2_image.xcframework; path = ../../../../dist/xcframework/libSDL2_image.xcframework; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -334,7 +334,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "rsync -av --delete \"$PROJECT_DIR/../../../carveracontroller\"/ \"$PROJECT_DIR\"/carveracontrollerpkg\n";
+			shellScript = "rsync -av --delete \"$PROJECT_DIR/../../../../carveracontroller\"/ \"$PROJECT_DIR\"/carveracontrollerpkg\n";
 		};
 		113D17E2153E3DB5001310A6 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -348,7 +348,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "$PROJECT_DIR/../../../dist/hostpython3/bin/python -m compileall -f -b \"$PROJECT_DIR\"/carveracontrollerpkg\n";
+			shellScript = "$PROJECT_DIR/../../../../dist/hostpython3/bin/python -m compileall -f -b \"$PROJECT_DIR\"/carveracontrollerpkg\n";
 		};
 		113D17E2153E3DB5001310A7 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -408,8 +408,8 @@
 				DEVELOPMENT_TEAM = QMMYJPQXNE;
 				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
-					"$(SRCROOT)/../../../dist/frameworks",
-					"$(SRCROOT)/../../../dist/xcframework",
+					"$(SRCROOT)/../../../../dist/frameworks",
+					"$(SRCROOT)/../../../../dist/xcframework",
 					"$(inherited)",
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -419,8 +419,8 @@
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/../../../dist/root/python3/include/python3.11/**",
-					"$(SRCROOT)/../../../dist/include/common/sdl2",
+					"$(SRCROOT)/../../../../dist/root/python3/include/python3.11/**",
+					"$(SRCROOT)/../../../../dist/include/common/sdl2",
 				);
 				INFOPLIST_FILE = "carveracontroller-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CarveraController;
@@ -428,7 +428,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../../../dist/lib",
+					"$(SRCROOT)/../../../../dist/lib",
 				);
 				MARKETING_VERSION = 0.8.2;
 				ONLY_ACTIVE_ARCH = YES;
@@ -459,8 +459,8 @@
 				DEVELOPMENT_TEAM = QMMYJPQXNE;
 				EXCLUDED_ARCHS = "";
 				FRAMEWORK_SEARCH_PATHS = (
-					"$(SRCROOT)/../../../dist/frameworks",
-					"$(SRCROOT)/../../../dist/xcframework",
+					"$(SRCROOT)/../../../../dist/frameworks",
+					"$(SRCROOT)/../../../../dist/xcframework",
 					"$(inherited)",
 				);
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -468,8 +468,8 @@
 				GCC_PREFIX_HEADER = "";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/../../../dist/root/python3/include/python3.11/**",
-					"$(SRCROOT)/../../../dist/include/common/sdl2",
+					"$(SRCROOT)/../../../../dist/root/python3/include/python3.11/**",
+					"$(SRCROOT)/../../../../dist/include/common/sdl2",
 				);
 				INFOPLIST_FILE = "carveracontroller-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = CarveraController;
@@ -477,7 +477,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../../../dist/lib",
+					"$(SRCROOT)/../../../../dist/lib",
 				);
 				MARKETING_VERSION = 0.8.2;
 				OTHER_LDFLAGS = "-all_load";
@@ -531,7 +531,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../dist/root/include/";
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../../dist/root/include/";
 			};
 			name = Debug;
 		};
@@ -569,7 +569,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
-				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../dist/root/include/";
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../../dist/root/include/";
 			};
 			name = Release;
 		};

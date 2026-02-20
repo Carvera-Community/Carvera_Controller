@@ -1,3 +1,58 @@
+[unreleased]
+- Enhancement: Support connecting to hidden wifi networks
+- Enhancement: Upload and select a file when it's double clicked in the local file browser
+- Enhancement: Select a file when it's double clicked in the remote file browser
+- Enhancement: Automatically connect to the machine on startup if its wifi address is configured
+- Enhancement: CI workflow for building iOS app
+- Enhancement: Added support sending multiple MDI commands at once
+- Enhancement: Pressing the up arrow when in the MDI input box re-populates the input with the last send command
+- Enhancement: Added "Always on top" Controller config option to keep the application window stay above other windows
+- Enhancement: Added option to resume playback of a gcode file at a particular line on the "Config and Run" screen
+- Enhancement: Added context menu when right clicking a line in a Gcode file. Current option is only to select the line for resume playback. On touch screen long pressing on a line also brings up this context menu.
+- Enhancement: Previewing gcode files synchronises the line selection in the file view with the progress slider
+- Enhancement: If machine is halted during gcode file playback or stopped, populate the last run line number into the resume playback inputbox
+- Enhancement: Back up the machine's config files to the computer where the Controller is running
+- Enhancement: Updated the wcs table page to include a description field for the different wcs
+- Enhancement: Show popup with suggestions when trying to start probing without a probing tool selected
+- Enhancement: Support inverted y-axis jogging controls to match intuition for some users
+- Enhancement: Add SMW fixture plate background images for the Carvera Air
+- Enhancement: Added debug logging of full sent/recieved content as a config option
+- Enhancement: Time remaining is now based on a estimate of the toolpath movements instead of basing on number of lines executed/duration. This adds extra parsing time after selecting a file. This new functionality can be disabled in Controller settings to return to using the time estimates that come from the machine firmware
+- Enhancement: Added debug logging of full sent/received content as a config option
+- Enhancement: Support recalling multiple commands from MDI history with up/down arrow keys
+- Enhancement: Add keyboard shortcuts for launching settings (ctrl+,) and navigating to MDI (ctrl+m)
+- Enhancement: Restore the previously-loaded background image in Config and Run
+- Enhancement: Support increasing USB connection speed if the firmware is >= 2.1.0c. Enable feature and set baud rate in Controller settings
+- Enhancement: Update UI based on machines feature set not on machine model
+- Enhancement: Added ability to use the toolchange popups of the AIR for manual toolchanges with an ATC
+- Enhancement: Added config settings for spindle Max RPM
+- Enhancement: Added a UI prompt if gcode cannot be visualised. File is still allowed to run but features dependent on visualisation will be disabled.
+- Enhancement: Added UI probing section for 4th axis. Currently the only option is stock leveling (M465.1)
+- Enhancement: Added ability to configure the TLO reference position. Defaults to -115.34 which is an empty collet on C1 and CA1
+- Fixed: Improved Overheat/Too Cold/temp undefined warning text
+- Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
+- Fixed: MDI scrolling behavior was sometimes quirky when new text was added
+- Fixed: Prevent keyboard jog when MDI text box has focus
+- Fixed: When uploading firmware, the "Download" and "Upload and select" buttons were visible
+- Fixed: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
+- Fixed: Only move once per keypress in step mode when keyboard jogging
+- Fixed: Pendant A axis position displayed was in MCS not WCS
+- Fixed: In the file manager, Upload and View buttons should be disabled until a file is selected
+- Fixed: missing config settings would disconnect the controller, now issues a warning
+- Fixed: Set A was incorrectly performing a RapidA movement instead of setting the WCS
+- Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
+- Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
+- Change: After loading a program, the gcode view scrolls to the top of the file
+- Change: Packaging assets are now in `assets/packaging` to create space for `assets/design` and other types of assets
+- Change: Improved logging of parser errors of machine responses
+- Change: On USB-serial connect, clear machine's receive buffer by sending "\n;\n"
+- Change: Probing screen overhauled for better visual clarity, defaults to save WCS on all probing operations
+- Change: added keyboard and pendant jogging modes to probing popup. Keyboard jogging is disabled when first opening the popup or clicking into any text field
+- Change: Values in the top bar buttons now shrink in font_size if just a bit too big (by up to 20%), and if still overflowing perform a marquee scroll
+- Change: Workspace Descriptions are now shown (if set) instead of G54 etc
+- Change: Laser and Spindle Top Bar buttons are now combined, and laser mode enable button added to Tool drop down to switch between them
+- Change - Added the instant spindle speed and feed rate overrides to the relavent +/- buttons and gated them behind a controller setting and firmware version 2.1.0c
+
 [2.0.0]
 - Fixed: Closing the Controller after auto-reconnection canceled causes the app to freeze
 - Fixed: App crashes if machine connection is lost while the controller attempts to query the the Diagnostic info
@@ -6,6 +61,7 @@
 - Fixed: Hard-coded search paths in Xcode project for iOS app
 - Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
 - Fixed: Scaling of the UI in Android no longer cuts off menu button on displays with 5:3 aspect ratio
+- Fixed: The H parameter in A axis Y calibration and graphic was wrong, the probe depth is set via E
 - Change: Intel MacOS minimum version increased to MacOS-14 (Sonoma). Previous versions might work, but will be unsupported
 
 [2.0.0-RC2]
@@ -52,8 +108,7 @@
 - Change: Added config item to skip moving to path origin on gcode playback start. Community firmware > 2.0.0c is required for this feature.
 - Fix: Upload-and-Select button is now disabled until a file is selected
 - Fix: WBH04 Pendant Macro-10 should be treated as an action button
-- Fix: Better handling of machine diagnostic output to support analogue mode spindles
-- Fix: XYZ Block probing UI was running the set offset gcode G10L2 instead of M495.3 
+- Fix: The background image for the CA1 in the configure-and-run preview screen was sized incorrectly causing scaling issues
 
 [0.10.1]
 - Change: Added input validation to catch empty values on input boxes

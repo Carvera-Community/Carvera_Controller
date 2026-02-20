@@ -376,6 +376,14 @@
     },
     {
         "type": "numeric",
+        "title": "Reference Tool MCS Z",
+        "desc": "The MCS Z height when probing an empty collet",
+        "section": "Advanced",
+        "key": "coordinate.reference_tool_mz",
+        "default": "-115.34"
+    },
+    {
+        "type": "numeric",
         "title": "Safe Z",
         "desc": "Safety Z height when clamping tool",
         "section": "Advanced",
@@ -556,6 +564,14 @@
     },
     {
         "type": "numeric",
+        "title": "Max RPM",
+        "desc": "Maximum RPM value the machine will allow",
+        "section": "Advanced",
+        "key": "spindle.max_rpm",
+        "default": "15000"
+    },
+    {
+        "type": "numeric",
         "title": "Cooldown Threshold",
         "desc": "Temperature to turn on or off spindle fan",
         "section": "Advanced",
@@ -623,5 +639,13 @@
         "desc": "Enter upper case: 'DEFAULT' to save default",
         "section": "Restore",
         "key": "default"
+    },
+    {
+        "type": "options",
+        "title": "Back up configuration files",
+        "desc": "config.txt, flex_compensation.dat, etc. will be backed up to your computer",
+        "section": "Backup",
+        "key": "backup",
+        "options": ["Back up files now"]
     }
 ]

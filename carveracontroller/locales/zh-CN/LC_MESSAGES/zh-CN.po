@@ -45,7 +45,7 @@ msgid "ATC Position Occupied"
 msgstr "自动换刀位置被占用"
 
 #: main.py:180
-msgid "Spindle Overheated"
+msgid "Spindle Temp Error"
 msgstr "主轴过热"
 
 #: main.py:181

@@ -80,7 +80,7 @@ class WIFIStream:
     modem = None
 
     # ----------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self, log_sent_receive = False):
 
         self.modem = XMODEM(self.getc, self.putc, 'xmodem8k')
 
@@ -89,14 +89,20 @@ class WIFIStream:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.modem.log.addHandler(handler)
+        self.log_sent_receive = log_sent_receive
 
     # ----------------------------------------------------------------------
     def send(self, data):
+        if self.log_sent_receive:
+            logger.debug(f"SENT: {data}")
         self.socket.send(data)
 
     # ----------------------------------------------------------------------
     def recv(self):
-        return self.socket.recv(BUFFER_SIZE)
+        data = self.socket.recv(BUFFER_SIZE)
+        if self.log_sent_receive:
+            logger.debug(f"RECIEVED: {data}")
+        return data
 
     # ----------------------------------------------------------------------
     def open(self, address):

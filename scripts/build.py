@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # ------ Build config ------
 APP_NAME = "Carvera-Controller-Community"
 PACKAGE_NAME = "carveracontroller"
-ASSETS_FOLDER = "packaging_assets"
+ASSETS_FOLDER = "assets/packaging"
 
 # ------ Versionfile info ------
 COMPANY_NAME = "Carvera-Community"
@@ -376,8 +376,8 @@ def create_macos_dmg():
     cmd = [
         "create-dmg",
         "--volname", "carvera-controller-community",
-        "--background", "packaging_assets/dmg_background.jpg",
-        "--volicon", "packaging_assets/icon-src.icns",
+        "--background", "assets/packaging/dmg_background.jpg",
+        "--volicon", "assets/packaging/icon-src.icns",
         "--window-pos", "200", "200",
         "--window-size", "640", "324",
         "--icon", "Carvera Controller Community.app", "130", "130",
