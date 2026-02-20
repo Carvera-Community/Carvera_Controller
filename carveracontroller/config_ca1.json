@@ -428,6 +428,14 @@
     },
     {
         "type": "numeric",
+        "title": "Max RPM",
+        "desc": "Maximum RPM value the machine will allow",
+        "section": "Advanced",
+        "key": "spindle.max_rpm",
+        "default": "13000"
+    },
+    {
+        "type": "numeric",
         "title": "Cooldown Threshold",
         "desc": "Temperature to turn on or off spindle fan",
         "section": "Advanced",

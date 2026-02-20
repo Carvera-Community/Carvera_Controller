@@ -25,6 +25,7 @@
 - Enhancement: Support increasing USB connection speed if the firmware is >= 2.1.0c. Enable feature and set baud rate in Controller settings
 - Enhancement: Update UI based on machines feature set not on machine model
 - Enhancement: Added ability to use the toolchange popups of the AIR for manual toolchanges with an ATC
+- Enhancement: Added config settings for spindle Max RPM
 - Enhancement: Added a UI prompt if gcode cannot be visualised. File is still allowed to run but features dependent on visualisation will be disabled.
 - Enhancement: Added UI probing section for 4th axis. Currently the only option is stock leveling (M465.1)
 - Enhancement: Added ability to configure the TLO reference position. Defaults to -115.34 which is an empty collet on C1 and CA1
@@ -37,6 +38,7 @@
 - Fixed: Only move once per keypress in step mode when keyboard jogging
 - Fixed: Pendant A axis position displayed was in MCS not WCS
 - Fixed: In the file manager, Upload and View buttons should be disabled until a file is selected
+- Fixed: missing config settings would disconnect the controller, now issues a warning
 - Fixed: Set A was incorrectly performing a RapidA movement instead of setting the WCS
 - Change: Scan Margin, Auto Z Probe default to disabled to encourage novice users to not "one-shot" setup.
 - Change: Ctrl + Enter needs to be pressed to send an MDI command now. Pressing enter will simply add a new line to the input box.
