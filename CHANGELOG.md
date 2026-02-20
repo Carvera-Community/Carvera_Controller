@@ -1,4 +1,4 @@
-[unreleased]
+[2.1.0-RC1]
 - Enhancement: Support connecting to hidden wifi networks
 - Enhancement: Upload and select a file when it's double clicked in the local file browser
 - Enhancement: Select a file when it's double clicked in the remote file browser
