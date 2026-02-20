@@ -108,6 +108,14 @@
         "desc": "Anchor2 Y Offset relative to anchor1",
         "section": "Advanced",
         "key": "coordinate.anchor2_offset_y"
+    },    
+    {
+        "type": "numeric",
+        "title": "Reference Tool MCS Z",
+        "desc": "The MCS Z height when probing an empty collet",
+        "section": "Advanced",
+        "key": "coordinate.reference_tool_mz",
+        "default": "-115.34"
     },
      {
         "type": "numeric",

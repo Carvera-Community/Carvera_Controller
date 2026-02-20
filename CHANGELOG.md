@@ -27,6 +27,7 @@
 - Enhancement: Added ability to use the toolchange popups of the AIR for manual toolchanges with an ATC
 - Enhancement: Added a UI prompt if gcode cannot be visualised. File is still allowed to run but features dependent on visualisation will be disabled.
 - Enhancement: Added UI probing section for 4th axis. Currently the only option is stock leveling (M465.1)
+- Enhancement: Added ability to configure the TLO reference position. Defaults to -115.34 which is an empty collet on C1 and CA1
 - Fixed: Improved Overheat/Too Cold/temp undefined warning text
 - Fixed: Improved reliability of the app cleanup/exit handler by switching to the Kivy on_request_close() hook.
 - Fixed: MDI scrolling behavior was sometimes quirky when new text was added

@@ -376,6 +376,14 @@
     },
     {
         "type": "numeric",
+        "title": "Reference Tool MCS Z",
+        "desc": "The MCS Z height when probing an empty collet",
+        "section": "Advanced",
+        "key": "coordinate.reference_tool_mz",
+        "default": "-115.34"
+    },
+    {
+        "type": "numeric",
         "title": "Safe Z",
         "desc": "Safety Z height when clamping tool",
         "section": "Advanced",
