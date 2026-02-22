@@ -62,8 +62,7 @@ class CalibrationOperationFourthZ(OperationsBase):
         config = copy.deepcopy(input_config)
 
         config[CalibrationParameterDefinitions.YAxisDistance.code] = ''
-        config[CalibrationParameterDefinitions.PinDiameter.code] = '' 
-        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''    
+        config[CalibrationParameterDefinitions.SideProbeDepth.code] = ''
 
         return "M469.5 " + self.config_to_gcode(config) + "\n Make sure 4th Axis in on has a pin in the chuck" 
 

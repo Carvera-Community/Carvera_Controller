@@ -1,3 +1,6 @@
+[unreleased]
+- Fixed: The 4th axis probing sequence for the z offset calibration (M469.5) was not passing pin diameter input through to the machine
+
 [2.1.0-RC1]
 - Enhancement: Support connecting to hidden wifi networks
 - Enhancement: Upload and select a file when it's double clicked in the local file browser
