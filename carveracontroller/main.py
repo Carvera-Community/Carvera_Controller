@@ -558,6 +558,14 @@ class GCodeLineContextMenu(FloatLayout):
         app.root.coord_popup.cbx_startline.active = True
         app.root.coord_popup.txt_startline.text = str(self.line_number)
         self.parent.remove_widget(self)
+
+    def clear_resume_at_line(self):
+        """Clear the resume at line setting"""
+        app = App.get_running_app()
+
+        app.root.coord_popup.cbx_startline.active = False
+        app.root.coord_popup.txt_startline.text = ''
+        self.parent.remove_widget(self)
     
     def dismiss(self):
         """Close the context menu"""
