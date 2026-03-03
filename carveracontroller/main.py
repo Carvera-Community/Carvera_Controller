@@ -3947,7 +3947,7 @@ class Makera(RelativeLayout):
         self.progress_popup.progress_text = tr._('Opening local file') + '\n%s' % filepath
         self.progress_popup.open()
 
-        threading.Thread(target=self.load_gcode_file, args=(filepath)).start()
+        threading.Thread(target=self.load_gcode_file, args=(filepath,), daemon=True).start()
         # Clock.schedule_once(partial(self.load_gcode_file, filepath), 0)
 
     # -----------------------------------------------------------------------
