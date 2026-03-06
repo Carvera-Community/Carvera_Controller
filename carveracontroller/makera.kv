@@ -5812,7 +5812,7 @@
 
 <GCodeLineContextMenu>:
     size_hint: None, None
-    size: dp(250), dp(60)
+    size: dp(250), dp(86)
 
     BoxLayout:
         orientation: 'vertical'
@@ -5833,6 +5833,19 @@
             disabled: app.root.gcode_cannot_visualise
             on_press: root.resume_at_line()
         
+        # Clear resume at line option
+        Button:
+            id: clear_resume_option
+            text: 'Clear resume at line'
+            size_hint_y: None
+            height: dp(26)
+            font_size: '15sp'
+            background_color: (250/255, 250/255, 250/255, 1)
+            color: (1, 1, 1, 1)
+            pos_hint:{'top': 1,'right':1}
+            disabled: not app.root.coord_popup.cbx_startline.active
+            on_press: root.clear_resume_at_line()
+
         # Cancel option
         Button:
             id: cancel_option
