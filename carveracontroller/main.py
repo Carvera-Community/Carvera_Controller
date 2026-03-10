@@ -3784,6 +3784,8 @@ class Makera(RelativeLayout):
         if self.confirm_popup.showing:
             return
         target_tool = str(CNC.vars['target_tool'])
+        target_collet_type = CNC.vars['target_collet_type']
+        target_collet_type_text = ["Undefined","3mm" "1/8\"", "4mm", "6mm", "1/4\"","8mm"]
         if CNC.vars['target_tool'] == 0:
             target_tool = 'Probe'
         elif CNC.vars['target_tool'] == 8888:
@@ -3796,8 +3798,12 @@ class Makera(RelativeLayout):
             #target is valid tool
             if CNC.vars['target_tool'] != -1:
                 if CNC.vars['tool'] == -1:
-                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
-                    self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._(' Then press \' Confirm\' or main button to clamp.\n')
+                    if target_collet_type == 0:
+                        self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                        self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to clamp.\n')
+                    else:
+                        self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                        self.confirm_popup.lb_content.text = tr._('Change to collet: ') + '%s\n' % (target_collet_type_text[target_collet_type]) + tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to clamp.\n')
                 else:
                     self.confirm_popup.lb_title.text = tr._('Manual toolchange')
                     self.confirm_popup.lb_content.text = tr._('When the tool is clamped press \' Confirm\' or main button to proceed.\nKeep your hands off the spindle unless you are willing to lose a finger!')
@@ -3806,8 +3812,12 @@ class Makera(RelativeLayout):
                     self.confirm_popup.lb_title.text = tr._('Hold tool')
                     self.confirm_popup.lb_content.text = tr._('Please hold the current tool and press \' Confirm\' or main button to proceed')
                 else:
-                    self.confirm_popup.lb_title.text = tr._('Open clamp')
-                    self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+                    if target_collet_type == 0:
+                        self.confirm_popup.lb_title.text = tr._('Confirm empty')
+                        self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+                    else:
+                        self.confirm_popup.lb_title.text = tr._('Confirm empty')
+                        self.confirm_popup.lb_content.text = tr._('Change to collet: ') + '%s\n' % (target_collet_type_text[target_collet_type]) + tr._('When the collet is changed and empty press \' Confirm\' or main button to proceed')
         else:
             self.confirm_popup.lb_title.text = tr._('Changing Tool')
             self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
