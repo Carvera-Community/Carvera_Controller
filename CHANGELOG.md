@@ -1,6 +1,7 @@
 [unreleased]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
 - Enhancement: Display collet information in the manual toolchange popup, when using S1-S6 parameter for M6 toolchanges
+- Enhancement: Display of the parsed line during file playback to visualize the lookahead buffer
 - Fixed: The 4th axis probing sequence for the z offset calibration (M469.5) was not passing pin diameter input through to the machine
 - Fixed: Viewing Gcode would cause an app crash when not connected to a machine
 
