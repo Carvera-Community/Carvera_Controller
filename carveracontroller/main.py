@@ -3785,7 +3785,7 @@ class Makera(RelativeLayout):
             return
         target_tool = str(CNC.vars['target_tool'])
         target_collet_type = CNC.vars['target_collet_type']
-        target_collet_type_text = ["Undefined","3mm" "1/8\"", "4mm", "6mm", "1/4\"","8mm"]
+        target_collet_type_text = ["Undefined","3mm", "1/8\"", "4mm", "6mm", "1/4\"","8mm"]
         if CNC.vars['target_tool'] == 0:
             target_tool = 'Probe'
         elif CNC.vars['target_tool'] == 8888:
