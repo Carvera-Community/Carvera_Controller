@@ -1239,10 +1239,15 @@ class Controller:
                 CNC.vars["target_tool"] = int(d['T'][2])
             else:
                 CNC.vars["target_tool"] = -1
+            if len(d['T']) > 3:
+                CNC.vars["target_collet_type"] = int(d['T'][3])
+            else:
+                CNC.vars["target_collet_type"] = 0
         else:
             CNC.vars["tool"] = -1
             CNC.vars["tlo"] = 0.0
             CNC.vars["target_tool"] = -1
+            CNC.vars["target_collet_type"] = 0
         if 'W' in d:
             CNC.vars["wpvoltage"] = float(d['W'][0])
         if 'L' in d:
