@@ -983,6 +983,8 @@ class Controller:
         position = self._get_line_position_from_gcode_viewer(prev_line) if prev_line else (None, None, None, None)
         x, y, z, a = position
 
+        app = App.get_running_app() if App is not None else None
+
         # Find additional commands to insert after "goto"
         # Note the use of buffer is to avoid the firmware bug https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/211
         additional_commands = []
@@ -1065,19 +1067,22 @@ class Controller:
         # Add SafeZ movement (G53 G0 Z-2)
         # This should come after coordinate system setup but before position movement
         additional_commands.append("buffer G53 G0 Z-2")
-        
-        # Add G0 movement to above the position
-        if x is not None or y is not None or z is not None or a is not None:
-            g0_cmd = "G0"
-            if x is not None:
-                g0_cmd += f" X{x:.3f}"
-            if y is not None:
-                g0_cmd += f" Y{y:.3f}"
-            if a is not None:
-                a = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
-                g0_cmd += f" A{a:.3f}"
-            additional_commands.append(f"buffer {g0_cmd}")
 
+        # Rapid XY first, then A. A combined G0 XY+A is often very slow because
+        # the planner must synchronize all axes
+
+        if x is not None or y is not None:
+            g0_xy = "G0"
+            if x is not None:
+                g0_xy += f" X{x:.3f}"
+            if y is not None:
+                g0_xy += f" Y{y:.3f}"
+            additional_commands.append(f"buffer {g0_xy}")
+
+        # Only move A when CNC parser marked the loaded program as 4-axis
+        if a is not None and app is not None and app.has_4axis:
+            a_machine = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
+            additional_commands.append(f"buffer G0 A{a_machine:.3f}")
         # Set the G1 feed modal
         feed_rate = None
         if local_file_path:
@@ -1094,8 +1099,7 @@ class Controller:
         # the bug is that it goes to the end of the line specified instead of start.
         start_line_comment = ""
 
-        app = App.get_running_app()
-        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
+        if app is not None and not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
             start_line = int(start_line)-1
             start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
 
