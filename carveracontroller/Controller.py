@@ -1065,18 +1065,24 @@ class Controller:
         # Add SafeZ movement (G53 G0 Z-2)
         # This should come after coordinate system setup but before position movement
         additional_commands.append("buffer G53 G0 Z-2")
-        
-        # Add G0 movement to above the position
-        if x is not None or y is not None or z is not None or a is not None:
-            g0_cmd = "G0"
+
+        # Rapid XY first, then A. A combined G0 XY+A is often very slow because
+        # the planner must synchronize all axes
+
+        if x is not None or y is not None:
+            g0_xy = "G0"
             if x is not None:
-                g0_cmd += f" X{x:.3f}"
+                g0_xy += f" X{x:.3f}"
             if y is not None:
-                g0_cmd += f" Y{y:.3f}"
-            if a is not None:
-                a = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
-                g0_cmd += f" A{a:.3f}"
-            additional_commands.append(f"buffer {g0_cmd}")
+                g0_xy += f" Y{y:.3f}"
+            additional_commands.append(f"buffer {g0_xy}")
+
+        a_machine = None
+        if a is not None:
+            a_machine = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
+
+         if a_machine is not None:
+            additional_commands.append(f"buffer G0 A{a_machine:.3f}")
 
         # Set the G1 feed modal
         feed_rate = None
