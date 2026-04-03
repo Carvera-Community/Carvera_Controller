@@ -20,7 +20,7 @@ try:
 except ImportError:
     from queue import *
 
-from .CNC import CNC
+from .CNC import CNC, CMDPAT, PARENPAT, SEMIPAT
 from .USBStream import USBStream
 from .WIFIStream import WIFIStream
 from .XMODEM import EOT, CAN
@@ -883,6 +883,57 @@ class Controller:
             logger.warning(f"Error finding feed rate before line {start_line} in {local_file_path}: {e}")
             return None
 
+    def _gcode_line_to_cmd_tokens(self, original_line):
+        """
+        Split a physical line into G-code words the same way CNC.parseLine does.
+        Handles multi-command blocks (e.g. 'G90 G94', 'G17 G21 G54') without false
+        substring matches (e.g. G17 matching a search for G1).
+        """
+        line = original_line.strip()
+        if not line or line[0] in ("%", "#", ";"):
+            return []
+        line = PARENPAT.sub("", line)
+        line = SEMIPAT.sub("", line)
+        if not line.strip():
+            return []
+        line = line.replace(" ", "")
+        if not line:
+            return []
+        tokenized = CMDPAT.sub(r" \1", line).lstrip()
+        return tokenized.split()
+
+    def _command_token_matches_base(self, token, base_command):
+        """True if token is the same modal word as base_command (G0/G00, but not G17 for G1)."""
+        if not token or not base_command:
+            return False
+        t, b = token.upper(), base_command.upper()
+        if t == b:
+            return True
+        if len(b) < 2 or len(t) < 2 or t[0] != b[0] or b[0] not in ("G", "M"):
+            return False
+        if "." in b or "." in t:
+            return False
+        try:
+            return int(float(t[1:])) == int(float(b[1:]))
+        except ValueError:
+            return False
+
+    def _is_tool_select_token(self, token):
+        tu = token.upper()
+        if len(tu) < 2 or tu[0] != "T":
+            return False
+        return tu[1:].isdigit()
+
+    def _compose_m6_command_from_tokens(self, tokens, m6_index):
+        """Build e.g. 'T4 M6' or 'M6 T4' from the line's tokens (same line as M6)."""
+        parts = []
+        if m6_index > 0 and self._is_tool_select_token(tokens[m6_index - 1]):
+            parts.append(tokens[m6_index - 1].upper())
+        parts.append(tokens[m6_index].upper())
+        if m6_index + 1 < len(tokens) and self._is_tool_select_token(tokens[m6_index + 1]):
+            parts.append(tokens[m6_index + 1].upper())
+        return " ".join(parts)
+
     def _find_command_line_number(self, local_file_path, start_line, gcode_command):
         """
         Search backwards from start_line to find the last occurrence of a gcode command.
@@ -894,8 +945,8 @@ class Controller:
                           Can include parameters (e.g., "M3 S1000", "M6 T1")
         
         Returns:
-            Tuple of (command_string, line_number) where command_string is the found command
-            (with parameters if present) and line_number is the 1-based line number, or (None, None) if not found
+            Tuple of (command_string, line_number). For M6, includes adjacent T on the same line
+            (e.g. 'T4 M6'). Otherwise the matched modal word (e.g. G90 from 'G90 G94').
         """
         if not local_file_path or not os.path.exists(local_file_path):
             return (None, None)
@@ -918,32 +969,13 @@ class Controller:
             base_command = command_upper.split()[0]
             
             for i in range(start_line - 2, -1, -1):
-                original_line = lines[i]
-                line = original_line.strip()
-                
-                # Remove comments using string methods
-                if ';' in line:
-                    line = line[:line.index(';')]
-                # Remove parentheses comments using string methods
-                while '(' in line and ')' in line:
-                    start_paren = line.index('(')
-                    end_paren = line.index(')', start_paren)
-                    line = line[:start_paren] + line[end_paren + 1:]
-                
-                # Check if line contains the base command (case-insensitive)
-                line_upper = line.upper()
-                if base_command in line_upper:
-                    # Find the position of the command in the line
-                    cmd_pos = line_upper.find(base_command)
-                    if cmd_pos != -1:
-                        # Extract from start of line to end of the command word
-                        # Find where the command word ends (next space or end of line)
-                        end_pos = cmd_pos + len(base_command)
-                        # Include any parameters that follow the command (letters/numbers)
-                        while end_pos < len(line) and (line[end_pos].isspace() or line[end_pos].isalnum() or line[end_pos] in '.-'):
-                            end_pos += 1
-                        full_command = line[:end_pos].strip()
-                        return (full_command, i + 1)
+                tokens = self._gcode_line_to_cmd_tokens(lines[i])
+                for ti in range(len(tokens) - 1, -1, -1):
+                    token = tokens[ti]
+                    if self._command_token_matches_base(token, base_command):
+                        if base_command.upper() == "M6":
+                            return (self._compose_m6_command_from_tokens(tokens, ti), i + 1)
+                        return (token.upper(), i + 1)
                 
         except Exception as e:
             logger.warning(f"Error finding command {gcode_command} before line {start_line} in {local_file_path}: {e}")
@@ -1005,6 +1037,40 @@ class Controller:
                 additional_commands.append("buffer G20")
             elif g21_line:
                 additional_commands.append("buffer G21")
+
+            # Absolute vs incremental distance mode (G90 / G91), including on shared lines e.g. G90 G94
+            _, g90_line = self._find_command_line_number(local_file_path, start_line, "G90")
+            _, g91_line = self._find_command_line_number(local_file_path, start_line, "G91")
+            if g90_line is not None and g91_line is not None:
+                if g90_line > g91_line:
+                    additional_commands.append("buffer G90")
+                elif g91_line > g90_line:
+                    additional_commands.append("buffer G91")
+                else:
+                    # Same line: last G90/G91 word wins (e.g. G91 G90)
+                    last_mode = None
+                    try:
+                        with open(local_file_path, "r", encoding="utf-8", errors="ignore") as f:
+                            joint_line = f.readlines()[g90_line - 1]
+                        for tok in self._gcode_line_to_cmd_tokens(joint_line):
+                            tu = tok.upper()
+                            if tu == "G90":
+                                last_mode = "G90"
+                            elif tu == "G91":
+                                last_mode = "G91"
+                    except (OSError, IndexError) as e:
+                        logger.warning(
+                            "Could not read line %s for G90/G91 tie-break (%s): %s",
+                            g90_line,
+                            local_file_path,
+                            e,
+                        )
+                    if last_mode:
+                        additional_commands.append(f"buffer {last_mode}")
+            elif g90_line:
+                additional_commands.append("buffer G90")
+            elif g91_line:
+                additional_commands.append("buffer G91")
 
             # Search for WCS coordinate space - find the last one used
             wcs_commands = [
