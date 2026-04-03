@@ -21,6 +21,7 @@ url = "https://pypi.org/simple/"
 [tool.poetry.dependencies]
 python = "<3.14,>=3.9"
 Kivy = "^2.3.1"
+certifi = ">=2017.4.17"
 pyserial = "^3.5"
 pyquicklz = "^1.4.1"
 hid = "^1.0.7"
