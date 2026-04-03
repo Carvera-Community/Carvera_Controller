@@ -4,6 +4,7 @@
 - Fixed: The 4th axis probing sequence for the z offset calibration (M469.5) was not passing pin diameter input through to the machine
 - Fixed: Viewing Gcode would cause an app crash when not connected to a machine
 - Fixed: Jogging buttons in the probing screen was using the step size from the main control panel not the probing screen
+- Fixed: Use embedded CA certs from certifi instead of depending on PyInstaller/OS
 
 [2.1.0-RC1]
 - Enhancement: Support connecting to hidden wifi networks
