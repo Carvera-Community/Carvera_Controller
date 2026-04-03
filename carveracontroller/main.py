@@ -1433,7 +1433,7 @@ class WCSSettingsPopup(ModalView):
                         cmd += f"{axis}{value:.3f}"
                 # Send rotation command if rotation changed
                 if 'R' in changed_values:
-                    cmd += f"R{changed_values['R']:.1f}"
+                    cmd += f"R{changed_values['R']:.3f}"
                 self.controller.executeCommand(cmd)
                
     def clear_wcs_offsets(self, wcs):
