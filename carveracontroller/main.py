@@ -5507,7 +5507,9 @@ class Makera(RelativeLayout):
         self.ids.step_xy.disabled = False
         self.ids.step_a.disabled = False
         self.ids.step_z.disabled = False
-    
+        self.probing_popup.ids.step_xy.disabled = False
+        self.probing_popup.ids.step_a.disabled = False
+        self.probing_popup.ids.step_z.disabled = False
 
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
@@ -5516,7 +5518,9 @@ class Makera(RelativeLayout):
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
-
+        self.probing_popup.ids.step_xy.disabled = True
+        self.probing_popup.ids.step_a.disabled = True
+        self.probing_popup.ids.step_z.disabled = True
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
