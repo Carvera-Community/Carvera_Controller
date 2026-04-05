@@ -5,7 +5,8 @@
 - Fixed: Viewing Gcode would cause an app crash when not connected to a machine
 - Fixed: Jogging buttons in the probing screen was using the step size from the main control panel not the probing screen
 - Fixed: Use embedded CA certs from certifi instead of depending on PyInstaller/OS
-- Fixed The input of the rotation value was cut to one decimal in the wcs table. Now uses 3 decimals.
+- Fixed: The input of the rotation value was cut to one decimal in the wcs table. Now uses 3 decimals.
+- Fixed: Disable probing dialog's step size text boxes when in continuous jog mode
 
 [2.1.0-RC1]
 - Enhancement: Support connecting to hidden wifi networks
