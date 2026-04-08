@@ -1005,7 +1005,15 @@ class Controller:
         try:
             start_line_int = int(start_line)
         except (ValueError, TypeError):
-            start_line_int = None
+            raise ValueError(f"Invalid start line: {start_line!r}")
+
+        if local_file_path:
+            # Fail closed if we can't safely derive modal state from the file.
+            if not os.path.exists(local_file_path):
+                logger.error(f"Cached gcode file is missing from local file system: {local_file_path}\n")
+                raise FileNotFoundError(
+                    f"Cached gcode file is missing from local file system: {local_file_path}"
+                )
         prev_line = None
         if local_file_path and start_line_int is not None:
             prev_line = self._get_last_movement_line_before(local_file_path, start_line_int)
@@ -1419,6 +1427,9 @@ class Controller:
     def open(self, conn_type, address):
         # init connection
         self.connection_type = conn_type
+        # Persist the last connection target so callers can detect "same machine"
+        # reconnects (e.g. for resume-at-line cached file behavior).
+        self.connection_address = address
         if conn_type == CONN_USB:
             self.stream = self.usb_stream
             self._baud_upgrade_attempted = False

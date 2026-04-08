@@ -5874,6 +5874,17 @@ class Makera(RelativeLayout):
         
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+
+        # If the cached temp file was deleted externally, fail with a UI popup.
+        if local_file_path and not os.path.exists(local_file_path):
+            logger.error(f"Resume-at-line: Cached gcode file is missing from local file system {local_file_path}\n")
+            self.show_message_popup(
+                tr._(f"Cached gcode file is missing from local file system\n"
+                    "Please select the file again in the file browser\n"
+                    "to re-download the file from the machine, then retry."),
+                False,
+            )
+            return
         
         # Get command preview from Controller (fail closed if cached file is missing)
         try:
@@ -5898,6 +5909,14 @@ class Makera(RelativeLayout):
         """Execute play command with start_line after user confirmation"""
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+
+        # If the cached temp file was deleted externally, fail with a UI popup.
+        if local_file_path and not os.path.exists(local_file_path):
+            self.show_message_popup(
+                tr._('Cached file is missing.\n\nPlease re-open or re-download the file, then try resume-at-line again.'),
+                False,
+            )
+            return
         try:
             self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
         except Exception as e:
