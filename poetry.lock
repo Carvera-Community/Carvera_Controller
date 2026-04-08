@@ -470,14 +470,14 @@ reference = "pypi-public"
 
 [[package]]
 name = "hid"
-version = "1.0.8"
+version = "1.0.9"
 description = "ctypes bindings for hidapi"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "hid-1.0.8-py3-none-any.whl", hash = "sha256:9b6fac92098322ae5d8d839c2bb30620b7533284bcf5f3e6aedcc0483c388046"},
-    {file = "hid-1.0.8.tar.gz", hash = "sha256:5ca129a7b9434ace5e3e429c1092a16792feffaf067a46b666e9c586872cdcfe"},
+    {file = "hid-1.0.9-py3-none-any.whl", hash = "sha256:6b9289e00bbc1e1589bec0c7f376a63fe03a4a4a1875575d0ad60e3e11a349f4"},
+    {file = "hid-1.0.9.tar.gz", hash = "sha256:f4471f11f0e176d1b0cb1b243e55498cc90347a3aede735655304395694ac182"},
 ]
 
 [package.source]
