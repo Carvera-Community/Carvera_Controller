@@ -1,4 +1,7 @@
 [unreleased]
+
+
+[2.1.0]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
 - Enhancement: Display collet information in the manual toolchange popup, when using S1-S6 parameter for M6 toolchanges
 - Fixed: The 4th axis probing sequence for the z offset calibration (M469.5) was not passing pin diameter input through to the machine
@@ -7,6 +10,8 @@
 - Fixed: Use embedded CA certs from certifi instead of depending on PyInstaller/OS
 - Fixed: The input of the rotation value was cut to one decimal in the wcs table. Now uses 3 decimals.
 - Fixed: Disable probing dialog's step size text boxes when in continuous jog mode
+- Fixed: Connecting used to clear the selected_local_filename of gcode file which would break resume-at-line functionality after a reconnect. Now it's retained if reconnecting to the same machine, and cleared only if connecting to a different machine
+- Fixed: Using resume-at-line functionality silenetly used to break if the cached gcode file has been deleted while the app was running. Now raises a UI error prompt.
 
 [2.1.0-RC1]
 - Enhancement: Support connecting to hidden wifi networks
