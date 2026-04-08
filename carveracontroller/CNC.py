@@ -84,6 +84,7 @@ class CNC:
         "cutter"     : "",
         "tlo"        : 0.0,
         "target_tool": -1,
+        "target_collet_type": 0,
         "program"    : "M0",
         "spindle"    : "M5",
         "coolant"    : "M9",

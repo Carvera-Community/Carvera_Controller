@@ -558,6 +558,14 @@ class GCodeLineContextMenu(FloatLayout):
         app.root.coord_popup.cbx_startline.active = True
         app.root.coord_popup.txt_startline.text = str(self.line_number)
         self.parent.remove_widget(self)
+
+    def clear_resume_at_line(self):
+        """Clear the resume at line setting"""
+        app = App.get_running_app()
+
+        app.root.coord_popup.cbx_startline.active = False
+        app.root.coord_popup.txt_startline.text = ''
+        self.parent.remove_widget(self)
     
     def dismiss(self):
         """Close the context menu"""
@@ -1425,7 +1433,7 @@ class WCSSettingsPopup(ModalView):
                         cmd += f"{axis}{value:.3f}"
                 # Send rotation command if rotation changed
                 if 'R' in changed_values:
-                    cmd += f"R{changed_values['R']:.1f}"
+                    cmd += f"R{changed_values['R']:.3f}"
                 self.controller.executeCommand(cmd)
                
     def clear_wcs_offsets(self, wcs):
@@ -2692,6 +2700,8 @@ class Makera(RelativeLayout):
     past_machine_addr = None
     allow_mdi_while_machine_running = "0"
     allow_jogging_while_machine_running = "0"
+    _selected_file_machine_key = None
+    _last_loaded_file_key = None  # used to track if a different file is selected
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
@@ -3776,6 +3786,8 @@ class Makera(RelativeLayout):
         if self.confirm_popup.showing:
             return
         target_tool = str(CNC.vars['target_tool'])
+        target_collet_type = CNC.vars['target_collet_type']
+        target_collet_type_text = ["Undefined","3mm", "1/8\"", "4mm", "6mm", "1/4\"","8mm"]
         if CNC.vars['target_tool'] == 0:
             target_tool = 'Probe'
         elif CNC.vars['target_tool'] == 8888:
@@ -3788,8 +3800,12 @@ class Makera(RelativeLayout):
             #target is valid tool
             if CNC.vars['target_tool'] != -1:
                 if CNC.vars['tool'] == -1:
-                    self.confirm_popup.lb_title.text = tr._('Manual toolchange')
-                    self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._(' Then press \' Confirm\' or main button to clamp.\n')
+                    if target_collet_type == 0:
+                        self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                        self.confirm_popup.lb_content.text = tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to clamp.\n')
+                    else:
+                        self.confirm_popup.lb_title.text = tr._('Manual toolchange')
+                        self.confirm_popup.lb_content.text = tr._('Change to collet: ') + '%s\n' % (target_collet_type_text[target_collet_type]) + tr._('Insert tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to clamp.\n')
                 else:
                     self.confirm_popup.lb_title.text = tr._('Manual toolchange')
                     self.confirm_popup.lb_content.text = tr._('When the tool is clamped press \' Confirm\' or main button to proceed.\nKeep your hands off the spindle unless you are willing to lose a finger!')
@@ -3798,8 +3814,12 @@ class Makera(RelativeLayout):
                     self.confirm_popup.lb_title.text = tr._('Hold tool')
                     self.confirm_popup.lb_content.text = tr._('Please hold the current tool and press \' Confirm\' or main button to proceed')
                 else:
-                    self.confirm_popup.lb_title.text = tr._('Open clamp')
-                    self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+                    if target_collet_type == 0:
+                        self.confirm_popup.lb_title.text = tr._('Confirm empty')
+                        self.confirm_popup.lb_content.text = tr._('When the collet is empty press \' Confirm\' or main button to proceed')
+                    else:
+                        self.confirm_popup.lb_title.text = tr._('Confirm empty')
+                        self.confirm_popup.lb_content.text = tr._('Change to collet: ') + '%s\n' % (target_collet_type_text[target_collet_type]) + tr._('When the collet is changed and empty press \' Confirm\' or main button to proceed')
         else:
             self.confirm_popup.lb_title.text = tr._('Changing Tool')
             self.confirm_popup.lb_content.text = tr._('Please change to tool: ') + '%s\n' % (target_tool) + tr._('Then press \' Confirm\' or main button to proceed')
@@ -3947,7 +3967,7 @@ class Makera(RelativeLayout):
         self.progress_popup.progress_text = tr._('Opening local file') + '\n%s' % filepath
         self.progress_popup.open()
 
-        threading.Thread(target=self.load_gcode_file, args=(filepath)).start()
+        threading.Thread(target=self.load_gcode_file, args=(filepath,), daemon=True).start()
         # Clock.schedule_once(partial(self.load_gcode_file, filepath), 0)
 
     # -----------------------------------------------------------------------
@@ -4076,9 +4096,37 @@ class Makera(RelativeLayout):
             self.controller.log.put(Controller.MSG_ERROR, tr._('Download config file error'))
             #self.controller.close()
 
+        # Preserve selected file only when reconnecting to the same machine.
+        # finishLoadConfig() can be called on reconnect; resume-at-line depends on
+        # selected_local_filename (cached local file). If the user connects to a
+        # different machine (different IP/COM port), we must clear it.
         app = App.get_running_app()
-        app.selected_local_filename = ''
+        current_key = self._get_current_machine_connection_key()
+        if self._selected_file_machine_key is None:
+            self._selected_file_machine_key = current_key
+        elif current_key != self._selected_file_machine_key:
+            app.selected_local_filename = ''
+            self._selected_file_machine_key = current_key
         self.updateStatus()
+
+    def _get_current_machine_connection_key(self):
+        """Return a stable identifier for the current machine connection."""
+        try:
+            conn_type = self.controller.connection_type
+        except Exception:
+            return None
+
+        addr = None
+        try:
+            addr = self.controller.connection_address
+        except Exception:
+            addr = None
+
+        if conn_type == CONN_WIFI:
+            return f"wifi:{addr}" if addr else "wifi"
+        if conn_type == CONN_USB:
+            return f"usb:{addr}" if addr else "usb"
+        return str(conn_type)
 
     # -----------------------------------------------------------------------
     def doDownload(self, remote_path, local_path, show_progress=True):
@@ -5489,7 +5537,9 @@ class Makera(RelativeLayout):
         self.ids.step_xy.disabled = False
         self.ids.step_a.disabled = False
         self.ids.step_z.disabled = False
-    
+        self.probing_popup.ids.step_xy.disabled = False
+        self.probing_popup.ids.step_a.disabled = False
+        self.probing_popup.ids.step_z.disabled = False
 
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
@@ -5498,7 +5548,9 @@ class Makera(RelativeLayout):
         self.ids.step_xy.disabled = True
         self.ids.step_a.disabled = True
         self.ids.step_z.disabled = True
-
+        self.probing_popup.ids.step_xy.disabled = True
+        self.probing_popup.ids.step_a.disabled = True
+        self.probing_popup.ids.step_z.disabled = True
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
@@ -5823,9 +5875,26 @@ class Makera(RelativeLayout):
         
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
+
+        # If the cached temp file was deleted externally, fail with a UI popup.
+        if local_file_path and not os.path.exists(local_file_path):
+            logger.error(f"Resume-at-line: Cached gcode file is missing from local file system {local_file_path}\n")
+            self.show_message_popup(
+                tr._(f"Cached gcode file is missing from local file system\n"
+                    "Please select the file again in the file browser\n"
+                    "to re-download the file from the machine, then retry."),
+                False,
+            )
+            return
         
-        # Get command preview from Controller
-        commands = self.controller.playStartLineCommand(file_name, start_line, preview=True, local_file_path=local_file_path)
+        # Get command preview from Controller (fail closed if cached file is missing)
+        try:
+            commands = self.controller.playStartLineCommand(
+                file_name, start_line, preview=True, local_file_path=local_file_path
+            )
+        except Exception as e:
+            self.show_message_popup(tr._(f"Resume-at-line cannot run:\n\n{e}"), False)
+            return
         commands_preview = '\n'.join(commands)
         
         self.confirm_popup.size_hint = (0.8, 0.8)
@@ -5841,7 +5910,18 @@ class Makera(RelativeLayout):
         """Execute play command with start_line after user confirmation"""
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
-        self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+
+        # If the cached temp file was deleted externally, fail with a UI popup.
+        if local_file_path and not os.path.exists(local_file_path):
+            self.show_message_popup(
+                tr._('Cached file is missing.\n\nPlease re-open or re-download the file, then try resume-at-line again.'),
+                False,
+            )
+            return
+        try:
+            self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+        except Exception as e:
+            self.show_message_popup(tr._(f"Resume-at-line failed:\n\n{e}"), False)
     
     # -----------------------------------------------------------------------
     def update_resume_at_line_from_played_line(self, line_number, percent_complete):
@@ -6011,12 +6091,16 @@ class Makera(RelativeLayout):
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
 
-        # Clear resume at line when a (possibly new) gcode file has finished loading
-        if self.coord_popup:
-            self.coord_popup.cbx_startline.active = False
-            self.coord_popup.txt_startline.text = ''
-
         app = App.get_running_app()
+
+        # Only clear resume-at-line when a different file is loaded.
+        current_file_key = app.selected_remote_filename or app.selected_local_filename
+        if current_file_key != self._last_loaded_file_key:
+            if self.coord_popup:
+                self.coord_popup.cbx_startline.active = False
+                self.coord_popup.txt_startline.text = ''
+            self._last_loaded_file_key = current_file_key
+
         app.has_4axis = self.cnc.has_4axis
         if app.has_4axis:
             self.coord_popup.set_config('leveling', 'active', False)

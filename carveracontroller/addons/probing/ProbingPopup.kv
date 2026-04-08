@@ -504,13 +504,13 @@
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'Y-'
-                                    on_press: app.root.controller.jog("Y-{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("Y-{}".format(step_xy.text))
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'X-'
-                                    on_press: app.root.controller.jog("X-{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("X-{}".format(step_xy.text))
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                                 Label:
@@ -525,13 +525,13 @@
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'X+'
-                                    on_press: app.root.controller.jog("X{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("X{}".format(step_xy.text))
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
                                     text: 'Y+'
-                                    on_press: app.root.controller.jog("Y{}".format(root.step_xy.text))
+                                    on_press: app.root.controller.jog("Y{}".format(step_xy.text))
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                 BoxLayout:
@@ -559,13 +559,13 @@
                             SmallRoundButton:
                                 text: 'A+'
                                 height: 30
-                                on_press: app.root.controller.jog("A{}".format(root.step_a.text))
+                                on_press: app.root.controller.jog("A{}".format(step_a.text))
                                 on_release: app.root.controller.stopContinuousJog()
                         GridBoxLayout:
                             SmallRoundButton:
                                 text: 'Z+'
                                 height: 30
-                                on_press: app.root.controller.jog("Z{}".format(root.step_z.text))
+                                on_press: app.root.controller.jog("Z{}".format(step_z.text))
                                 on_release: app.root.controller.stopContinuousJog()
                         GridBoxLayout:
                             Label:
@@ -591,13 +591,13 @@
                             SmallRoundButton:
                                 text: 'A-'
                                 height: 30
-                                on_press: app.root.controller.jog("A-{}".format(root.step_a.text))
+                                on_press: app.root.controller.jog("A-{}".format(step_a.text))
                                 on_release: app.root.controller.stopContinuousJog()
                         GridBoxLayout:
                             SmallRoundButton:
                                 text: 'Z-'
                                 height: 30
-                                on_press: app.root.controller.jog("Z-{}".format(root.step_z.text))
+                                on_press: app.root.controller.jog("Z-{}".format(step_z.text))
                                 on_release: app.root.controller.stopContinuousJog()
                 BoxLayout:
                     size_hint_x: 0.1

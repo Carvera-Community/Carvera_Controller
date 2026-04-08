@@ -20,7 +20,7 @@ try:
 except ImportError:
     from queue import *
 
-from .CNC import CNC
+from .CNC import CNC, CMDPAT, PARENPAT, SEMIPAT
 from .USBStream import USBStream
 from .WIFIStream import WIFIStream
 from .XMODEM import EOT, CAN
@@ -883,6 +883,57 @@ class Controller:
             logger.warning(f"Error finding feed rate before line {start_line} in {local_file_path}: {e}")
             return None
 
+    def _gcode_line_to_cmd_tokens(self, original_line):
+        """
+        Split a physical line into G-code words the same way CNC.parseLine does.
+        Handles multi-command blocks (e.g. 'G90 G94', 'G17 G21 G54') without false
+        substring matches (e.g. G17 matching a search for G1).
+        """
+        line = original_line.strip()
+        if not line or line[0] in ("%", "#", ";"):
+            return []
+        line = PARENPAT.sub("", line)
+        line = SEMIPAT.sub("", line)
+        if not line.strip():
+            return []
+        line = line.replace(" ", "")
+        if not line:
+            return []
+        tokenized = CMDPAT.sub(r" \1", line).lstrip()
+        return tokenized.split()
+
+    def _command_token_matches_base(self, token, base_command):
+        """True if token is the same modal word as base_command (G0/G00, but not G17 for G1)."""
+        if not token or not base_command:
+            return False
+        t, b = token.upper(), base_command.upper()
+        if t == b:
+            return True
+        if len(b) < 2 or len(t) < 2 or t[0] != b[0] or b[0] not in ("G", "M"):
+            return False
+        if "." in b or "." in t:
+            return False
+        try:
+            return int(float(t[1:])) == int(float(b[1:]))
+        except ValueError:
+            return False
+
+    def _is_tool_select_token(self, token):
+        tu = token.upper()
+        if len(tu) < 2 or tu[0] != "T":
+            return False
+        return tu[1:].isdigit()
+
+    def _compose_m6_command_from_tokens(self, tokens, m6_index):
+        """Build e.g. 'T4 M6' or 'M6 T4' from the line's tokens (same line as M6)."""
+        parts = []
+        if m6_index > 0 and self._is_tool_select_token(tokens[m6_index - 1]):
+            parts.append(tokens[m6_index - 1].upper())
+        parts.append(tokens[m6_index].upper())
+        if m6_index + 1 < len(tokens) and self._is_tool_select_token(tokens[m6_index + 1]):
+            parts.append(tokens[m6_index + 1].upper())
+        return " ".join(parts)
+
     def _find_command_line_number(self, local_file_path, start_line, gcode_command):
         """
         Search backwards from start_line to find the last occurrence of a gcode command.
@@ -894,8 +945,8 @@ class Controller:
                           Can include parameters (e.g., "M3 S1000", "M6 T1")
         
         Returns:
-            Tuple of (command_string, line_number) where command_string is the found command
-            (with parameters if present) and line_number is the 1-based line number, or (None, None) if not found
+            Tuple of (command_string, line_number). For M6, includes adjacent T on the same line
+            (e.g. 'T4 M6'). Otherwise the matched modal word (e.g. G90 from 'G90 G94').
         """
         if not local_file_path or not os.path.exists(local_file_path):
             return (None, None)
@@ -918,32 +969,13 @@ class Controller:
             base_command = command_upper.split()[0]
             
             for i in range(start_line - 2, -1, -1):
-                original_line = lines[i]
-                line = original_line.strip()
-                
-                # Remove comments using string methods
-                if ';' in line:
-                    line = line[:line.index(';')]
-                # Remove parentheses comments using string methods
-                while '(' in line and ')' in line:
-                    start_paren = line.index('(')
-                    end_paren = line.index(')', start_paren)
-                    line = line[:start_paren] + line[end_paren + 1:]
-                
-                # Check if line contains the base command (case-insensitive)
-                line_upper = line.upper()
-                if base_command in line_upper:
-                    # Find the position of the command in the line
-                    cmd_pos = line_upper.find(base_command)
-                    if cmd_pos != -1:
-                        # Extract from start of line to end of the command word
-                        # Find where the command word ends (next space or end of line)
-                        end_pos = cmd_pos + len(base_command)
-                        # Include any parameters that follow the command (letters/numbers)
-                        while end_pos < len(line) and (line[end_pos].isspace() or line[end_pos].isalnum() or line[end_pos] in '.-'):
-                            end_pos += 1
-                        full_command = line[:end_pos].strip()
-                        return (full_command, i + 1)
+                tokens = self._gcode_line_to_cmd_tokens(lines[i])
+                for ti in range(len(tokens) - 1, -1, -1):
+                    token = tokens[ti]
+                    if self._command_token_matches_base(token, base_command):
+                        if base_command.upper() == "M6":
+                            return (self._compose_m6_command_from_tokens(tokens, ti), i + 1)
+                        return (token.upper(), i + 1)
                 
         except Exception as e:
             logger.warning(f"Error finding command {gcode_command} before line {start_line} in {local_file_path}: {e}")
@@ -973,7 +1005,15 @@ class Controller:
         try:
             start_line_int = int(start_line)
         except (ValueError, TypeError):
-            start_line_int = None
+            raise ValueError(f"Invalid start line: {start_line!r}")
+
+        if local_file_path:
+            # Fail closed if we can't safely derive modal state from the file.
+            if not os.path.exists(local_file_path):
+                logger.error(f"Cached gcode file is missing from local file system: {local_file_path}\n")
+                raise FileNotFoundError(
+                    f"Cached gcode file is missing from local file system: {local_file_path}"
+                )
         prev_line = None
         if local_file_path and start_line_int is not None:
             prev_line = self._get_last_movement_line_before(local_file_path, start_line_int)
@@ -982,6 +1022,8 @@ class Controller:
         prev_line = max(1, prev_line) if prev_line else None
         position = self._get_line_position_from_gcode_viewer(prev_line) if prev_line else (None, None, None, None)
         x, y, z, a = position
+
+        app = App.get_running_app() if App is not None else None
 
         # Find additional commands to insert after "goto"
         # Note the use of buffer is to avoid the firmware bug https://github.com/Carvera-Community/Carvera_Community_Firmware/issues/211
@@ -1003,6 +1045,40 @@ class Controller:
                 additional_commands.append("buffer G20")
             elif g21_line:
                 additional_commands.append("buffer G21")
+
+            # Absolute vs incremental distance mode (G90 / G91), including on shared lines e.g. G90 G94
+            _, g90_line = self._find_command_line_number(local_file_path, start_line, "G90")
+            _, g91_line = self._find_command_line_number(local_file_path, start_line, "G91")
+            if g90_line is not None and g91_line is not None:
+                if g90_line > g91_line:
+                    additional_commands.append("buffer G90")
+                elif g91_line > g90_line:
+                    additional_commands.append("buffer G91")
+                else:
+                    # Same line: last G90/G91 word wins (e.g. G91 G90)
+                    last_mode = None
+                    try:
+                        with open(local_file_path, "r", encoding="utf-8", errors="ignore") as f:
+                            joint_line = f.readlines()[g90_line - 1]
+                        for tok in self._gcode_line_to_cmd_tokens(joint_line):
+                            tu = tok.upper()
+                            if tu == "G90":
+                                last_mode = "G90"
+                            elif tu == "G91":
+                                last_mode = "G91"
+                    except (OSError, IndexError) as e:
+                        logger.warning(
+                            "Could not read line %s for G90/G91 tie-break (%s): %s",
+                            g90_line,
+                            local_file_path,
+                            e,
+                        )
+                    if last_mode:
+                        additional_commands.append(f"buffer {last_mode}")
+            elif g90_line:
+                additional_commands.append("buffer G90")
+            elif g91_line:
+                additional_commands.append("buffer G91")
 
             # Search for WCS coordinate space - find the last one used
             wcs_commands = [
@@ -1065,19 +1141,22 @@ class Controller:
         # Add SafeZ movement (G53 G0 Z-2)
         # This should come after coordinate system setup but before position movement
         additional_commands.append("buffer G53 G0 Z-2")
-        
-        # Add G0 movement to above the position
-        if x is not None or y is not None or z is not None or a is not None:
-            g0_cmd = "G0"
-            if x is not None:
-                g0_cmd += f" X{x:.3f}"
-            if y is not None:
-                g0_cmd += f" Y{y:.3f}"
-            if a is not None:
-                a = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
-                g0_cmd += f" A{a:.3f}"
-            additional_commands.append(f"buffer {g0_cmd}")
 
+        # Rapid XY first, then A. A combined G0 XY+A is often very slow because
+        # the planner must synchronize all axes
+
+        if x is not None or y is not None:
+            g0_xy = "G0"
+            if x is not None:
+                g0_xy += f" X{x:.3f}"
+            if y is not None:
+                g0_xy += f" Y{y:.3f}"
+            additional_commands.append(f"buffer {g0_xy}")
+
+        # Only move A when CNC parser marked the loaded program as 4-axis
+        if a is not None and app is not None and app.has_4axis:
+            a_machine = a * -1  # need to flip positive to negative due to a "right hand rule" rotation in gcode viewer
+            additional_commands.append(f"buffer G0 A{a_machine:.3f}")
         # Set the G1 feed modal
         feed_rate = None
         if local_file_path:
@@ -1094,8 +1173,7 @@ class Controller:
         # the bug is that it goes to the end of the line specified instead of start.
         start_line_comment = ""
 
-        app = App.get_running_app()
-        if not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
+        if app is not None and not (app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.1.0")):
             start_line = int(start_line)-1
             start_line_comment = ";using number-1 as goto is bugged and off by one in this fw version"
 
@@ -1239,10 +1317,15 @@ class Controller:
                 CNC.vars["target_tool"] = int(d['T'][2])
             else:
                 CNC.vars["target_tool"] = -1
+            if len(d['T']) > 3:
+                CNC.vars["target_collet_type"] = int(d['T'][3])
+            else:
+                CNC.vars["target_collet_type"] = 0
         else:
             CNC.vars["tool"] = -1
             CNC.vars["tlo"] = 0.0
             CNC.vars["target_tool"] = -1
+            CNC.vars["target_collet_type"] = 0
         if 'W' in d:
             CNC.vars["wpvoltage"] = float(d['W'][0])
         if 'L' in d:
@@ -1344,6 +1427,9 @@ class Controller:
     def open(self, conn_type, address):
         # init connection
         self.connection_type = conn_type
+        # Persist the last connection target so callers can detect "same machine"
+        # reconnects (e.g. for resume-at-line cached file behavior).
+        self.connection_address = address
         if conn_type == CONN_USB:
             self.stream = self.usb_stream
             self._baud_upgrade_attempted = False
