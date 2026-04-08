@@ -2701,6 +2701,7 @@ class Makera(RelativeLayout):
     allow_mdi_while_machine_running = "0"
     allow_jogging_while_machine_running = "0"
     _selected_file_machine_key = None
+    _last_loaded_file_key = None  # used to track if a different file is selected
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
@@ -6090,12 +6091,16 @@ class Makera(RelativeLayout):
             self.gcode_viewer_distance = self.gcode_viewer.get_total_distance()
             self.gcode_viewer.show_all()
 
-        # Clear resume at line when a (possibly new) gcode file has finished loading
-        if self.coord_popup:
-            self.coord_popup.cbx_startline.active = False
-            self.coord_popup.txt_startline.text = ''
-
         app = App.get_running_app()
+
+        # Only clear resume-at-line when a different file is loaded.
+        current_file_key = app.selected_remote_filename or app.selected_local_filename
+        if current_file_key != self._last_loaded_file_key:
+            if self.coord_popup:
+                self.coord_popup.cbx_startline.active = False
+                self.coord_popup.txt_startline.text = ''
+            self._last_loaded_file_key = current_file_key
+
         app.has_4axis = self.cnc.has_4axis
         if app.has_4axis:
             self.coord_popup.set_config('leveling', 'active', False)
