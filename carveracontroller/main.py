@@ -2700,6 +2700,7 @@ class Makera(RelativeLayout):
     past_machine_addr = None
     allow_mdi_while_machine_running = "0"
     allow_jogging_while_machine_running = "0"
+    _selected_file_machine_key = None
 
     def __init__(self, ctl_version):
         super(Makera, self).__init__()
@@ -4094,9 +4095,37 @@ class Makera(RelativeLayout):
             self.controller.log.put(Controller.MSG_ERROR, tr._('Download config file error'))
             #self.controller.close()
 
+        # Preserve selected file only when reconnecting to the same machine.
+        # finishLoadConfig() can be called on reconnect; resume-at-line depends on
+        # selected_local_filename (cached local file). If the user connects to a
+        # different machine (different IP/COM port), we must clear it.
         app = App.get_running_app()
-        app.selected_local_filename = ''
+        current_key = self._get_current_machine_connection_key()
+        if self._selected_file_machine_key is None:
+            self._selected_file_machine_key = current_key
+        elif current_key != self._selected_file_machine_key:
+            app.selected_local_filename = ''
+            self._selected_file_machine_key = current_key
         self.updateStatus()
+
+    def _get_current_machine_connection_key(self):
+        """Return a stable identifier for the current machine connection."""
+        try:
+            conn_type = self.controller.connection_type
+        except Exception:
+            return None
+
+        addr = None
+        try:
+            addr = self.controller.connection_address
+        except Exception:
+            addr = None
+
+        if conn_type == CONN_WIFI:
+            return f"wifi:{addr}" if addr else "wifi"
+        if conn_type == CONN_USB:
+            return f"usb:{addr}" if addr else "usb"
+        return str(conn_type)
 
     # -----------------------------------------------------------------------
     def doDownload(self, remote_path, local_path, show_progress=True):
@@ -5846,8 +5875,14 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
         
-        # Get command preview from Controller
-        commands = self.controller.playStartLineCommand(file_name, start_line, preview=True, local_file_path=local_file_path)
+        # Get command preview from Controller (fail closed if cached file is missing)
+        try:
+            commands = self.controller.playStartLineCommand(
+                file_name, start_line, preview=True, local_file_path=local_file_path
+            )
+        except Exception as e:
+            self.show_message_popup(tr._(f"Resume-at-line cannot run:\n\n{e}"), False)
+            return
         commands_preview = '\n'.join(commands)
         
         self.confirm_popup.size_hint = (0.8, 0.8)
@@ -5863,7 +5898,10 @@ class Makera(RelativeLayout):
         """Execute play command with start_line after user confirmation"""
         app = App.get_running_app()
         local_file_path = app.selected_local_filename if hasattr(app, 'selected_local_filename') else None
-        self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+        try:
+            self.controller.playStartLineCommand(file_name, start_line, local_file_path=local_file_path)
+        except Exception as e:
+            self.show_message_popup(tr._(f"Resume-at-line failed:\n\n{e}"), False)
     
     # -----------------------------------------------------------------------
     def update_resume_at_line_from_played_line(self, line_number, percent_complete):
