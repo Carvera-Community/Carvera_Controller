@@ -1,3 +1,6 @@
+[unreleased]
+
+
 [2.1.0]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
 - Enhancement: Display collet information in the manual toolchange popup, when using S1-S6 parameter for M6 toolchanges
