@@ -101,6 +101,7 @@ class CNC:
 
         'wpvoltage'  : 0.0,
         'halt_reason': 1,
+        'alarm_message': '',
 
         "planner"    : 0,
         "rxbytes"    : 0,
