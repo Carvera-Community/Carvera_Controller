@@ -1443,6 +1443,7 @@ class Controller:
             #self.stream.send(b"\n")
             self._gcount = 0
             self._alarm = True
+            CNC.vars["alarm_message"] = ''
             # Reset manual disconnect flag when connection is established
             self._manual_disconnect = False
             try:
@@ -1608,6 +1609,7 @@ class Controller:
         self.openClose()
         self.stopProbe()
         self._alarm = False
+        CNC.vars["alarm_message"] = ''
         CNC.vars["_OvChanged"] = True  # force a feed change if any
         self.notBusy()
 
@@ -1615,11 +1617,15 @@ class Controller:
         if self.stream:
             self.stream.send(b"\030")
         self.stopProbe()
-        if clearAlarm: self._alarm = False
+        if clearAlarm:
+            self._alarm = False
+            CNC.vars["alarm_message"] = ''
         CNC.vars["_OvChanged"] = True  # force a feed change if any
 
     def unlock(self, clearAlarm=True):
-        if clearAlarm: self._alarm = False
+        if clearAlarm:
+            self._alarm = False
+            CNC.vars["alarm_message"] = ''
         self.sendGCode("$X")
 
     def home(self, event=None):
@@ -1794,6 +1800,7 @@ class Controller:
         self.stream.send(b"~")
         self.stream.flush()
         self._alarm = False
+        CNC.vars["alarm_message"] = ''
         self._pause = False
 
     def pause(self, event=None):
@@ -1845,6 +1852,10 @@ class Controller:
                     self.continuous_jog_active = False
             elif "error" in line.lower() or "alarm" in line.lower():
                 self.log.put((self.MSG_ERROR, line))
+                if line.upper().startswith("ALARM:"):
+                    msg = line[len("ALARM:"):].strip()
+                    if msg:
+                        CNC.vars["alarm_message"] = msg
             else:
                 self.log.put((self.MSG_NORMAL, line))
         except (LookupError, ArithmeticError) as e:

@@ -3735,6 +3735,8 @@ class Makera(RelativeLayout):
         if last_line > 0:
             self.update_resume_at_line_from_played_line(last_line, CNC.vars["playedpercent"])
 
+        alarm_msg = CNC.vars.get("alarm_message", "")
+
         # Use UnlockPopup for halt_reason < 20 (machine doesn't require reset, only unlock)
         if CNC.vars["halt_reason"] < 20:
             if self.unlock_popup.showing:
@@ -3744,6 +3746,11 @@ class Makera(RelativeLayout):
                 self.unlock_popup.lb_title.text = tr._('Machine Is Halted: ') + '%s' % (HALT_REASON[CNC.vars["halt_reason"]])
             else:
                 self.unlock_popup.lb_title.text = tr._('Machine Is Halted!')
+
+            if alarm_msg:
+                self.unlock_popup.lb_content.text = alarm_msg
+            else:
+                self.unlock_popup.lb_content.text = tr._('Choose unlock option:')
             
             self.unlock_popup.unlock_stay = partial(self.unlockMachine)
             self.unlock_popup.unlock_safe_z = partial(self.unlockMachineAndMoveToSafeZ)
@@ -3761,14 +3768,20 @@ class Makera(RelativeLayout):
         
         self.confirm_popup.cancel = None
         if CNC.vars["halt_reason"] > 40:
-            self.confirm_popup.lb_content.text = tr._('Please manually switch off/on the machine!')
+            action_text = tr._('Please manually switch off/on the machine!')
             self.confirm_popup.confirm = partial(self.resetMachine)
         elif CNC.vars["halt_reason"] > 20:
-            self.confirm_popup.lb_content.text = tr._('Confirm to reset machine?')
+            action_text = tr._('Confirm to reset machine?')
             self.confirm_popup.confirm = partial(self.resetMachine)
         else:
-            self.confirm_popup.lb_content.text = tr._('Confirm to unlock machine?')
+            action_text = tr._('Confirm to unlock machine?')
             self.confirm_popup.confirm = partial(self.unlockMachine)
+
+        if alarm_msg:
+            self.confirm_popup.lb_content.text = alarm_msg + '\n' + action_text
+        else:
+            self.confirm_popup.lb_content.text = action_text
+
         self.confirm_popup.open(self)
 
     # -----------------------------------------------------------------------
