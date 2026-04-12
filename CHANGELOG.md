@@ -1,5 +1,5 @@
 [unreleased]
-
+- Enhancement: Display alarm message in halt popup
 
 [2.1.0]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
