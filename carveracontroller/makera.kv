@@ -188,6 +188,12 @@
         Rectangle:
             pos: self.pos
             size: self.size
+        # Parsed-line marker: cyan left border when this row is the parsed line
+        Color:
+            rgba: (0, 0.6, 0.85, 1) if self.parsed else (0, 0, 0, 0)
+        Rectangle:
+            pos: self.pos
+            size: (dp(3), self.height) if self.parsed else (0, 0)
     Label:
         size_hint_x: None
         width: dp(72)
