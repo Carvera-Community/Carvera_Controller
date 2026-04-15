@@ -61,6 +61,9 @@ class ProbingPopup(ModalView):
 
         super(ProbingPopup, self).__init__(**kwargs)
 
+    def on_dismiss(self):
+        App.get_running_app().root.restore_keyboard_jog_control()
+
     def open_probe_info_url(self):
         webbrowser.open("https://carvera-community.gitbook.io/docs/firmware/features/3d-probe-support")
 

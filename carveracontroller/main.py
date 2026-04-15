@@ -3022,7 +3022,9 @@ class Makera(RelativeLayout):
 
     def open_probing_popup(self):
         if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
-            app = App.get_running_app() #disable keyboard control to prevent accidents when opening the popup
+            # Disable keyboard control to prevent accidents when opening the popup
+            # But save the state to restore after probing is closed
+            self._pre_probing_keyboard_jog = self.keyboard_jog_control
             self.toggle_keyboard_jog_control(True)
             self.probing_popup.open()
         else:
@@ -5584,6 +5586,14 @@ class Makera(RelativeLayout):
         # open. We want to use the pendant as a convenient way to get to the
         # initial probing location
         return (self.is_jogging_enabled())# or self.probing_popup._is_open)
+
+    def restore_keyboard_jog_control(self):
+        prev = getattr(self, '_pre_probing_keyboard_jog', None)
+        if prev is None:
+            return
+        if self.keyboard_jog_control != prev:
+            self.toggle_keyboard_jog_control()
+        self._pre_probing_keyboard_jog = None
 
     def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
