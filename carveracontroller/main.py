@@ -3067,7 +3067,7 @@ class Makera(RelativeLayout):
                 else:
                     app.fw_has_update = False
                     self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version
-        self.fw_version_checked = False
+        self.fw_version_checked = True
 
     def ctl_upd_loaded(self, req, result):
         self.ctl_upd_text = result
