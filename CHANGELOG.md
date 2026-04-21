@@ -1,5 +1,6 @@
 [unreleased]
 - Enhancement: Display alarm message in halt popup
+- Enhancement: Add popup notice when using stock firmware instead of the Community Firmware
 - Fixed: Restore Keyboard Jogging state after Probing Popup is closed
 
 [2.1.0]

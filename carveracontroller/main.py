@@ -3589,6 +3589,7 @@ class Makera(RelativeLayout):
                         self.fw_version = remote_version[0].split('=')[1].strip()
                         app.fw_version_digitized = Utils.digitize_v(self.fw_version)
                         logger.debug(f"Firmware Version detected as {self.fw_version}")
+                        Clock.schedule_once(partial(self.onFirmwareDetected, self.fw_version), 0)
                         if self.fw_version_new != '':
                             self.check_fw_version()
                         # Request higher USB baud if firmware >= 2.1.0 and user has enabled it
@@ -4224,6 +4225,32 @@ class Makera(RelativeLayout):
 
         if show_progress:
             Clock.schedule_once(self.progressFinish, 0.1)
+
+    def onFirmwareDetected(self, version, *args):
+        app = App.get_running_app()
+        if not app.is_community_firmware:
+            content = BoxLayout(orientation='vertical', padding=dp(15))
+            lbl = Label(
+                text=tr._('This machine is not running the Community Firmware.\nThis is STRONGLY recommended when using the Community Controller.'),
+                halign='center',
+                valign='middle'
+            )
+            lbl.bind(size=lambda inst, val: setattr(inst, 'text_size', val))
+            content.add_widget(lbl)
+            btns = BoxLayout(size_hint_y=0.4)
+            popup = Popup(title=tr._('Stock Firmware Detected'), content=content,
+                          size_hint=(0.5, 0.4), auto_dismiss=False)
+            btn_instructions = Button(text=tr._('Get Instructions'))
+            btn_instructions.bind(on_release=lambda *a: (
+                webbrowser.open('https://carvera-community.gitbook.io/docs/firmware/installation-upgrade'),
+                popup.dismiss()
+            ))
+            btn_continue = Button(text=tr._('Continue'))
+            btn_continue.bind(on_release=lambda *a: popup.dismiss())
+            btns.add_widget(btn_instructions)
+            btns.add_widget(btn_continue)
+            content.add_widget(btns)
+            popup.open()
 
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
