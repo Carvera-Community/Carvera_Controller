@@ -73,6 +73,14 @@
     },
     {
         "type": "bool",
+        "title": "Show Firmware Compatibility Check",
+        "desc": "Warn if the connected machine's firmware doesn't allow full functionality",
+        "section": "carvera",
+        "key": "show_firmware_check",
+        "default": "true"
+    },
+    {
+        "type": "bool",
         "title": "Use Instant Feed And Spindle Overrides",
         "desc": "Off uses stock commands that wait for the current block to execute",
         "section": "carvera",
