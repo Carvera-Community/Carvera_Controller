@@ -2,6 +2,7 @@
 - Enhancement: Display alarm message in halt popup
 - Enhancement: Improvements to saving changes in settings menu
 - Fixed: Restore Keyboard Jogging state after Probing Popup is closed
+- Fixed: Repeated firmware checks now happen just once
 
 [2.1.0]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
