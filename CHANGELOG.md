@@ -1,5 +1,6 @@
 [unreleased]
 - Enhancement: Display alarm message in halt popup
+- Enhancement: Improvements to saving changes in settings menu
 - Fixed: Restore Keyboard Jogging state after Probing Popup is closed
 
 [2.1.0]
