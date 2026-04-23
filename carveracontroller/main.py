@@ -370,7 +370,7 @@ class GcodePlaySlider(Slider):
             if current_pos and len(current_pos) > 1:
                 line_number = current_pos[1]
                 if line_number > 0 and hasattr(app.root, 'gcode_rv'):
-                    app.root.gcode_rv.set_selected_line(line_number)
+                    app.root.gcode_rv.set_selected_line_and_parsed_line(line_number, -1)
         
     def on_value(self, instance, value):
         """Called when the slider value changes (both programmatically and manually)"""
@@ -2125,6 +2125,7 @@ class GCodeRow(RecycleDataViewBehavior, BoxLayout):
     """Single row in GCodeRV: line number, optional resume-flag icon, gcode text."""
     index = None
     selected = BooleanProperty(False)
+    parsed = BooleanProperty(False)
     selectable = BooleanProperty(True)
     line_no = NumericProperty(0)
     text = StringProperty('')
@@ -2564,6 +2565,7 @@ class GCodeRV(RecycleView):
     scroll_time = 0
     old_selected_line = 0
     new_selected_line = 0
+    new_parsed_line = 0
 
     def __init__(self, **kwargs):
         super(GCodeRV, self).__init__(**kwargs)
@@ -2574,15 +2576,26 @@ class GCodeRV(RecycleView):
 
 
 
-    def set_selected_line(self, line):
+    def set_selected_line_and_parsed_line(self, line, parsed_line):
         app = App.get_running_app()
         aiming_page = int(line / MAX_LOAD_LINES) + (0 if line % MAX_LOAD_LINES == 0 else 1)
         if aiming_page != app.curr_page:
             app.root.load_page(aiming_page)
         line = line % MAX_LOAD_LINES
+
+        aiming_page_parsed = int(parsed_line / MAX_LOAD_LINES) + (0 if parsed_line % MAX_LOAD_LINES == 0 else 1)
+        if aiming_page_parsed == aiming_page:
+            parsed_line = parsed_line % MAX_LOAD_LINES
+        else:
+            parsed_line = 0
+
         if self.data_length > 0 and line < self.data_length:
             page_lines = len(self.view_adapter.views)
             self.new_selected_line = line - 1
+            if parsed_line > 0:
+                self.new_parsed_line = parsed_line - 1
+            else:
+                self.new_parsed_line = -1
 
             # Schedule all UI attribute updates for the next frame to avoid re-entry loops
             def update_selection_ui(dt):
@@ -2590,6 +2603,12 @@ class GCodeRV(RecycleView):
                     view = self.view_adapter.views[key]
                     if view and hasattr(view, 'selected') and view.selected is not None:
                         view.selected = False
+                    if view and hasattr(view, 'parsed') and view.parsed is not None:
+                        view.parsed = False
+                if self.new_parsed_line >= 0:
+                    new_parsed_line = self.view_adapter.get_visible_view(self.new_parsed_line)
+                    if new_parsed_line:
+                        new_parsed_line.parsed = True
                 new_line = self.view_adapter.get_visible_view(self.new_selected_line)
                 if new_line:
                     new_line.selected = True
@@ -5243,6 +5262,7 @@ class Makera(RelativeLayout):
                 self.wpb_leveling.value = 0
                 self.wpb_play.value = 0
                 self.progress_info = ""
+                self.parsed_lines = 0
                 # Stop smooth progress updates
                 if self._progress_smooth_clock is not None:
                     self._progress_smooth_clock.cancel()
@@ -5260,11 +5280,12 @@ class Makera(RelativeLayout):
                     self.progress_info = tr._(' No Remote File Selected') + last_job_elapsed
             else:
                 app.playing = True
-                if self.played_lines != CNC.vars["playedlines"]:
+                if self.played_lines != CNC.vars["playedlines"] or self.parsed_lines != CNC.vars["parsedlines"]:
                     self.played_lines = CNC.vars["playedlines"]
+                    self.parsed_lines = CNC.vars["parsedlines"]
                     self.wpb_play.value = CNC.vars["playedpercent"]
                     if (app.selected_remote_filename != '' or app.selected_local_filename != '') and self.selected_file_line_count > 0:
-                        self.gcode_rv.set_selected_line(self.played_lines)
+                        self.gcode_rv.set_selected_line_and_parsed_line(self.played_lines, self.parsed_lines)
                         self.gcode_viewer.set_distance_by_lineidx(self.played_lines, 0.5)
                         remaining_sec = self.gcode_viewer.get_remaining_time_by_lineidx(self.played_lines, 0.5)
                         if remaining_sec is not None and remaining_sec >= 0:
@@ -5464,7 +5485,7 @@ class Makera(RelativeLayout):
             self.test_line = self.test_line + 1
         if self.test_line == 0:
             self.test_line = 1
-        self.gcode_rv.set_selected_line(self.test_line - 1)
+        self.gcode_rv.set_selected_line_and_parsed_line(self.test_line - 1, -1)
 
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
@@ -6101,7 +6122,11 @@ class Makera(RelativeLayout):
             if getattr(self, '_skip_next_set_selected_line_from_callback', False):
                 self._skip_next_set_selected_line_from_callback = False
             elif line_number > 0 and hasattr(self, 'gcode_rv'):
-                self.gcode_rv.set_selected_line(line_number)
+                if CNC.vars.get('is_playing', 0) == 1:
+                    parsed = CNC.vars.get('parsedlines', 0)
+                    self.gcode_rv.set_selected_line_and_parsed_line(line_number, parsed)
+                else:
+                    self.gcode_rv.set_selected_line_and_parsed_line(line_number, -1)
 
     # -----------------------------------------------------------------------
     def gcode_play_over_call_back(self):
