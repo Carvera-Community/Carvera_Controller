@@ -100,7 +100,7 @@ from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.settings import SettingsWithSidebar, SettingItem
+from kivy.uix.settings import SettingsWithSidebar, SettingItem, SettingsPanel
 from kivy.uix.stencilview import StencilView
 from kivy.uix.slider import Slider
 from kivy.uix.dropdown import DropDown
@@ -1131,15 +1131,90 @@ class DiagnosePopup(ModalView):
     def on_dismiss(self):
         self.showing = False
 
+# Kivy's SettingsPanel writes every change to Config and disk immediately
+# with no undo. This subclass overrides set_value to skip the Config write
+# while still notifying on_config_change, so changes only persist when the
+# user clicks Apply.
+class DeferredSettingsPanel(SettingsPanel):
+    _skip_sections = ('Backup', 'Restore')
+
+    def set_value(self, section, key, value):
+        if section in self._skip_sections:
+            # Action triggers — write through immediately
+            current = self.get_value(section, key)
+            if current == value:
+                return
+            config = self.config
+            if config:
+                config.set(section, key, value)
+                config.write()
+            if self.settings:
+                self.settings.dispatch('on_config_change', config, section, key, value)
+            return
+        current = self.get_value(section, key)
+        if current == value:
+            return
+        if self.settings:
+            self.settings.dispatch('on_config_change', self.config, section, key, value)
+
+
 class ConfigPopup(ModalView):
     def __init__(self, **kwargs):
+        self._widget_snapshot = {}
         super(ConfigPopup, self).__init__(**kwargs)
 
+    def _all_setting_items(self):
+        panels = self.settings_panel.interface.content.panels
+        for panel in panels.values():
+            for widget in panel.walk():
+                if isinstance(widget, SettingItem):
+                    yield widget
+
     def on_open(self):
-        pass
+        self._widget_snapshot = {}
+        for widget in self._all_setting_items():
+            self._widget_snapshot[(widget.section, widget.key)] = widget.value
+
+    def get_original(self, section, key):
+        return self._widget_snapshot.get((section, key))
 
     def on_dismiss(self):
-        pass
+        app = App.get_running_app()
+        makera = app.root
+        has_pending = bool(makera.controller_setting_change_list or makera.setting_change_list)
+        if has_pending:
+            makera.confirm_popup.lb_title.text = tr._('Unapplied Changes')
+            makera.confirm_popup.lb_content.text = tr._('You have unapplied changes. Do you wish to apply them?')
+            makera.confirm_popup.confirm = self._apply_and_close
+            makera.confirm_popup.cancel = self._discard_and_close
+            makera.confirm_popup.open()
+            return True  # cancel the dismiss
+
+    def _apply_and_close(self):
+        app = App.get_running_app()
+        # Write pending widget values to their Config instances
+        for widget in self._all_setting_items():
+            original = self._widget_snapshot.get((widget.section, widget.key))
+            if original is not None and str(widget.value) != str(original):
+                config = widget.panel.config
+                config.set(widget.section, widget.key, widget.value)
+        Config.write()
+        app.root.apply_setting_changes()
+        self.dismiss(force=True)
+
+    def _discard_and_close(self):
+        app = App.get_running_app()
+        makera = app.root
+        makera.config_loading = True
+        for widget in self._all_setting_items():
+            original = self._widget_snapshot.get((widget.section, widget.key))
+            if original is not None and str(widget.value) != str(original):
+                widget.value = original
+        makera.config_loading = False
+        makera.controller_setting_change_list.clear()
+        makera.setting_change_list.clear()
+        self.btn_apply.disabled = True
+        self.dismiss(force=True)
 
 class SetXPopup(ModalView):
     def __init__(self, coord_popup, **kwargs):
@@ -1611,18 +1686,34 @@ class MakeraConfigPanel(SettingsWithSidebar):
         self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
         self.register_type('colorpicker', ui.SettingColorPicker)
 
+    def create_json_panel(self, title, config, filename=None, data=None):
+        panel = super().create_json_panel(title, config, filename, data)
+        panel.__class__ = DeferredSettingsPanel
+        return panel
+
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
         if not app.root.config_loading:
+            config_popup = app.root.config_popup
+            original = config_popup.get_original(section, key)
             if section in ['carvera', 'graphics', 'kivy']:
-                app.root.controller_setting_change_list[key] = value
-                app.root.config_popup.btn_apply.disabled = False
+                if str(value) == str(original):
+                    app.root.controller_setting_change_list.pop(key, None)
+                else:
+                    app.root.controller_setting_change_list[key] = value
+                has_changes = bool(app.root.controller_setting_change_list or app.root.setting_change_list)
+                config_popup.btn_apply.disabled = not has_changes
             elif section == 'Backup':
                 app.root.start_back_up_config()
                 app.root.config_popup.btn_apply.disabled = True
             elif section != 'Restore':
-                app.root.setting_change_list[key] = Utils.to_config(app.root.setting_type_list[key], value).strip()
-                app.root.config_popup.btn_apply.disabled = False
+                if str(value) == str(original):
+                    app.root.setting_change_list.pop(key, None)
+                else:
+                    new_value = Utils.to_config(app.root.setting_type_list[key], value).strip()
+                    app.root.setting_change_list[key] = new_value
+                has_changes = bool(app.root.controller_setting_change_list or app.root.setting_change_list)
+                config_popup.btn_apply.disabled = not has_changes
             elif key == 'restore' and value == 'RESTORE':
                 app.root.open_setting_restore_confirm_popup()
             elif key == 'default' and value == 'DEFAULT':
@@ -3067,7 +3158,7 @@ class Makera(RelativeLayout):
                 else:
                     app.fw_has_update = False
                     self.upgrade_popup.fw_version_txt.text = tr._(' Current version: v') + self.fw_version
-        self.fw_version_checked = False
+        self.fw_version_checked = True
 
     def ctl_upd_loaded(self, req, result):
         self.ctl_upd_text = result
@@ -3589,6 +3680,7 @@ class Makera(RelativeLayout):
                         self.fw_version = remote_version[0].split('=')[1].strip()
                         app.fw_version_digitized = Utils.digitize_v(self.fw_version)
                         logger.debug(f"Firmware Version detected as {self.fw_version}")
+                        Clock.schedule_once(partial(self.onFirmwareDetected, self.fw_version), 0)
                         if self.fw_version_new != '':
                             self.check_fw_version()
                         # Request higher USB baud if firmware >= 2.1.0 and user has enabled it
@@ -4224,6 +4316,41 @@ class Makera(RelativeLayout):
 
         if show_progress:
             Clock.schedule_once(self.progressFinish, 0.1)
+
+    def onFirmwareDetected(self, version, *args):
+        app = App.get_running_app()
+        if Config.get('carvera', 'show_firmware_check') != '1':
+            return
+        if not app.is_community_firmware:
+            content = BoxLayout(orientation='vertical', padding=dp(15))
+            lbl = Label(
+                text=tr._('This machine is not running the Community Firmware.\nComplete functionality is available when using both Community Firmware and Community Controller.'),
+                halign='center',
+                valign='middle'
+            )
+            lbl.bind(size=lambda inst, val: setattr(inst, 'text_size', val))
+            content.add_widget(lbl)
+            btns = BoxLayout(size_hint_y=0.4)
+            popup = Popup(title=tr._('Stock Firmware Detected'), content=content,
+                          size_hint=(0.5, 0.4), auto_dismiss=False)
+            btn_information = Button(text=tr._('More Information'))
+            btn_information.bind(on_release=lambda *a: (
+                webbrowser.open('https://carvera-community.gitbook.io/docs/compatibility'),
+                popup.dismiss()
+            ))
+            btn_dont_show = Button(text=tr._("Don't Show Again"))
+            btn_dont_show.bind(on_release=lambda *a: (
+                Config.set('carvera', 'show_firmware_check', '0'),
+                Config.write(),
+                popup.dismiss()
+            ))
+            btn_continue = Button(text=tr._('Continue'))
+            btn_continue.bind(on_release=lambda *a: popup.dismiss())
+            btns.add_widget(btn_information)
+            btns.add_widget(btn_dont_show)
+            btns.add_widget(btn_continue)
+            content.add_widget(btns)
+            popup.open()
 
     # -----------------------------------------------------------------------
     def setUIForModel(self, model, *args):
@@ -5857,6 +5984,7 @@ class Makera(RelativeLayout):
         if "high_precision_reamining_time_estimate" in self.controller_setting_change_list:
             self.gcode_viewer.high_precision_time_estimate = self.controller_setting_change_list.get("high_precision_reamining_time_estimate")
 
+        self.controller_setting_change_list.clear()
 
     # -----------------------------------------------------------------------
     def open_setting_restore_confirm_popup(self):
@@ -6400,6 +6528,7 @@ def set_config_defaults(default_lang):
 
     # Configurable config options. Don't change if they are already set
     if not Config.has_option('carvera', 'show_update'): Config.set('carvera', 'show_update', '1')
+    if not Config.has_option('carvera', 'show_firmware_check'): Config.set('carvera', 'show_firmware_check', '1')
     if not Config.has_option('carvera', 'show_tooltips'): Config.set('carvera', 'show_tooltips' , '1')
     if not Config.has_option('carvera', 'tooltip_delay'): Config.set('carvera', 'tooltip_delay','1.5')
     if not Config.has_option('carvera', 'active_color'): Config.set('carvera', 'active_color', '0,255,255,255')
