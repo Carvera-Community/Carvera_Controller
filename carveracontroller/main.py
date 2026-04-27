@@ -94,7 +94,7 @@ import os
 import platform
 import subprocess
 from kivy.app import App
-from kivy.clock import Clock
+from kivy.clock import Clock, mainthread
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
@@ -3714,14 +3714,12 @@ class Makera(RelativeLayout):
 
                     if msg == Controller.MSG_NORMAL:
                         logger.info(f"MDI Received: {line}")
-                        self.manual_rv.data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
-                        if line not in [' ', 'ok', 'Done ATC' ]:
-                            App.get_running_app().mdi_data.append({'text': line, 'color': (103/255, 150/255, 186/255, 1)})
+                        entry = {'text': line, 'color': (103/255, 150/255, 186/255, 1)}
+                        self._append_to_mdi([entry], log_to_mdi_data=line not in [' ', 'ok', 'Done ATC'])
                     elif msg == Controller.MSG_ERROR:
                         logger.error(f"MDI Received: {line}")
-                        self.manual_rv.data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
-                        if line not in [' ', 'ok', 'Done ATC' ]:
-                            App.get_running_app().mdi_data.append({'text': line, 'color': (250/255, 105/255, 102/255, 1)})
+                        entry = {'text': line, 'color': (250/255, 105/255, 102/255, 1)}
+                        self._append_to_mdi([entry], log_to_mdi_data=line not in [' ', 'ok', 'Done ATC'])
                 except:
                     logger.error(sys.exc_info()[1])
                     break
@@ -5468,12 +5466,17 @@ class Makera(RelativeLayout):
 
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
-        try:
+        entries = [{'text': cmd, 'color': (200/255, 200/255, 200/255, 1)} for cmd in line.strip().split('\n')]
+        self._append_to_mdi(entries, scroll_to_bottom=True)
+
+    @mainthread
+    def _append_to_mdi(self, entries, log_to_mdi_data=False, scroll_to_bottom=False):
+        self.manual_rv.data.extend(entries)
+        if log_to_mdi_data:
+            App.get_running_app().mdi_data.extend(entries)
+        if scroll_to_bottom:
             Clock.schedule_once(lambda dt: setattr(self.manual_rv, 'scroll_y', 0), 0)
-            for cmd in line.strip().split('\n'):
-                self.manual_rv.data.append({'text': cmd, 'color': (200/255, 200/255, 200/255, 1)})
-        except IndexError:
-            logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
+
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         try:
