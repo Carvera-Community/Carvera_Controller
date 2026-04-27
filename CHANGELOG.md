@@ -4,6 +4,7 @@
 - Enhancement: Improvements to saving changes in settings menu
 - Fixed: Restore Keyboard Jogging state after Probing Popup is closed
 - Fixed: Repeated firmware checks now happen just once
+- Fixed: UI widget updates from the SerialMonitor() now dispatched via the main thread. This should reduce the number of RecycleView related crashes
 
 [2.1.0]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
