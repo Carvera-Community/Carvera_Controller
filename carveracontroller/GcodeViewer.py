@@ -814,7 +814,7 @@ class GCodeViewer(Widget):
 
         self.bind(size=self._on_size_change, pos=self._on_size_change)
 
-        Clock.schedule_interval(self.increase_angle, 1/60)
+        Clock.schedule_interval(self._on_frame_tick, 1/60)
 
 
     def _on_size_change(self, *args):
@@ -2108,7 +2108,7 @@ class GCodeViewer(Widget):
         self._scene_dirty = True
 
     #repeat this function every 1/60 s
-    def increase_angle(self,_):
+    def _on_frame_tick(self, _):
 
         if self.lengths is None or len(self.lengths) <= 1:
             #data is not loaded yet
