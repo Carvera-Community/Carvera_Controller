@@ -1,0 +1,82 @@
+[
+    {
+        "type": "bool",
+        "title": "Enable Syntax Highlighting",
+        "desc": "Colorize G-code tokens in the file viewer. Disable on low-end machines for better scroll performance.",
+        "section": "carvera",
+        "key": "gcode_highlight_enabled",
+        "default": "true"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Comments",
+        "desc": "Color for parenthetical (...) and semicolon comments.",
+        "section": "carvera",
+        "key": "gcode_color_comment",
+        "default": "106,153,85,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "G Commands",
+        "desc": "Color for G commands (G0, G1, G28, etc.).",
+        "section": "carvera",
+        "key": "gcode_color_g_command",
+        "default": "86,156,214,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "M Commands",
+        "desc": "Color for M commands (M3, M5, M6, etc.).",
+        "section": "carvera",
+        "key": "gcode_color_m_command",
+        "default": "197,134,192,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Coordinates (X/Y/Z/A)",
+        "desc": "Color for axis coordinate parameters.",
+        "section": "carvera",
+        "key": "gcode_color_coordinate",
+        "default": "206,145,120,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Feed Rate (F)",
+        "desc": "Color for the feed rate parameter.",
+        "section": "carvera",
+        "key": "gcode_color_feedrate",
+        "default": "78,201,176,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Spindle Speed (S)",
+        "desc": "Color for the spindle speed parameter.",
+        "section": "carvera",
+        "key": "gcode_color_spindle",
+        "default": "209,105,105,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Tool (T)",
+        "desc": "Color for tool number.",
+        "section": "carvera",
+        "key": "gcode_color_tool",
+        "default": "181,206,168,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Line Number (N)",
+        "desc": "Color for line number codes (N100, etc.).",
+        "section": "carvera",
+        "key": "gcode_color_line_number",
+        "default": "133,133,133,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Other Parameters",
+        "desc": "Color for other parameters (I, J, K, P, R, etc.).",
+        "section": "carvera",
+        "key": "gcode_color_parameter",
+        "default": "156,220,254,255"
+    }
+]

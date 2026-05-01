@@ -190,7 +190,7 @@ import subprocess
 from . import Utils
 from . import ui
 from kivy.config import ConfigParser
-from .CNC import CNC
+from .CNC import CNC, highlight_gcode_line, escape_gcode_markup, GCODE_DEFAULT_COLORS
 from .GcodeViewer import GCodeViewer
 from .Controller import Controller, NOT_CONNECTED, STATECOLOR, STATECOLORDEF,\
     LOAD_DIR, LOAD_MV, LOAD_RM, LOAD_MKDIR, LOAD_WIFI, LOAD_CONN_WIFI, CONN_USB, CONN_WIFI, SEND_FILE
@@ -2128,6 +2128,7 @@ class GCodeRow(RecycleDataViewBehavior, BoxLayout):
     selectable = BooleanProperty(True)
     line_no = NumericProperty(0)
     text = StringProperty('')
+    highlighted_text = StringProperty('')
     color = ListProperty([1, 1, 1, 1])
     is_resume_line = BooleanProperty(False)
     touch_start_time = 0
@@ -2915,6 +2916,7 @@ class Makera(RelativeLayout):
         self.setting_default_list = {}
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_gcode_viewer_config()
         self.load_pendant_config()
 
         self.usb_event = lambda instance, x: self.openUSB(x)
@@ -2960,6 +2962,8 @@ class Makera(RelativeLayout):
         if Config.has_option('carvera', 'active_color'):
             App.get_running_app().active_color = self._parse_active_color(Config.get('carvera', 'active_color'))
 
+        self._load_gcode_highlight_settings()
+
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
         # status switch timer
@@ -2989,6 +2993,33 @@ class Makera(RelativeLayout):
             return [parts[0]/255, parts[1]/255, parts[2]/255, parts[3]/255 if parts[3] > 1 else parts[3]]
         except Exception:
             return [0, 1, 1, 1]  # Default cyan
+
+    def _load_gcode_highlight_settings(self):
+        """Read gcode highlighting config into cached attributes."""
+        raw_enabled = Config.get('carvera', 'gcode_highlight_enabled') if Config.has_option('carvera', 'gcode_highlight_enabled') else '1'
+        self.gcode_highlight_enabled = raw_enabled not in ('0', 'false', 'False')
+        self.gcode_highlight_colors = {}
+        for cat in GCODE_DEFAULT_COLORS:
+            config_key = f'gcode_color_{cat}'
+            raw = Config.get('carvera', config_key) if Config.has_option('carvera', config_key) else None
+            if raw:
+                self.gcode_highlight_colors[cat] = self._config_color_to_hex(raw)
+
+    @staticmethod
+    def _config_color_to_hex(value):
+        """Convert a 'R,G,B,A' config string (0-255) to a Kivy markup hex color.
+
+        Returns '#RRGGBBAA' when alpha < 255, otherwise '#RRGGBB'.
+        """
+        try:
+            parts = [int(float(x.strip())) for x in value.split(',')]
+            r, g, b = parts[0], parts[1], parts[2]
+            a = parts[3] if len(parts) >= 4 else 255
+            if a < 255:
+                return '#{:02X}{:02X}{:02X}{:02X}'.format(r, g, b, a)
+            return '#{:02X}{:02X}{:02X}'.format(r, g, b)
+        except Exception:
+            return '#C8C8C8'
 
     def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
@@ -3026,6 +3057,24 @@ class Makera(RelativeLayout):
         self.config_popup.settings_panel.add_json_panel(tr._('Controller'), Config, data=json.dumps(controller_config))
 
         self._update_macro_button_text()
+
+    def load_gcode_viewer_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), 'gcode_viewer_config.json')
+        try:
+            with open(config_def_file) as file:
+                gcode_viewer_config_definition = json.load(file)
+        except Exception as e:
+            logger.error(f"Failed to load gcode_viewer_config.json: {e}")
+            return
+        gcode_viewer_config = []
+
+        for setting in gcode_viewer_config_definition:
+            if 'default' in setting:
+                Config.setdefault(setting['section'], setting['key'], setting['default'])
+                setting.pop('default', None)
+            gcode_viewer_config.append(setting)
+
+        self.config_popup.settings_panel.add_json_panel(tr._('G-Code Viewer'), Config, data=json.dumps(gcode_viewer_config))
 
     def load_pendant_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), 'pendant_config.json')
@@ -5987,6 +6036,20 @@ class Makera(RelativeLayout):
         if "high_precision_reamining_time_estimate" in self.controller_setting_change_list:
             self.gcode_viewer.high_precision_time_estimate = self.controller_setting_change_list.get("high_precision_reamining_time_estimate")
 
+        gcode_hl_changed = False
+        if 'gcode_highlight_enabled' in self.controller_setting_change_list:
+            self.gcode_highlight_enabled = self.controller_setting_change_list['gcode_highlight_enabled'] not in ('0', 'false', 'False')
+            gcode_hl_changed = True
+        for cat in GCODE_DEFAULT_COLORS:
+            config_key = f'gcode_color_{cat}'
+            if config_key in self.controller_setting_change_list:
+                self.gcode_highlight_colors[cat] = self._config_color_to_hex(self.controller_setting_change_list[config_key])
+                gcode_hl_changed = True
+        if gcode_hl_changed:
+            app = App.get_running_app()
+            if hasattr(self, 'gcode_rv') and self.gcode_rv.data:
+                self.load_page(app.curr_page)
+
         self.controller_setting_change_list.clear()
 
     # -----------------------------------------------------------------------
@@ -6180,12 +6243,19 @@ class Makera(RelativeLayout):
         if page_no > app.total_pages:
             page_no = app.total_pages
         self.gcode_rv.data = []
+        hl_enabled = getattr(self, 'gcode_highlight_enabled', False)
+        hl_colors = getattr(self, 'gcode_highlight_colors', None)
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line[:-1].replace("\x0d", "")
+            plain = line_txt.strip()
+            if hl_enabled:
+                hl = highlight_gcode_line(plain, hl_colors)
+            else:
+                hl = escape_gcode_markup(plain)
             try:
                 self.gcode_rv.data.append(
-                    {'line_no': line_no, 'text': line_txt.strip(), 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
+                    {'line_no': line_no, 'text': plain, 'highlighted_text': hl, 'color': (200 / 255, 200 / 255, 200 / 255, 1)})
             except IndexError:
                 logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
             line_no = line_no + 1
@@ -6556,6 +6626,18 @@ def set_config_defaults(default_lang):
     if not Config.has_option('graphics', 'height'): Config.set('graphics', 'height', '1440')
     if not Config.has_option('graphics', 'width'): Config.set('graphics', 'width',  '900')
     if not Config.has_option('carvera', 'instantFSoverride'): Config.set('carvera','instantFSoverride','1')
+
+    # G-code viewer syntax highlighting defaults
+    if not Config.has_option('carvera', 'gcode_highlight_enabled'): Config.set('carvera', 'gcode_highlight_enabled', '1')
+    if not Config.has_option('carvera', 'gcode_color_comment'): Config.set('carvera', 'gcode_color_comment', '106,153,85,255')
+    if not Config.has_option('carvera', 'gcode_color_g_command'): Config.set('carvera', 'gcode_color_g_command', '86,156,214,255')
+    if not Config.has_option('carvera', 'gcode_color_m_command'): Config.set('carvera', 'gcode_color_m_command', '197,134,192,255')
+    if not Config.has_option('carvera', 'gcode_color_coordinate'): Config.set('carvera', 'gcode_color_coordinate', '206,145,120,255')
+    if not Config.has_option('carvera', 'gcode_color_feedrate'): Config.set('carvera', 'gcode_color_feedrate', '78,201,176,255')
+    if not Config.has_option('carvera', 'gcode_color_spindle'): Config.set('carvera', 'gcode_color_spindle', '209,105,105,255')
+    if not Config.has_option('carvera', 'gcode_color_tool'): Config.set('carvera', 'gcode_color_tool', '181,206,168,255')
+    if not Config.has_option('carvera', 'gcode_color_line_number'): Config.set('carvera', 'gcode_color_line_number', '133,133,133,255')
+    if not Config.has_option('carvera', 'gcode_color_parameter'): Config.set('carvera', 'gcode_color_parameter', '156,220,254,255')
 
     Config.write()
 
