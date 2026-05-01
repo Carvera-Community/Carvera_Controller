@@ -11,6 +11,7 @@ Usage:
     # Subsequent runs: compare against baselines
     poetry run python -m pytest tests/integration/test_visual_regression.py
 """
+
 import json
 import os
 

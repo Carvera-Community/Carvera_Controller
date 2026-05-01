@@ -3,6 +3,7 @@
 Provides a session-scoped fixture that boots the full MakeraApp with mocked
 hardware, plus helpers for screenshot capture and comparison.
 """
+
 import os
 import shutil
 import tempfile
@@ -70,9 +71,7 @@ def load_gcode_file(app, filepath):
     load_event.wait() while the UI thread processes scheduled callbacks.
     We pump frames from here to service those callbacks.
     """
-    loader = threading.Thread(
-        target=app.root.load_gcode_file, args=(filepath,), daemon=True
-    )
+    loader = threading.Thread(target=app.root.load_gcode_file, args=(filepath,), daemon=True)
     loader.start()
     # Pump frames while the loader thread runs, so Clock.schedule_once
     # callbacks (load_start, load_page, load_gcodes, load_end) get processed
@@ -124,17 +123,12 @@ def compare_screenshots(name):
     out_path = os.path.join(OUTPUT_DIR, f"{name}.png")
 
     if not os.path.exists(ref_path):
-        pytest.skip(
-            f"No reference screenshot for '{name}'. "
-            f"Run with --update-references to create one."
-        )
+        pytest.skip(f"No reference screenshot for '{name}'. " f"Run with --update-references to create one.")
 
     ref = Image.open(ref_path).convert("RGB")
     out = Image.open(out_path).convert("RGB")
 
-    assert ref.size == out.size, (
-        f"Screenshot size mismatch: reference={ref.size}, actual={out.size}"
-    )
+    assert ref.size == out.size, f"Screenshot size mismatch: reference={ref.size}, actual={out.size}"
 
     diff = ImageChops.difference(ref, out)
     bbox = diff.getbbox()
@@ -142,10 +136,7 @@ def compare_screenshots(name):
     if bbox is not None:
         diff_path = os.path.join(OUTPUT_DIR, f"{name}_DIFF.png")
         diff.save(diff_path)
-        pytest.fail(
-            f"Visual difference detected in '{name}'. "
-            f"Diff region: {bbox}. See {diff_path}"
-        )
+        pytest.fail(f"Visual difference detected in '{name}'. " f"Diff region: {bbox}. See {diff_path}")
 
 
 def save_reference(name):
@@ -216,6 +207,7 @@ def kivy_app():
 
     # Disable screen transition animations so page switches are instant
     from kivy.uix.screenmanager import NoTransition
+
     app.root.content.transition = NoTransition()
     app.root.cmd_manager.transition = NoTransition()
 
