@@ -2,6 +2,7 @@
 - Enhancement: Display alarm message in halt popup
 - Enhancement: Add popup notice when using stock firmware instead of the Community Firmware
 - Enhancement: Improvements to saving changes in settings menu
+- Enhancement: Only re-render the G-Code viewer scene if something has changed
 - Fixed: Restore Keyboard Jogging state after Probing Popup is closed
 - Fixed: Repeated firmware checks now happen just once
 - Fixed: UI widget updates from the SerialMonitor() now dispatched via the main thread. This should reduce the number of RecycleView related crashes
