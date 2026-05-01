@@ -102,6 +102,32 @@ poetry run python -m carveracontroller
 
 To run the iOS app, you first need to build its dependencies using the Local Packaging instructions below. The build script will open Xcode for you, or you can open the project manually by finding it in `assets/packaging/ios/carveracontroller-ios`.
 
+### Linting
+
+The project uses [Ruff](https://docs.astral.sh/ruff/) (lint + format), [Mypy](https://mypy-lang.org/) (type checking), and [import-linter](https://import-linter.readthedocs.io/) (architectural boundaries) to enforce code quality. The strict ruleset applies to new code under `carveracontroller/machine/` and `carveracontroller/ui/`; legacy files are excluded until they are extracted into the new structure.
+
+Run all checks at once:
+
+```bash
+poetry run pre-commit run --all-files
+```
+
+Or run individual tools:
+
+```bash
+poetry run ruff check carveracontroller        # lint
+poetry run ruff check --fix carveracontroller  # lint + auto-fix safe issues
+poetry run ruff format carveracontroller       # format in place
+poetry run mypy carveracontroller              # type check
+poetry run lint-imports                        # architectural contracts
+```
+
+To have the checks run automatically on every `git commit`, install the pre-commit hooks once:
+
+```bash
+poetry run pre-commit install
+```
+
 ### Local Packaging
 
 The application is packaged using PyInstaller (except for iOS). This tool converts Python applications into a standalone executable, so it can be run on systems without requiring management of a installed Python interpreter or dependent libraries. An build helper script is configured with Poetry and can be run with:

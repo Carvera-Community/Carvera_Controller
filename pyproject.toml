@@ -40,6 +40,12 @@ pytest = "^8.0"
 pytest-timeout = "^2.3"
 Pillow = "^11.0"
 
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.8"
+mypy = "^1.13"
+import-linter = "^2.1"
+pre-commit = "^4.0"
+
 [tool.poetry.group.ios-dev.dependencies.kivy-ios]
 git = "https://github.com/Carvera-Community/kivy-ios.git"
 branch = "pr-643-fix-custom-recipes"
@@ -47,3 +53,115 @@ branch = "pr-643-fix-custom-recipes"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 timeout = 60
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+extend-exclude = [
+    ".buildozer",
+    "build",
+    "dist",
+    # Build/release tooling and packaging recipes — these are project-owned but
+    # outside the scope of the refactor. Same git-blame reasoning as the legacy
+    # carveracontroller/* files below.
+    "scripts/**",
+    "assets/packaging/**",
+    # Legacy files — exempt from both linting and formatting until their contents
+    # are extracted into the new layered structure (see /machine/, /ui/). When a
+    # file is fully extracted, delete it and remove its entry here. Each removed
+    # entry is visible progress on the refactor.
+    "carveracontroller/main.py",
+    "carveracontroller/Controller.py",
+    "carveracontroller/CNC.py",
+    "carveracontroller/GcodeViewer.py",
+    "carveracontroller/XMODEM.py",
+    "carveracontroller/Utils.py",
+    "carveracontroller/custom_widgets.py",
+    "carveracontroller/arcball_from_cpp.py",
+    "carveracontroller/WIFIStream.py",
+    "carveracontroller/USBStream.py",
+    "carveracontroller/Objloader.py",
+    "carveracontroller/translation.py",
+    "carveracontroller/ios_helpers.py",
+    "carveracontroller/__main__.py",
+    # Version file is managed by the build script — see comment at top of file
+    "carveracontroller/__version__.py",
+    # addons/ — left alone for now; will be migrated later
+    "carveracontroller/addons/**",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes (undefined names, unused imports — real bugs)
+    "I",     # isort
+    "B",     # flake8-bugbear (common bug patterns)
+    "UP",    # pyupgrade (modern Python idioms)
+    "N",     # pep8-naming
+    "C4",    # comprehensions
+    "SIM",   # simplify
+    "ARG",   # unused arguments
+    "RET",   # return statements
+    "ERA",   # eradicate (commented-out code)
+    "TID",   # tidy imports
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can be slightly looser. E402 + I001 are exempt because conftest.py
+# legitimately needs to set environment variables and Kivy Config before imports.
+"tests/**" = ["ARG", "N", "ERA001", "E402", "I001"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+# Legacy files are excluded from type-checking entirely. Only the new layers
+# (/machine/, /ui/) get checked, with overrides below. As legacy files are
+# extracted, remove their entries from this list.
+exclude = [
+    '^carveracontroller/main\.py$',
+    '^carveracontroller/Controller\.py$',
+    '^carveracontroller/CNC\.py$',
+    '^carveracontroller/GcodeViewer\.py$',
+    '^carveracontroller/XMODEM\.py$',
+    '^carveracontroller/Utils\.py$',
+    '^carveracontroller/custom_widgets\.py$',
+    '^carveracontroller/arcball_from_cpp\.py$',
+    '^carveracontroller/WIFIStream\.py$',
+    '^carveracontroller/USBStream\.py$',
+    '^carveracontroller/Objloader\.py$',
+    '^carveracontroller/translation\.py$',
+    '^carveracontroller/ios_helpers\.py$',
+    '^carveracontroller/__main__\.py$',
+    '^carveracontroller/__version__\.py$',
+    '^carveracontroller/addons/',
+]
+
+[[tool.mypy.overrides]]
+module = "carveracontroller.machine.*"
+strict = true
+
+[[tool.mypy.overrides]]
+module = "carveracontroller.ui.*"
+disallow_untyped_defs = true
+# Not full strict — Kivy's dynamic attrs and .kv id-bindings fight strict mode.
+
+[tool.importlinter]
+root_packages = ["carveracontroller"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture: ui depends on machine, never reversed"
+type = "layers"
+layers = [
+    "carveracontroller.ui",
+    "carveracontroller.machine",
+]
+
+[[tool.importlinter.contracts]]
+name = "Machine layer is Kivy-free"
+type = "forbidden"
+source_modules = ["carveracontroller.machine"]
+forbidden_modules = ["kivy"]

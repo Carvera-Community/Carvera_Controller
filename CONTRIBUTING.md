@@ -22,6 +22,6 @@ Thank you for your interest in contributing to our project! We welcome contribut
 4. **Clone your Fork:** Clone your fork to your local machine using `git clone`.
 5. **Create a Branch:** Use `git checkout -b feature-name` to create a new branch for your changes.
 6. **Make Changes:** Implement your changes.
-7. **Test Your Changes:** Ensure your changes don’t break existing functionality or introduce new bugs.
+7. **Test Your Changes:** Ensure your changes don’t break existing functionality or introduce new bugs. Run the linter checks with `poetry run pre-commit run --all-files` and fix any issues before opening the PR. See the [Linting section in the README](README.md#linting) for details on the tools and what they enforce.
 8. **Commit Your Changes:** Write a concise and descriptive commit message.
 9. **Push and Open a Pull Request:** Push your branch to your fork and open a pull request from your branch and use the `develop` branch as the destination. In the Pull Request please describe what issue you are resolving, and summarize the changes.
