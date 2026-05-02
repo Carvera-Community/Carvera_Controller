@@ -7,6 +7,61 @@ PARENPAT = re.compile(r"(\(.*?\))")
 SEMIPAT  = re.compile(r"(;.*)")
 CMDPAT   = re.compile(r"([A-Za-z]+)")
 
+GCODE_TOKEN_RE = re.compile(
+    r'(?P<comment>\(.*?\)|;.*)'                              # paren or semicolon comment
+    r'|(?P<g_command>[Gg]\d+\.?\d*)'                         # G command
+    r'|(?P<m_command>[Mm]\d+\.?\d*)'                         # M command
+    r'|(?P<coordinate>[XYZAxyza][-+]?\d*\.?\d*)'             # coordinate axis
+    r'|(?P<feedrate>[Ff][-+]?\d*\.?\d*)'                     # feed rate
+    r'|(?P<spindle>[Ss][-+]?\d*\.?\d*)'                      # spindle speed
+    r'|(?P<tool>[Tt]\d+)'                                    # tool number
+    r'|(?P<line_number>[Nn]\d+)'                             # line number
+    r'|(?P<parameter>[IJKPRHLDQEijkprhldqe][-+]?\d*\.?\d*)' # other parameters
+)
+
+GCODE_DEFAULT_COLORS = {
+    'comment':     '#6A9955',
+    'g_command':   '#569CD6',
+    'm_command':   '#C586C0',
+    'coordinate':  '#CE9178',
+    'feedrate':    '#4EC9B0',
+    'spindle':     '#D16969',
+    'tool':        '#B5CEA8',
+    'line_number': '#858585',
+    'parameter':   '#9CDCFE',
+}
+
+def escape_gcode_markup(text):
+    """Escape characters that Kivy label markup interprets."""
+    return text.replace('&', '&amp;').replace('[', '&bl;').replace(']', '&br;')
+
+def highlight_gcode_line(line, colors=None):
+    """Return *line* wrapped in Kivy ``[color]`` markup tags.
+
+    *colors* is an optional dict mapping category names (see
+    ``GCODE_DEFAULT_COLORS``) to ``#RRGGBB`` hex strings.  Missing keys
+    fall back to the built-in defaults; pass ``None`` to use defaults for
+    everything.
+    """
+    if colors is None:
+        effective = GCODE_DEFAULT_COLORS
+    else:
+        effective = {**GCODE_DEFAULT_COLORS, **colors}
+
+    result = []
+    pos = 0
+    for m in GCODE_TOKEN_RE.finditer(line):
+        if m.start() > pos:
+            result.append(escape_gcode_markup(line[pos:m.start()]))
+
+        hex_color = effective.get(m.lastgroup, '#C8C8C8')
+        result.append(f'[color={hex_color}]{escape_gcode_markup(m.group())}[/color]')
+        pos = m.end()
+
+    if pos < len(line):
+        result.append(escape_gcode_markup(line[pos:]))
+    return ''.join(result)
+
 XY   = 0
 XZ   = 1
 YZ   = 2
