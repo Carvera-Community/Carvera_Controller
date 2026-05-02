@@ -799,19 +799,27 @@ class GCodeViewer(Widget):
 
 
         self.meshmanager = MyMeshManager()
-        #self.load('out_tap1.txt')
-        # lines = []
-        # with open('out.txt','r') as file:
-        #     for line in file:
-        #         lines.append(line)
-        # self.load(lines)
 
-        #print("pos:")
-        #debug
-        #self.load(lines)
-        #self.set_frame_callback(frame_call_back_test)
-        Clock.schedule_interval(self.increase_angle, 1/60)
+        # Dirty flags: set True whenever the scene must be re-rendered.
+        # _scene_dirty covers view/pointer/axis uniform changes; _proj_dirty
+        # covers the projection matrix (zoom, pan, resize).
+        self._scene_dirty = True
+        self._proj_dirty = True
 
+        # Pre-computed constant matrices reused every frame to avoid per-frame
+        # allocation and rotate() calls.
+        self._identity_mat = Matrix()
+        self._axis_y_rot = Matrix().rotate(0.5 * math.pi, 1, 0, 0)
+        self._axis_z_rot = Matrix().rotate(-0.5 * math.pi, 0, 0, 1)
+
+        self.bind(size=self._on_size_change, pos=self._on_size_change)
+
+        Clock.schedule_interval(self._on_frame_tick, 1/60)
+
+
+    def _on_size_change(self, *args):
+        self._proj_dirty = True
+        self._scene_dirty = True
 
     #清空渲染
     def clearDisplay(self):
@@ -988,6 +996,7 @@ class GCodeViewer(Widget):
 
         self.update_proj()
         self.update_view()
+        self._scene_dirty = True
         #force update
         self.canvas.ask_update()
 
@@ -1185,6 +1194,7 @@ class GCodeViewer(Widget):
 
             self.update_proj()
             self.update_view()
+            self._scene_dirty = True
             #force update
             self.canvas.ask_update()
 
@@ -1554,6 +1564,7 @@ class GCodeViewer(Widget):
 
                 self.update_proj()
                 self.update_view()
+                self._scene_dirty = True
 
         #剩下的lines
         if len(lines)>0:
@@ -1616,6 +1627,7 @@ class GCodeViewer(Widget):
 
             self.update_proj()
             self.update_view()
+            self._scene_dirty = True
     #加载数据
     def load(self, tmplines):
 
@@ -1791,6 +1803,7 @@ class GCodeViewer(Widget):
 
         self.update_proj()
         self.update_view()
+        self._scene_dirty = True
         #print(self.size)
         #init for arccamera
 
@@ -1849,6 +1862,7 @@ class GCodeViewer(Widget):
     def set_display_offset(self,offx,offy):
         self.off_x = offx
         self.off_y = offy
+        self._scene_dirty = True
 
     #set displaying limit
     def set_pos_by_distance(self, distance):
@@ -1856,6 +1870,7 @@ class GCodeViewer(Widget):
             print("distance is out of bounds")
             return
         self.display_count = float(distance)
+        self._scene_dirty = True
         # Sync cur_line_index to display_count so get_cur_pos_index() returns the correct line
         if self.lengths:
             cur_display_distance = float(self.display_count)
@@ -2056,11 +2071,13 @@ class GCodeViewer(Widget):
     #设置自动走刀路
     def enable_dynamic_displaying(self,dynamic_display):
         self.dynamic_display = dynamic_display
+        self._scene_dirty = True
 
     #显示全部数据
     def show_all(self):
         self.dynamic_display = False
         self.display_count = self.get_total_distance()
+        self._scene_dirty = True
 
     #恢复默认视角
     def restore_default_view(self):
@@ -2074,6 +2091,7 @@ class GCodeViewer(Widget):
         self.m_yPan = 0
         self.update_proj()
         self.update_view()
+        self._scene_dirty = True
 
     #设置移动速度
     def set_move_speed(self,mov_speed):
@@ -2087,18 +2105,24 @@ class GCodeViewer(Widget):
         #if(mask_val > 999999):
         #    mask_val -= int(mask_val / 1000000) * 1000000
         self.linemesh['vertex_type_display'] = mask_val
+        self._scene_dirty = True
 
     #repeat this function every 1/60 s
-    def increase_angle(self,_):
+    def _on_frame_tick(self, _):
 
         if self.lengths is None or len(self.lengths) <= 1:
             #data is not loaded yet
             return
         
-        #calculate the current distance of line segment
-        #print(self.pos)
-        #print(self.size)
-        self.update_proj()
+        # Skip the entire frame when nothing has changed and playback is paused.
+        if not self.dynamic_display and not self._scene_dirty:
+            return
+
+        # Recompute projection only when it is actually stale (resize / zoom / pan).
+        if self._proj_dirty:
+            self.update_proj()
+            self._proj_dirty = False
+
         if self.dynamic_display:
             self.add_dir = self.move_speed * self.move_scale * self.move_scale_by_positon
 
@@ -2159,7 +2183,7 @@ class GCodeViewer(Widget):
 
 
         #print(view)
-        self.linemesh['my_rotation'] = Matrix() #rotation_mat#
+        self.linemesh['my_rotation'] = self._identity_mat
         
         self.linemesh['my_view'] = self.m_viewMatrix#rotation_mat
            
@@ -2167,7 +2191,7 @@ class GCodeViewer(Widget):
         #print(pointer_updated_pos)
         
         #if(not self.is_4_axis):
-        self.pointermesh['rotation'] = Matrix()#rotate_mat_by_x_axis_angle(0)
+        self.pointermesh['rotation'] = self._identity_mat
         #.rotate(-90, 1.0, 0.0, 0.0)
         if pointer_updated_pos < len(self.positions):
             base_start = int(line_index_withratio)
@@ -2223,32 +2247,29 @@ class GCodeViewer(Widget):
 
         
         
-        self.pointermesh['modelview_mat'] = Matrix().multiply(self.m_viewMatrix)
+        self.pointermesh['modelview_mat'] = self.m_viewMatrix
 
         #axis
-        self.axisxmesh['offset'] = (-self.lines_center[0],-self.lines_center[1],-self.lines_center[2])
-        self.axisxmesh['rotation'] = Matrix()
-        self.axisxmesh['diff_color'] = [0.0,1.0,0.0] 
-        #self.axisxmesh['rotation'] = self.axisxmesh['rotation'].rotate(0.5*3.1415926,0,1,0)
+        axis_offset = (-self.lines_center[0],-self.lines_center[1],-self.lines_center[2])
+        self.axisxmesh['offset'] = axis_offset
+        self.axisxmesh['rotation'] = self._identity_mat
+        self.axisxmesh['diff_color'] = [0.0,1.0,0.0]
 
-        self.axisymesh['offset'] = (-self.lines_center[0],-self.lines_center[1],-self.lines_center[2])
-        self.axisymesh['rotation'] = Matrix()
-        self.axisymesh['rotation'] = self.axisymesh['rotation'].rotate(0.5*3.1415926,1,0,0)
+        self.axisymesh['offset'] = axis_offset
+        self.axisymesh['rotation'] = self._axis_y_rot
         self.axisymesh['diff_color'] = [0.0,0.0,1.0]
-        
-        
-        self.axiszmesh['offset'] = (-self.lines_center[0],-self.lines_center[1],-self.lines_center[2])
-        self.axiszmesh['rotation'] = Matrix()
-        self.axiszmesh['rotation'] = self.axiszmesh['rotation'].rotate(-0.5*3.1415926,0,0,1)
-        self.axiszmesh['diff_color'] = [1.0,0.0,0.0] 
 
-        
-        self.axisxmesh['modelview_mat'] = self.m_viewMatrix#rotation_mat
-        self.axisymesh['modelview_mat'] = self.m_viewMatrix#rotation_mat
-        self.axiszmesh['modelview_mat'] = self.m_viewMatrix#rotation_mat
+        self.axiszmesh['offset'] = axis_offset
+        self.axiszmesh['rotation'] = self._axis_z_rot
+        self.axiszmesh['diff_color'] = [1.0,0.0,0.0]
+
+        self.axisxmesh['modelview_mat'] = self.m_viewMatrix
+        self.axisymesh['modelview_mat'] = self.m_viewMatrix
+        self.axiszmesh['modelview_mat'] = self.m_viewMatrix
 
         self.g_old_curosr  = self.g_cursor
         self.g_wheel_data = 0
+        self._scene_dirty = False
 
     #mouse event
     #     return super(GCodeViewer, self).on_touch_move(touch)
@@ -2273,6 +2294,7 @@ class GCodeViewer(Widget):
 
                 self.update_proj()
                 self.update_view()
+                self._scene_dirty = True
 
                 if touch.is_double_tap:
                     self.restore_default_view()
@@ -2307,6 +2329,7 @@ class GCodeViewer(Widget):
                     self.update_proj()
 
                 self.g_cursor = [touch.pos[0], touch.pos[1]]
+                self._scene_dirty = True
             except:
                 print(sys.exc_info()[1])
 
@@ -2322,12 +2345,14 @@ class GCodeViewer(Widget):
             self.m_zoom /= ZOOMSTEP
             self.update_proj()
             self.update_view()
+            self._scene_dirty = True
 
     def zoom_out(self):
         if (self.m_zoom < 10):
             self.m_zoom *= ZOOMSTEP
             self.update_proj()
             self.update_view()
+            self._scene_dirty = True
 
     def set_orbit(self, orbit = True):
         self.orbit = orbit
