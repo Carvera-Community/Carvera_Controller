@@ -202,7 +202,8 @@
         opacity: 1 if root.is_resume_line else 0
         source: 'data/open_iconic_UI/flag-8x.png'
     Label:
-        text: root.text
+        text: root.highlighted_text or root.text
+        markup: True
         color: root.color
         halign: 'left'
         valign: 'middle'

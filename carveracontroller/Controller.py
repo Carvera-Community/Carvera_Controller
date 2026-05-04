@@ -1302,6 +1302,8 @@ class Controller:
            CNC.vars["curfeed"] = float(d['F'][0])
            CNC.vars["tarfeed"] = float(d['F'][1])
            CNC.vars["OvFeed"]  = int(d['F'][2])
+           if len(d['F']) > 3:  # Analog type spindle reports temp via F status for some reason in FW <= 2.1.0
+               CNC.vars["spindletemp"] = float(d['F'][3])
         if 'S' in d:
             CNC.vars["curspindle"]  = float(d['S'][0])
             CNC.vars["tarspindle"]  = float(d['S'][1])
