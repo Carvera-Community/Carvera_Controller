@@ -3,6 +3,7 @@
 Provides machine state fixtures that set CNC.vars to simulate different
 machine states without needing real hardware.
 """
+
 import pytest
 
 

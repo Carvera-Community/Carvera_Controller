@@ -188,7 +188,7 @@ import string
 import subprocess
 
 from . import Utils
-from . import ui
+from . import custom_widgets
 from kivy.config import ConfigParser
 from .CNC import CNC, highlight_gcode_line, escape_gcode_markup, GCODE_DEFAULT_COLORS
 from .GcodeViewer import GCodeViewer
@@ -1683,8 +1683,8 @@ class MakeraConfigPanel(SettingsWithSidebar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.register_type('pendant', SettingPendantSelector)
-        self.register_type('gcodesnippet', ui.SettingGCodeSnippet)
-        self.register_type('colorpicker', ui.SettingColorPicker)
+        self.register_type('gcodesnippet', custom_widgets.SettingGCodeSnippet)
+        self.register_type('colorpicker', custom_widgets.SettingColorPicker)
 
     def create_json_panel(self, title, config, filename=None, data=None):
         panel = super().create_json_panel(title, config, filename, data)

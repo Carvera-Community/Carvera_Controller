@@ -1,0 +1,31 @@
+# Local-only linter enforcement. Opt in with:
+#   poetry install --with lint
+#   poetry run pre-commit install
+#
+# After install, hooks run automatically on `git commit`. Run manually against
+# the whole repo with:
+#   poetry run pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict on /machine/, /ui/)
+        entry: poetry run mypy carveracontroller
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: import-linter
+        name: import-linter (architectural boundaries)
+        entry: poetry run lint-imports
+        language: system
+        types: [python]
+        pass_filenames: false
