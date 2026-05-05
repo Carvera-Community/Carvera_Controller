@@ -1190,7 +1190,7 @@ class ConfigPopup(ModalView):
             makera.confirm_popup.open()
             return True  # cancel the dismiss
 
-    def _apply_and_close(self):
+    def _apply_changes(self):
         app = App.get_running_app()
         # Write pending widget values to their Config instances
         for widget in self._all_setting_items():
@@ -1200,6 +1200,12 @@ class ConfigPopup(ModalView):
                 config.set(widget.section, widget.key, widget.value)
         Config.write()
         app.root.apply_setting_changes()
+        self._widget_snapshot = {}
+        for widget in self._all_setting_items():
+            self._widget_snapshot[(widget.section, widget.key)] = widget.value
+
+    def _apply_and_close(self):
+        self._apply_changes()
         self.dismiss(force=True)
 
     def _discard_and_close(self):

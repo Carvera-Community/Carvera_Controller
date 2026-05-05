@@ -3445,7 +3445,7 @@
                 text: tr._("Apply")
                 disabled: True
                 on_release:
-                    app.root.apply_setting_changes()
+                    app.root.config_popup._apply_changes()
         BoxLayout:
             size_hint_y: None
             height: '5dp'
