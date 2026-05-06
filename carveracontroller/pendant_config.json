@@ -13,7 +13,8 @@
         "desc": "This defines if the pendant jogging is automatically active on the jog screen",
         "section": "carvera",
         "key": "pendant_jogging_default",
-        "default": "true"
+        "default": "true",
+        "pendant_types": ["WHB04", "Gamepad"]
     },
     {
         "type": "bool",
@@ -21,7 +22,8 @@
         "desc": "Directly probe Z instead of opening the probing screen",
         "section": "carvera",
         "key": "pendant_probe_z_alt_cmd",
-        "default": "false"
+        "default": "false",
+        "pendant_types": ["WHB04", "Gamepad"]
     },
     {
         "type": "options",
@@ -32,7 +34,8 @@
         "default": "Macro",
         "options": [
             "Macro",
-            "Key-specific Action"]
+            "Key-specific Action"],
+        "pendant_types": ["WHB04"]
     },
     {
         "type": "gcodesnippet",
@@ -66,7 +69,8 @@
         "key": "pendant_macro_4",
         "default": {}
     },
-    {"type": "gcodesnippet",
+    {
+        "type": "gcodesnippet",
         "title": "Macro 5",
         "desc": "GCode to trigger when pressing the Macro 5 button on the pendant.",
         "section": "carvera",
@@ -112,5 +116,68 @@
         "section": "carvera",
         "key": "pendant_macro_10",
         "default": {}
+    },
+    {
+        "type": "numeric",
+        "title": "Gamepad: Deadzone",
+        "desc": "Thumbstick deadzone threshold (0.05-0.50). Values below this are treated as center.",
+        "section": "carvera",
+        "key": "gamepad_deadzone",
+        "default": "0.15",
+        "pendant_types": ["Gamepad"]
+    },
+    {
+        "type": "numeric",
+        "title": "Gamepad: Max Jog Speed (mm/min)",
+        "desc": "Maximum feed rate for continuous jog mode. The selected step size determines the speed fraction used.",
+        "section": "carvera",
+        "key": "gamepad_max_jog_speed",
+        "default": "3000",
+        "pendant_types": ["Gamepad"]
+    },
+    {
+        "type": "bool",
+        "title": "Gamepad: Invert X Axis",
+        "desc": "Invert the X axis direction on the gamepad thumbstick.",
+        "section": "carvera",
+        "key": "gamepad_invert_x",
+        "default": "false",
+        "pendant_types": ["Gamepad"]
+    },
+    {
+        "type": "bool",
+        "title": "Gamepad: Invert Y Axis",
+        "desc": "Invert the Y axis direction on the gamepad thumbstick.",
+        "section": "carvera",
+        "key": "gamepad_invert_y",
+        "default": "false",
+        "pendant_types": ["Gamepad"]
+    },
+    {
+        "type": "bool",
+        "title": "Gamepad: Invert Z Axis",
+        "desc": "Invert the Z axis direction on the gamepad thumbstick.",
+        "section": "carvera",
+        "key": "gamepad_invert_z",
+        "default": "false",
+        "pendant_types": ["Gamepad"]
+    },
+    {
+        "type": "bool",
+        "title": "Gamepad: Invert A Axis",
+        "desc": "Invert the A (rotary) axis direction on the gamepad thumbstick.",
+        "section": "carvera",
+        "key": "gamepad_invert_a",
+        "default": "false",
+        "pendant_types": ["Gamepad"]
+    },
+    {
+        "type": "gamepad_bindings",
+        "title": "Gamepad: Button/Axis Bindings",
+        "desc": "Configure which gamepad buttons and axes map to each action.",
+        "section": "carvera",
+        "key": "gamepad_bindings",
+        "default": "",
+        "pendant_types": ["Gamepad"]
     }
 ]

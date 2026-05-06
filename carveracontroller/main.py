@@ -85,7 +85,7 @@ def request_android_permissions():
 
 from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
-from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController
+from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController, SettingGamepadBindings
 
 import json
 import re
@@ -1691,6 +1691,7 @@ class MakeraConfigPanel(SettingsWithSidebar):
         self.register_type('pendant', SettingPendantSelector)
         self.register_type('gcodesnippet', custom_widgets.SettingGCodeSnippet)
         self.register_type('colorpicker', custom_widgets.SettingColorPicker)
+        self.register_type('gamepad_bindings', SettingGamepadBindings)
 
     def create_json_panel(self, title, config, filename=None, data=None):
         panel = super().create_json_panel(title, config, filename, data)
@@ -2950,9 +2951,8 @@ class Makera(RelativeLayout):
             self.allow_jogging_while_machine_running = Config.get('carvera', 'allow_jogging_while_machine_running')
 
         # Setup pendant
+        self.refresh_pendant_settings()
         self.setup_pendant()
-        self.pendant_jogging_default = Config.get('carvera', 'pendant_jogging_default')
-        self.pendant_probe_z_alt_cmd = Config.get('carvera', 'pendant_probe_z_alt_cmd')
 
         if Config.has_option('carvera', 'tooltip_delay'):
             delay_value = Config.getfloat('carvera','tooltip_delay')
@@ -3087,14 +3087,17 @@ class Makera(RelativeLayout):
         with open(config_def_file) as file:
             pendant_config_definition = json.load(file)
         pendant_config = []
+        pendant_types_map = {}
 
-        # Set default pendant config values
         for setting in pendant_config_definition:
             if 'default' in setting:
                 Config.setdefault(setting['section'], setting['key'], setting['default'])
                 setting.pop('default', None)
+            if 'pendant_types' in setting:
+                pendant_types_map[setting['key']] = setting.pop('pendant_types')
             pendant_config.append(setting)
 
+        SettingPendantSelector.pendant_types_map = pendant_types_map
         self.config_popup.settings_panel.add_json_panel(tr._('Pendant'), Config, data=json.dumps(pendant_config))
 
     def _update_macro_button_text(self):
@@ -5740,6 +5743,7 @@ class Makera(RelativeLayout):
         self.probing_popup.ids.step_xy.disabled = False
         self.probing_popup.ids.step_a.disabled = False
         self.probing_popup.ids.step_z.disabled = False
+        self.update_pendant_jog_text()
 
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
@@ -5751,6 +5755,7 @@ class Makera(RelativeLayout):
         self.probing_popup.ids.step_xy.disabled = True
         self.probing_popup.ids.step_a.disabled = True
         self.probing_popup.ids.step_z.disabled = True
+        self.update_pendant_jog_text()
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
@@ -5804,6 +5809,9 @@ class Makera(RelativeLayout):
 
     def setup_pendant(self):
         self.handle_pendant_disconnected()
+        if self.controller.continuous_jog_active and self.controller.stream is not None:
+            self.controller.stream.send(b"\031")
+        self.controller.continuous_jog_active = False
 
         type_name = Config.get('carvera', 'pendant_type')
         pendant_type = SUPPORTED_PENDANTS.get(type_name, SUPPORTED_PENDANTS["None"])
@@ -5839,12 +5847,23 @@ class Makera(RelativeLayout):
                                 self.handle_pendant_disconnected,
                                 self.handle_pendant_button_press)
 
+        if self.controller.jog_mode == Controller.JOG_MODE_CONTINUOUS:
+            self.update_ui_for_jog_mode_cont()
+        else:
+            self.update_ui_for_jog_mode_step()
+
+    def refresh_pendant_settings(self):
+        self.pendant_jogging_default = Config.getboolean(
+            'carvera', 'pendant_jogging_default', fallback=True)
+        self.pendant_probe_z_alt_cmd = Config.getboolean(
+            'carvera', 'pendant_probe_z_alt_cmd', fallback=False)
+
     def handle_pendant_connected(self):
         self.ids.pendant_jogging_en_btn.disabled = False
         app =App.get_running_app()
-        app.jog_pendant_text = tr._('Pendant Jogging')
-        app.jog_pendant_enable = 'down' if self.pendant_jogging_default == "1" else 'normal'
-        app.root.pendant_jog_control = True if self.pendant_jogging_default == "1" else False
+        self.update_pendant_jog_text()
+        app.jog_pendant_enable = 'down' if self.pendant_jogging_default else 'normal'
+        app.root.pendant_jog_control = self.pendant_jogging_default
 
     def handle_pendant_disconnected(self):
         app =App.get_running_app()
@@ -5869,7 +5888,7 @@ class Makera(RelativeLayout):
         #self.probing_popup.open()
 
     def handle_pendant_probe_z(self):
-        if self.pendant_probe_z_alt_cmd == "1":
+        if self.pendant_probe_z_alt_cmd:
             if self.controller.is_community_firmware:
                 self.controller.executeCommand("M466 Z-200 S2")
             else:
@@ -5877,6 +5896,18 @@ class Makera(RelativeLayout):
         else:
             #self.probing_popup.open()
             self.open_probing_popup()
+
+    def update_pendant_jog_text(self):
+        app = App.get_running_app()
+        if not self.ids.pendant_jogging_en_btn.disabled:
+            if hasattr(self, 'pendant') and hasattr(self.pendant, "current_step_size"):
+                if self.controller.jog_mode == self.controller.JOG_MODE_CONTINUOUS:
+                    percent = int(self.pendant.STEP_SIZE_SPEED_FRACTION[self.pendant.current_step_size] * 100)
+                    app.jog_pendant_text = tr._('Pendant Jogging') + f" ({percent}%)"
+                else:
+                    app.jog_pendant_text = tr._('Pendant Jogging') + f" ({self.pendant.current_step_size:g}mm)"
+            else:
+                app.jog_pendant_text = tr._('Pendant Jogging')
 
     def handle_pendant_button_press(self, button_action: str):
         """
@@ -5892,6 +5923,8 @@ class Makera(RelativeLayout):
                 self.update_ui_for_jog_mode_cont()
             elif button_action == "mode_step":
                 self.update_ui_for_jog_mode_step()
+        elif button_action == "step_size_changed":
+            self.update_pendant_jog_text()
 
 
     def _is_popup_open(self):
@@ -6021,7 +6054,16 @@ class Makera(RelativeLayout):
         if self.controller_setting_change_list.get('active_color'):
             App.get_running_app().active_color = self._parse_active_color(self.controller_setting_change_list.get('active_color'))
 
-        if "pendant_type" in self.controller_setting_change_list:
+        pendant_changed = any(
+            k == "pendant_type" or k.startswith("gamepad_")
+            for k in self.controller_setting_change_list
+        )
+
+        if any(k in self.controller_setting_change_list for k in (
+                "pendant_jogging_default", "pendant_probe_z_alt_cmd")):
+            self.refresh_pendant_settings()
+
+        if pendant_changed:
             self.pendant.close()
             self.setup_pendant()
 

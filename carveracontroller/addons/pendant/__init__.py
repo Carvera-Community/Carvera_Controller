@@ -1,2 +1,6 @@
-from .pendant import SettingPendantSelector, SUPPORTED_PENDANTS, \
-    OverrideController
+from .pendant import (
+    SettingPendantSelector,
+    SUPPORTED_PENDANTS,
+    OverrideController,
+    SettingGamepadBindings,
+)

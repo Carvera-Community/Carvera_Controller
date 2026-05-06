@@ -1674,9 +1674,9 @@ class Controller:
             return
         
         if mode in [Controller.JOG_MODE_STEP, Controller.JOG_MODE_CONTINUOUS]:
-            self.jog_mode = mode
             if self.continuous_jog_active:
                 self.stopContinuousJog()
+            self.jog_mode = mode
 
     def startContinuousJog(self, _dir, speed=None, scale_feed_override=None):
         """Start continuous jogging in the specified direction"""
