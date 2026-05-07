@@ -1,0 +1,556 @@
+#:import tr carveracontroller.__main__.tr
+
+<FacingGcodePreviewLine@Label>:
+    markup: True
+    font_size: dp(14)
+    size_hint_y: None
+    height: dp(24)
+    shorten: False
+    text_size: self.width - dp(16), None
+    padding_x: dp(10)
+    padding_y: dp(2)
+    halign: 'left'
+    valign: 'middle'
+    color: 200/255, 200/255, 200/255, 1
+
+<FacingWizardPopup>:
+    title: tr._('Facing wizard')
+    size_hint: 0.88, 0.9
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    auto_dismiss: False
+    overlay_color: 0, 0, 0, 0.35
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(8)
+        spacing: dp(8)
+
+        BoxLayout:
+            orientation: 'horizontal'
+            spacing: dp(8)
+            size_hint_y: 1
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: 0.44
+                spacing: dp(6)
+
+                TabbedPanel:
+                    size_hint_y: 0.57
+                    do_default_tab: False
+                    tab_width: dp(120)
+                    bar_width: dp(8)
+                    bar_color: 0.85, 0.25, 0.2, 1
+                    padding: dp(8), dp(8), dp(8), dp(10)
+
+                    TabbedPanelItem:
+                        text: tr._('Stock')
+                        ScrollView:
+                            scroll_type: ['bars', 'content']
+                            bar_width: dp(14)
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            BoxLayout:
+                                orientation: 'vertical'
+                                size_hint_y: None
+                                height: self.padding[1] + self.padding[3] + stock_tab_help.height + stock_tab_fields.height + self.spacing
+                                spacing: dp(12)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    id: stock_tab_help
+                                    size_hint_y: None
+                                    size_hint_x: 1
+                                    font_size: dp(14)
+                                    line_spacing: dp(5)
+                                    color: 0.72, 0.73, 0.76, 1
+                                    text_size: self.width, None
+                                    halign: 'left'
+                                    valign: 'top'
+                                    multiline: True
+                                    text: tr._('Measure your stock and pick the corner where X0 Y0 sits—the point you touched off when setting work zero. Width runs along X and length along Y from that corner. Margins pad the outline outward so facing and probing keep a safe distance from the edges. Extra depth removes a bit more material downward on top of the facing depth. Clearance height is how high the spindle travels between moves. If you enable Z grid probing on the Z probe grid tab, the machine checks the surface first; after you swap to your facing tool, Z zero is aligned to the highest spot the probe found.')
+                                    height: max(dp(60), self.texture_size[1] + dp(10))
+
+                                GridLayout:
+                                    id: stock_tab_fields
+                                    cols: 2
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    row_default_height: dp(40)
+                                    spacing: dp(4)
+
+                                    Label:
+                                        text: tr._('WCS origin corner')
+                                    Spinner:
+                                        id: spn_stock_corner
+                                        values: ['']
+                                        text: ''
+                                        size_hint_y: None
+                                        height: dp(40)
+
+                                    Label:
+                                        text: tr._('Width (mm)')
+                                    TextInput:
+                                        id: txt_w
+                                        text: '100'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Length (mm)')
+                                    TextInput:
+                                        id: txt_l
+                                        text: '80'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Margin ±X (mm)')
+                                    TextInput:
+                                        id: txt_mx
+                                        text: '1'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Margin ±Y (mm)')
+                                    TextInput:
+                                        id: txt_my
+                                        text: '1'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Extra depth (mm)')
+                                    TextInput:
+                                        id: txt_mz
+                                        text: '0'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Clearance Z (mm)')
+                                    TextInput:
+                                        id: txt_clear
+                                        text: '5'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                    TabbedPanelItem:
+                        text: tr._('Cutting')
+                        ScrollView:
+                            scroll_type: ['bars', 'content']
+                            bar_width: dp(14)
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            BoxLayout:
+                                orientation: 'vertical'
+                                size_hint_y: None
+                                height: self.padding[1] + self.padding[3] + cutting_tab_help.height + cutting_tab_fields.height + self.spacing
+                                spacing: dp(12)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    id: cutting_tab_help
+                                    size_hint_y: None
+                                    size_hint_x: 1
+                                    font_size: dp(14)
+                                    line_spacing: dp(5)
+                                    color: 0.72, 0.73, 0.76, 1
+                                    text_size: self.width, None
+                                    halign: 'left'
+                                    valign: 'top'
+                                    multiline: True
+                                    text: tr._('Roughing clears material in layers using stepover, depth per pass, and total rough depth (combine with Extra depth on Stock if you need more Z). Turn on Finish for a light cleanup pass at the end. Raster picks whether the tool sweeps mainly along X or along Y. Enter the real diameter of your facing bit so the sketch matches what the machine will cut.')
+                                    height: max(dp(60), self.texture_size[1] + dp(10))
+
+                                GridLayout:
+                                    id: cutting_tab_fields
+                                    cols: 2
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    row_default_height: dp(40)
+                                    spacing: dp(4)
+
+                                    Label:
+                                        text: tr._('Tool Ø (mm)')
+                                    TextInput:
+                                        id: txt_tool_d
+                                        text: '6'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Spindle RPM')
+                                    TextInput:
+                                        id: txt_spindle
+                                        text: '12000'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Raster')
+                                    BoxLayout:
+                                        ToggleButton:
+                                            id: raster_x_btn
+                                            text: tr._('Along X')
+                                            group: 'facing_raster'
+                                            state: 'down'
+                                        ToggleButton:
+                                            id: raster_y_btn
+                                            text: tr._('Along Y')
+                                            group: 'facing_raster'
+
+                                    Label:
+                                        text: tr._('Milling')
+                                    Spinner:
+                                        id: spn_milling_dir
+                                        values: ['']
+                                        text: ''
+                                        size_hint_y: None
+                                        height: dp(40)
+
+                                    Label:
+                                        text: tr._('Rough feed (mm/min)')
+                                    TextInput:
+                                        id: txt_rough_f
+                                        text: '1200'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Rough plunge (mm/min)')
+                                    TextInput:
+                                        id: txt_rough_plunge
+                                        text: '400'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Rough stepover (mm)')
+                                    TextInput:
+                                        id: txt_rough_step
+                                        text: '3'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Rough depth/pass (mm)')
+                                    TextInput:
+                                        id: txt_rough_doc
+                                        text: '1'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Rough total depth (mm)')
+                                    TextInput:
+                                        id: txt_rough_total
+                                        text: '2'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Finish pass')
+                                    CheckBox:
+                                        id: chk_finish
+                                        size_hint_x: 0.3
+
+                                    Label:
+                                        text: tr._('Finish feed (mm/min)')
+                                    TextInput:
+                                        id: txt_finish_f
+                                        text: '600'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Finish stepover (mm)')
+                                    TextInput:
+                                        id: txt_finish_step
+                                        text: '0.6'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Finish extra depth (mm)')
+                                    TextInput:
+                                        id: txt_finish_depth
+                                        text: '0.15'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                    TabbedPanelItem:
+                        text: tr._('Z probe grid')
+                        ScrollView:
+                            scroll_type: ['bars', 'content']
+                            bar_width: dp(14)
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            BoxLayout:
+                                orientation: 'vertical'
+                                size_hint_y: None
+                                height: self.padding[1] + self.padding[3] + probe_tab_help.height + probe_tab_fields.height + self.spacing
+                                spacing: dp(12)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    id: probe_tab_help
+                                    size_hint_y: None
+                                    size_hint_x: 1
+                                    font_size: dp(14)
+                                    line_spacing: dp(5)
+                                    color: 0.72, 0.73, 0.76, 1
+                                    text_size: self.width, None
+                                    halign: 'left'
+                                    valign: 'top'
+                                    multiline: True
+                                    text: tr._('Turn on Include Z grid probe with the checkbox below; layout matches the origin corner from the Stock tab. The machine taps the surface on a grid to map height. Probe Z travel must stay negative so the probe searches downward. Grid inset pulls probe points slightly inside the gray stock outline (not inside the dashed margin ring). After probing and loading your facing tool, Z zero is adjusted so the tallest measured spot is treated as the top surface for facing.')
+                                    height: max(dp(60), self.texture_size[1] + dp(10))
+
+                                GridLayout:
+                                    id: probe_tab_fields
+                                    cols: 2
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    row_default_height: dp(40)
+                                    spacing: dp(4)
+
+                                    Label:
+                                        text: tr._('Include Z grid probe')
+                                    CheckBox:
+                                        id: chk_probe
+                                        size_hint_x: 0.3
+
+                                    Label:
+                                        text: tr._('Probe')
+                                    Spinner:
+                                        id: spn_probe_tool
+                                        values: ['']
+                                        text: ''
+                                        size_hint_y: None
+                                        height: dp(40)
+
+                                    Label:
+                                        text: tr._('Grid NX')
+                                    TextInput:
+                                        id: txt_grid_nx
+                                        text: '3'
+                                        multiline: False
+                                        input_filter: 'int'
+
+                                    Label:
+                                        text: tr._('Grid NY')
+                                    TextInput:
+                                        id: txt_grid_ny
+                                        text: '3'
+                                        multiline: False
+                                        input_filter: 'int'
+
+                                    Label:
+                                        text: tr._('Probe approach Z (mm)')
+                                    TextInput:
+                                        id: txt_probe_approach
+                                        text: '3'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Probe Z travel (mm)')
+                                    TextInput:
+                                        id: txt_probe_travel
+                                        text: '-35'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Probe feed (mm/min)')
+                                    TextInput:
+                                        id: txt_probe_f
+                                        text: '120'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Grid inset (mm)')
+                                    TextInput:
+                                        id: txt_probe_inset
+                                        text: '1'
+                                        multiline: False
+                                        hint_text: tr._('Inset from the stock outline')
+                                        input_filter: 'float'
+
+                    TabbedPanelItem:
+                        text: tr._('Tool change')
+                        ScrollView:
+                            scroll_type: ['bars', 'content']
+                            bar_width: dp(14)
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            BoxLayout:
+                                orientation: 'vertical'
+                                size_hint_y: None
+                                height: self.padding[1] + self.padding[3] + tool_tab_help.height + tool_tab_fields.height + self.spacing
+                                spacing: dp(12)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    id: tool_tab_help
+                                    size_hint_y: None
+                                    size_hint_x: 1
+                                    font_size: dp(14)
+                                    line_spacing: dp(5)
+                                    color: 0.72, 0.73, 0.76, 1
+                                    text_size: self.width, None
+                                    halign: 'left'
+                                    valign: 'top'
+                                    multiline: True
+                                    text: tr._('This section loads your facing bit before cutting starts. Without probing it runs at the top of the program; with Z grid probing it runs after the probe cycle. Enter the facing tool number and ATC collet size when your machine needs them. The optional fields are for advanced setups such as repeating a tool-length touch-off or applying setter offsets.')
+                                    height: max(dp(60), self.texture_size[1] + dp(10))
+
+                                GridLayout:
+                                    id: tool_tab_fields
+                                    cols: 2
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    row_default_height: dp(40)
+                                    spacing: dp(4)
+
+                                    Label:
+                                        text: tr._('Facing tool T')
+                                    TextInput:
+                                        id: txt_m6_t
+                                        text: '1'
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Collet size (ATC)')
+                                    Spinner:
+                                        id: spn_m6_collet
+                                        values: ['']
+                                        text: ''
+                                        size_hint_y: None
+                                        height: dp(40)
+
+                                    Label:
+                                        text: tr._('TLO repeats (optional)')
+                                    TextInput:
+                                        id: txt_tlo_r
+                                        text: ''
+                                        multiline: False
+                                        input_filter: 'int'
+
+                                    Label:
+                                        text: tr._('Setter offset X (mm)')
+                                    TextInput:
+                                        id: txt_m491_x
+                                        text: ''
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Setter offset Y (mm)')
+                                    TextInput:
+                                        id: txt_m491_y
+                                        text: ''
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Setter offset Z (mm)')
+                                    TextInput:
+                                        id: txt_m491_z
+                                        text: ''
+                                        multiline: False
+                                        input_filter: 'float'
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: 0.43
+                    spacing: dp(4)
+                    padding: dp(8), dp(2), dp(8), dp(0)
+
+                    FacingSketch:
+                        id: facing_preview_sketch
+                        size_hint_y: 1
+                        size_hint_min_y: dp(120)
+
+                    Label:
+                        id: lbl_preview_error
+                        size_hint_y: None
+                        height: dp(22)
+                        font_size: dp(10)
+                        text_size: self.width, None
+                        halign: 'center'
+                        valign: 'middle'
+                        shorten: True
+                        max_lines: 2
+                        multiline: True
+                        text: ''
+                        color: 0.92, 0.42, 0.35, 1
+
+                    Label:
+                        size_hint_y: None
+                        height: self.texture_size[1] + dp(6)
+                        font_size: dp(9)
+                        text_size: self.width - dp(8), None
+                        halign: 'center'
+                        valign: 'top'
+                        color: 0.65, 0.66, 0.7, 1
+                        text: tr._('Gray solid: stock outline · Dashed ring: margin · Red: facing path · Blue: probe grid (inset from stock edge) · Bright marker: X Y zero')
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: 0.56
+                spacing: dp(6)
+                padding: dp(8), dp(6), dp(8), dp(4)
+
+                Label:
+                    size_hint_y: None
+                    font_size: dp(13)
+                    color: 0.7, 0.71, 0.74, 1
+                    text_size: self.width, None
+                    halign: 'left'
+                    valign: 'middle'
+                    text: tr._('G-code preview')
+                    height: self.texture_size[1] + dp(8)
+
+                BoxLayout:
+                    size_hint_y: 1
+                    canvas.before:
+                        Color:
+                            rgba: 35/255, 35/255, 35/255, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    RecycleView:
+                        id: rv_gcode_preview
+                        viewclass: 'FacingGcodePreviewLine'
+                        scroll_type: ['bars', 'content']
+                        bar_width: dp(14)
+                        scroll_wheel_distance: dp(80)
+                        RecycleBoxLayout:
+                            default_size: None, dp(24)
+                            default_size_hint: 1, None
+                            size_hint_y: None
+                            height: self.minimum_height
+                            orientation: 'vertical'
+                            spacing: 0
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(48)
+            spacing: dp(8)
+
+            Button:
+                text: tr._('Generate')
+                on_release: root.generate_program()
+
+            Button:
+                text: tr._('Load in viewer')
+                on_release: root.load_in_viewer()
+
+            Button:
+                text: tr._('Upload & select')
+                on_release: root.upload_to_machine()
+
+            Button:
+                text: tr._('Close')
+                on_release: root.dismiss()

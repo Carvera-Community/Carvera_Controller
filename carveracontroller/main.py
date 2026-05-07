@@ -85,6 +85,7 @@ def request_android_permissions():
 
 from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.facing.FacingWizardPopup import FacingWizardPopup
 from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController
 
 import json
@@ -2888,6 +2889,7 @@ class Makera(RelativeLayout):
         self.manual_wifi_popup = ManualWifiPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
+        self.facing_popup = FacingWizardPopup()
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
         self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
@@ -3170,12 +3172,21 @@ class Makera(RelativeLayout):
         if CNC.vars["tool"] == 0 or CNC.vars["tool"] >=999990:
             # Disable keyboard control to prevent accidents when opening the popup
             # But save the state to restore after probing is closed
-            self._pre_probing_keyboard_jog = self.keyboard_jog_control
+            self._pre_modal_keyboard_jog = self.keyboard_jog_control
             self.toggle_keyboard_jog_control(True)
             self.probing_popup.open()
         else:
             self.select_probe_popup = SelectAndCalibrateProbePopup()
             self.select_probe_popup.open()
+
+    def open_facing_popup(self):
+        app = App.get_running_app()
+        if not app.is_community_firmware:
+            self.show_message_popup(tr._('Facing wizard requires the Community firmware.'), False)
+            return
+        self._pre_modal_keyboard_jog = self.keyboard_jog_control
+        self.toggle_keyboard_jog_control(True)
+        self.facing_popup.open()
 
     def open_update_popup(self):
         self.upgrade_popup.check_button.disabled = False
@@ -5773,12 +5784,12 @@ class Makera(RelativeLayout):
         return (self.is_jogging_enabled())# or self.probing_popup._is_open)
 
     def restore_keyboard_jog_control(self):
-        prev = getattr(self, '_pre_probing_keyboard_jog', None)
+        prev = getattr(self, '_pre_modal_keyboard_jog', None)
         if prev is None:
             return
         if self.keyboard_jog_control != prev:
             self.toggle_keyboard_jog_control()
-        self._pre_probing_keyboard_jog = None
+        self._pre_modal_keyboard_jog = None
 
     def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
@@ -5901,7 +5912,8 @@ class Makera(RelativeLayout):
                            self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open,
                            self.confirm_popup._is_open, self.unlock_popup._is_open,
                            self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open,
-                           self.config_popup._is_open, self.probing_popup._is_open]
+                           self.config_popup._is_open, self.probing_popup._is_open,
+                           self.facing_popup._is_open]
 
         return any(popups_to_check)
     
