@@ -5,10 +5,13 @@ import json
 import logging
 from typing import Callable, Dict, List, Optional, Tuple
 
+from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.config import Config
 
 from carveracontroller.translation import tr
+
+from .sdl_joystick_hotplug import ensure_sdl_joysticks_open
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +44,12 @@ PRESETS: List[Tuple[str, dict]] = [
         "axes": {
             "0": "jog_x",
             "1": "jog_y",
-            "4": "jog_z",
-            "3": "jog_a",
+            "5": "jog_z",
+            "2": "jog_a",
         },
         "triggers": {
-            "2:+": "feed_minus",   # L2
-            "5:+": "feed_plus",    # R2
+            "3:+": "feed_minus",   # L2
+            "4:+": "feed_plus",    # R2
         },
         "buttons": {
             "4": "step_size_down",   # L1
@@ -322,6 +325,9 @@ class GamepadManager:
         self.on_jog_stop: Optional[Callable[[str], None]] = None
         self.on_button_action: Optional[Callable[[str], None]] = None
 
+        self._joystick_rescan_ev = Clock.schedule_interval(
+            self._rescan_sdl_joysticks, 1.0)
+        ensure_sdl_joysticks_open()
         self._bind_events()
 
     @property
@@ -363,10 +369,16 @@ class GamepadManager:
                 self.on_jog_stop(action)
 
     def close(self) -> None:
+        if self._joystick_rescan_ev is not None:
+            self._joystick_rescan_ev.cancel()
+            self._joystick_rescan_ev = None
         self._release_all_inputs()
         self._unbind_events()
         self._active_stick = None
         self._connected = False
+
+    def _rescan_sdl_joysticks(self, _dt: float) -> None:
+        ensure_sdl_joysticks_open()
 
     def _bind_events(self) -> None:
         logger.info("GamepadManager: binding on_joy_* events on Window")
