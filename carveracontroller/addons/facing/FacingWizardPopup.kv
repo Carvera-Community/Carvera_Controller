@@ -1,4 +1,5 @@
 #:import tr carveracontroller.__main__.tr
+#:import default_values carveracontroller.addons.facing.facing_wizard_defaults
 
 <FacingGcodePreviewLine@Label>:
     markup: True
@@ -40,6 +41,37 @@
         height: dp(36)
         multiline: False
         text: 'facing_wizard.nc'
+    BoxLayout:
+        size_hint_y: None
+        height: dp(44)
+        spacing: dp(8)
+        Button:
+            id: btn_cancel
+            text: tr._('Cancel')
+        Button:
+            id: btn_save
+            text: tr._('Save')
+
+<FacingSavePresetContent>:
+    orientation: 'vertical'
+    size_hint: 1, None
+    height: self.minimum_height
+    padding: dp(14)
+    spacing: dp(8)
+    Label:
+        text: tr._('Preset name')
+        size_hint_y: None
+        height: self.texture_size[1] + dp(2)
+        font_size: dp(12)
+        text_size: self.width, None
+        halign: 'left'
+        valign: 'bottom'
+        color: 0.78, 0.79, 0.82, 1
+    TextInput:
+        id: ti_name
+        size_hint_y: None
+        height: dp(40)
+        multiline: False
     BoxLayout:
         size_hint_y: None
         height: dp(44)
@@ -129,7 +161,7 @@
                                         text: tr._('Width (mm)')
                                     TextInput:
                                         id: txt_w
-                                        text: '100'
+                                        text: default_values.DEFAULT_TXT['txt_w']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -137,7 +169,7 @@
                                         text: tr._('Length (mm)')
                                     TextInput:
                                         id: txt_l
-                                        text: '80'
+                                        text: default_values.DEFAULT_TXT['txt_l']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -145,7 +177,7 @@
                                         text: tr._('Margin ±X (mm)')
                                     TextInput:
                                         id: txt_mx
-                                        text: '1'
+                                        text: default_values.DEFAULT_TXT['txt_mx']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -153,7 +185,7 @@
                                         text: tr._('Margin ±Y (mm)')
                                     TextInput:
                                         id: txt_my
-                                        text: '1'
+                                        text: default_values.DEFAULT_TXT['txt_my']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -161,7 +193,7 @@
                                         text: tr._('Extra depth (mm)')
                                     TextInput:
                                         id: txt_mz
-                                        text: '0'
+                                        text: default_values.DEFAULT_TXT['txt_mz']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -169,7 +201,7 @@
                                         text: tr._('Clearance Z (mm)')
                                     TextInput:
                                         id: txt_clear
-                                        text: '5'
+                                        text: default_values.DEFAULT_TXT['txt_clear']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -212,7 +244,7 @@
                                         text: tr._('Tool Ø (mm)')
                                     TextInput:
                                         id: txt_tool_d
-                                        text: '6'
+                                        text: default_values.DEFAULT_TXT['txt_tool_d']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -220,7 +252,7 @@
                                         text: tr._('Spindle RPM')
                                     TextInput:
                                         id: txt_spindle
-                                        text: '12000'
+                                        text: default_values.DEFAULT_TXT['txt_spindle']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -254,7 +286,7 @@
                                         text: tr._('Rough feed (mm/min)')
                                     TextInput:
                                         id: txt_rough_f
-                                        text: '1200'
+                                        text: default_values.DEFAULT_TXT['txt_rough_f']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -262,7 +294,7 @@
                                         text: tr._('Rough plunge (mm/min)')
                                     TextInput:
                                         id: txt_rough_plunge
-                                        text: '400'
+                                        text: default_values.DEFAULT_TXT['txt_rough_plunge']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -270,7 +302,7 @@
                                         text: tr._('Rough stepover (mm)')
                                     TextInput:
                                         id: txt_rough_step
-                                        text: '3'
+                                        text: default_values.DEFAULT_TXT['txt_rough_step']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -278,7 +310,7 @@
                                         text: tr._('Rough depth/pass (mm)')
                                     TextInput:
                                         id: txt_rough_doc
-                                        text: '1'
+                                        text: default_values.DEFAULT_TXT['txt_rough_doc']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -286,7 +318,7 @@
                                         text: tr._('Rough total depth (mm)')
                                     TextInput:
                                         id: txt_rough_total
-                                        text: '2'
+                                        text: default_values.DEFAULT_TXT['txt_rough_total']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -294,13 +326,14 @@
                                         text: tr._('Finish pass')
                                     CheckBox:
                                         id: chk_finish
+                                        active: default_values.DEFAULT_CHK_FINISH
                                         size_hint_x: 0.3
 
                                     Label:
                                         text: tr._('Finish feed (mm/min)')
                                     TextInput:
                                         id: txt_finish_f
-                                        text: '600'
+                                        text: default_values.DEFAULT_TXT['txt_finish_f']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -308,7 +341,7 @@
                                         text: tr._('Finish stepover (mm)')
                                     TextInput:
                                         id: txt_finish_step
-                                        text: '0.6'
+                                        text: default_values.DEFAULT_TXT['txt_finish_step']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -316,7 +349,7 @@
                                         text: tr._('Finish extra depth (mm)')
                                     TextInput:
                                         id: txt_finish_depth
-                                        text: '0.15'
+                                        text: default_values.DEFAULT_TXT['txt_finish_depth']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -359,6 +392,7 @@
                                         text: tr._('Include Z grid probe')
                                     CheckBox:
                                         id: chk_probe
+                                        active: default_values.DEFAULT_CHK_PROBE
                                         size_hint_x: 0.3
 
                                     Label:
@@ -374,7 +408,7 @@
                                         text: tr._('Grid NX')
                                     TextInput:
                                         id: txt_grid_nx
-                                        text: '3'
+                                        text: default_values.DEFAULT_TXT['txt_grid_nx']
                                         multiline: False
                                         input_filter: 'int'
 
@@ -382,7 +416,7 @@
                                         text: tr._('Grid NY')
                                     TextInput:
                                         id: txt_grid_ny
-                                        text: '3'
+                                        text: default_values.DEFAULT_TXT['txt_grid_ny']
                                         multiline: False
                                         input_filter: 'int'
 
@@ -390,7 +424,7 @@
                                         text: tr._('Probe approach Z (mm)')
                                     TextInput:
                                         id: txt_probe_approach
-                                        text: '3'
+                                        text: default_values.DEFAULT_TXT['txt_probe_approach']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -398,7 +432,7 @@
                                         text: tr._('Probe Z travel (mm)')
                                     TextInput:
                                         id: txt_probe_travel
-                                        text: '-35'
+                                        text: default_values.DEFAULT_TXT['txt_probe_travel']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -406,7 +440,7 @@
                                         text: tr._('Probe feed (mm/min)')
                                     TextInput:
                                         id: txt_probe_f
-                                        text: '120'
+                                        text: default_values.DEFAULT_TXT['txt_probe_f']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -414,7 +448,7 @@
                                         text: tr._('Grid inset (mm)')
                                     TextInput:
                                         id: txt_probe_inset
-                                        text: '1'
+                                        text: default_values.DEFAULT_TXT['txt_probe_inset']
                                         multiline: False
                                         hint_text: tr._('Inset from the stock outline')
                                         input_filter: 'float'
@@ -458,7 +492,7 @@
                                         text: tr._('Facing tool T')
                                     TextInput:
                                         id: txt_m6_t
-                                        text: '1'
+                                        text: default_values.DEFAULT_TXT['txt_m6_t']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -475,7 +509,7 @@
                                         text: tr._('TLO repeats (optional)')
                                     TextInput:
                                         id: txt_tlo_r
-                                        text: ''
+                                        text: default_values.DEFAULT_TXT['txt_tlo_r']
                                         multiline: False
                                         input_filter: 'int'
 
@@ -483,7 +517,7 @@
                                         text: tr._('Setter offset X (mm)')
                                     TextInput:
                                         id: txt_m491_x
-                                        text: ''
+                                        text: default_values.DEFAULT_TXT['txt_m491_x']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -491,7 +525,7 @@
                                         text: tr._('Setter offset Y (mm)')
                                     TextInput:
                                         id: txt_m491_y
-                                        text: ''
+                                        text: default_values.DEFAULT_TXT['txt_m491_y']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -499,7 +533,7 @@
                                         text: tr._('Setter offset Z (mm)')
                                     TextInput:
                                         id: txt_m491_z
-                                        text: ''
+                                        text: default_values.DEFAULT_TXT['txt_m491_z']
                                         multiline: False
                                         input_filter: 'float'
 
@@ -580,7 +614,7 @@
         BoxLayout:
             orientation: 'vertical'
             size_hint_y: None
-            height: dp(102)
+            height: dp(60)
             padding: dp(6), dp(4), dp(6), dp(8)
             spacing: dp(6)
             canvas.before:
@@ -590,35 +624,31 @@
                     pos: self.pos[0], self.pos[1] + self.height - dp(1)
                     size: self.width, dp(1)
 
-            GridLayout:
-                cols: 3
-                spacing: dp(6)
+            BoxLayout:
+                orientation: 'horizontal'
+                spacing: dp(10)
                 size_hint_y: None
-                height: dp(42)
+                height: dp(44)
                 Button:
+                    id: btn_presets_menu
+                    size_hint_x: 1
+                    font_size: dp(12)
+                    text: tr._('Presets')
+                    on_release: root.open_presets_menu(btn_presets_menu)
+                Button:
+                    id: btn_generate_program
+                    size_hint_x: 1
                     font_size: dp(12)
                     text: tr._('Generate')
                     on_release: root.generate_program()
                 Button:
-                    font_size: dp(12)
-                    text: tr._('Load in viewer')
-                    on_release: root.load_in_viewer()
-                Button:
-                    font_size: dp(12)
-                    text: tr._('Save to file')
-                    on_release: root.save_gcode_to_file()
-
-            BoxLayout:
-                spacing: dp(8)
-                size_hint_y: None
-                height: dp(42)
-                Button:
-                    font_size: dp(12)
-                    text: tr._('Upload & select')
+                    id: btn_gcode_menu
                     size_hint_x: 1
-                    on_release: root.upload_to_machine()
+                    font_size: dp(12)
+                    text: tr._('G-code')
+                    on_release: root.open_gcode_menu(btn_gcode_menu)
                 Button:
+                    size_hint_x: 1
                     font_size: dp(12)
                     text: tr._('Close')
-                    size_hint_x: 1
                     on_release: root.dismiss()
