@@ -107,6 +107,8 @@ class FacingWizardPopup(ModalView):
         self._preview_bindings_done = False
         self._preview_bind_attempts = 0
         self._gcode_plain = ""
+        self._facing_gcode_stale = False
+        self._facing_suspend_stale = False
         self._gcode_preview_width_bound = False
         Clock.schedule_once(lambda _dt: self._bind_preview_inputs(), 0)
 
@@ -168,6 +170,7 @@ class FacingWizardPopup(ModalView):
             self._milling_direction_pairs_list = _milling_direction_pairs()
 
     def _init_wizard_widgets(self, dt):
+        self._facing_suspend_stale = True
         try:
             self._m6_collet_pairs_list = _m6_collet_pairs()
             spc = self.ids.spn_m6_collet
@@ -195,6 +198,8 @@ class FacingWizardPopup(ModalView):
             self._preview_trigger()
         except Exception as e:
             logger.debug("facing wizard init widgets: %s", e)
+        finally:
+            self._facing_suspend_stale = False
 
     def _prefill_facing_tool_t(self):
         try:
@@ -361,31 +366,43 @@ class FacingWizardPopup(ModalView):
             "txt_probe_travel",
             "txt_probe_f",
             "txt_probe_inset",
+            "txt_m6_t",
+            "txt_m491_x",
+            "txt_m491_y",
+            "txt_m491_z",
+            "txt_tlo_r",
         ):
             try:
-                getattr(ids, wid_name).bind(text=self._preview_trigger)
+                getattr(ids, wid_name).bind(text=self._on_facing_input_changed)
             except Exception:
                 pass
         for wid_name in ("chk_probe", "chk_finish"):
             try:
-                getattr(ids, wid_name).bind(active=self._preview_trigger)
+                getattr(ids, wid_name).bind(active=self._on_facing_input_changed)
             except Exception:
                 pass
         try:
-            ids.raster_x_btn.bind(state=self._preview_trigger)
-            ids.raster_y_btn.bind(state=self._preview_trigger)
+            ids.raster_x_btn.bind(state=self._on_facing_input_changed)
+            ids.raster_y_btn.bind(state=self._on_facing_input_changed)
         except Exception:
             pass
-        try:
-            ids.spn_stock_corner.bind(text=self._preview_trigger)
-        except Exception:
-            pass
-        try:
-            ids.spn_milling_dir.bind(text=self._preview_trigger)
-        except Exception:
-            pass
+        for wid_name in ("spn_stock_corner", "spn_milling_dir", "spn_m6_collet", "spn_probe_tool"):
+            try:
+                getattr(ids, wid_name).bind(text=self._on_facing_input_changed)
+            except Exception:
+                pass
 
         ids.facing_preview_sketch.bind(size=self._preview_trigger)
+
+    def _on_facing_input_changed(self, *args):
+        self._mark_facing_gcode_stale_from_ui()
+        self._preview_trigger()
+
+    def _mark_facing_gcode_stale_from_ui(self, *args):
+        if self._facing_suspend_stale:
+            return
+        if self._gcode_plain.strip():
+            self._facing_gcode_stale = True
 
     def _build_probe_params_from_ui(self) -> ProbeGridParams:
         self._ensure_wizard_lists()
@@ -514,27 +531,71 @@ class FacingWizardPopup(ModalView):
             blocks.append(face_str)
             combined = "\n".join(blocks) + "\n"
             self._gcode_plain = combined
+            self._facing_gcode_stale = False
             self._refresh_gcode_preview()
         except ValueError as e:
             App.get_running_app().root.show_message_popup(str(e), False)
+
+    def _confirm_facing_stale_then(self, proceed):
+        root = App.get_running_app().root
+        cp = root.confirm_popup
+        cp.lb_title.text = tr._("G-code may be out of date")
+        cp.lb_content.text = tr._(
+            "Parameters changed since last Generate. The preview may not match what you run. Continue anyway?"
+        )
+        cp.confirm = proceed
+        cp.cancel = None
+        cp.open(root)
+
+    def _switch_to_gcode_viewer_screen(self):
+        """Show file/viewer layout (not Control) and hide viewer tool + playback chrome."""
+        app = App.get_running_app()
+        root = app.root
+        if root.content.current != "File":
+            root.content.transition.direction = "right"
+            root.content.current = "File"
+        app.show_gcode_ctl_bar = False
+        try:
+            root.cmd_manager.transition.direction = "right"
+            root.cmd_manager.current = "gcode_cmd_page"
+        except Exception:
+            pass
 
     def load_in_viewer(self, *args):
         text = self._gcode_plain.strip()
         if not text:
             App.get_running_app().root.show_message_popup(tr._("Generate or paste G-code first."), False)
             return
-        path = self._write_temp_nc(text)
-        root = App.get_running_app().root
-        root.progress_popup.progress_value = 0
-        root.progress_popup.btn_cancel.disabled = True
-        root.progress_popup.progress_text = tr._("Loading file") + "\n%s" % path
-        root.progress_popup.open()
-        threading.Thread(target=root.load_gcode_file, args=(path,), daemon=True).start()
+
+        def _do_load():
+            path = self._write_temp_nc(text)
+            root = App.get_running_app().root
+            self.dismiss()
+            self._switch_to_gcode_viewer_screen()
+            root.progress_popup.progress_value = 0
+            root.progress_popup.btn_cancel.disabled = True
+            root.progress_popup.progress_text = tr._("Loading file") + "\n%s" % path
+            root.progress_popup.open()
+            threading.Thread(target=root.load_gcode_file, args=(path,), daemon=True).start()
+
+        if self._facing_gcode_stale:
+            self._confirm_facing_stale_then(_do_load)
+        else:
+            _do_load()
 
     def upload_to_machine(self, *args):
         text = self._gcode_plain.strip()
         if not text:
             App.get_running_app().root.show_message_popup(tr._("Generate or paste G-code first."), False)
             return
-        path = self._write_temp_nc(text)
-        App.get_running_app().root.uploadLocalFile(path, App.get_running_app().root.select_file)
+
+        def _do_upload():
+            path = self._write_temp_nc(text)
+            root = App.get_running_app().root
+            self.dismiss()
+            root.uploadLocalFile(path, root.select_file)
+
+        if self._facing_gcode_stale:
+            self._confirm_facing_stale_then(_do_upload)
+        else:
+            _do_upload()
