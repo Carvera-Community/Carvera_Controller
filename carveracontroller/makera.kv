@@ -3857,10 +3857,15 @@
                                                 on_release: app.root.controller.setExternalControl(100 if self.state=="down" else 0)
 
                                         GridBoxLayout:
-                                            SmallRoundButton:
+                                            Spinner:
+                                                center: 0.5, 0.5
+                                                height: '35dp'
                                                 disabled: not app.is_community_firmware or app.state != 'Idle'
-                                                text: tr._('Facing...')
-                                                on_release: app.root.open_facing_popup()
+                                                text: tr._('Tools...')
+                                                values: [tr._('Facing...')]
+                                                on_text:
+                                                    if self.text == tr._('Facing...'): app.root.open_facing_popup()
+                                                    if self.text != tr._('Tools...'): self.text = tr._('Tools...')
 
                             Widget:
                                 size_hint_y: 0.1
