@@ -124,6 +124,17 @@ def vec3_min(v1, v2):
     return [min(v1[0], v2[0]), min(v1[1], v2[1]), min(v1[2], v2[2])]
 
 
+def bbox_max_side_length(min_pt, max_pt):
+    """Retrieve the largest axis span from the bounding box"""
+    ex = max_pt[0] - min_pt[0]
+    ey = max_pt[1] - min_pt[1]
+    ez = max_pt[2] - min_pt[2]
+    m = max(ex, ey, ez)
+    if m <= 0.0 or not isfinite(m):
+        return 0.0
+    return m
+
+
 def vec3_distance(v1, v2):
     v3 = vec3_sub(v1, v2)
     return vec3_len(v3)
@@ -159,8 +170,9 @@ class MyMeshManager():
 
         # record the max size of area
         self.area_size = 0.0
-        # max pt
-        self.max_pt = [0, 0, 0]
+        # bounding box (min/max per axis)
+        self.min_pt = [float('inf'), float('inf'), float('inf')]
+        self.max_pt = [float('-inf'), float('-inf'), float('-inf')]
         # cetner of meshes
         self.area_center_sum = [0, 0, 0]
         self.area_center_sum_index = 0
@@ -188,7 +200,8 @@ class MyMeshManager():
 
         #move to origin
         self.area_size = 0.0
-        self.max_pt = [0, 0, 0]
+        self.min_pt = [float('inf'), float('inf'), float('inf')]
+        self.max_pt = [float('-inf'), float('-inf'), float('-inf')]
         self.area_center_sum = [0,0,0]
         self.area_center_sum_index = 0
         self.position_scale = 1.0  # same to scale_invert
@@ -237,6 +250,7 @@ class MyMeshManager():
         self.positions.append(pos[0])
         self.positions.append(pos[1])
         self.positions.append(pos[2])
+        self.min_pt = vec3_min(self.min_pt, pos)
         self.max_pt = vec3_max(self.max_pt, pos)
 
         # for center calculating
@@ -321,6 +335,7 @@ class MyMeshManager():
         pos = rotate_pt_by_x_axis_angle(raw_pos[0], raw_pos[1], raw_pos[2], angle)
 
         self.positions.extend(pos)
+        self.min_pt = vec3_min(self.min_pt, pos)
         self.max_pt = vec3_max(self.max_pt, pos)
 
         # for center calculating
@@ -365,12 +380,14 @@ class MyMeshManager():
         self.angles_of_vertices.append(angle)
 
     def generate_meshes(self):
-        # 0 scale all points
-        max_point = (max(self.max_pt[0], max(self.max_pt[1], self.max_pt[2])))
-
+        # 0 scale all points to fit largest bbox side in ~2 units
         vertex_count = len(self.positions) // 3
         vertex_float_num = 10
-        self.position_scale = (2.0) if max_point == 0 else (2.0 / max_point)
+        if vertex_count == 0:
+            self.meshes.clear()
+            return
+        max_extent = bbox_max_side_length(self.min_pt, self.max_pt)
+        self.position_scale = (2.0) if max_extent == 0 else (2.0 / max_extent)
         for i in range(vertex_count):
             self.vertices[vertex_float_num * i + 0] = self.positions[3 * i + 0] * self.position_scale
             self.vertices[vertex_float_num * i + 1] = self.positions[3 * i + 1] * self.position_scale
@@ -498,7 +515,8 @@ def load_data(lines):
     
     scale = 1.0
     positions = []
-    max_pt = [0,0,0]
+    max_pt = [float('-inf'), float('-inf'), float('-inf')]
+    min_pt = [float('inf'), float('inf'), float('inf')]
     for mesh_id in range(how_many_meshes):
         for line in lines[line_start:line_end]:
             arr_pt = line.split(' ')
@@ -515,6 +533,9 @@ def load_data(lines):
                 positions.append(rot_pos[1])
                 positions.append(rot_pos[2])
                 
+                min_pt[0] = min(min_pt[0], rot_pos[0])
+                min_pt[1] = min(min_pt[1], rot_pos[1])
+                min_pt[2] = min(min_pt[2], rot_pos[2])
                 max_pt[0] = max(max_pt[0],rot_pos[0])
                 max_pt[1] = max(max_pt[1],rot_pos[1])
                 max_pt[2] = max(max_pt[2],rot_pos[2])
@@ -524,6 +545,9 @@ def load_data(lines):
                 positions.append(pos[2])
 
                     
+                min_pt[0] = min(min_pt[0], pos[0])
+                min_pt[1] = min(min_pt[1], pos[1])
+                min_pt[2] = min(min_pt[2], pos[2])
                 max_pt[0] = max(max_pt[0],pos[0])
                 max_pt[1] = max(max_pt[1],pos[1])
                 max_pt[2] = max(max_pt[2],pos[2])
@@ -534,7 +558,7 @@ def load_data(lines):
     vertices_count = int(len(positions)/3)
     print(vertices_count)
     #apply scale to 2
-    max_point = (max(max_pt[0],max(max_pt[1],max_pt[2])))
+    max_point = bbox_max_side_length(min_pt, max_pt)
     scale_invert = (2.0) if max_point == 0 else (2.0 / max_point)
     for i in range(len(positions)):
         positions[i] *= scale_invert
@@ -1244,7 +1268,8 @@ class GCodeViewer(Widget):
         
         scale = 1.0
         positions = []
-        max_pt = [0,0,0]
+        max_pt = [float('-inf'), float('-inf'), float('-inf')]
+        min_pt = [float('inf'), float('inf'), float('inf')]
         for mesh_id in range(how_many_meshes):
             for line in lines[line_start:line_end]:
                 arr_pt = line.split(' ')
@@ -1261,6 +1286,9 @@ class GCodeViewer(Widget):
                     positions.append(rot_pos[1])
                     positions.append(rot_pos[2])
                     
+                    min_pt[0] = min(min_pt[0], rot_pos[0])
+                    min_pt[1] = min(min_pt[1], rot_pos[1])
+                    min_pt[2] = min(min_pt[2], rot_pos[2])
                     max_pt[0] = max(max_pt[0],rot_pos[0])
                     max_pt[1] = max(max_pt[1],rot_pos[1])
                     max_pt[2] = max(max_pt[2],rot_pos[2])
@@ -1270,6 +1298,9 @@ class GCodeViewer(Widget):
                     positions.append(pos[2])
 
                         
+                    min_pt[0] = min(min_pt[0], pos[0])
+                    min_pt[1] = min(min_pt[1], pos[1])
+                    min_pt[2] = min(min_pt[2], pos[2])
                     max_pt[0] = max(max_pt[0],pos[0])
                     max_pt[1] = max(max_pt[1],pos[1])
                     max_pt[2] = max(max_pt[2],pos[2])
@@ -1280,7 +1311,7 @@ class GCodeViewer(Widget):
         vertices_count = int(len(positions)/3)
         print(vertices_count)
         #apply scale to 2
-        max_point = 50.0#(max(max_pt[0],max(max_pt[1],max_pt[2])))
+        max_point = bbox_max_side_length(min_pt, max_pt)
         scale_invert = (2.0) if max_point == 0 else (2.0 / max_point)
         for i in range(len(positions)):
             positions[i] *= scale_invert
