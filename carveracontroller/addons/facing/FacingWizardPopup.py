@@ -8,7 +8,9 @@ import threading
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.modalview import ModalView
+from kivy.uix.popup import Popup
 
 from carveracontroller.CNC import CNC, escape_gcode_markup, highlight_gcode_line
 from carveracontroller.translation import tr
@@ -94,6 +96,10 @@ def _stock_corner_pairs():
         (tr._("Top-left (+X width, -Y length)"), CORNER_TL),
         (tr._("Top-right (-X width, -Y length)"), CORNER_TR),
     ]
+
+
+class FacingSaveGcodeContent(BoxLayout):
+    pass
 
 
 class FacingWizardPopup(ModalView):
@@ -294,6 +300,76 @@ class FacingWizardPopup(ModalView):
         with open(path, "w", encoding="utf-8") as f:
             f.write(text)
         return path
+
+    def _attempt_save_gcode_file(self, save_popup: Popup, content: FacingSaveGcodeContent, text: str):
+        root = App.get_running_app().root
+        raw_name = content.ids.ti_filename.text.strip()
+        if not raw_name:
+            root.show_message_popup(tr._("Enter a file name."), False)
+            return
+        fn = os.path.basename(raw_name)
+        if not fn:
+            root.show_message_popup(tr._("Enter a file name."), False)
+            return
+        dest_dir = content.ids.fc.path
+        if not dest_dir or not os.path.isdir(dest_dir):
+            root.show_message_popup(tr._("Choose an existing folder."), False)
+            return
+        dest = os.path.join(dest_dir, fn)
+
+        def write_file():
+            try:
+                with open(dest, "w", encoding="utf-8") as f:
+                    f.write(text)
+                save_popup.dismiss()
+                root.show_message_popup(tr._("Saved to:\n%s") % dest, False)
+            except OSError as e:
+                root.show_message_popup(tr._("Could not save:\n%s") % e, False)
+
+        if os.path.isfile(dest):
+            cp = root.confirm_popup
+            cp.lb_title.text = tr._("Overwrite file?")
+            cp.lb_content.text = tr._("Replace existing file?\n%s") % dest
+
+            def on_overwrite():
+                write_file()
+
+            cp.confirm = on_overwrite
+            cp.cancel = None
+            cp.open(root)
+        else:
+            write_file()
+
+    def save_gcode_to_file(self, *args):
+        text = self._gcode_plain.strip()
+        if not text:
+            App.get_running_app().root.show_message_popup(tr._("Generate or paste G-code first."), False)
+            return
+
+        def _open_dialog():
+            root = App.get_running_app().root
+            content = FacingSaveGcodeContent()
+            try:
+                home = os.path.expanduser("~")
+                content.ids.fc.path = home if os.path.isdir(home) else "/"
+            except Exception:
+                content.ids.fc.path = "."
+            save_popup = Popup(
+                title=tr._("Save G-code"),
+                content=content,
+                size_hint=(0.85, 0.85),
+                auto_dismiss=False,
+            )
+            content.ids.btn_cancel.bind(on_release=lambda *_: save_popup.dismiss())
+            content.ids.btn_save.bind(
+                on_release=lambda *_: self._attempt_save_gcode_file(save_popup, content, text)
+            )
+            save_popup.open()
+
+        if self._facing_gcode_stale:
+            self._confirm_facing_stale_then(_open_dialog)
+        else:
+            _open_dialog()
 
     def _opt_float_field(self, widget):
         t = widget.text.strip().replace(",", ".")

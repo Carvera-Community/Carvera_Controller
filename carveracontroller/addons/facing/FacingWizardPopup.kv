@@ -13,6 +13,44 @@
     valign: 'middle'
     color: 200/255, 200/255, 200/255, 1
 
+<FacingSaveGcodeContent>:
+    orientation: 'vertical'
+    padding: dp(6)
+    spacing: dp(6)
+    Label:
+        size_hint_y: None
+        height: dp(22)
+        font_size: dp(11)
+        text_size: self.width, None
+        halign: 'left'
+        text: tr._('Choose folder and file name')
+    FileChooserListView:
+        id: fc
+        size_hint_y: 0.7
+    Label:
+        size_hint_y: None
+        height: dp(18)
+        font_size: dp(10)
+        text_size: self.width, None
+        halign: 'left'
+        text: tr._('File name')
+    TextInput:
+        id: ti_filename
+        size_hint_y: None
+        height: dp(36)
+        multiline: False
+        text: 'facing_wizard.nc'
+    BoxLayout:
+        size_hint_y: None
+        height: dp(44)
+        spacing: dp(8)
+        Button:
+            id: btn_cancel
+            text: tr._('Cancel')
+        Button:
+            id: btn_save
+            text: tr._('Save')
+
 <FacingWizardPopup>:
     title: tr._('Facing wizard')
     size_hint: 0.88, 0.9
@@ -538,23 +576,49 @@
                             orientation: 'vertical'
                             spacing: 0
 
+        # Footer
         BoxLayout:
+            orientation: 'vertical'
             size_hint_y: None
-            height: dp(48)
-            spacing: dp(8)
+            height: dp(102)
+            padding: dp(6), dp(4), dp(6), dp(8)
+            spacing: dp(6)
+            canvas.before:
+                Color:
+                    rgba: 0.22, 0.22, 0.24, 1
+                Rectangle:
+                    pos: self.pos[0], self.pos[1] + self.height - dp(1)
+                    size: self.width, dp(1)
 
-            Button:
-                text: tr._('Generate')
-                on_release: root.generate_program()
+            GridLayout:
+                cols: 3
+                spacing: dp(6)
+                size_hint_y: None
+                height: dp(42)
+                Button:
+                    font_size: dp(12)
+                    text: tr._('Generate')
+                    on_release: root.generate_program()
+                Button:
+                    font_size: dp(12)
+                    text: tr._('Load in viewer')
+                    on_release: root.load_in_viewer()
+                Button:
+                    font_size: dp(12)
+                    text: tr._('Save to file')
+                    on_release: root.save_gcode_to_file()
 
-            Button:
-                text: tr._('Load in viewer')
-                on_release: root.load_in_viewer()
-
-            Button:
-                text: tr._('Upload & select')
-                on_release: root.upload_to_machine()
-
-            Button:
-                text: tr._('Close')
-                on_release: root.dismiss()
+            BoxLayout:
+                spacing: dp(8)
+                size_hint_y: None
+                height: dp(42)
+                Button:
+                    font_size: dp(12)
+                    text: tr._('Upload & select')
+                    size_hint_x: 1
+                    on_release: root.upload_to_machine()
+                Button:
+                    font_size: dp(12)
+                    text: tr._('Close')
+                    size_hint_x: 1
+                    on_release: root.dismiss()
