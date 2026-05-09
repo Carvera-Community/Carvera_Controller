@@ -234,18 +234,7 @@ class FacingWizardPopup(ModalView):
             root.show_message_popup(tr._("No saved presets yet."), False)
             return
         list_h = min(dp(280), max(dp(120), len(names) * dp(46)))
-        popup = ModalView(size_hint=(0.58, None), auto_dismiss=True)
         outer = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(8))
-        outer.add_widget(
-            Label(
-                text=tr._("Load preset"),
-                size_hint_y=None,
-                height=dp(26),
-                font_size=dp(16),
-                bold=True,
-                halign="left",
-            )
-        )
         outer.add_widget(
             Label(
                 text=tr._("Tap a preset to load."),
@@ -266,6 +255,15 @@ class FacingWizardPopup(ModalView):
         )
         inner = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         inner.bind(minimum_height=inner.setter("height"))
+
+        popup = Popup(
+            title=tr._("Load preset"),
+            content=outer,
+            size_hint=(0.58, None),
+            auto_dismiss=True,
+            separator_height=dp(1),
+        )
+
         for name in names:
             b = Button(text=name, size_hint_y=None, height=dp(44), font_size=dp(12))
 
@@ -283,9 +281,15 @@ class FacingWizardPopup(ModalView):
         cancel_btn = Button(text=tr._("Cancel"), size_hint_y=None, height=dp(42), font_size=dp(12))
         cancel_btn.bind(on_release=lambda *_a: popup.dismiss())
         outer.add_widget(cancel_btn)
-        popup.add_widget(outer)
-        popup.height = list_h + dp(200)
+
+        def _fit_list_popup_height(*_a):
+            popup.height = min(
+                root.height * 0.72,
+                outer.minimum_height + dp(56),
+            )
+
         popup.open()
+        Clock.schedule_once(_fit_list_popup_height, 0.05)
 
     def _open_preset_list_for_delete(self):
         names = sorted_preset_names(load_store())
@@ -294,18 +298,7 @@ class FacingWizardPopup(ModalView):
             root.show_message_popup(tr._("No saved presets yet."), False)
             return
         list_h = min(dp(280), max(dp(120), len(names) * dp(46)))
-        popup = ModalView(size_hint=(0.58, None), auto_dismiss=True)
         outer = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(8))
-        outer.add_widget(
-            Label(
-                text=tr._("Delete preset"),
-                size_hint_y=None,
-                height=dp(26),
-                font_size=dp(16),
-                bold=True,
-                halign="left",
-            )
-        )
         outer.add_widget(
             Label(
                 text=tr._("Tap a preset to delete."),
@@ -326,6 +319,15 @@ class FacingWizardPopup(ModalView):
         )
         inner = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         inner.bind(minimum_height=inner.setter("height"))
+
+        popup = Popup(
+            title=tr._("Delete preset"),
+            content=outer,
+            size_hint=(0.58, None),
+            auto_dismiss=True,
+            separator_height=dp(1),
+        )
+
         for name in names:
             b = Button(text=name, size_hint_y=None, height=dp(44), font_size=dp(12))
 
@@ -343,9 +345,15 @@ class FacingWizardPopup(ModalView):
         cancel_btn = Button(text=tr._("Cancel"), size_hint_y=None, height=dp(42), font_size=dp(12))
         cancel_btn.bind(on_release=lambda *_a: popup.dismiss())
         outer.add_widget(cancel_btn)
-        popup.add_widget(outer)
-        popup.height = list_h + dp(200)
+
+        def _fit_list_popup_height(*_a):
+            popup.height = min(
+                root.height * 0.72,
+                outer.minimum_height + dp(56),
+            )
+
         popup.open()
+        Clock.schedule_once(_fit_list_popup_height, 0.05)
 
     def _load_preset_by_name(self, name: str):
         root = App.get_running_app().root
