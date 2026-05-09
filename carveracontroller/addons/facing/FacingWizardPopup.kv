@@ -159,7 +159,7 @@
                                     halign: 'left'
                                     valign: 'top'
                                     multiline: True
-                                    text: tr._('Roughing clears material in layers using stepover, depth per pass, and total rough depth (combine with Extra depth on Stock if you need more Z). Turn on Finish for a light cleanup pass at the end. Raster picks whether the tool sweeps mainly along X or along Y. Enter the real diameter of your facing bit so the sketch matches what the machine will cut.')
+                                    text: tr._('Roughing clears material in layers using stepover, depth per pass, and total rough depth (combine with Extra depth on Stock if you need more Z). Turn on Finish for a light cleanup pass at the end. Pattern picks raster (Along X or Along Y) or an outside-in spiral. Enter the real diameter of your facing bit so the sketch matches what the machine will cut.')
                                     height: max(dp(60), self.texture_size[1] + dp(10))
 
                                 GridLayout:
@@ -187,17 +187,21 @@
                                         input_filter: 'float'
 
                                     Label:
-                                        text: tr._('Raster')
+                                        text: tr._('Pattern')
                                     BoxLayout:
                                         ToggleButton:
                                             id: raster_x_btn
                                             text: tr._('Along X')
-                                            group: 'facing_raster'
+                                            group: 'facing_pattern'
                                             state: 'down'
                                         ToggleButton:
                                             id: raster_y_btn
                                             text: tr._('Along Y')
-                                            group: 'facing_raster'
+                                            group: 'facing_pattern'
+                                        ToggleButton:
+                                            id: raster_spiral_btn
+                                            text: tr._('Spiral')
+                                            group: 'facing_pattern'
 
                                     Label:
                                         text: tr._('Milling')

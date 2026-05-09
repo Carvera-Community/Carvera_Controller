@@ -23,6 +23,10 @@ MILLING_CLIMB = "climb"
 MILLING_CONVENTIONAL = "conventional"
 MILLING_BOTH = "both"
 
+PATTERN_RASTER_X = "raster_x"
+PATTERN_RASTER_Y = "raster_y"
+PATTERN_SPIRAL = "spiral"
+
 
 @dataclass
 class FacingParams:
@@ -35,7 +39,7 @@ class FacingParams:
     tool_diameter_mm: float
     clearance_z_mm: float
     spindle_rpm: float
-    raster_along_x: bool
+    pattern: str
     milling_direction: str
     rough_feed_mm_min: float
     rough_plunge_feed_mm_min: float
@@ -62,7 +66,7 @@ class FacingEnvelope:
     facing_ya: float
     facing_yb: float
     rough_stepover_mm: float
-    raster_along_x: bool
+    pattern: str
     milling_direction: str
 
 
@@ -76,6 +80,14 @@ def compute_facing_envelope(p: FacingParams) -> FacingEnvelope:
     mx = p.margin_x_mm
     my = p.margin_y_mm
     rad = p.tool_diameter_mm / 2.0
+
+    pattern = p.pattern.strip().lower()
+    if pattern not in (PATTERN_RASTER_X, PATTERN_RASTER_Y, PATTERN_SPIRAL):
+        raise ValueError(tr._("Unknown facing pattern."))
+    if pattern == PATTERN_SPIRAL and p.milling_direction == MILLING_BOTH:
+        raise ValueError(
+            tr._("Spiral facing requires Climb or Conventional milling, not Both.")
+        )
 
     nx0, ny0, nx1, ny1 = stock_rect_from_origin_corner(w, sl, p.stock_origin_corner)
     x0 = nx0 - mx
@@ -108,7 +120,7 @@ def compute_facing_envelope(p: FacingParams) -> FacingEnvelope:
         facing_ya=ya,
         facing_yb=yb,
         rough_stepover_mm=rough_step,
-        raster_along_x=p.raster_along_x,
+        pattern=pattern,
         milling_direction=p.milling_direction,
     )
 
@@ -162,6 +174,7 @@ def _cols_along_y(corner: str, xa: float, xb: float, step: float) -> list[float]
         x -= step
     return xs
 
+
 def _climb_is_forward(corner: str, raster_along_x: bool) -> bool:
     """Whether forward (xa->xb / ya->yb = increasing coordinate) is the climb direction
 
@@ -184,8 +197,9 @@ def iter_raster_passes(
     step = max(step_mm, 0.05)
     c = env.origin_corner
     md = env.milling_direction
+    along_x = env.pattern == PATTERN_RASTER_X
 
-    climb_fwd = _climb_is_forward(c, env.raster_along_x)
+    climb_fwd = _climb_is_forward(c, along_x)
     if md == MILLING_CLIMB:
         fixed_forward = climb_fwd
     elif md == MILLING_CONVENTIONAL:
@@ -193,7 +207,7 @@ def iter_raster_passes(
     else:
         fixed_forward = None
 
-    if env.raster_along_x:
+    if along_x:
         forward = fixed_forward if fixed_forward is not None else c in (CORNER_BL, CORNER_TL)
         for y in _rows_along_x(c, ya, yb, step):
             xs = xa if forward else xb
@@ -211,10 +225,67 @@ def iter_raster_passes(
                 forward = not forward
 
 
-def facing_raster_xy_polyline(env: FacingEnvelope) -> list[tuple[float, float]]:
+def iter_spiral_rect_passes(
+    env: FacingEnvelope,
+    step_mm: float,
+) -> Iterator[tuple[tuple[float, float], tuple[float, float]]]:
+    """Nested rectangles outside→in."""
+    xa, xb = env.facing_xa, env.facing_xb
+    ya, yb = env.facing_ya, env.facing_yb
+    step = max(step_mm, 0.05)
+    md = env.milling_direction
+    ccw = md == MILLING_CLIMB
+
+    k = 0
+    while True:
+        L = xa + k * step
+        R = xb - k * step
+        B = ya + k * step
+        T = yb - k * step
+        if R - L < 1e-6 or T - B < 1e-6:
+            break
+
+        if ccw:
+            segments = (
+                ((L, B), (L, T)),
+                ((L, T), (R, T)),
+                ((R, T), (R, B)),
+                ((R, B), (L, B)),
+            )
+        else:
+            segments = (
+                ((L, B), (R, B)),
+                ((R, B), (R, T)),
+                ((R, T), (L, T)),
+                ((L, T), (L, B)),
+            )
+        for seg in segments:
+            yield seg
+
+        k += 1
+        L2 = xa + k * step
+        R2 = xb - k * step
+        B2 = ya + k * step
+        T2 = yb - k * step
+        if R2 - L2 < 1e-6 or T2 - B2 < 1e-6:
+            break
+        yield ((L, B), (L2, B2))
+
+
+def iter_facing_xy_segments(
+    env: FacingEnvelope,
+    step_mm: float,
+) -> Iterator[tuple[tuple[float, float], tuple[float, float]]]:
+    if env.pattern == PATTERN_SPIRAL:
+        yield from iter_spiral_rect_passes(env, step_mm)
+    else:
+        yield from iter_raster_passes(env, step_mm)
+
+
+def facing_toolpath_xy_polyline(env: FacingEnvelope) -> list[tuple[float, float]]:
     pts: list[tuple[float, float]] = []
     step = env.rough_stepover_mm
-    for a, b in iter_raster_passes(env, step):
+    for a, b in iter_facing_xy_segments(env, step):
         pts.append(a)
         pts.append(b)
     return pts
@@ -238,16 +309,19 @@ def generate_facing_gcode(p: FacingParams) -> str:
     lines.append(f"M3 S{p.spindle_rpm:.0f}")
     lines.append("G4 P1.0")
 
-    unidirectional = env.milling_direction != MILLING_BOTH
+    retract_between_passes = env.pattern in (
+        PATTERN_RASTER_X,
+        PATTERN_RASTER_Y,
+    ) and env.milling_direction != MILLING_BOTH
 
     def emit_layer(z_cut: float, step: float, feed: float, plunge_f: float) -> None:
         first = True
-        for (sx, sy), (ex, ey) in iter_raster_passes(env, step):
+        for (sx, sy), (ex, ey) in iter_facing_xy_segments(env, step):
             if first:
                 lines.append(f"G0 X{sx:.4f} Y{sy:.4f}")
                 lines.append(f"G1 Z{z_cut:.4f} F{plunge_f:.1f}")
                 first = False
-            elif unidirectional:
+            elif retract_between_passes:
                 lines.append(f"G0 Z{p.clearance_z_mm:.4f}")
                 lines.append(f"G0 X{sx:.4f} Y{sy:.4f}")
                 lines.append(f"G1 Z{z_cut:.4f} F{plunge_f:.1f}")

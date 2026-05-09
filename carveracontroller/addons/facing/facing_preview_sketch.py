@@ -44,7 +44,7 @@ class FacingXYPreviewSketch(Widget):
                 machining_rect = g.get("machining_rect")
                 facing = g.get("facing")
                 probe_geom: ProbeGridGeometry | None = g.get("probe_geom")
-                raster = g.get("raster")
+                toolpath = g.get("toolpath")
                 if not stock_rect:
                     PopMatrix()
                 else:
@@ -55,7 +55,7 @@ class FacingXYPreviewSketch(Widget):
                         machining_rect,
                         facing,
                         probe_geom,
-                        raster,
+                        toolpath,
                     )
                     PopMatrix()
 
@@ -69,10 +69,10 @@ class FacingXYPreviewSketch(Widget):
         machining_rect,
         facing,
         probe_geom: ProbeGridGeometry | None,
-        raster,
+        toolpath,
     ):
         min_x, min_y, max_x, max_y = self._bbox(
-            stock_rect, machining_rect, facing, probe_geom, raster
+            stock_rect, machining_rect, facing, probe_geom, toolpath
         )
         pad_frac = 0.06
         span_x = max(max_x - min_x, 1e-6)
@@ -144,11 +144,11 @@ class FacingXYPreviewSketch(Widget):
                 width=1.5,
             )
 
-        if raster:
+        if toolpath:
             flat = []
-            step = max(1, len(raster) // 400)
-            for i in range(0, len(raster), step):
-                x, y = raster[i]
+            step = max(1, len(toolpath) // 400)
+            for i in range(0, len(toolpath), step):
+                x, y = toolpath[i]
                 qx, qy = px(x, y)
                 flat.extend([qx, qy])
             Color(0.95, 0.72, 0.35, 0.65)
@@ -234,7 +234,7 @@ class FacingXYPreviewSketch(Widget):
         ]
 
     @staticmethod
-    def _bbox(stock_rect, machining_rect, facing, probe_geom, raster):
+    def _bbox(stock_rect, machining_rect, facing, probe_geom, toolpath):
         sx0, sy0, sx1, sy1 = stock_rect
         min_x, max_x = min(sx0, sx1), max(sx0, sx1)
         min_y, max_y = min(sy0, sy1), max(sy0, sy1)
@@ -260,8 +260,8 @@ class FacingXYPreviewSketch(Widget):
                     max_x = max(max_x, wx)
                     min_y = min(min_y, wy)
                     max_y = max(max_y, wy)
-        if raster:
-            for x, y in raster:
+        if toolpath:
+            for x, y in toolpath:
                 min_x = min(min_x, x)
                 max_x = max(max_x, x)
                 min_y = min(min_y, y)
@@ -279,7 +279,7 @@ class FacingXYPreviewSketch(Widget):
         machining_rect: tuple[float, float, float, float] | None = None,
         facing: FacingEnvelope | None = None,
         probe_geom: ProbeGridGeometry | None = None,
-        raster: list[tuple[float, float]] | None = None,
+        toolpath: list[tuple[float, float]] | None = None,
     ):
         if stock_rect is None:
             self._geom = None
@@ -289,7 +289,7 @@ class FacingXYPreviewSketch(Widget):
                 "machining_rect": machining_rect,
                 "facing": facing,
                 "probe_geom": probe_geom,
-                "raster": raster,
+                "toolpath": toolpath,
             }
         self._redraw()
 

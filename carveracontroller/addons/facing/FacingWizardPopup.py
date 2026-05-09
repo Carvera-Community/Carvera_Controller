@@ -17,9 +17,12 @@ from .facing_gcode import (
     MILLING_BOTH,
     MILLING_CLIMB,
     MILLING_CONVENTIONAL,
+    PATTERN_RASTER_X,
+    PATTERN_RASTER_Y,
+    PATTERN_SPIRAL,
     FacingParams,
     compute_facing_envelope,
-    facing_raster_xy_polyline,
+    facing_toolpath_xy_polyline,
     generate_facing_gcode,
 )
 from .probe_grid_gcode import (
@@ -194,6 +197,8 @@ class FacingWizardPopup(ModalView):
             if spmd.text not in spmd.values:
                 spmd.text = self._milling_direction_pairs_list[0][0]
 
+            self._sync_milling_spinner_for_pattern()
+
             self._prefill_facing_tool_t()
             self._preview_trigger()
         except Exception as e:
@@ -238,6 +243,44 @@ class FacingWizardPopup(ModalView):
             if text == label:
                 return val
         return MILLING_CLIMB
+
+    def _pattern_from_ui(self) -> str:
+        try:
+            ids = self.ids
+        except Exception:
+            return PATTERN_RASTER_X
+        if getattr(ids, "raster_spiral_btn", None) and ids.raster_spiral_btn.state == "down":
+            return PATTERN_SPIRAL
+        if ids.raster_x_btn.state == "down":
+            return PATTERN_RASTER_X
+        if ids.raster_y_btn.state == "down":
+            return PATTERN_RASTER_Y
+        return PATTERN_RASTER_X
+
+    def _sync_milling_spinner_for_pattern(self) -> None:
+        self._ensure_wizard_lists()
+        try:
+            spmd = self.ids.spn_milling_dir
+        except Exception:
+            return
+        pat = self._pattern_from_ui()
+        if pat == PATTERN_SPIRAL:
+            filtered = [
+                (lab, v)
+                for lab, v in self._milling_direction_pairs_list
+                if v != MILLING_BOTH
+            ]
+            new_values = [p[0] for p in filtered]
+            if list(spmd.values) != new_values:
+                spmd.values = new_values
+            if spmd.text not in spmd.values:
+                spmd.text = filtered[0][0]
+        else:
+            full = [p[0] for p in self._milling_direction_pairs_list]
+            if list(spmd.values) != full:
+                spmd.values = full
+            if spmd.text not in spmd.values:
+                spmd.text = self._milling_direction_pairs_list[0][0]
 
     def _on_dismiss_wizard(self, *args):
         try:
@@ -334,7 +377,11 @@ class FacingWizardPopup(ModalView):
             Clock.schedule_once(lambda _dt: self._bind_preview_inputs(), 0.12)
             return
 
-        if "raster_x_btn" not in ids or "raster_y_btn" not in ids:
+        if (
+            "raster_x_btn" not in ids
+            or "raster_y_btn" not in ids
+            or "raster_spiral_btn" not in ids
+        ):
             logger.debug("facing preview bind: tab widgets missing, retrying")
             Clock.schedule_once(lambda _dt: self._bind_preview_inputs(), 0.12)
             return
@@ -384,6 +431,7 @@ class FacingWizardPopup(ModalView):
         try:
             ids.raster_x_btn.bind(state=self._on_facing_input_changed)
             ids.raster_y_btn.bind(state=self._on_facing_input_changed)
+            ids.raster_spiral_btn.bind(state=self._on_facing_input_changed)
         except Exception:
             pass
         for wid_name in ("spn_stock_corner", "spn_milling_dir", "spn_m6_collet", "spn_probe_tool"):
@@ -395,6 +443,7 @@ class FacingWizardPopup(ModalView):
         ids.facing_preview_sketch.bind(size=self._preview_trigger)
 
     def _on_facing_input_changed(self, *args):
+        self._sync_milling_spinner_for_pattern()
         self._mark_facing_gcode_stale_from_ui()
         self._preview_trigger()
 
@@ -443,7 +492,7 @@ class FacingWizardPopup(ModalView):
             tool_diameter_mm=_parse_float_widget(self.ids.txt_tool_d, tr._("Tool diameter (mm)")),
             clearance_z_mm=_parse_float_widget(self.ids.txt_clear, tr._("Clearance Z (mm)")),
             spindle_rpm=_parse_float_widget(self.ids.txt_spindle, tr._("Spindle RPM")),
-            raster_along_x=self.ids.raster_x_btn.state == "down",
+            pattern=self._pattern_from_ui(),
             milling_direction=self._milling_direction_from_ui(),
             rough_feed_mm_min=_parse_float_widget(self.ids.txt_rough_f, tr._("Rough feed (mm/min)")),
             rough_plunge_feed_mm_min=_parse_float_widget(self.ids.txt_rough_plunge, tr._("Rough plunge feed (mm/min)")),
@@ -488,7 +537,7 @@ class FacingWizardPopup(ModalView):
         try:
             fp = self._build_facing_params_from_ui()
             facing_env = compute_facing_envelope(fp)
-            raster_pts = facing_raster_xy_polyline(facing_env)
+            toolpath_pts = facing_toolpath_xy_polyline(facing_env)
         except ValueError as e:
             sketch.clear_geometry()
             lbl_err.text = str(e)
@@ -508,7 +557,7 @@ class FacingWizardPopup(ModalView):
             machining_rect=machining_rect,
             facing=facing_env,
             probe_geom=probe_geom,
-            raster=raster_pts,
+            toolpath=toolpath_pts,
         )
 
     def generate_program(self, *args):
