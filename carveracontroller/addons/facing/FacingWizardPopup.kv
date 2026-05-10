@@ -229,7 +229,7 @@
                                     halign: 'left'
                                     valign: 'top'
                                     multiline: True
-                                    text: tr._('Roughing clears material in layers using stepover, depth per pass, and total rough depth (combine with Extra depth on Stock if you need more Z). Turn on Finish for a light cleanup pass at the end. Pattern picks raster (Along X or Along Y) or an outside-in spiral. Enter the real diameter of your facing bit so the sketch matches what the machine will cut.')
+                                    text: tr._('Roughing clears material in layers using stepover, depth per pass, and total rough depth (combine with Extra depth on Stock if you need more Z). Turn on Finish for a light cleanup pass at the end. Pattern picks raster (Along X or Along Y) or an outside-in spiral.')
                                     height: max(dp(60), self.texture_size[1] + dp(10))
 
                                 GridLayout:
@@ -239,14 +239,6 @@
                                     height: self.minimum_height
                                     row_default_height: dp(40)
                                     spacing: dp(4)
-
-                                    Label:
-                                        text: tr._('Tool Ø (mm)')
-                                    TextInput:
-                                        id: txt_tool_d
-                                        text: default_values.DEFAULT_TXT['txt_tool_d']
-                                        multiline: False
-                                        input_filter: 'float'
 
                                     Label:
                                         text: tr._('Spindle RPM')
@@ -462,7 +454,7 @@
                                         input_filter: 'float'
 
                     TabbedPanelItem:
-                        text: tr._('Tool change')
+                        text: tr._('Tool / Misc.')
                         ScrollView:
                             scroll_type: ['bars', 'content']
                             bar_width: dp(14)
@@ -501,6 +493,14 @@
                                     TextInput:
                                         id: txt_m6_t
                                         text: default_values.DEFAULT_TXT['txt_m6_t']
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Facing tool diameter (mm)')
+                                    TextInput:
+                                        id: txt_tool_d
+                                        text: default_values.DEFAULT_TXT['txt_tool_d']
                                         multiline: False
                                         input_filter: 'float'
 

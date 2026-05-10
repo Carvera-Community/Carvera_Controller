@@ -882,7 +882,7 @@ class FacingWizardPopup(ModalView):
             margin_x_mm=_parse_float_widget(self.ids.txt_mx, tr._("Margin X (mm)")),
             margin_y_mm=_parse_float_widget(self.ids.txt_my, tr._("Margin Y (mm)")),
             margin_z_mm=_parse_float_widget(self.ids.txt_mz, tr._("Extra depth (mm)")),
-            tool_diameter_mm=_parse_float_widget(self.ids.txt_tool_d, tr._("Tool diameter (mm)")),
+            tool_diameter_mm=_parse_float_widget(self.ids.txt_tool_d, tr._("Facing tool diameter (mm)")),
             clearance_z_mm=_parse_float_widget(self.ids.txt_clear, tr._("Clearance Z (mm)")),
             spindle_rpm=_parse_float_widget(self.ids.txt_spindle, tr._("Spindle RPM")),
             spindle_spinup_dwell_s=_parse_non_negative_int_widget(self.ids.txt_spindle_dwell, tr._("Spindle dwell (s)")),
