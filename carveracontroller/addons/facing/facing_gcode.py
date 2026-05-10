@@ -354,8 +354,8 @@ def generate_facing_gcode(p: FacingParams) -> str:
         emit_layer(z_fin, finish_step, fd, pf)
 
     lines.append("M5")
-    lines.append(f"G0 Z{p.clearance_z_mm:.4f}")
     if p.ext_port_enabled:
         lines.append("M852")
+    lines.append("G28")
     lines.append("M2")
     return "\n".join(lines) + "\n"
