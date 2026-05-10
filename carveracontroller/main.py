@@ -1135,8 +1135,18 @@ class DiagnosePopup(ModalView):
 # with no undo. This subclass overrides set_value to skip the Config write
 # while still notifying on_config_change, so changes only persist when the
 # user clicks Apply.
+#
+# ConfigPopup._apply_changes detects pending changes by comparing each
+# SettingItem's `value` ObjectProperty against a snapshot taken on open. That
+# only works if `widget.value` reflects user input. Standard Kivy widgets
+# assign `self.value` directly on input, but custom widgets that call
+# `panel.set_value(...)` without first updating `self.value` (e.g.
+# SettingPendantSelector) would otherwise be invisible to the Apply loop and
+# silently lose data. We sync `widget.value` here so the contract holds for
+# any caller of set_value.
 class DeferredSettingsPanel(SettingsPanel):
     _skip_sections = ('Backup', 'Restore')
+    _setting_widget_value = False
 
     def set_value(self, section, key, value):
         if section in self._skip_sections:
@@ -1151,9 +1161,22 @@ class DeferredSettingsPanel(SettingsPanel):
             if self.settings:
                 self.settings.dispatch('on_config_change', config, section, key, value)
             return
-        current = self.get_value(section, key)
-        if current == value:
+        # Re-entry guard: assigning child.value below fires SettingItem.on_value,
+        # which calls back into panel.set_value. Skip the inner call.
+        if self._setting_widget_value:
             return
+        current = self.get_value(section, key)
+        if str(current) == str(value):
+            return
+        for child in self.walk():
+            if isinstance(child, SettingItem) and child.section == section and child.key == key:
+                if str(child.value) != str(value):
+                    self._setting_widget_value = True
+                    try:
+                        child.value = value
+                    finally:
+                        self._setting_widget_value = False
+                break
         if self.settings:
             self.settings.dispatch('on_config_change', self.config, section, key, value)
 
