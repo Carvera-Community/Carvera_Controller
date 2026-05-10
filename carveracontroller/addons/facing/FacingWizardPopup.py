@@ -396,7 +396,7 @@ class FacingWizardPopup(ModalView):
         save_popup = Popup(
             title=tr._("Save preset"),
             content=content,
-            size_hint=(0.78, None),
+            size_hint=(0.58, None),
             auto_dismiss=False,
             separator_height=dp(1),
         )
