@@ -2,6 +2,7 @@
 #:import Factory kivy.factory.Factory
 #:import digitize_v carveracontroller.Utils.digitize_v
 #:import tr carveracontroller.__main__.tr
+#:import StaticMatplotFigureTwinx carveracontroller.ui.graph_widget_twinx
 #:include addons/tooltips/Tooltips.kv
 #:include addons/probing/ProbingPopup.kv
 
@@ -3483,6 +3484,7 @@
     cmd_manager: cmd_manager
     gcode_viewer_container: gcode_viewer_container
     gcode_play_slider: gcode_play_slider
+    telemetry_chart: telemetry_chart
 
     BoxLayout:
         padding: dp(5)
@@ -4117,231 +4119,253 @@
                                                     disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running in ['0', 'false', False])
                                                     on_release:
                                                         root.send_cmd()
-                        FloatBox:
-                            id: float_layout
-                            tool_bar: tool_bar
-                            t1: t1
-                            t2: t2
-                            t3: t3
-                            t4: t4
-                            t5: t5
-                            t6: t6
-                            laser: laser
-                            hide_all: hide_all
-                            gcode_ctl_bar: gcode_ctl_bar
-                            BoxLayout:
-                                id: gcode_viewer_container
-                                pos: float_layout.pos
-                                orientation: 'vertical'
-                            BoxLayout:
-                                id: tool_bar
-                                orbit: True
-                                size_hint_x: 1
-                                size_hint_y: 0.1 if app.show_gcode_ctl_bar else 0
-                                opacity: 1 if app.show_gcode_ctl_bar else 0
-                                # pos: float_layout.x, 0
-                                pos_hint: {'x': 0.0, 'top': 1.0}
+                        BoxLayout:
+                            orientation: 'vertical'
+                            Splitter:
+                                sizable_from: 'bottom'
+                                strip_size: '5dp'
                                 canvas.before:
                                     Color:
-                                        rgba: 10/255, 10/255, 10/255, 0.2
+                                        rgba: 0.6, 0.6, 0.6, 1
+                                    Rectangle:
+                                        pos: self.x, self.y
+                                        size: self.width, self.strip_size
+                                FloatBox:
+                                    id: float_layout
+                                    tool_bar: tool_bar
+                                    t1: t1
+                                    t2: t2
+                                    t3: t3
+                                    t4: t4
+                                    t5: t5
+                                    t6: t6
+                                    laser: laser
+                                    hide_all: hide_all
+                                    gcode_ctl_bar: gcode_ctl_bar
+                                    BoxLayout:
+                                        id: gcode_viewer_container
+                                        pos: float_layout.pos
+                                        orientation: 'vertical'
+                                    BoxLayout:
+                                        id: tool_bar
+                                        orbit: True
+                                        size_hint_x: 1
+                                        size_hint_y: 0.1 if app.show_gcode_ctl_bar else 0
+                                        opacity: 1 if app.show_gcode_ctl_bar else 0
+                                        # pos: float_layout.x, 0
+                                        pos_hint: {'x': 0.0, 'top': 1.0}
+                                        canvas.before:
+                                            Color:
+                                                rgba: 10/255, 10/255, 10/255, 0.2
+                                            Rectangle:
+                                                pos: self.pos
+                                                size: self.size
+                                        BoxLayout:
+                                            # tool bar buttons
+                                            TransparentButton:
+                                                width: '50dp'
+                                                active: tool_bar.orbit
+                                                icon: 'data/orbit.png'
+                                                disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                                on_release:
+                                                    tool_bar.orbit = True
+                                                    root.gcode_viewer.set_orbit(True)
+                                            TransparentButton:
+                                                width: '50dp'
+                                                active: not tool_bar.orbit
+                                                icon: 'data/pan.png'
+                                                disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                                on_release:
+                                                    tool_bar.orbit = False
+                                                    root.gcode_viewer.set_orbit(False)
+                                            TransparentButton:
+                                                width: '50dp'
+                                                icon: 'data/zoom_out.png'
+                                                disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                                on_release:
+                                                    root.gcode_viewer.zoom_in()
+                                            TransparentButton:
+                                                width: '50dp'
+                                                icon: 'data/zoom_in.png'
+                                                disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                                on_release:
+                                                    root.gcode_viewer.zoom_out()
+                                            TransparentButton:
+                                                width: '50dp'
+                                                icon: 'data/zoom_fit.png'
+                                                disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                                on_release:
+                                                    root.gcode_viewer.restore_default_view()
+                                            Widget:
+
+                                            # tools
+                                            TransparentButton:
+                                                id: t1
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                text: 'T1'
+                                                active: app.tool == 1
+                                                disabled: 1 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentButton:
+                                                id: t2
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                text: 'T2'
+                                                active: app.tool == 2
+                                                disabled: 2 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentButton:
+                                                id: t3
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                text: 'T3'
+                                                active: app.tool == 3
+                                                disabled: 3 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentButton:
+                                                id: t4
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                text: 'T4'
+                                                active: app.tool == 4
+                                                disabled: 4 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentButton:
+                                                id: t5
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                text: 'T5'
+                                                active: app.tool == 5
+                                                disabled: 5 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentButton:
+                                                id: t6
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                text: 'T6'
+                                                active: app.tool == 6
+                                                disabled: 6 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentButton:
+                                                id: laser
+                                                width: '44dp'
+                                                valign: 'middle'
+                                                icon: 'data/laser.png'
+                                                active: app.lasering == True
+                                                disabled: 7 not in root.used_tools
+                                                min_icon: 'data/eye.png'
+                                                on_release:
+                                                    self.min_active = not self.min_active
+                                                    app.root.filter_tool()
+                                            TransparentGrayButton:
+                                                id: hide_all
+                                                width: '50dp'
+                                                icon: 'data/eye.png'
+                                                disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                                on_release:
+                                                    self.active = not self.active
+                                                    if self.active:\
+                                                    t1.min_active = True;\
+                                                    t2.min_active = True;\
+                                                    t3.min_active = True;\
+                                                    t4.min_active = True;\
+                                                    t5.min_active = True;\
+                                                    t6.min_active = True;\
+                                                    laser.min_active = True;
+                                                    else:\
+                                                    t1.min_active = False;\
+                                                    t2.min_active = False;\
+                                                    t3.min_active = False;\
+                                                    t4.min_active = False;\
+                                                    t5.min_active = False;\
+                                                    t6.min_active = False;\
+                                                    laser.min_active = False;
+                                                    app.root.filter_tool()
+                                    BoxLayout:
+                                        id: gcode_ctl_bar
+                                        size_hint_x: 1
+                                        size_hint_y: 0.2 if app.show_gcode_ctl_bar else 0
+                                        opacity: 1 if app.show_gcode_ctl_bar else 0
+                                        orientation: 'vertical'
+                                        pos: float_layout.pos
+                                        canvas.before:
+                                            Color:
+                                                rgba: 10/255, 10/255, 10/255, 0.2
+                                            Rectangle:
+                                                pos: self.pos
+                                                size: self.size
+                                        BoxLayout:
+                                            Widget:
+                                            TransparentButton:
+                                                height: '0dp'
+                                                icon: 'data/to_start.png'
+                                                icon_size: 24
+                                                disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
+                                                on_release:
+                                                    root.gcode_play_to_start()
+                                            TransparentButton:
+                                                icon: 'data/backward.png'
+                                                icon_size: 24
+                                                disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
+                                                on_release:
+                                                    root.gcode_play_speed_down()
+                                            TransparentButton:
+                                                icon: 'data/suspend.png' if root.gcode_playing else 'data/start.png'
+                                                icon_size: 26 if root.gcode_playing else 18
+                                                disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
+                                                on_release:
+                                                    root.gcode_play_toggle()
+                                            TransparentButton:
+                                                icon: 'data/forward.png'
+                                                icon_size: 24
+                                                disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
+                                                on_release:
+                                                    root.gcode_play_speed_up()
+                                            TransparentButton:
+                                                icon: 'data/to_end.png'
+                                                icon_size: 24
+                                                disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
+                                                on_release:
+                                                    root.gcode_play_to_end()
+
+                                            Widget:
+                                        GcodePlaySlider:
+                                            id: gcode_play_slider
+                                            height: '15dp'
+                                            min: 0
+                                            max: 1000
+                                            value: 1000
+                                            disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                            BoxLayout:
+                                size_hint_y: None
+                                height: '200dp'
+                                canvas.before:
+                                    Color:
+                                        rgba: 20/255, 20/255, 20/255, 1
                                     Rectangle:
                                         pos: self.pos
                                         size: self.size
-                                BoxLayout:
-                                    # tool bar buttons
-                                    TransparentButton:
-                                        width: '50dp'
-                                        active: tool_bar.orbit
-                                        icon: 'data/orbit.png'
-                                        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                        on_release:
-                                            tool_bar.orbit = True
-                                            root.gcode_viewer.set_orbit(True)
-                                    TransparentButton:
-                                        width: '50dp'
-                                        active: not tool_bar.orbit
-                                        icon: 'data/pan.png'
-                                        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                        on_release:
-                                            tool_bar.orbit = False
-                                            root.gcode_viewer.set_orbit(False)
-                                    TransparentButton:
-                                        width: '50dp'
-                                        icon: 'data/zoom_out.png'
-                                        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                        on_release:
-                                            root.gcode_viewer.zoom_in()
-                                    TransparentButton:
-                                        width: '50dp'
-                                        icon: 'data/zoom_in.png'
-                                        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                        on_release:
-                                            root.gcode_viewer.zoom_out()
-                                    TransparentButton:
-                                        width: '50dp'
-                                        icon: 'data/zoom_fit.png'
-                                        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                        on_release:
-                                            root.gcode_viewer.restore_default_view()
-                                    Widget:
-
-                                    # tools
-                                    TransparentButton:
-                                        id: t1
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        text: 'T1'
-                                        active: app.tool == 1
-                                        disabled: 1 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentButton:
-                                        id: t2
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        text: 'T2'
-                                        active: app.tool == 2
-                                        disabled: 2 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentButton:
-                                        id: t3
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        text: 'T3'
-                                        active: app.tool == 3
-                                        disabled: 3 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentButton:
-                                        id: t4
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        text: 'T4'
-                                        active: app.tool == 4
-                                        disabled: 4 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentButton:
-                                        id: t5
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        text: 'T5'
-                                        active: app.tool == 5
-                                        disabled: 5 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentButton:
-                                        id: t6
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        text: 'T6'
-                                        active: app.tool == 6
-                                        disabled: 6 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentButton:
-                                        id: laser
-                                        width: '44dp'
-                                        valign: 'middle'
-                                        icon: 'data/laser.png'
-                                        active: app.lasering == True
-                                        disabled: 7 not in root.used_tools
-                                        min_icon: 'data/eye.png'
-                                        on_release:
-                                            self.min_active = not self.min_active
-                                            app.root.filter_tool()
-                                    TransparentGrayButton:
-                                        id: hide_all
-                                        width: '50dp'
-                                        icon: 'data/eye.png'
-                                        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                        on_release:
-                                            self.active = not self.active
-                                            if self.active:\
-                                            t1.min_active = True;\
-                                            t2.min_active = True;\
-                                            t3.min_active = True;\
-                                            t4.min_active = True;\
-                                            t5.min_active = True;\
-                                            t6.min_active = True;\
-                                            laser.min_active = True;
-                                            else:\
-                                            t1.min_active = False;\
-                                            t2.min_active = False;\
-                                            t3.min_active = False;\
-                                            t4.min_active = False;\
-                                            t5.min_active = False;\
-                                            t6.min_active = False;\
-                                            laser.min_active = False;
-                                            app.root.filter_tool()
-                            BoxLayout:
-                                id: gcode_ctl_bar
-                                size_hint_x: 1
-                                size_hint_y: 0.2 if app.show_gcode_ctl_bar else 0
-                                opacity: 1 if app.show_gcode_ctl_bar else 0
-                                orientation: 'vertical'
-                                pos: float_layout.pos
-                                canvas.before:
-                                    Color:
-                                        rgba: 10/255, 10/255, 10/255, 0.2
-                                    Rectangle:
-                                        pos: self.pos
-                                        size: self.size
-                                BoxLayout:
-                                    Widget:
-                                    TransparentButton:
-                                        height: '0dp'
-                                        icon: 'data/to_start.png'
-                                        icon_size: 24
-                                        disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
-                                        on_release:
-                                            root.gcode_play_to_start()
-                                    TransparentButton:
-                                        icon: 'data/backward.png'
-                                        icon_size: 24
-                                        disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
-                                        on_release:
-                                            root.gcode_play_speed_down()
-                                    TransparentButton:
-                                        icon: 'data/suspend.png' if root.gcode_playing else 'data/start.png'
-                                        icon_size: 26 if root.gcode_playing else 18
-                                        disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
-                                        on_release:
-                                            root.gcode_play_toggle()
-                                    TransparentButton:
-                                        icon: 'data/forward.png'
-                                        icon_size: 24
-                                        disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
-                                        on_release:
-                                            root.gcode_play_speed_up()
-                                    TransparentButton:
-                                        icon: 'data/to_end.png'
-                                        icon_size: 24
-                                        disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or (app.state != 'Idle' and app.state != 'N/A')
-                                        on_release:
-                                            root.gcode_play_to_end()
-
-                                    Widget:
-                                GcodePlaySlider:
-                                    id: gcode_play_slider
-                                    height: '15dp'
-                                    min: 0
-                                    max: 1000
-                                    value: 1000
-                                    disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+                                StaticMatplotFigureTwinx:
+                                    id: telemetry_chart
 
             SettingPage:
                 name: 'Setting'

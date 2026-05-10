@@ -25,6 +25,7 @@ certifi = ">=2017.4.17"
 pyserial = "^3.5"
 pyquicklz = "^1.4.1"
 hid = "^1.0.7"
+kivy-matplotlib-widget = "^0.16.0"
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.11.0"

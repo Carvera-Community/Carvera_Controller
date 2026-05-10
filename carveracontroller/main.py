@@ -200,6 +200,17 @@ from kivy.lang import Builder
 from .addons.tooltips.Tooltips import Tooltip,ToolTipButton,ToolTipDropDown
 from .addons.probing.ProbingControls import ProbeButton
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from collections import deque
+from .ui.graph_widget_twinx import StaticMatplotFigureTwinx  # noqa: F401  – registers widget with Kivy Factory
+
+mpl.rcParams['path.simplify'] = True
+mpl.rcParams['path.simplify_threshold'] = 1.0
+mpl.rcParams['agg.path.chunksize'] = 1000
+
 def load_halt_translations(tr: translation.Lang):
     """Loads the appropriate language translation"""
     HALT_REASON = {
@@ -2726,6 +2737,8 @@ class Makera(RelativeLayout):
     gcode_playing = BooleanProperty(False)
     gcode_cannot_visualise = BooleanProperty(False)
 
+    telemetry_chart = ObjectProperty()
+
     probing_popup = ObjectProperty()
     coord_config = {}
 
@@ -2934,6 +2947,16 @@ class Makera(RelativeLayout):
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
         self.gcode_viewer.set_error_popup_callback(self._on_gcode_cannot_visualise)
         self.gcode_viewer.time_estimate_progress_callback = self._on_time_estimate_progress
+
+        # init telemetry chart
+        self._telemetry_spindle_temp = deque(maxlen=Makera._TELEMETRY_WINDOW)
+        self._telemetry_spindle_pwm_request = deque(maxlen=Makera._TELEMETRY_WINDOW)
+        self._init_telemetry_chart()
+        # Drive the chart at a fixed 1 Hz, independent of machine connection state.
+        Clock.schedule_interval(lambda dt: self._update_telemetry_chart(), 1.0)
+        # Schedule an initial home() for the next frame so the widget has its
+        # final layout size before the first draw.
+        Clock.schedule_once(lambda dt: self.telemetry_chart.home(), 0)
 
         # init settings
         self.config = ConfigParser()
@@ -4991,6 +5014,86 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: callback(), 0.1)
 
     # -----------------------------------------------------------------------
+    _TELEMETRY_WINDOW = 300  # seconds / points shown at once
+
+    def _init_telemetry_chart(self):
+        fs = dp(8)
+        bg = 18 / 255
+        fig, ax1 = plt.subplots(1, 1)
+        fig.patch.set_facecolor((bg, bg, bg, 1))
+        ax1.set_facecolor((bg, bg, bg, 1))
+        ax2 = ax1.twinx()
+
+        self._telemetry_line_temp, = ax1.plot([], [], color='#ff6b35', linewidth=1.5)
+        self._telemetry_line_feed, = ax2.plot([], [], color='#4ec9b0', linewidth=1.5)
+
+        ax1.set_xlabel('Time (s)', color='#888888', fontsize=fs)
+        ax1.set_ylabel('Temp (°C)', color='#ff6b35', fontsize=fs)
+        ax2.set_ylabel('Spindle Power Request %', color='#4ec9b0', fontsize=fs)
+
+        for ax in (ax1, ax2):
+            ax.tick_params(colors='#888888', labelsize=fs)
+            ax.spines['bottom'].set_color('#444444')
+            ax.spines['left'].set_color('#444444')
+            ax.spines['right'].set_color('#444444')
+            ax.spines['top'].set_visible(False)
+
+        ax1.yaxis.label.set_color('#ff6b35')
+        ax1.tick_params(axis='y', colors='#ff6b35', labelsize=fs)
+        ax2.yaxis.label.set_color('#4ec9b0')
+        ax2.tick_params(axis='y', colors='#4ec9b0', labelsize=fs)
+
+        ax1.set_xlim(-self._TELEMETRY_WINDOW, 0)
+        ax1.set_ylim(0, 100)
+        ax2.set_ylim(0, 1000)
+
+        fig.tight_layout(pad=0.5)
+
+        self._telemetry_ax1 = ax1
+        self._telemetry_ax2 = ax2
+
+        # Assign figure and initialise the widget's limit properties so
+        # home() has the correct anchors from the start.
+        self.telemetry_chart.figure = fig
+        self.telemetry_chart.xmin = -self._TELEMETRY_WINDOW
+        self.telemetry_chart.xmax = 0
+        self.telemetry_chart.ymin = 0
+        self.telemetry_chart.ymax = 100
+        self.telemetry_chart.ymin2 = 0
+        self.telemetry_chart.ymax2 = 1000
+
+    # -----------------------------------------------------------------------
+    def _update_telemetry_chart(self):
+        self._telemetry_spindle_temp.append(CNC.vars["spindletemp"])
+        self._telemetry_spindle_pwm_request.append(CNC.vars["spindle_pwm_request"])
+
+        n = len(self._telemetry_spindle_temp)
+        # x = 0 is "now"; each previous sample is 1 s earlier → [-n+1, …, -1, 0]
+        times = list(range(-(n - 1), 1))
+
+        self._telemetry_line_temp.set_data(times, list(self._telemetry_spindle_temp))
+        self._telemetry_line_feed.set_data(times, list(self._telemetry_spindle_pwm_request))
+
+        # Recompute y limits from current data and write back to widget so
+        # home() (called below) applies them correctly.
+        temp_vals = list(self._telemetry_spindle_temp)
+        feed_vals = list(self._telemetry_spindle_pwm_request)
+
+        if temp_vals:
+            pad = max((max(temp_vals) - min(temp_vals)) * 0.1, 1.0)
+            self.telemetry_chart.ymin = min(temp_vals) - pad
+            self.telemetry_chart.ymax = max(temp_vals) + pad
+
+        if feed_vals:
+            pad = max((max(feed_vals) - min(feed_vals)) * 0.1, 10.0)
+            self.telemetry_chart.ymin2 = min(feed_vals) - pad
+            self.telemetry_chart.ymax2 = max(feed_vals) + pad
+
+        # home() sets axes limits from widget properties and calls draw_idle()
+        # + flush_events() — the idiomatic live-update pattern from example_live_data.
+        self.telemetry_chart.home()
+
+    # -----------------------------------------------------------------------
     def updateStatus(self, *args):
         try:
             now = time.time()
@@ -5518,6 +5621,8 @@ class Makera(RelativeLayout):
             self.diagnose_popup.st_atc_home.state = CNC.vars["st_atc_home"]
             self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
             self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
+
+
         except:
             logger.error(sys.exc_info()[1])
 

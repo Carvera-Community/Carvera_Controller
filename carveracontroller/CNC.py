@@ -222,7 +222,8 @@ class CNC:
         "st_calibrate"      : 0,
         "st_cover"          : 0,
         "st_tool_sensor"    : 0,
-        "st_e_stop"         : 0
+        "st_e_stop"         : 0,
+        "spindle_pwm_request": 0
 
     }
 
