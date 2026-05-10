@@ -71,6 +71,19 @@ def _parse_float_widget(widget, label: str) -> float:
     return float(t)
 
 
+def _parse_non_negative_int_widget(widget, label: str) -> int:
+    t = widget.text.strip().replace(",", ".")
+    if not t:
+        raise ValueError(tr._("%s is required") % label)
+    try:
+        v = int(round(float(t)))
+    except ValueError:
+        raise ValueError(tr._("%s must be a number.") % label) from None
+    if v < 0:
+        raise ValueError(tr._("%s must be zero or positive.") % label)
+    return v
+
+
 def _optional_float(widget, default: float) -> float:
     t = widget.text.strip().replace(",", ".")
     if not t:
@@ -761,6 +774,7 @@ class FacingWizardPopup(ModalView):
             "txt_clear",
             "txt_tool_d",
             "txt_spindle",
+            "txt_spindle_dwell",
             "txt_rough_f",
             "txt_rough_plunge",
             "txt_rough_step",
@@ -780,12 +794,13 @@ class FacingWizardPopup(ModalView):
             "txt_m491_y",
             "txt_m491_z",
             "txt_tlo_r",
+            "txt_ext_port_s",
         ):
             try:
                 getattr(ids, wid_name).bind(text=self._on_facing_input_changed)
             except Exception:
                 pass
-        for wid_name in ("chk_probe", "chk_finish"):
+        for wid_name in ("chk_probe", "chk_finish", "chk_ext_port"):
             try:
                 getattr(ids, wid_name).bind(active=self._on_facing_input_changed)
             except Exception:
@@ -842,8 +857,24 @@ class FacingWizardPopup(ModalView):
             raise ValueError(tr._("Grid NX and NY must be at least 1."))
         return pg
 
+    def _ext_port_options_from_ui(self) -> tuple[bool, int]:
+        """(enabled, PWM 0–100 for M851 S in G-code)."""
+        if not self.ids.chk_ext_port.active:
+            return False, 100
+        raw = self.ids.txt_ext_port_s.text.strip().replace(",", ".")
+        if not raw:
+            raise ValueError(tr._("Ext. port is enabled but PWM % is empty."))
+        try:
+            s_val = int(round(float(raw)))
+        except ValueError:
+            raise ValueError(tr._("Ext. port PWM % must be a number."))
+        if s_val < 0 or s_val > 100:
+            raise ValueError(tr._("Ext. port PWM % is out of range (0–100)."))
+        return True, s_val
+
     def _build_facing_params_from_ui(self) -> FacingParams:
         self._ensure_wizard_lists()
+        ext_on, ext_pwm = self._ext_port_options_from_ui()
         fp = FacingParams(
             stock_width_mm=_parse_float_widget(self.ids.txt_w, tr._("Stock width (mm)")),
             stock_length_mm=_parse_float_widget(self.ids.txt_l, tr._("Stock length (mm)")),
@@ -854,6 +885,7 @@ class FacingWizardPopup(ModalView):
             tool_diameter_mm=_parse_float_widget(self.ids.txt_tool_d, tr._("Tool diameter (mm)")),
             clearance_z_mm=_parse_float_widget(self.ids.txt_clear, tr._("Clearance Z (mm)")),
             spindle_rpm=_parse_float_widget(self.ids.txt_spindle, tr._("Spindle RPM")),
+            spindle_spinup_dwell_s=_parse_non_negative_int_widget(self.ids.txt_spindle_dwell, tr._("Spindle dwell (s)")),
             pattern=self._pattern_from_ui(),
             milling_direction=self._milling_direction_from_ui(),
             rough_feed_mm_min=_parse_float_widget(self.ids.txt_rough_f, tr._("Rough feed (mm/min)")),
@@ -865,6 +897,8 @@ class FacingWizardPopup(ModalView):
             finish_feed_mm_min=_optional_float(self.ids.txt_finish_f, 600.0),
             finish_stepover_mm=_optional_float(self.ids.txt_finish_step, 0.5),
             finish_depth_mm=_optional_float(self.ids.txt_finish_depth, 0.2),
+            ext_port_enabled=ext_on,
+            ext_port_pwm=ext_pwm,
         )
         if fp.clearance_z_mm <= 0:
             raise ValueError(tr._("Clearance Z must be positive."))

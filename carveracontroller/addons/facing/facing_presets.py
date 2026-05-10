@@ -132,12 +132,25 @@ def normalize_preset_data(data: dict[str, Any]) -> dict[str, Any]:
 
     merged["chk_probe"] = bool(merged.get("chk_probe", default_values.DEFAULT_CHK_PROBE))
     merged["chk_finish"] = bool(merged.get("chk_finish", default_values.DEFAULT_CHK_FINISH))
+    merged["chk_ext_port"] = bool(merged.get("chk_ext_port", default_values.DEFAULT_CHK_EXT_PORT))
 
     for tk in TXT_KEYS:
         if tk not in merged or merged[tk] is None:
             merged[tk] = DEFAULT_PRESET_DATA[tk]
         else:
             merged[tk] = str(merged[tk])
+
+    try:
+        s_ext = int(round(float(merged["txt_ext_port_s"].replace(",", "."))))
+    except (TypeError, ValueError):
+        s_ext = int(default_values.DEFAULT_TXT["txt_ext_port_s"])
+    merged["txt_ext_port_s"] = str(max(0, min(100, s_ext)))
+
+    try:
+        d_s = int(round(float(merged["txt_spindle_dwell"].replace(",", "."))))
+    except (TypeError, ValueError):
+        d_s = int(default_values.DEFAULT_TXT["txt_spindle_dwell"])
+    merged["txt_spindle_dwell"] = str(max(0, d_s))
 
     if pat == PATTERN_SPIRAL and mill == MILLING_BOTH:
         merged["milling_direction"] = MILLING_CLIMB
@@ -167,6 +180,7 @@ def preset_data_from_popup(popup: Any) -> dict[str, Any]:
         "m6_collet": _collet_code_from_popup(popup),
         "chk_probe": bool(ids.chk_probe.active),
         "chk_finish": bool(ids.chk_finish.active),
+        "chk_ext_port": bool(ids.chk_ext_port.active),
     }
     for tk in TXT_KEYS:
         data[tk] = getattr(ids, tk).text
@@ -193,6 +207,7 @@ def apply_preset_data(popup: Any, data: dict[str, Any]) -> None:
 
     ids.chk_probe.active = blob["chk_probe"]
     ids.chk_finish.active = blob["chk_finish"]
+    ids.chk_ext_port.active = blob["chk_ext_port"]
 
     pat = blob["pattern"]
     ids.raster_x_btn.state = "down" if pat == PATTERN_RASTER_X else "normal"

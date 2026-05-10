@@ -100,6 +100,7 @@ def generate_probe_grid_gcode(p: ProbeGridParams, *, end_program: bool = True) -
     lines.append("G21")
     lines.append("G90")
     lines.append("G17")
+    lines.append("G94")
     lines.append(f"M6 T{p.probe_tool_t:d}")
     lines.append("(Tracking max WCS Z value in #105)")
     lines.append("#105=-999999")

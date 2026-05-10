@@ -257,6 +257,14 @@
                                         input_filter: 'float'
 
                                     Label:
+                                        text: tr._('Spindle dwell (s)')
+                                    TextInput:
+                                        id: txt_spindle_dwell
+                                        text: default_values.DEFAULT_TXT['txt_spindle_dwell']
+                                        multiline: False
+                                        input_filter: 'int'
+
+                                    Label:
                                         text: tr._('Pattern')
                                     BoxLayout:
                                         ToggleButton:
@@ -536,6 +544,22 @@
                                         text: default_values.DEFAULT_TXT['txt_m491_z']
                                         multiline: False
                                         input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Ext. port (vacuum, coolant, …)')
+                                    CheckBox:
+                                        id: chk_ext_port
+                                        active: default_values.DEFAULT_CHK_EXT_PORT
+                                        size_hint_x: 0.3
+
+                                    Label:
+                                        text: tr._('Ext. port PWM %')
+                                    TextInput:
+                                        id: txt_ext_port_s
+                                        text: default_values.DEFAULT_TXT['txt_ext_port_s']
+                                        multiline: False
+                                        hint_text: tr._('0–100')
+                                        input_filter: 'int'
 
                 BoxLayout:
                     orientation: 'vertical'

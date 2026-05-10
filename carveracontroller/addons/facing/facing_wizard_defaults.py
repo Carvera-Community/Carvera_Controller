@@ -16,20 +16,22 @@ DEFAULT_MILLING_DIRECTION = MILLING_CLIMB
 
 DEFAULT_CHK_PROBE = False
 DEFAULT_CHK_FINISH = True
+DEFAULT_CHK_EXT_PORT = False
 
 # Text inputs by widget id
 DEFAULT_TXT: dict[str, str] = {
     "txt_w": "100",
     "txt_l": "80",
-    "txt_mx": "1",
-    "txt_my": "1",
+    "txt_mx": "6",
+    "txt_my": "6",
     "txt_mz": "0",
-    "txt_clear": "5",
+    "txt_clear": "10",
     "txt_tool_d": "6",
     "txt_spindle": "12000",
+    "txt_spindle_dwell": "5",
     "txt_rough_f": "1200",
     "txt_rough_plunge": "400",
-    "txt_rough_step": "3",
+    "txt_rough_step": "2",
     "txt_rough_doc": "1",
     "txt_rough_total": "2",
     "txt_finish_f": "600",
@@ -40,12 +42,13 @@ DEFAULT_TXT: dict[str, str] = {
     "txt_probe_approach": "3",
     "txt_probe_travel": "-35",
     "txt_probe_f": "120",
-    "txt_probe_inset": "1",
+    "txt_probe_inset": "5",
     "txt_m6_t": "1",
     "txt_tlo_r": "",
     "txt_m491_x": "",
     "txt_m491_y": "",
     "txt_m491_z": "",
+    "txt_ext_port_s": "100",
 }
 
 
@@ -60,6 +63,7 @@ def default_preset_data(*, schema_version: int) -> dict[str, Any]:
         "m6_collet": DEFAULT_M6_COLLET,
         "chk_probe": DEFAULT_CHK_PROBE,
         "chk_finish": DEFAULT_CHK_FINISH,
+        "chk_ext_port": DEFAULT_CHK_EXT_PORT,
     }
     d.update(DEFAULT_TXT)
     return d

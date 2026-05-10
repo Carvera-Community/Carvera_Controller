@@ -39,6 +39,7 @@ class FacingParams:
     tool_diameter_mm: float
     clearance_z_mm: float
     spindle_rpm: float
+    spindle_spinup_dwell_s: int
     pattern: str
     milling_direction: str
     rough_feed_mm_min: float
@@ -50,6 +51,8 @@ class FacingParams:
     finish_feed_mm_min: float
     finish_stepover_mm: float
     finish_depth_mm: float
+    ext_port_enabled: bool
+    ext_port_pwm: int
 
 
 @dataclass(frozen=True)
@@ -305,9 +308,13 @@ def generate_facing_gcode(p: FacingParams) -> str:
     lines.append("G21")
     lines.append("G90")
     lines.append("G17")
+    lines.append("G94")
+    if p.ext_port_enabled:
+        lines.append(f"M851 S{p.ext_port_pwm:d}")
     lines.append(f"G0 Z{p.clearance_z_mm:.4f}")
     lines.append(f"M3 S{p.spindle_rpm:.0f}")
-    lines.append("G4 P1.0")
+    if p.spindle_spinup_dwell_s > 0:
+        lines.append(f"G4 P{p.spindle_spinup_dwell_s:d}")
 
     retract_between_passes = env.pattern in (
         PATTERN_RASTER_X,
@@ -348,5 +355,7 @@ def generate_facing_gcode(p: FacingParams) -> str:
 
     lines.append("M5")
     lines.append(f"G0 Z{p.clearance_z_mm:.4f}")
+    if p.ext_port_enabled:
+        lines.append("M852")
     lines.append("M2")
     return "\n".join(lines) + "\n"
