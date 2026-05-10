@@ -8,6 +8,7 @@
 - Fixed: Repeated firmware checks now happen just once
 - Fixed: UI widget updates from the SerialMonitor() now dispatched via the main thread. This should reduce the number of RecycleView related crashes
 - Fixed: Spindle temp reporting when running Analog type spindle without rpm reporting
+- Fixed: Last character of the current file was sometimes missing in the file viewer
 
 [2.1.0]
 - Enhancement: Add right-click menu option to clear resume-at-line setting
