@@ -6253,7 +6253,7 @@ class Makera(RelativeLayout):
         hl_colors = getattr(self, 'gcode_highlight_colors', None)
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
-            line_txt = line[:-1].replace("\x0d", "")
+            line_txt = line.rstrip("\r\n")
             plain = line_txt.strip()
             if hl_enabled:
                 hl = highlight_gcode_line(plain, hl_colors)
