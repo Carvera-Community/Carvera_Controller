@@ -6620,6 +6620,17 @@ def set_config_defaults(default_lang):
     if not kivy_platform in ['android', 'ios']:
         Config.set('input', 'mouse', "mouse,multitouch_on_demand") # disable multitouch simulation on non-mobile platforms
 
+    if kivy_platform == 'linux':
+        # Remove the default probesysfs entry that treats trackpads as touchscreens.
+        # Kivy's default adds '%(name)s = probesysfs,provider=hidinput' which picks up
+        # all HID devices including laptop trackpads.
+        if Config.has_option('input', '%(name)s'):
+            Config.remove_option('input', '%(name)s')
+        # Re-add probesysfs using mtdev, filtered to devices whose name contains
+        # "touchscreen" (case-insensitive). This preserves real touchscreen support
+        # while excluding trackpads, which never have "touchscreen" in their device name.
+        Config.set('input', 'touchscreen_%(name)s', 'probesysfs,provider=mtdev,match=(?i)touchscreen')
+
     # Only update config if running new version
     if not Config.has_option('carvera', 'version') or Config.get('carvera', 'version') != __version__:
         Config.set('carvera', 'version', __version__)
