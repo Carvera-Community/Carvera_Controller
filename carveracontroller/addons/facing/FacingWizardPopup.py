@@ -1038,6 +1038,7 @@ class FacingWizardPopup(ModalView):
             path = self._write_temp_nc(text)
             root = App.get_running_app().root
             self.dismiss()
+            self._switch_to_gcode_viewer_screen()
             root.uploadLocalFile(path, root.select_file)
 
         if self._facing_gcode_stale:

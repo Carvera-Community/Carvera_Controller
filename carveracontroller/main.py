@@ -4629,9 +4629,13 @@ class Makera(RelativeLayout):
             can_write_in_lz = os.access(input_filename + '.lz', os.W_OK)
             if not can_write_in_lz:
                 logger.warning(f"Compression failed: Cannot write to '{input_filename}.lz', using temp dir")
-                # First copy the file to the temp dir
-                shutil.copy(input_filename, self.temp_dir)
-                input_filename = os.path.join(self.temp_dir, os.path.basename(input_filename))
+                # First copy the file to the temp dir (skip if already there, e.g. facing wizard .nc).
+                dest_path = os.path.join(self.temp_dir, os.path.basename(input_filename))
+                try:
+                    shutil.copy(input_filename, self.temp_dir)
+                except shutil.SameFileError:
+                    pass
+                input_filename = dest_path
                 # Then compress the file to the temp dir
                 output_filename = os.path.join(self.temp_dir, os.path.basename(input_filename) + '.lz')
             else:
