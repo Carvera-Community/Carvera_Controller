@@ -970,9 +970,8 @@ class FacingWizardPopup(ModalView):
             blocks: list[str] = []
             if probe_str:
                 blocks.append(probe_str)
-            blocks.append(self._build_probe_to_facing_transition())
-            if probe_str:
                 blocks.append(probe_grid_z_datum_shift_after_probe_gcode())
+            blocks.append(self._build_probe_to_facing_transition())
             blocks.append(face_str)
             combined = "\n".join(blocks) + "\n"
             self._gcode_plain = combined
