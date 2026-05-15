@@ -46,7 +46,6 @@ def build_m466(
     *,
     x: str = "",
     y: str = "",
-    z: str = "",
     e: str = "",
     h: str = "",
     c: str = "",
@@ -55,17 +54,15 @@ def build_m466(
     l_repeat: str = "",
     r_retract: str = "",
 ) -> str:
-    xw, yw, zw = _word("X", x), _word("Y", y), _word("Z", z)
+    xw, yw = _word("X", x), _word("Y", y)
     result_vars: list[str] = []
     if xw:
         result_vars.append("154")
     if yw:
         result_vars.append("155")
-    if zw:
-        result_vars.append("156")
     return _build_probe_cmd(
         "M466",
-        [xw, yw, zw, _word("E", e), _word("H", h), _word("C", c)],
+        [xw, yw, _word("E", e), _word("H", h), _word("C", c)],
         f_probe=f_probe, k_rapid=k_rapid,
         l_repeat=l_repeat, r_retract=r_retract,
         result_vars=result_vars or list(VAR_SETS["M466"]),

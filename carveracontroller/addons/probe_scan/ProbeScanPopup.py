@@ -1202,30 +1202,27 @@ class ProbeScanPopup(ModalView):
                 return
             xs = self.ids.t466_x.text.strip()
             ys = self.ids.t466_y.text.strip()
-            zs = self.ids.t466_z.text.strip()
             side = self._m466_side
             x_cmd, y_cmd = xs, ys
             if side in ("Left", "Right"):
                 y_cmd = ""
-                if not xs and not zs:
-                    self._toast(tr._("Enter X (and/or Z) for this probe direction."))
+                if not xs:
+                    self._toast(tr._("Enter X travel for this probe direction."))
                     return
-                if xs:
-                    x_cmd = _distance_for_command(xs, negate=(side == "Right"))
+                x_cmd = _distance_for_command(xs, negate=(side == "Right"))
             elif side in ("Bottom", "Top"):
                 x_cmd = ""
-                if not ys and not zs:
-                    self._toast(tr._("Enter Y (and/or Z) for this probe direction."))
+                if not ys:
+                    self._toast(tr._("Enter Y travel for this probe direction."))
                     return
-                if ys:
-                    y_cmd = _distance_for_command(ys, negate=(side == "Top"))
+                y_cmd = _distance_for_command(ys, negate=(side == "Top"))
             else:
                 self._toast_need_probing_option()
                 return
             opts = self._read_common_probe_opts("466")
             e_o = _parse_optional_float_text(self.ids.t466_e)
             self._run_gcode_program(
-                build_m466(x=x_cmd, y=y_cmd, z=zs, e=e_o or "", **opts)
+                build_m466(x=x_cmd, y=y_cmd, e=e_o or "", **opts)
             )
         except Exception as e:
             self._toast(str(e))
