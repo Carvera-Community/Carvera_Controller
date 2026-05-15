@@ -1200,22 +1200,19 @@ class ProbeScanPopup(ModalView):
             if not self._m466_side:
                 self._toast_need_probing_option()
                 return
-            xs = self.ids.t466_x.text.strip()
-            ys = self.ids.t466_y.text.strip()
+            travel = self.ids.t466_xy.text.strip().replace(",", ".")
             side = self._m466_side
-            x_cmd, y_cmd = xs, ys
+            x_cmd, y_cmd = "", ""
             if side in ("Left", "Right"):
-                y_cmd = ""
-                if not xs:
+                if not travel:
                     self._toast(tr._("Enter X travel for this probe direction."))
                     return
-                x_cmd = _distance_for_command(xs, negate=(side == "Right"))
+                x_cmd = _distance_for_command(travel, negate=(side == "Right"))
             elif side in ("Bottom", "Top"):
-                x_cmd = ""
-                if not ys:
+                if not travel:
                     self._toast(tr._("Enter Y travel for this probe direction."))
                     return
-                y_cmd = _distance_for_command(ys, negate=(side == "Top"))
+                y_cmd = _distance_for_command(travel, negate=(side == "Top"))
             else:
                 self._toast_need_probing_option()
                 return
@@ -1345,21 +1342,20 @@ class ProbeScanPopup(ModalView):
             if not self._angle_variant:
                 self._toast_need_probing_option()
                 return
-            xs = self.ids.t465_x.text.strip()
-            ys = self.ids.t465_y.text.strip()
+            travel = self.ids.t465_xy.text.strip().replace(",", ".")
             v = self._angle_variant
             if v in ("above", "below"):
-                if not xs:
+                if not travel:
                     self._toast(tr._("Enter X distance for M465."))
                     return
-                xs_cmd = _signed_distance_for_command(xs)
+                xs_cmd = _signed_distance_for_command(travel)
                 ys_cmd = ""
             elif v in ("left", "right"):
-                if not ys:
+                if not travel:
                     self._toast(tr._("Enter Y distance for M465."))
                     return
                 xs_cmd = ""
-                ys_cmd = _signed_distance_for_command(ys)
+                ys_cmd = _signed_distance_for_command(travel)
             else:
                 self._toast_need_probing_option()
                 return
