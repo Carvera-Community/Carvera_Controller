@@ -64,6 +64,10 @@ from .session import CoordSys, FeatureKind, ProbeScanFeature, ProbeScanSession
 if "ProbeScanPreviewSketch" not in Factory.classes:
     Factory.register("ProbeScanPreviewSketch", cls=ProbeScanPreviewSketch)
 
+# Feature list row highlight (canvas.before Color on each row BoxLayout).
+_FEATURE_ROW_FOCUS_RGBA_ON = (0.18, 0.38, 0.58, 0.22)
+_FEATURE_ROW_FOCUS_RGBA_OFF = (0.18, 0.38, 0.58, 0.0)
+
 
 class ProbeScanIconToggle(ToggleButton):
 
@@ -218,7 +222,7 @@ class ProbeScanPopup(ModalView):
         try:
             self.ids.sketch.on_feature_tap = self._on_sketch_feature_tap
         except Exception:
-            logger.debug("sketch tap hook", exc_info=True)
+            logger.debug("Could not bind sketch tap handler", exc_info=True)
 
     def _on_sketch_feature_tap(self, feat_id: str) -> None:
         """Called by ProbeScanPreviewSketch when the user taps a feature."""
@@ -226,7 +230,8 @@ class ProbeScanPopup(ModalView):
             self._preview_focus_id = None
         else:
             self._preview_focus_id = feat_id
-        self._refresh_feature_ui()
+        self._sync_sketch_preview()
+        self._apply_feature_row_focus_visual()
         Clock.schedule_once(lambda _dt: self._scroll_to_feature(feat_id), 0.05)
 
     def _scroll_to_feature(self, feat_id: str) -> None:
@@ -264,7 +269,35 @@ class ProbeScanPopup(ModalView):
             target_sy = max(0.0, min(1.0, target_bottom / scroll_range))
             sv.scroll_y = target_sy
         except Exception:
-            logger.debug("scroll to feature", exc_info=True)
+            logger.debug("Could not scroll feature list", exc_info=True)
+
+    def _sync_sketch_preview(self) -> None:
+        """Push session/focus/selection into the XY preview sketch."""
+        try:
+            self.ids.sketch.set_features(
+                self.session.features,
+                focus_id=self._preview_focus_id,
+                selection_ids=list(self._selection_order),
+            )
+        except Exception:
+            logger.debug("Could not update sketch preview", exc_info=True)
+
+    def _apply_feature_row_focus_visual(self) -> None:
+        """Toggle row highlight without rebuilding the feature list."""
+        fid_focus = self._preview_focus_id
+        try:
+            for row in self.ids.feature_rows.children:
+                fc = getattr(row, "_probe_focus_color", None)
+                fid = getattr(row, "_probe_feat_id", None)
+                if fc is None or fid is None:
+                    continue
+                fc.rgba = (
+                    _FEATURE_ROW_FOCUS_RGBA_ON
+                    if fid == fid_focus
+                    else _FEATURE_ROW_FOCUS_RGBA_OFF
+                )
+        except Exception:
+            logger.debug("Could not toggle row focus", exc_info=True)
 
     def open_jog_popup(self, *_args):
         jog = getattr(self, "_jog_popup", None)
@@ -338,7 +371,7 @@ class ProbeScanPopup(ModalView):
                 f"X  {wx:+.4f}   Y  {wy:+.4f}   Z  {wz:+.4f}"
             )
         except Exception:
-            logger.debug("wcs tick", exc_info=True)
+            logger.debug("Could not refresh live position label", exc_info=True)
 
     def _sync_manual_wcs_fields_from_machine(self, *_args):
         try:
@@ -349,7 +382,7 @@ class ProbeScanPopup(ModalView):
             self.ids.t_manual_wy.text = _fmt_wcs_manual_field(wy)
             self.ids.t_manual_wz.text = _fmt_wcs_manual_field(wz)
         except Exception:
-            logger.debug("manual wcs sync", exc_info=True)
+            logger.debug("Could not sync manual WCS fields", exc_info=True)
 
     def on_manual_sync_from_machine(self, *_args):
         self._sync_manual_wcs_fields_from_machine()
@@ -672,7 +705,8 @@ class ProbeScanPopup(ModalView):
             self._preview_focus_id = None
         else:
             self._preview_focus_id = feat_id
-        self._refresh_feature_ui()
+        self._sync_sketch_preview()
+        self._apply_feature_row_focus_visual()
         return True
 
     def _refresh_feature_ui(self):
@@ -695,16 +729,23 @@ class ProbeScanPopup(ModalView):
                     spacing=dp(4),
                     padding=[0, 0, dp(4), 0],
                 )
-                if feat.id == self._preview_focus_id:
-                    with row.canvas.before:
-                        Color(0.18, 0.38, 0.58, 0.22)
-                        rect = Rectangle(pos=row.pos, size=row.size)
+                with row.canvas.before:
+                    fc = Color(
+                        *(
+                            _FEATURE_ROW_FOCUS_RGBA_ON
+                            if feat.id == self._preview_focus_id
+                            else _FEATURE_ROW_FOCUS_RGBA_OFF
+                        )
+                    )
+                    rect = Rectangle(pos=row.pos, size=row.size)
 
-                    def _upd_focus_bg(*_a, r=rect, rw=row):
-                        r.pos = rw.pos
-                        r.size = rw.size
+                def _upd_focus_bg(*_a, r=rect, rw=row):
+                    r.pos = rw.pos
+                    r.size = rw.size
 
-                    row.bind(pos=_upd_focus_bg, size=_upd_focus_bg)
+                row.bind(pos=_upd_focus_bg, size=_upd_focus_bg)
+                row._probe_feat_id = feat.id
+                row._probe_focus_color = fc
                 cb_col = BoxLayout(
                     orientation="horizontal",
                     size_hint_x=None,
@@ -763,17 +804,13 @@ class ProbeScanPopup(ModalView):
                 )
                 Clock.schedule_once(lambda dt, lw=lbl: _sync_feat_label_textsize(lw), 0)
                 fl.add_widget(row)
-            self.ids.sketch.set_features(
-                self.session.features,
-                focus_id=self._preview_focus_id,
-                selection_ids=list(self._selection_order),
-            )
+            self._sync_sketch_preview()
             empty = len(self.session.features) == 0
             ph = self.ids.lbl_sketch_placeholder
             ph.opacity = 1.0 if empty else 0.0
             ph.height = ph.texture_size[1] if empty else 0 # Collapse height if empty to avoid touch interferences
-        except Exception as e:
-            logger.debug("refresh feature ui: %s", e)
+        except Exception:
+            logger.debug("Could not refresh feature UI", exc_info=True)
 
     def _on_row_checkbox(self, fid: str, _widget, active: bool):
         if active:
@@ -784,14 +821,7 @@ class ProbeScanPopup(ModalView):
                 x for x in self._selection_order if x != fid
             ]
         self._recompute_construct_buttons()
-        try:
-            self.ids.sketch.set_features(
-                self.session.features,
-                focus_id=self._preview_focus_id,
-                selection_ids=list(self._selection_order),
-            )
-        except Exception:
-            logger.debug("sketch sync after checkbox", exc_info=True)
+        self._sync_sketch_preview()
 
     def on_clear_construct_selection(self):
         self._selection_order.clear()
