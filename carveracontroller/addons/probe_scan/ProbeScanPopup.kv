@@ -1022,7 +1022,7 @@
 
 <JogProbeScanPopup>:
     size_hint: None, None
-    width: min(dp(968), Window.width - dp(48))
+    width: min(dp(1000), Window.width - dp(48))
     auto_dismiss: True
     overlay_color: 0, 0, 0, 0.4
     background: ''
@@ -1072,18 +1072,18 @@
                         size: self.size
 
         BoxLayout:
-            spacing: dp(0)
+            spacing: dp(8)
             size_hint_y: None
             height: dp(226)
-            GridLayout:
-                cols: 5
-                rows: 1
-                size_hint: 1, 1
-                spacing: dp(0)
-                padding: dp(0)
+            orientation: 'horizontal'
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_x: 1
+                spacing: dp(12)
                 BoxLayout:
                     orientation: 'horizontal'
                     padding: dp(0)
+                    size_hint_x: 1
                     canvas.before:
                         Color:
                             rgba: (40 / 255, 40 / 255, 40 / 255, 1)
@@ -1142,14 +1142,10 @@
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                 BoxLayout:
-                    size_hint_x: 0.1
                     disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
                     padding: dp(0)
                     orientation: 'horizontal'
-                BoxLayout:
-                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
-                    padding: dp(0)
-                    orientation: 'horizontal'
+                    size_hint_x: 1
                     canvas.before:
                         Color:
                             rgba: (50 / 255, 50 / 255, 50 / 255, 1)
@@ -1205,69 +1201,65 @@
                                 height: 46
                                 on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
                                 on_release: app.root.controller.stopContinuousJog()
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: None
+                width: dp(292)
+                padding: dp(4)
                 BoxLayout:
-                    size_hint_x: 0.1
-                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
-                    padding: dp(0)
-                    orientation: 'horizontal'
-                BoxLayout:
-                    orientation: 'vertical'
                     padding: dp(4)
-                    size_hint: 1, 1
-                    BoxLayout:
-                        padding: dp(4)
-                        canvas.before:
-                            Color:
-                                rgba: (50 / 255, 50 / 255, 50 / 255, 1)
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12),]
-                        GridLayout:
-                            cols: 2
-                            rows: 2
-                            spacing: dp(4)
-                            GridBoxLayout:
-                                Button:
-                                    text: app.jog_speed_text
-                                    id: jog_speed_btn_scan
-                                    center: 0.5, 0.5
-                                    height: dp(52)
-                                    text_size: self.width - dp(12), None
-                                    valign: 'middle'
-                                    halign: 'center'
-                                    on_release: app.root.jog_speed_drop_down.open(self)
-                            GridBoxLayout:
-                                Button:
-                                    id: jog_mode_btn_scan
-                                    disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
-                                    text: app.jog_mode_text
-                                    height: dp(52)
-                                    text_size: self.width - dp(12), None
-                                    valign: 'middle'
-                                    halign: 'center'
-                                    on_release: app.root.toggle_jog_mode()
-                            GridBoxLayout:
-                                ToggleButton:
-                                    id: kb_jog_btn_scan
-                                    text: tr._('Keyboard Jogging')
-                                    height: dp(52)
-                                    text_size: self.width - dp(12), None
-                                    valign: 'middle'
-                                    halign: 'center'
-                                    state: app.jog_keyboard_enable
-                                    on_release: app.root.toggle_keyboard_jog_control()
-                            GridBoxLayout:
-                                ToggleButton:
-                                    id: pendant_jog_btn_scan
-                                    text: app.jog_pendant_text
-                                    state: app.jog_pendant_enable
-                                    disabled: app.jog_pendant_text == tr._('No Pendant')
-                                    height: dp(52)
-                                    text_size: self.width - dp(12), None
-                                    valign: 'middle'
-                                    halign: 'center'
-                                    on_release: app.root.toggle_pendant_jog_control()
+                    canvas.before:
+                        Color:
+                            rgba: (50 / 255, 50 / 255, 50 / 255, 1)
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [dp(12),]
+                    GridLayout:
+                        cols: 2
+                        rows: 2
+                        spacing: dp(4)
+                        GridBoxLayout:
+                            Button:
+                                text: app.jog_speed_text
+                                id: jog_speed_btn_scan
+                                center: 0.5, 0.5
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                on_release: app.root.jog_speed_drop_down.open(self)
+                        GridBoxLayout:
+                            Button:
+                                id: jog_mode_btn_scan
+                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
+                                text: app.jog_mode_text
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                on_release: app.root.toggle_jog_mode()
+                        GridBoxLayout:
+                            ToggleButton:
+                                id: kb_jog_btn_scan
+                                text: tr._('Keyboard Jogging')
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                state: app.jog_keyboard_enable
+                                on_release: app.root.toggle_keyboard_jog_control()
+                        GridBoxLayout:
+                            ToggleButton:
+                                id: pendant_jog_btn_scan
+                                text: app.jog_pendant_text
+                                state: app.jog_pendant_enable
+                                disabled: app.jog_pendant_text == tr._('No Pendant')
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                on_release: app.root.toggle_pendant_jog_control()
         Widget:
             size_hint_y: None
             height: dp(12)

@@ -5806,11 +5806,15 @@ class Makera(RelativeLayout):
 
     def restore_keyboard_jog_control(self):
         prev = getattr(self, '_pre_probing_keyboard_jog', None)
+        clear_name = '_pre_probing_keyboard_jog'
+        if prev is None:
+            prev = getattr(self, '_pre_modal_keyboard_jog', None)
+            clear_name = '_pre_modal_keyboard_jog'
         if prev is None:
             return
         if self.keyboard_jog_control != prev:
             self.toggle_keyboard_jog_control()
-        self._pre_probing_keyboard_jog = None
+        setattr(self, clear_name, None)
 
     def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()

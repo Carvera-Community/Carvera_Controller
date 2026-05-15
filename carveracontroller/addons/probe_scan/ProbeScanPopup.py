@@ -212,6 +212,7 @@ class ProbeScanPopup(ModalView):
         self._m463_quadrant: str | None = None
         self._m464_quadrant: str | None = None
         self._jog_popup = None
+        self._keyboard_jog_while_jog_modal_open = False
         self._probe_anim_event = None
         self._probe_timeout_event = None
         self._probe_anim_frame: int = 0
@@ -303,8 +304,23 @@ class ProbeScanPopup(ModalView):
         jog = getattr(self, "_jog_popup", None)
         if jog is None:
             jog = Factory.JogProbeScanPopup()
+            jog.bind(on_open=self._on_jog_modal_open)
+            jog.bind(on_dismiss=self._on_jog_modal_dismiss)
             self._jog_popup = jog
         jog.open()
+
+    def _on_jog_modal_open(self, *_args):
+        Clock.schedule_once(self._restore_keyboard_jog_if_wanted_for_jog_modal, 0)
+
+    def _restore_keyboard_jog_if_wanted_for_jog_modal(self, _dt=None):
+        root = App.get_running_app().root
+        if self._keyboard_jog_while_jog_modal_open and not root.keyboard_jog_control:
+            root.toggle_keyboard_jog_control()
+
+    def _on_jog_modal_dismiss(self, *_args):
+        root = App.get_running_app().root
+        self._keyboard_jog_while_jog_modal_open = bool(root.keyboard_jog_control)
+        root.toggle_keyboard_jog_control(True)
 
     def _dismiss_jog_popup(self):
         jog = getattr(self, "_jog_popup", None)
