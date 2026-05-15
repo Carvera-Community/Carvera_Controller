@@ -4,6 +4,7 @@
 #:import tr carveracontroller.__main__.tr
 #:include addons/tooltips/Tooltips.kv
 #:include addons/probing/ProbingPopup.kv
+#:include addons/probe_scan/ProbeScanPopup.kv
 
 <Label>:
     font_name: 'ARIALUNI'
@@ -1115,6 +1116,18 @@
         on_release:
             root.select('')
             app.root.open_probing_popup()
+    IconButton:
+        icon: ''
+        text: 'P'
+        icon_size: 0
+        small_icon: True
+        size_hint_y: None
+        disabled: app.state != 'Idle' or not app.is_community_firmware
+        height: '50dp'
+        tooltip_txt: tr._('Probe scan')
+        on_release:
+            root.select('')
+            app.root.open_probe_scan_popup()
     IconButton:
         icon: 'data/open_iconic_UI/oi--question-mark.png'
         icon_size: 24
@@ -3844,7 +3857,15 @@
                                                 on_release: app.root.controller.setExternalControl(100 if self.state=="down" else 0)
 
                                         GridBoxLayout:
-                                        # empty spot
+                                            Spinner:
+                                                center: 0.5, 0.5
+                                                height: '35dp'
+                                                disabled: not app.is_community_firmware or app.state != 'Idle'
+                                                text: tr._('Tools...')
+                                                values: [tr._('Probe scan...')]
+                                                on_text:
+                                                    if self.text == tr._('Probe scan...'): app.root.open_probe_scan_popup()
+                                                    if self.text != tr._('Tools...'): self.text = tr._('Tools...')
 
                             Widget:
                                 size_hint_y: 0.1

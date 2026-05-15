@@ -1,0 +1,1270 @@
+#:import tr carveracontroller.__main__.tr
+#:import digitize_v carveracontroller.Utils.digitize_v
+#:import Window kivy.core.window.Window
+
+
+<ProbeScanIconToggle>:
+    background_color: 0, 0, 0, 0
+    group: ''
+    canvas.before:
+        Color:
+            rgba: (88/255, 88/255, 88/255, 1) if self.state == 'normal' else (50/255, 164/255, 206/255, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(3),]
+    Image:
+        source: root.image
+        size: self.parent.size
+        fit_mode: 'scale-down'
+        pos: self.parent.pos
+
+
+<ProbeScanFieldLabel@Label>:
+    font_size: dp(15)
+    color: 0.88, 0.88, 0.92, 1
+    halign: 'center'
+    valign: 'middle'
+    text_size: self.size
+
+<ProbeScanFieldInput@TextInput>:
+    multiline: False
+    font_size: dp(15)
+    size_hint_y: None
+    height: dp(40)
+    halign: 'right'
+    padding: [dp(10), dp(8), dp(10), dp(8)]
+    input_filter: 'float'
+
+
+<ProbeScanFileSheet@BoxLayout>:
+    orientation: 'vertical'
+    padding: dp(8)
+    spacing: dp(8)
+    Label:
+        text: tr._('Choose folder and file name')
+        size_hint_y: None
+        height: dp(22)
+        font_size: dp(11)
+        text_size: self.width, None
+        halign: 'left'
+        color: 0.78, 0.79, 0.82, 1
+    FileChooserListView:
+        id: fc
+        size_hint_y: 0.6
+    Label:
+        text: tr._('File name')
+        size_hint_y: None
+        height: dp(18)
+        font_size: dp(10)
+        halign: 'left'
+        text_size: self.width, None
+    TextInput:
+        id: ti_filename
+        multiline: False
+        size_hint_y: None
+        height: dp(36)
+    BoxLayout:
+        size_hint_y: None
+        height: dp(44)
+        spacing: dp(8)
+        Button:
+            id: btn_cancel
+            text: tr._('Cancel')
+        Button:
+            id: btn_save
+            text: tr._('Save')
+
+
+<ProbeScanPopup>:
+    title: tr._('Probe scan')
+    size_hint: 0.9, 0.88
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    auto_dismiss: False
+    overlay_color: 0, 0, 0, 0.35
+
+    RelativeLayout:
+        size_hint: 1, 1
+        BoxLayout:
+            id: probe_scan_body
+            orientation: 'vertical'
+            padding: dp(8)
+            spacing: dp(6)
+            size_hint: 1, 1
+            pos_hint: {'x': 0, 'y': 0}
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: 1
+                spacing: dp(8)
+
+                TabbedPanel:
+                    size_hint_x: 0.55
+                    do_default_tab: False
+                    tab_width: dp(118)
+                    bar_width: dp(8)
+                    bar_color: 0.52, 0.68, 0.85, 1
+                    padding: dp(6), dp(8), dp(6), dp(10)
+                    disabled: root.is_probing
+
+                    TabbedPanelItem:
+                        text: tr._('Manual')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(10)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    text: tr._("[b]Manual (no motion)[/b]\n[color=78797f]Live position is shown below. Load it into the fields or type your own, then add a point or circle.[/color]")
+                                BoxLayout:
+                                    orientation: 'horizontal'
+                                    size_hint_y: None
+                                    height: dp(72)
+                                    spacing: dp(8)
+                                    Widget:
+                                        size_hint_x: 1
+                                    Label:
+                                        id: lbl_wcs_live
+                                        size_hint_x: None
+                                        size_hint_y: 1
+                                        width: dp(292)
+                                        font_size: dp(13)
+                                        halign: 'right'
+                                        valign: 'middle'
+                                        text_size: self.width, self.height
+                                        markup: True
+                                        color: 0.65, 0.92, 0.98, 1
+                                        text: ''
+                                    AnchorLayout:
+                                        size_hint_x: None
+                                        width: dp(136)
+                                        anchor_y: 'center'
+                                        Button:
+                                            size_hint: None, None
+                                            width: dp(136)
+                                            height: dp(48)
+                                            text: tr._('Load coordinates')
+                                            font_size: dp(12)
+                                            on_release: root.on_manual_sync_from_machine()
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(0), dp(4), dp(0), dp(2)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X mm')
+                                    ProbeScanFieldInput:
+                                        id: t_manual_wx
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Y mm')
+                                    ProbeScanFieldInput:
+                                        id: t_manual_wy
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Z mm')
+                                    ProbeScanFieldInput:
+                                        id: t_manual_wz
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Radius mm')
+                                    ProbeScanFieldInput:
+                                        id: t_manual_radius
+
+                                Button:
+                                    text: tr._('Add point')
+                                    size_hint_y: None
+                                    height: dp(48)
+                                    on_release: root.on_add_current_position()
+
+                                Button:
+                                    text: tr._('Add circle')
+                                    size_hint_y: None
+                                    height: dp(48)
+                                    on_release: root.on_add_manual_circle()
+
+                    TabbedPanelItem:
+                        text: tr._('Touch')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(8)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    text: tr._("[b]Single-axis probe[/b]\n[color=78797f][b]M466[/b][/color]")
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(12)
+                                    padding: dp(8)
+                                    row_default_height: dp(146)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m466'
+                                        image: 'addons/probing/data/icons_1024x768/single_axis/X+.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_probe_side_hint('Left')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m466'
+                                        image: 'addons/probing/data/icons_1024x768/single_axis/X-.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_probe_side_hint('Right')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m466'
+                                        image: 'addons/probing/data/icons_1024x768/single_axis/Y+.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_probe_side_hint('Bottom')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m466'
+                                        image: 'addons/probing/data/icons_1024x768/single_axis/Y-.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_probe_side_hint('Top')
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(8)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X / Y (mm)')
+                                    ProbeScanFieldInput:
+                                        id: t466_xy
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Probe F')
+                                    ProbeScanFieldInput:
+                                        id: t466_f
+                                        text: '300'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Rapid K')
+                                    ProbeScanFieldInput:
+                                        id: t466_k
+                                        text: '800'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Depth E')
+                                    ProbeScanFieldInput:
+                                        id: t466_e
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Height H')
+                                    ProbeScanFieldInput:
+                                        id: t466_h
+                                        hint_text: '0'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance C')
+                                    ProbeScanFieldInput:
+                                        id: t466_c
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Repeat L')
+                                    ProbeScanFieldInput:
+                                        id: t466_l
+                                        hint_text: '1'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Retract R')
+                                    ProbeScanFieldInput:
+                                        id: t466_r
+                                        hint_text: '1.5'
+
+                                Button:
+                                    text: tr._('Run probe and capture')
+                                    size_hint_y: None
+                                    height: dp(46)
+                                    on_release: root.on_probe_axis466()
+
+                    TabbedPanelItem:
+                        text: tr._('Bore')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(8)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text: tr._("[b]Circular pocket / bore center[/b]\n[color=78797f][b]M461[/b][/color]")
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(14)
+                                    padding: dp(8)
+                                    row_default_height: dp(174)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m461'
+                                        image: 'addons/probing/data/icons_1024x768/inside_center/inside_center_rectangular_pocket_x.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_bore_preset('CenterX')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m461'
+                                        image: 'addons/probing/data/icons_1024x768/inside_center/inside_center_rectangular_pocket_y.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_bore_preset('CenterY')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m461'
+                                        image: 'addons/probing/data/icons_1024x768/inside_center/inside_center_circular_bore.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_bore_preset('CenterBore')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m461'
+                                        image: 'addons/probing/data/icons_1024x768/inside_center/inside_center_rectangular_pocket.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_bore_preset('CenterPocket')
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(8)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X mm')
+                                    ProbeScanFieldInput:
+                                        id: t461_x
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Y mm')
+                                    ProbeScanFieldInput:
+                                        id: t461_y
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Probe F')
+                                    ProbeScanFieldInput:
+                                        id: t461_f
+                                        text: '300'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Rapid K')
+                                    ProbeScanFieldInput:
+                                        id: t461_k
+                                        text: '800'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Depth E')
+                                    ProbeScanFieldInput:
+                                        id: t461_e
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Height H')
+                                    ProbeScanFieldInput:
+                                        id: t461_h
+                                        hint_text: '0'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance C')
+                                    ProbeScanFieldInput:
+                                        id: t461_c
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Repeat L')
+                                    ProbeScanFieldInput:
+                                        id: t461_l
+                                        hint_text: '1'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Retract R')
+                                    ProbeScanFieldInput:
+                                        id: t461_r
+                                        hint_text: '1.5'
+
+                                Button:
+                                    text: tr._('Run bore probe and capture')
+                                    size_hint_y: None
+                                    height: dp(46)
+                                    on_release: root.on_bore461()
+
+                    TabbedPanelItem:
+                        text: tr._('Boss')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(8)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text: tr._("[b]Outside boss / block center[/b]\n[color=78797f][b]M462[/b][/color]")
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(14)
+                                    padding: dp(8)
+                                    row_default_height: dp(174)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m462'
+                                        image: 'addons/probing/data/icons_1024x768/outside_center/outside_center_rect_boss_x.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_boss_preset('CenterX')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m462'
+                                        image: 'addons/probing/data/icons_1024x768/outside_center/outside_center_rect_boss_y.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_boss_preset('CenterY')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m462'
+                                        image: 'addons/probing/data/icons_1024x768/outside_center/outside_center_circular_boss.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_boss_preset('CenterBoss')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m462'
+                                        image: 'addons/probing/data/icons_1024x768/outside_center/outside_center_rect_boss.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_boss_preset('CenterBlock')
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(8)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X mm')
+                                    ProbeScanFieldInput:
+                                        id: t462_x
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Y mm')
+                                    ProbeScanFieldInput:
+                                        id: t462_y
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Depth E')
+                                    ProbeScanFieldInput:
+                                        id: t462_e
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance J')
+                                    ProbeScanFieldInput:
+                                        id: t462_j
+                                        hint_text: '4'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Height H')
+                                    ProbeScanFieldInput:
+                                        id: t462_h
+                                        hint_text: '0'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance C')
+                                    ProbeScanFieldInput:
+                                        id: t462_c
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Probe F')
+                                    ProbeScanFieldInput:
+                                        id: t462_f
+                                        text: '300'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Rapid K')
+                                    ProbeScanFieldInput:
+                                        id: t462_k
+                                        text: '800'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Repeat L')
+                                    ProbeScanFieldInput:
+                                        id: t462_l
+                                        hint_text: '1'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Retract R')
+                                    ProbeScanFieldInput:
+                                        id: t462_r
+                                        hint_text: '1.5'
+
+                                Button:
+                                    text: tr._('Run boss probe and capture')
+                                    size_hint_y: None
+                                    height: dp(46)
+                                    on_release: root.on_boss462()
+
+                    TabbedPanelItem:
+                        text: tr._('Corner in')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(8)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text: tr._("[b]Inside corner[/b]\n[color=78797f][b]M463[/b][/color]")
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(14)
+                                    padding: dp(8)
+                                    row_default_height: dp(174)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m463'
+                                        image: 'addons/probing/data/icons_1024x768/inside_corner/inX+Y+.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_inside_corner_quick('BottomLeft')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m463'
+                                        image: 'addons/probing/data/icons_1024x768/inside_corner/inX-Y+.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_inside_corner_quick('BottomRight')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m463'
+                                        image: 'addons/probing/data/icons_1024x768/inside_corner/inX+Y-.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_inside_corner_quick('TopLeft')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m463'
+                                        image: 'addons/probing/data/icons_1024x768/inside_corner/inX-Y-.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_inside_corner_quick('TopRight')
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(8)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X mm')
+                                    ProbeScanFieldInput:
+                                        id: t463_x
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Y mm')
+                                    ProbeScanFieldInput:
+                                        id: t463_y
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Depth E')
+                                    ProbeScanFieldInput:
+                                        id: t463_e
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Height H')
+                                    ProbeScanFieldInput:
+                                        id: t463_h
+                                        hint_text: '0'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance C')
+                                    ProbeScanFieldInput:
+                                        id: t463_c
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Probe F')
+                                    ProbeScanFieldInput:
+                                        id: t463_f
+                                        text: '300'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Rapid K')
+                                    ProbeScanFieldInput:
+                                        id: t463_k
+                                        text: '800'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Repeat L')
+                                    ProbeScanFieldInput:
+                                        id: t463_l
+                                        hint_text: '1'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Retract R')
+                                    ProbeScanFieldInput:
+                                        id: t463_r
+                                        hint_text: '1.5'
+
+                                Button:
+                                    text: tr._('Run inside corner probe')
+                                    size_hint_y: None
+                                    height: dp(46)
+                                    on_release: root.on_in463()
+
+                    TabbedPanelItem:
+                        text: tr._('Corner out')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(8)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text: tr._("[b]Outside corner[/b]\n[color=78797f][b]M464[/b][/color]")
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(14)
+                                    padding: dp(8)
+                                    row_default_height: dp(174)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m464'
+                                        image: 'addons/probing/data/icons_1024x768/outside_corner/X+Y+.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_outside_corner_quick('BottomLeft')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m464'
+                                        image: 'addons/probing/data/icons_1024x768/outside_corner/X-Y+.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_outside_corner_quick('BottomRight')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m464'
+                                        image: 'addons/probing/data/icons_1024x768/outside_corner/X+Y-.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_outside_corner_quick('TopLeft')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m464'
+                                        image: 'addons/probing/data/icons_1024x768/outside_corner/X-Y-.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_outside_corner_quick('TopRight')
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(8)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X mm')
+                                    ProbeScanFieldInput:
+                                        id: t464_x
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Y mm')
+                                    ProbeScanFieldInput:
+                                        id: t464_y
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Depth E')
+                                    ProbeScanFieldInput:
+                                        id: t464_e
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Height H')
+                                    ProbeScanFieldInput:
+                                        id: t464_h
+                                        hint_text: '0'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance C')
+                                    ProbeScanFieldInput:
+                                        id: t464_c
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Probe F')
+                                    ProbeScanFieldInput:
+                                        id: t464_f
+                                        text: '300'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Rapid K')
+                                    ProbeScanFieldInput:
+                                        id: t464_k
+                                        text: '800'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Repeat L')
+                                    ProbeScanFieldInput:
+                                        id: t464_l
+                                        hint_text: '1'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Retract R')
+                                    ProbeScanFieldInput:
+                                        id: t464_r
+                                        hint_text: '1.5'
+
+                                Button:
+                                    text: tr._('Run outside corner probe')
+                                    size_hint_y: None
+                                    height: dp(46)
+                                    on_release: root.on_out464()
+
+                    TabbedPanelItem:
+                        text: tr._('Angle')
+                        ScrollView:
+                            bar_width: dp(14)
+                            scroll_type: ['bars', 'content']
+                            padding: dp(16), dp(10), dp(22), dp(14)
+                            GridLayout:
+                                cols: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                spacing: dp(8)
+                                padding: [dp(14), dp(10), dp(16), dp(12)]
+
+                                Label:
+                                    text_size: self.width, None
+                                    markup: True
+                                    halign: 'left'
+                                    color: 0.88, 0.88, 0.92, 1
+                                    size_hint_y: None
+                                    height: self.texture_size[1]
+                                    text: tr._("[b]Axis angle[/b]\n[color=78797f][b]M465[/b][/color]")
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(14)
+                                    padding: dp(8)
+                                    row_default_height: dp(174)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m465'
+                                        image: 'addons/probing/data/icons_1024x768/angle/probe_angle_x_above.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_angle_axis_hint('above')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m465'
+                                        image: 'addons/probing/data/icons_1024x768/angle/probe_angle_x_below.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_angle_axis_hint('below')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m465'
+                                        image: 'addons/probing/data/icons_1024x768/angle/probe_angle_y_left.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_angle_axis_hint('left')
+                                    ProbeScanIconToggle:
+                                        group: 'scan_m465'
+                                        image: 'addons/probing/data/icons_1024x768/angle/probe_angle_y_right.png'
+                                        on_state:
+                                            if self.state == 'down': root.on_angle_axis_hint('right')
+
+                                GridLayout:
+                                    cols: 2
+                                    spacing: dp(4)
+                                    padding: dp(8)
+                                    row_default_height: dp(40)
+                                    row_force_default: True
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    ProbeScanFieldLabel:
+                                        text: tr._('X / Y (mm)')
+                                    ProbeScanFieldInput:
+                                        id: t465_xy
+                                        text: '10'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Depth E')
+                                    ProbeScanFieldInput:
+                                        id: t465_e
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Height H')
+                                    ProbeScanFieldInput:
+                                        id: t465_h
+                                        hint_text: '0'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Clearance C')
+                                    ProbeScanFieldInput:
+                                        id: t465_c
+                                        hint_text: '2'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Probe F')
+                                    ProbeScanFieldInput:
+                                        id: t465_f
+                                        text: '300'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Rapid K')
+                                    ProbeScanFieldInput:
+                                        id: t465_k
+                                        text: '800'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Repeat L')
+                                    ProbeScanFieldInput:
+                                        id: t465_l
+                                        hint_text: '1'
+                                    ProbeScanFieldLabel:
+                                        text: tr._('Retract R')
+                                    ProbeScanFieldInput:
+                                        id: t465_r
+                                        hint_text: '1.5'
+
+                                Button:
+                                    text: tr._('Measure angle and capture')
+                                    size_hint_y: None
+                                    height: dp(46)
+                                    on_release: root.on_angle465()
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint_x: 0.5
+                    spacing: dp(6)
+                    padding: [0, 0, dp(8), 0]
+
+                    Label:
+                        text: tr._('XY preview')
+                        size_hint_y: None
+                        height: dp(24)
+                        font_size: dp(14)
+
+                    FloatLayout:
+                        size_hint_y: 1
+
+                        ProbeScanPreviewSketch:
+                            id: sketch
+                            pos_hint: {'x': 0, 'y': 0}
+                            size_hint: 1, 1
+
+                        Label:
+                            id: lbl_sketch_placeholder
+                            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                            size_hint: 0.86, None
+                            text: tr._('No features captured yet.\nUse the left-hand tabs to probe or add coordinates from Manual.')
+                            color: 0.45, 0.46, 0.52, 0.95
+                            disabled_color: 0.45, 0.46, 0.52, 0.95
+                            disabled: True
+                            font_size: dp(13)
+                            halign: 'center'
+                            valign: 'middle'
+                            text_size: self.width, None
+
+                    Label:
+                        text: tr._('Features')
+                        size_hint_y: None
+                        height: dp(24)
+                        font_size: dp(14)
+
+                    GridLayout:
+                        cols: 4
+                        size_hint_y: None
+                        spacing: dp(4)
+                        height: dp(100)
+                        Button:
+                            text: tr._('Segment')
+                            font_size: dp(13)
+                            disabled: not root.can_make_segment
+                            on_release: root.on_construct_segment()
+                        Button:
+                            text: tr._('Poly open')
+                            font_size: dp(13)
+                            disabled: not root.can_make_polyline_open
+                            on_release: root.on_construct_polyline_open()
+                        Button:
+                            text: tr._('Poly closed')
+                            font_size: dp(13)
+                            disabled: not root.can_make_polyline_closed
+                            on_release: root.on_construct_polyline_closed()
+                        Button:
+                            text: tr._('Circumcircle')
+                            font_size: dp(13)
+                            disabled: not root.can_make_circumcircle
+                            on_release: root.on_construct_derived_circle()
+                        Button:
+                            text: tr._('Intersect')
+                            font_size: dp(13)
+                            disabled: not root.can_make_intersection
+                            on_release: root.on_construct_intersection()
+                        Button:
+                            text: tr._('Midpoint')
+                            font_size: dp(13)
+                            disabled: not root.can_make_midpoint
+                            on_release: root.on_construct_midpoint()
+                        Button:
+                            text: tr._('Tangent')
+                            font_size: dp(13)
+                            disabled: not root.can_make_tangent
+                            on_release: root.on_construct_tangent()
+                        Button:
+                            text: tr._('Clear sel.')
+                            font_size: dp(13)
+                            disabled: not root.has_construct_selection
+                            on_release: root.on_clear_construct_selection()
+
+                    ScrollView:
+                        id: feature_rows_scroll
+                        size_hint_y: 1
+                        bar_width: dp(14)
+                        scroll_type: ['bars', 'content']
+                        GridLayout:
+                            id: feature_rows
+                            cols: 1
+                            size_hint_y: None
+                            height: self.minimum_height
+                            spacing: dp(4)
+                            padding: [dp(4), dp(4), dp(20), dp(10)]
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: None
+                height: dp(58)
+                spacing: dp(6)
+                Button:
+                    text: tr._('Load...')
+                    font_size: dp(12)
+                    size_hint_x: 1
+                    on_release: root.on_load_session()
+                Button:
+                    text: tr._('Save as...')
+                    font_size: dp(12)
+                    size_hint_x: 1
+                    on_release: root.open_save_format_dropdown(self)
+                Button:
+                    text: tr._('Copy as...')
+                    font_size: dp(12)
+                    size_hint_x: 1
+                    on_release: root.open_copy_format_dropdown(self)
+                Button:
+                    text: tr._('Reset')
+                    font_size: dp(12)
+                    size_hint_x: 1
+                    on_release: root.on_reset_session()
+                Button:
+                    text: tr._('Jog...')
+                    font_size: dp(12)
+                    size_hint_x: 1
+                    on_release: root.open_jog_popup()
+                Button:
+                    text: tr._('Close')
+                    font_size: dp(12)
+                    size_hint_x: 1
+                    on_release: root.dismiss()
+
+        BoxLayout:
+            id: probing_banner
+            orientation: 'horizontal'
+            size_hint: None, None
+            height: dp(40) if root.is_probing else 0
+            width: (probe_scan_body.width - probe_scan_body.padding[0] - probe_scan_body.padding[2]) if root.is_probing else 0
+            x: probe_scan_body.x + probe_scan_body.padding[0]
+            y: probe_scan_body.y + probe_scan_body.padding[3] + dp(58) + dp(6)
+            opacity: 1 if root.is_probing else 0
+            padding: dp(10), dp(6), dp(10), dp(6)
+            spacing: dp(8)
+            canvas.before:
+                Color:
+                    rgba: 0.12, 0.38, 0.18, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(4), dp(4), dp(4), dp(4)]
+            Label:
+                text: root.probing_status_text
+                color: 0.62, 0.98, 0.68, 1
+                disabled_color: 0.62, 0.98, 0.68, 1
+                font_size: dp(14)
+                bold: True
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.width, self.height
+
+
+<JogProbeScanPopup>:
+    size_hint: None, None
+    width: min(dp(1000), Window.width - dp(48))
+    auto_dismiss: True
+    overlay_color: 0, 0, 0, 0.4
+    background: ''
+    background_color: 0, 0, 0, 0
+    border: [0, 0, 0, 0]
+
+    canvas.before:
+        Color:
+            rgba: (38 / 255, 39 / 255, 42 / 255, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(10), dp(10), dp(10), dp(10)]
+
+    BoxLayout:
+        id: jog_modal_inner
+        orientation: 'vertical'
+        spacing: dp(0)
+        padding: [dp(14), dp(6), dp(14), dp(18)]
+        size_hint: 1, None
+        height: self.minimum_height
+
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: None
+            height: dp(29)
+            spacing: dp(2)
+            Label:
+                text: tr._('Jog')
+                size_hint_y: None
+                height: dp(24)
+                font_size: dp(17)
+                color: 0.95, 0.96, 0.97, 1
+                bold: True
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.width, None
+
+            Widget:
+                size_hint_y: None
+                height: dp(3)
+                canvas:
+                    Color:
+                        rgba: (50 / 255, 167 / 255, 212 / 255, 0.92)
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+
+        BoxLayout:
+            spacing: dp(8)
+            size_hint_y: None
+            height: dp(226)
+            orientation: 'horizontal'
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_x: 1
+                spacing: dp(12)
+                BoxLayout:
+                    orientation: 'horizontal'
+                    padding: dp(0)
+                    size_hint_x: 1
+                    canvas.before:
+                        Color:
+                            rgba: (40 / 255, 40 / 255, 40 / 255, 1)
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [self.height / 2, self.height / 2]
+                    BoxLayout:
+                        disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
+                        padding: dp(0)
+                        canvas.before:
+                            Color:
+                                rgba: (50 / 255, 50 / 255, 50 / 255, 1)
+                            Ellipse:
+                                pos: self.pos
+                                size: self.size
+                        GridLayout:
+                            cols: 3
+                            rows: 3
+                            GridBoxLayout:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'Y-'
+                                    height: 46
+                                    on_press: app.root.controller.jog("Y-{}".format(scan_jog_step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
+                            GridBoxLayout:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'X-'
+                                    height: 46
+                                    on_press: app.root.controller.jog("X-{}".format(scan_jog_step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
+                            GridBoxLayout:
+                                Label:
+                                Spinner:
+                                    id: scan_jog_step_xy
+                                    center: 0.5, 0.5
+                                    size_hint_y: None
+                                    height: dp(39)
+                                    text: '10'
+                                    values: '10', '1', '0.1', '0.01', '0.005'
+                                Label:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'X+'
+                                    height: 46
+                                    on_press: app.root.controller.jog("X{}".format(scan_jog_step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
+                            GridBoxLayout:
+                            GridBoxLayout:
+                                SmallRoundButton:
+                                    text: 'Y+'
+                                    height: 46
+                                    on_press: app.root.controller.jog("Y{}".format(scan_jog_step_xy.text))
+                                    on_release: app.root.controller.stopContinuousJog()
+                            GridBoxLayout:
+                BoxLayout:
+                    disabled: not (app.state == 'Idle' or app.state == 'Run' or app.state == 'Pause') or (app.playing and app.state != 'Pause') or (app.state == 'Run' and app.root.allow_jogging_while_machine_running == '0')
+                    padding: dp(0)
+                    orientation: 'horizontal'
+                    size_hint_x: 1
+                    canvas.before:
+                        Color:
+                            rgba: (50 / 255, 50 / 255, 50 / 255, 1)
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [5, 5]
+                    GridLayout:
+                        size_hint_y: 0.9
+                        cols: 2
+                        rows: 3
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'A+'
+                                height: 46
+                                on_press: app.root.controller.jog("A{}".format(scan_jog_step_a.text))
+                                on_release: app.root.controller.stopContinuousJog()
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'Z+'
+                                height: 46
+                                on_press: app.root.controller.jog("Z{}".format(scan_jog_step_z.text))
+                                on_release: app.root.controller.stopContinuousJog()
+                        GridBoxLayout:
+                            Label:
+                            Spinner:
+                                id: scan_jog_step_a
+                                center: 0.5, 0.5
+                                size_hint_y: None
+                                height: dp(48)
+                                text: '90'
+                                values: '90', '10', '1', '0.1'
+                            Label:
+                        GridBoxLayout:
+                            Label:
+                            Spinner:
+                                id: scan_jog_step_z
+                                center: 0.5, 0.5
+                                size_hint_y: None
+                                height: dp(48)
+                                text: '1'
+                                values: '10', '1', '0.1', '0.01', '0.005'
+                            Label:
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'A-'
+                                height: 46
+                                on_press: app.root.controller.jog("A-{}".format(scan_jog_step_a.text))
+                                on_release: app.root.controller.stopContinuousJog()
+                        GridBoxLayout:
+                            SmallRoundButton:
+                                text: 'Z-'
+                                height: 46
+                                on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
+                                on_release: app.root.controller.stopContinuousJog()
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: None
+                width: dp(292)
+                padding: dp(4)
+                BoxLayout:
+                    padding: dp(4)
+                    canvas.before:
+                        Color:
+                            rgba: (50 / 255, 50 / 255, 50 / 255, 1)
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [dp(12),]
+                    GridLayout:
+                        cols: 2
+                        rows: 2
+                        spacing: dp(4)
+                        GridBoxLayout:
+                            Button:
+                                text: app.jog_speed_text
+                                id: jog_speed_btn_scan
+                                center: 0.5, 0.5
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                on_release: app.root.jog_speed_drop_down.open(self)
+                        GridBoxLayout:
+                            Button:
+                                id: jog_mode_btn_scan
+                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
+                                text: app.jog_mode_text
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                on_release: app.root.toggle_jog_mode()
+                        GridBoxLayout:
+                            ToggleButton:
+                                id: kb_jog_btn_scan
+                                text: tr._('Keyboard Jogging')
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                state: app.jog_keyboard_enable
+                                on_release: app.root.toggle_keyboard_jog_control()
+                        GridBoxLayout:
+                            ToggleButton:
+                                id: pendant_jog_btn_scan
+                                text: app.jog_pendant_text
+                                state: app.jog_pendant_enable
+                                disabled: app.jog_pendant_text == tr._('No Pendant')
+                                height: dp(52)
+                                text_size: self.width - dp(8), None
+                                valign: 'middle'
+                                halign: 'center'
+                                on_release: app.root.toggle_pendant_jog_control()
+        Widget:
+            size_hint_y: None
+            height: dp(12)
+        Button:
+            text: tr._('Close')
+            size_hint_y: None
+            height: dp(58)
+            on_release: root.dismiss()

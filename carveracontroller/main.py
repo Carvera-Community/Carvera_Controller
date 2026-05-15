@@ -83,8 +83,9 @@ def request_android_permissions():
         except Exception as e:
             logger.error(f"Error requesting permissions: {e}")
 
-from .addons.probing.ProbingPopup import ProbingPopup
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.probe_scan.ProbeScanPopup import ProbeScanPopup
+from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.addons.pendant import SettingPendantSelector, SUPPORTED_PENDANTS, OverrideController
 
 import json
@@ -2911,6 +2912,7 @@ class Makera(RelativeLayout):
         self.manual_wifi_popup = ManualWifiPopup()
 
         self.probing_popup = ProbingPopup(self.controller)
+        self.probe_scan_popup = ProbeScanPopup(self.controller)
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
         self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
         self.comports_drop_down = DropDown(auto_width=False, width='250dp')
@@ -3196,6 +3198,22 @@ class Makera(RelativeLayout):
             self._pre_probing_keyboard_jog = self.keyboard_jog_control
             self.toggle_keyboard_jog_control(True)
             self.probing_popup.open()
+        else:
+            self.select_probe_popup = SelectAndCalibrateProbePopup()
+            self.select_probe_popup.open()
+
+    def open_probe_scan_popup(self):
+        app = App.get_running_app()
+        if not app.is_community_firmware:
+            self.show_message_popup(
+                tr._("Probe scan requires the Community firmware."),
+                False,
+            )
+            return
+        if CNC.vars["tool"] == 0 or CNC.vars["tool"] >= 999990:
+            self._pre_modal_keyboard_jog = self.keyboard_jog_control
+            self.toggle_keyboard_jog_control(True)
+            self.probe_scan_popup.open()
         else:
             self.select_probe_popup = SelectAndCalibrateProbePopup()
             self.select_probe_popup.open()
@@ -3736,6 +3754,7 @@ class Makera(RelativeLayout):
                     msg, line = self.controller.log.get_nowait()
                     line = line.rstrip("\n")
                     line = line.rstrip("\r")
+                    dispatch_serial_line(msg, line)
 
                     remote_time = re.search('time = [0-9]+', line)
                     if remote_time != None:
@@ -5777,14 +5796,27 @@ class Makera(RelativeLayout):
 
     def is_jogging_enabled(self):
         app = App.get_running_app()
-        
-        # Allow jogging when machine is running if the setting is enabled
-        if app.state == 'Run' and self.allow_jogging_while_machine_running == '1':
-            return not self._is_popup_open()
-        return \
-            not app.playing and \
-            (app.state in ['Idle', 'Run', 'Pause'] or (app.playing and app.state == 'Pause')) and \
-            not (self._is_popup_open() and not self.probing_popup._is_open)
+        jog_popup = getattr(self.probe_scan_popup, "_jog_popup", None)
+        probe_scan_jog_overlay = (
+            self.probe_scan_popup._is_open
+            and jog_popup is not None
+            and jog_popup._is_open
+        )
+        # Keyboard/pendant jogging is normally blocked whenever a modal popup is open,
+        # except for probing and the probe-scan "Jog" overlay
+        jog_modal_excused = self.probing_popup._is_open or probe_scan_jog_overlay
+
+        if app.state == "Run" and self.allow_jogging_while_machine_running == "1":
+            return (not self._is_popup_open()) or jog_modal_excused
+
+        return (
+            not app.playing
+            and (
+                app.state in ["Idle", "Run", "Pause"]
+                or (app.playing and app.state == "Pause")
+            )
+            and (not self._is_popup_open() or jog_modal_excused)
+        )
 
     def is_pendant_jogging_enabled(self):
         # If the user disabled pendant, respect it.
@@ -5797,11 +5829,15 @@ class Makera(RelativeLayout):
 
     def restore_keyboard_jog_control(self):
         prev = getattr(self, '_pre_probing_keyboard_jog', None)
+        clear_name = '_pre_probing_keyboard_jog'
+        if prev is None:
+            prev = getattr(self, '_pre_modal_keyboard_jog', None)
+            clear_name = '_pre_modal_keyboard_jog'
         if prev is None:
             return
         if self.keyboard_jog_control != prev:
             self.toggle_keyboard_jog_control()
-        self._pre_probing_keyboard_jog = None
+        setattr(self, clear_name, None)
 
     def toggle_keyboard_jog_control(self , disable = False):
         app = App.get_running_app()
@@ -5924,7 +5960,8 @@ class Makera(RelativeLayout):
                            self.upgrade_popup._is_open, self.language_popup._is_open, self.diagnose_popup._is_open,
                            self.confirm_popup._is_open, self.unlock_popup._is_open,
                            self.message_popup._is_open, self.progress_popup._is_open, self.input_popup._is_open,
-                           self.config_popup._is_open, self.probing_popup._is_open]
+                           self.config_popup._is_open, self.probing_popup._is_open,
+                           self.probe_scan_popup._is_open]
 
         return any(popups_to_check)
     
