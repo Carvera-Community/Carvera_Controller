@@ -15,7 +15,7 @@ DEFAULT_PATTERN = PATTERN_RASTER_X
 DEFAULT_MILLING_DIRECTION = MILLING_CLIMB
 
 DEFAULT_CHK_PROBE = False
-DEFAULT_CHK_FINISH = True
+DEFAULT_CHK_FINISH = False
 DEFAULT_CHK_EXT_PORT = False
 
 # Text inputs by widget id
@@ -27,8 +27,8 @@ DEFAULT_TXT: dict[str, str] = {
     "txt_mz": "0",
     "txt_clear": "10",
     "txt_tool_d": "6",
-    "txt_spindle": "12000",
-    "txt_spindle_dwell": "5",
+    "txt_spindle": "13000",
+    "txt_spindle_dwell": "2",
     "txt_rough_f": "1200",
     "txt_rough_plunge": "400",
     "txt_rough_step": "2",
