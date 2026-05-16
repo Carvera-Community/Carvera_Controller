@@ -84,7 +84,7 @@ def compute_probe_grid_xy(p: ProbeGridParams) -> ProbeGridGeometry:
 def probe_grid_z_datum_shift_after_probe_gcode() -> str:
     """
     Run after probe cycle and before facing M6/M491 while still at clearance:
-    - ``#5023`` is current WCS Z
+    - ``#5023`` is current MCS Z
     - ``#105`` is the highest sampled surface Z tracked
     - ``G10 L20 P0`` sets the WCS origin so that highest point becomes Z=0.
     """
