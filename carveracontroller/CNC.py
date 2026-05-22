@@ -147,6 +147,7 @@ class CNC:
         "playedlines": 0,
         "playedpercent": 0,
         "playedseconds": 0,
+        "parsedlines": -1,
 
         "atc_state": 0,
 
