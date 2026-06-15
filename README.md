@@ -90,14 +90,14 @@ Once you have Poetry installed, setting up the development environment is straig
    poetry env activate
    ```
 
-   This step is usually not necessary since `poetry run <command>` automatically uses the virtual environment, but it can be helpful if you want to run multiple commands without prefixing `poetry run`.
+   This step is usually not necessary since `poetry run -- <command>` automatically uses the virtual environment, but it can be helpful if you want to run multiple commands without prefixing `poetry run --`.
 
 ### Running the Project
 
 You can run the Controller software using Poetry's run command without installation. This is handy for iterative development.
 
 ```bash
-poetry run python -m carveracontroller
+poetry run -- python3 -m carveracontroller
 ```
 
 To run the iOS app, you first need to build its dependencies using the Local Packaging instructions below. The build script will open Xcode for you, or you can open the project manually by finding it in `assets/packaging/ios/carveracontroller-ios`.
@@ -109,38 +109,92 @@ The project uses [Ruff](https://docs.astral.sh/ruff/) (linting), [Mypy](https://
 Run all configured hooks with pre-commit:
 
 ```bash
-poetry run pre-commit run --all-files
+poetry run -- pre-commit run --all-files
 ```
 
 To run the same checks automatically on every `git commit`, install the hooks once:
 
 ```bash
-poetry run pre-commit install
+poetry run -- pre-commit install
 ```
 
 Run individual checks with Poetry:
 
 ```bash
-poetry run ruff check carveracontroller tests scripts
-poetry run ruff format --check carveracontroller tests scripts
-poetry run mypy carveracontroller --config-file pyproject.toml
-poetry run mypy carveracontroller/machine --config-file pyproject.toml --strict
-poetry run lint-imports --config pyproject.toml
-poetry run python -m pytest tests -q
+poetry run -- ruff check carveracontroller tests scripts
+poetry run -- ruff format --check carveracontroller tests scripts
+poetry run -- mypy carveracontroller --config-file pyproject.toml
+poetry run -- mypy carveracontroller/machine --config-file pyproject.toml --strict
+poetry run -- lint-imports --config pyproject.toml
+poetry run -- python3 -m pytest tests -q
 ```
 
 To format checked Python files, run:
 
 ```bash
-poetry run ruff format carveracontroller tests scripts
+poetry run -- ruff format carveracontroller tests scripts
 ```
+
+### Visual Regression Tests
+
+The screenshot tests support two reference modes:
+
+* Local mode uses ignored host-local references in `tests/integration/local-reference/`, grouped by test file.
+* Committed mode uses tracked Linux references in `tests/integration/reference/`, grouped by test file.
+
+For fast local UI iteration, create host-local references before changing the UI:
+
+```bash
+poetry run -- python3 scripts/visual_tests.py local-update
+```
+
+Then compare against those local references:
+
+```bash
+poetry run -- python3 scripts/visual_tests.py local-compare
+```
+
+Local comparisons skip any screenshot that is missing from `tests/integration/local-reference/`; they do not fall back
+to committed Linux references. Extra pytest arguments can be passed after the script command, for example:
+
+```bash
+poetry run -- python3 scripts/visual_tests.py local-compare \
+  tests/integration/test_visual_regression.py::TestDisconnectedState::test_control_page
+```
+
+On Linux, update or check the committed references directly:
+
+```bash
+poetry run -- python3 scripts/visual_tests.py reference-update --xvfb
+poetry run -- python3 scripts/visual_tests.py reference-compare --xvfb
+```
+
+Reference compare/update can run isolated screenshot tests in parallel:
+
+```bash
+visual_jobs=$(( $(nproc) - 1 ))
+visual_jobs=$(( visual_jobs > 0 ? visual_jobs : 1 ))
+poetry run -- python3 scripts/visual_tests.py reference-compare --jobs "$visual_jobs" --xvfb
+```
+
+On macOS or Windows, run the same command inside the CI-like dependency container:
+
+```bash
+poetry run -- python3 scripts/run_in_container.py -- \
+  sh -c 'visual_jobs=$(( $(nproc) - 1 )); visual_jobs=$(( visual_jobs > 0 ? visual_jobs : 1 )); poetry run -- python3 scripts/visual_tests.py reference-compare --jobs "$visual_jobs" --xvfb'
+```
+
+The container helper uses Podman if available, then Docker. Override that with `CARVERA_CI_ENGINE=docker` or
+`--engine docker`. The image tag can be overridden with `CARVERA_CI_IMAGE` or `--image`. The helper passes a native
+container platform by default, such as `linux/arm64` on Apple Silicon and `linux/amd64` on typical CI runners;
+override it with `CARVERA_CI_PLATFORM` or `--platform` if your container engine uses a remote architecture.
 
 ### Local Packaging
 
 The application is packaged using PyInstaller (except for iOS). This tool converts Python applications into a standalone executable, so it can be run on systems without requiring management of a installed Python interpreter or dependent libraries. An build helper script is configured with Poetry and can be run with:
 
 ```bash
-poetry run python scripts/build.py --os os --version version [--no-appimage]
+poetry run -- python3 scripts/build.py --os os --version version [--no-appimage]
 ```
 
 The options for `os` are windows, macos, linux, pypi, ios or android. If selecting `linux`, an appimage is built by default unless --no-appimage is specified.
@@ -157,7 +211,7 @@ If you add or modify any UI text strings you need to update the messages.pot fil
 Updating the .pot and .po strings, as well as compiling to .mo can be performed by running the following command:
 
 ``` bash
-poetry run python scripts/update_translations.py
+poetry run -- python3 scripts/update_translations.py
 ```
 
 This utility scans the python and kivvy code for new strings and updates the mapping files. It does not clear/overwrite previous translations.

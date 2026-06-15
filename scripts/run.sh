@@ -5,4 +5,4 @@ cd "$(dirname "$0")"
 cd ..
 
 poetry sync
-poetry run python -m carveracontroller
+poetry run -- python3 -m carveracontroller

@@ -40,7 +40,23 @@ jobs:
           install-args: --only main,lint,test
 
       - name: Run quality hooks
-        run: poetry run pre-commit run --all-files
+        run: poetry run -- pre-commit run --all-files
 
       - name: Run tests
-        run: xvfb-run -a -s "-screen 0 1920x1080x24 -nolisten tcp" poetry run python -m pytest tests
+        run: xvfb-run -a -s "-screen 0 1920x1080x24 -dpi 96 -nolisten tcp" poetry run -- python3 -m pytest tests
+
+      - name: Run visual regression tests
+        run: |
+          visual_jobs=$(( $(nproc) - 1 ))
+          visual_jobs=$(( visual_jobs > 0 ? visual_jobs : 1 ))
+          poetry run -- python3 scripts/visual_tests.py reference-compare --jobs "$visual_jobs" --xvfb
+
+      - name: Upload visual regression output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-output
+          path: |
+            tests/integration/output/**/*.png
+            tests/integration/reference/**/*.png
+          if-no-files-found: ignore

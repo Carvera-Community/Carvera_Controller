@@ -31,13 +31,18 @@ Thank you for your interest in contributing to our project! We welcome contribut
 Run the configured hooks before opening a pull request:
 
 ```bash
-poetry run pre-commit run --all-files
+poetry run -- pre-commit run --all-files
 ```
 
 Run the test suite separately:
 
 ```bash
-poetry run python -m pytest tests -q
+poetry run -- python3 -m pytest tests -q
 ```
 
-For targeted checks, run the individual Poetry commands listed in the [Quality Checks section in the README](README.md#quality-checks).
+For screenshot visual tests, use local ignored references while iterating and committed references for Linux checks.
+See [README visual tests](README.md#visual-regression-tests) for commands, including the CI-like container helper for
+macOS and Windows.
+
+For targeted checks, run the individual Poetry commands listed in the
+[Quality Checks section in the README](README.md#quality-checks).

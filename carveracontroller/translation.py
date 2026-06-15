@@ -78,10 +78,10 @@ tr = TrProxy()
 def init(langname: str | None = None):
     if langname is None or langname not in LANGS:
         try:
-            default_locale = locale.getdefaultlocale()
-            if default_locale is not None and default_locale[0] is not None:
+            locale_name = locale.getlocale()[0]
+            if locale_name is not None:
                 for lang_key in LANGS:
-                    if default_locale[0][0:2] in lang_key:
+                    if locale_name[0:2] in lang_key:
                         langname = lang_key
                         break
         except:
