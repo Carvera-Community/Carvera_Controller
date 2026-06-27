@@ -5077,7 +5077,14 @@ class Makera(RelativeLayout):
                 self.coord_system_data_view.main_text = wcs_description
             else:
                 self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = coord_system_name
+                
+            # ewabob put out angle when WCS rotated    
+            if abs(rotation_angle) > 0.001:
+                self.coord_system_data_view.minr_text = f"R: {rotation_angle:.3f}°"
+            else:
+                self.coord_system_data_view.minr_text = coord_system_name
+           # end of ewabob    
+            
             self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
             
             # Update WCS Settings popup if it's open
