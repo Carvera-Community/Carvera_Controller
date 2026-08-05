@@ -22,7 +22,7 @@ from kivy.uix.togglebutton import ToggleButton
 
 from carveracontroller.addons.probing.operations.ConfigUtils import get_machine_config_hint
 from carveracontroller.CNC import CNC
-from carveracontroller.Controller import Controller
+from carveracontroller.Controller import NOT_CONNECTED, Controller
 from carveracontroller.main import is_ios
 from carveracontroller.serial_listeners import (
     register_serial_listener,
@@ -55,6 +55,7 @@ from ..core.gcode import (
     PROBE_VAR_CENTER_Y,
     PROBE_VAR_CENTER_Z,
     M118ProbeCapture,
+    ProbeProgram,
     build_m461,
     build_m462,
     build_m463,
@@ -62,7 +63,6 @@ from ..core.gcode import (
     build_m465,
     build_m466,
     extract_probe_start_meta,
-    split_execute_lines,
 )
 from ..core.io_export import export_csv, export_dxf, export_json
 from ..core.session import CMMWorkbenchFeature, CMMWorkbenchSession, FeatureKind
@@ -237,9 +237,10 @@ class CMMWorkbenchPopup(ModalView):
             set_status_text=lambda v: setattr(self, "probing_status_text", v),
             on_is_probing_changed=self._on_probe_is_probing_changed,
             controller_abort=self.controller.abortCommand,
-            idle_ok=self._idle_ok,
+            get_state=self._machine_state,
+            execute_line=self._execute_line,
+            on_aborted=self._on_probe_aborted,
         )
-        self._runner.set_on_timeout(self._on_probe_timeout_toast)
 
     def on_kv_post(self, base_widget):
         super().on_kv_post(base_widget)
@@ -384,7 +385,7 @@ class CMMWorkbenchPopup(ModalView):
             self._on_probe_values,
             on_abort=self._on_probe_abort,
         )
-        self._listener_handle = register_serial_listener(self._capture.feed_line)
+        self._listener_handle = register_serial_listener(self._on_serial_line)
         Clock.schedule_interval(self._tick_wcs_live, 0.35)
         Clock.schedule_once(lambda _dt: self._tick_wcs_live(), 0.05)
         Clock.schedule_once(lambda _dt: self._sync_manual_wcs_fields_from_machine(), 0.08)
@@ -443,19 +444,24 @@ class CMMWorkbenchPopup(ModalView):
         except Exception:
             logger.debug("Could not apply probing lock to feature rows", exc_info=True)
 
-    def _on_probe_timeout_toast(self) -> None:
+    def _on_serial_line(self, msg_kind: int, line: str) -> None:
+        # An error line means the machine gave up on the run; without this the UI
+        # would stay locked until the timeout.
+        if msg_kind == Controller.MSG_ERROR and self.is_probing:
+            self._runner.abort(tr._("Probe stopped: machine reported an error."))
+            return
+        if self._capture is not None:
+            self._capture.feed_line(msg_kind, line)
+
+    def _on_probe_aborted(self, reason: str) -> None:
         if self._capture is not None:
             self._capture.reset()
-        self._toast(tr._("Probe timed out."))
+        self._toast(reason)
 
     def _cancel_probe_run(self) -> None:
         if self._capture is not None:
             self._capture.reset()
         self._runner.cancel(abort_machine=True)
-
-    def _start_probing(self) -> None:
-        self._dismiss_jog_popup()
-        self._runner.start()
 
     def _tick_wcs_live(self, *_args):
         try:
@@ -509,31 +515,34 @@ class CMMWorkbenchPopup(ModalView):
     def _toast_need_probing_option(self) -> None:
         self._toast(tr._("Select a probing option before running."))
 
-    def _idle_ok(self) -> bool:
+    def _machine_state(self) -> str:
         app = App.get_running_app()
-        return app.state == "Idle"
+        if app is None:
+            return NOT_CONNECTED
+        return app.state or NOT_CONNECTED
 
-    def _run_gcode_program(self, program: str):
+    def _is_idle(self) -> bool:
+        return self._machine_state() == "Idle"
+
+    def _execute_line(self, line: str) -> None:
+        self.controller.executeCommand(line + "\n")
+
+    def _run_gcode_program(self, program: ProbeProgram):
         if self.is_probing:
             self._toast(tr._("Probe already in progress."))
             return
-        if not self._idle_ok():
+        if not self._is_idle():
             self._toast(tr._("Machine must be Idle to probe."))
             return
-        lines = split_execute_lines(program)
-        if not lines:
-            self._toast(tr._("No G-code to run."))
-            return
         if self._capture is not None:
-            for ln in lines:
+            for ln in program.tail:
                 meta = extract_probe_start_meta(ln)
                 if meta:
                     op, keys = meta
                     self._capture.prime_upstream(op, keys)
                     break
-        self._start_probing()
-        for ln in lines:
-            self.controller.executeCommand(ln + "\n")
+        self._dismiss_jog_popup()
+        self._runner.start(program)
 
     def _on_probe_values(self, op: str, values: dict[str, float], var_keys: list[str]):
         self._runner.pre_complete()

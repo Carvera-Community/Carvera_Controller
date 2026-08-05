@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from carveracontroller.Controller import Controller
 
@@ -29,7 +30,18 @@ VAR_SETS: dict[str, list[str]] = {
 }
 
 
-def build_m118_echo_tail(op: str, result_vars: Sequence[str] | None = None) -> str:
+@dataclass(frozen=True)
+class ProbeProgram:
+    """A probe run split into phases so they can be sent at different times.
+    Sending everything at once can cause timeout issues when using the Makera protocol.
+    """
+
+    setup: list[str]
+    probe: str
+    tail: list[str]
+
+
+def build_m118_echo_tail(op: str, result_vars: Sequence[str] | None = None) -> list[str]:
     """Append START, M118.1 P# for each variable, then END."""
     if result_vars is not None:
         vars_ = [str(v).strip() for v in result_vars if str(v).strip()]
@@ -46,14 +58,7 @@ def build_m118_echo_tail(op: str, result_vars: Sequence[str] | None = None) -> s
     for v in vars_:
         lines.append(f"M118.1 P#{v}")
     lines.append("M118 CMMProbe END")
-    return "\n".join(lines)
-
-
-def merge_probe_program(head: str, op: str, *, result_vars: Sequence[str] | None = None) -> str:
-    """Join head G-code (may be multi-line) with echo tail for ``op``."""
-    head = head.strip()
-    tail = build_m118_echo_tail(op, result_vars=result_vars)
-    return f"{head}\n{tail}\n"
+    return lines
 
 
 def parse_cmm_start_remainder(remainder: str) -> tuple[list[str], int]:
@@ -212,7 +217,7 @@ def _build_probe_cmd(
     l_repeat: str = "",
     r_retract: str = "",
     result_vars: list[str] | None = None,
-) -> str:
+) -> ProbeProgram:
     parts = [op]
     parts.extend(w for w in axis_words if w)
     parts.append(f"F{_fmt(f_probe)}")
@@ -226,8 +231,11 @@ def _build_probe_cmd(
     rw = _word("R", r_retract)
     if rw:
         parts.append(rw)
-    head = "\n".join(["G21", "G90", "G17", "G94", " ".join(parts)])
-    return merge_probe_program(head, op, result_vars=result_vars)
+    return ProbeProgram(
+        setup=["G21", "G90", "G17", "G94"],
+        probe=" ".join(parts),
+        tail=build_m118_echo_tail(op, result_vars=result_vars),
+    )
 
 
 def build_m466(
@@ -242,7 +250,7 @@ def build_m466(
     k_rapid: float = 800.0,
     l_repeat: str = "",
     r_retract: str = "",
-) -> str:
+) -> ProbeProgram:
     xw, yw = _word("X", x), _word("Y", y)
     result_vars: list[str] = []
     if xw:
@@ -273,7 +281,7 @@ def build_m461(
     k_rapid: float = 800.0,
     l_repeat: str = "",
     r_retract: str = "",
-) -> str:
+) -> ProbeProgram:
     xw, yw = _word("X", x), _word("Y", y)
     result_vars: list[str] = []
     if xw:
@@ -305,7 +313,7 @@ def build_m462(
     k_rapid: float = 800.0,
     l_repeat: str = "",
     r_retract: str = "",
-) -> str:
+) -> ProbeProgram:
     xw, yw = _word("X", x), _word("Y", y)
     result_vars: list[str] = []
     if xw:
@@ -336,7 +344,7 @@ def build_m463(
     k_rapid: float = 800.0,
     l_repeat: str = "",
     r_retract: str = "",
-) -> str:
+) -> ProbeProgram:
     return _build_probe_cmd(
         "M463",
         [f"X{_fmt(x)}", f"Y{_fmt(y)}", _word("E", e), _word("H", h), _word("C", c)],
@@ -360,7 +368,7 @@ def build_m464(
     k_rapid: float = 800.0,
     l_repeat: str = "",
     r_retract: str = "",
-) -> str:
+) -> ProbeProgram:
     return _build_probe_cmd(
         "M464",
         [f"X{_fmt(x)}", f"Y{_fmt(y)}", _word("E", e), _word("H", h), _word("C", c)],
@@ -384,7 +392,7 @@ def build_m465(
     k_rapid: float = 800.0,
     l_repeat: str = "",
     r_retract: str = "",
-) -> str:
+) -> ProbeProgram:
     return _build_probe_cmd(
         "M465",
         [_word("X", x), _word("Y", y), _word("E", e), _word("H", h), _word("C", c)],
@@ -394,12 +402,3 @@ def build_m465(
         l_repeat=l_repeat,
         r_retract=r_retract,
     )
-
-
-def split_execute_lines(program: str) -> list[str]:
-    out: list[str] = []
-    for ln in program.replace("\r\n", "\n").split("\n"):
-        s = ln.strip()
-        if s and not s.startswith(";"):
-            out.append(s)
-    return out
