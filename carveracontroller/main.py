@@ -236,6 +236,7 @@ from .Controller import (
     Controller,
 )
 from .GcodeViewer import GCodeViewer
+from .machine.mdi import MDI_MAX_LINE_BYTES, prepare_mdi_lines
 from .ui import widget_helpers
 from .ui.PlayProgressBar import play_percent_from_line, tool_change_markers_to_percents
 from .ui.popups.adv_calibrate import AdvCalibratePopup
@@ -7840,15 +7841,29 @@ class Makera(RelativeLayout):
             if to_send.lower() == "clear":
                 self.manual_rv.data = []
             else:
-                sanitized_to_send = "\n".join([line for line in to_send.split("\n") if line.strip().lower() != "clear"])
-                if sanitized_to_send != to_send:
+                lines, rejected = prepare_mdi_lines(to_send)
+                if any(line.lower() == "clear" for line in lines):
+                    lines = [line for line in lines if line.lower() != "clear"]
                     self.manual_rv.data.append(
                         {
                             "text": "clear command can't be used together with other commands",
                             "color": (250 / 255, 105 / 255, 102 / 255, 1),
                         }
                     )
-                self.controller.executeCommand(sanitized_to_send)
+                for line in rejected:
+                    self.manual_rv.data.append(
+                        {
+                            "text": tr._("Line exceeds the machine's %d byte command buffer, not sent:")
+                            % MDI_MAX_LINE_BYTES
+                            + " %s" % (line if len(line) <= 60 else line[:57] + "..."),
+                            "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                        }
+                    )
+                # One write per line: the firmware assembles/queues commands
+                # line-by-line, and a framed CTRL_MULTI payload is dispatched
+                # as a single console line no matter how many newlines it has.
+                for line in lines:
+                    self.controller.executeCommand(line)
         self.manual_cmd.text = ""
         Clock.schedule_once(self.refocus_cmd)
 

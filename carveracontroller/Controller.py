@@ -104,6 +104,11 @@ class Controller:
         self.usb_stream = USBStream(log_sent_receive)
         self.wifi_stream = WIFIStream(log_sent_receive)
 
+        # Serializes writes to the active stream. The status poller (streamIO
+        # thread) and command senders (UI thread) share one socket/serial port;
+        # without a lock their writes can interleave mid-command.
+        self._send_lock = threading.RLock()
+
         # Reconnection properties
         self.reconnect_enabled = True
         self.reconnect_wait_time = 10
@@ -242,7 +247,8 @@ class Controller:
                     self._notify_usb_reset_blocked()
                     return
                 payload = line.encode() if isinstance(line, str) else line
-                self.stream.send(self.comms.encode_command(payload))
+                with self._send_lock:
+                    self.stream.send(self.comms.encode_command(payload))
                 if self.execCallback:
                     display = line if isinstance(line, str) else line.decode(errors="ignore")
                     # Strip ".lz" suffix for display
@@ -283,7 +289,8 @@ class Controller:
                 if isinstance(char, (bytes, bytearray)):
                     char = char[0]
                 payload.extend(self.comms.encode_realtime(int(char)))
-            self.stream.send(bytes(payload))
+            with self._send_lock:
+                self.stream.send(bytes(payload))
         except Exception:
             self.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
 
@@ -294,7 +301,8 @@ class Controller:
                 if isinstance(line, str) and not line.endswith("\n"):
                     line += "\n"
                 payload = line.encode() if isinstance(line, str) else line
-                self.stream.send(self.comms.encode_file_command(payload))
+                with self._send_lock:
+                    self.stream.send(self.comms.encode_file_command(payload))
                 if self.execCallback:
                     display = line if isinstance(line, str) else line.decode(errors="ignore")
                     if display.endswith(".lz\n"):

@@ -92,7 +92,9 @@ class WIFIStream:
     def send(self, data):
         if self.log_sent_receive:
             logger.debug(f"SENT: {data}")
-        self.socket.send(data)
+        # sendall, not send: a partial socket.send would silently drop the tail
+        # of the command (seen as truncated MDI input on the machine).
+        self.socket.sendall(data)
 
     # ----------------------------------------------------------------------
     def recv(self):
