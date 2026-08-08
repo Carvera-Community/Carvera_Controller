@@ -1488,11 +1488,11 @@ class WCSSettingsPopup(ModalView):
         """Populate the WCS fields with parsed data from machine"""
 
         def update_ui(dt):
-            # wcs_data format: {'G54': [x, y, z, a, rotation], 'G55': [...], ...}
+            # wcs_data format: {'G54': [x, y, z, a, b, rotation], 'G55': [...], ...}
 
             for wcs, values in wcs_data.items():
-                if len(values) >= 5:  # Ensure we have X, Y, Z, A, rotation
-                    x, y, z, a, b, rotation = values
+                if len(values) >= 6:  # Ensure we have X, Y, Z, A, B, rotation
+                    x, y, z, a, b, rotation = values[:6]
 
                     # Store original values for comparison
                     self.original_values[wcs] = {"X": x, "Y": y, "Z": z, "A": a, "B": b, "R": rotation}
@@ -6201,8 +6201,15 @@ class Makera(RelativeLayout):
                 self.coord_system_data_view.main_text = wcs_description
             else:
                 self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = coord_system_name
-            self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
+            # Take turns between the WCS name and the rotation angle (same
+            # pattern as the feed/spindle/tool buttons), so a rotated WCS
+            # shows its angle without ever hiding the WCS name (#637).
+            has_rotation = abs(rotation_angle) > 0.001
+            if has_rotation and self.status_index % 2 == 1:
+                self.coord_system_data_view.minr_text = f"R: {rotation_angle:.3f}°"
+            else:
+                self.coord_system_data_view.minr_text = coord_system_name
+            self.coord_system_data_view.scale = 80.0 if has_rotation else 100.0
 
             # Update WCS Settings popup if it's open
             if hasattr(self, "wcs_settings_popup") and self.wcs_settings_popup.parent:
