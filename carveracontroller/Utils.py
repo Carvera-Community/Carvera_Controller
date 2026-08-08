@@ -8,6 +8,7 @@ __author__ = "Vasilis Vlachoudis"
 __email__ = "vvlachoudis@gmail.com"
 
 import hashlib
+import json
 import os
 import sys
 
@@ -803,6 +804,37 @@ def fill_local_dir_dropdown(dropdown, common_dirs, recent_dirs):
         )
         btn.bind(on_release=lambda _btn, p=recent_dir: dropdown.select(p))
         dropdown.add_widget(btn)
+
+
+def parse_github_release(payload):
+    """Extract (version, notes) from a GitHub "latest release" API payload.
+
+    Accepts the parsed JSON dict (Kivy's UrlRequest decodes application/json
+    responses) or a raw JSON string/bytes. Returns ("", "") when the payload
+    carries no usable tag, so callers can treat it as "no release found".
+    """
+    if isinstance(payload, bytes):
+        try:
+            payload = payload.decode("utf-8")
+        except UnicodeDecodeError:
+            return "", ""
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except ValueError:
+            return "", ""
+    if not isinstance(payload, dict):
+        return "", ""
+    tag = payload.get("tag_name") or payload.get("name") or ""
+    if not isinstance(tag, str):
+        return "", ""
+    version = tag.strip()
+    if version[:1] in ("v", "V"):
+        version = version[1:]
+    notes = payload.get("body")
+    if not isinstance(notes, str):
+        notes = ""
+    return version, notes
 
 
 def digitize_v(version):
