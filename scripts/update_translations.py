@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 
 POT_FILE = "locales/messages.pot"
-LANGUAGES = ["en", "zh-CN"]  # Supported Languages
+LANGUAGES = ["en", "pt-BR", "zh-CN"]  # Supported Languages
 
 BUILD_PATH = Path(__file__).parent.resolve()
 PACKAGE_NAME = "carveracontroller"

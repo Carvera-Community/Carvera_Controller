@@ -1,0 +1,1871 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: carvera-controller-community\n"
+"Report-Msgid-Bugs-To: \n"
+"Language-Team: Portuguese (Brazil)\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: main.py:172
+msgid "Halt Manually"
+msgstr "Parada Manual"
+
+#: main.py:173
+msgid "Home Fail"
+msgstr "Falha na Referência"
+
+#: main.py:174
+msgid "Probe Fail"
+msgstr "Falha na Sonda"
+
+#: main.py:175
+msgid "Calibrate Fail"
+msgstr "Falha na Calibração"
+
+#: main.py:176
+msgid "ATC Home Fail"
+msgstr "Falha na Referência do ATC"
+
+#: main.py:177
+msgid "ATC Invalid Tool Number"
+msgstr "Número de Ferramenta Inválido no ATC"
+
+#: main.py:178
+msgid "ATC Drop Tool Fail"
+msgstr "Falha ao Soltar Ferramenta no ATC"
+
+#: main.py:179
+msgid "ATC Position Occupied"
+msgstr "Posição do ATC Ocupada"
+
+#: main.py:180
+msgid "Spindle Overheated"
+msgstr "Fuso Superaquecido"
+
+#: main.py:181
+msgid "Soft Limit Triggered"
+msgstr "Limite Suave Ativado"
+
+#: main.py:182
+msgid "Cover opened when playing"
+msgstr "Tampa Aberta Durante Operação"
+
+#: main.py:183
+msgid "Wireless probe dead or not set"
+msgstr "Sonda Sem Fio Inoperante ou Não Configurada"
+
+#: main.py:184
+msgid "Emergency stop button pressed"
+msgstr "Botão de Parada de Emergência Pressionado"
+
+#: main.py:186
+msgid "Hard Limit Triggered, reset needed"
+msgstr "Limite Rígido Ativado, Reinicialização Necessária"
+
+#: main.py:187
+msgid "X Axis Motor Error, reset needed"
+msgstr "Erro no Motor do Eixo X, Reinicialização Necessária"
+
+#: main.py:188
+msgid "Y Axis Motor Error, reset needed"
+msgstr "Erro no Motor do Eixo Y, Reinicialização Necessária"
+
+#: main.py:189
+msgid "Z Axis Motor Error, reset needed"
+msgstr "Erro no Motor do Eixo Z, Reinicialização Necessária"
+
+#: main.py:190
+msgid "Spindle Stall, reset needed"
+msgstr "Fuso Parado, Reinicialização Necessária"
+
+#: main.py:191
+msgid "SD card read fail, reset needed"
+msgstr "Falha na Leitura do Cartão SD, Reinicialização Necessária"
+
+#: main.py:193
+msgid "Spindle Alarm, power off/on needed"
+msgstr "Alarme do Fuso, Necessário Desligar/Ligar"
+
+#: main.py:396
+msgid "Please enter values for both block thickness and tool diameter."
+msgstr "Informe os valores da espessura do bloco e do diâmetro da ferramenta."
+
+#: main.py:403
+msgid "Please enter valid numbers for block thickness and tool diameter."
+msgstr ""
+"Informe números válidos para a espessura do bloco e o diâmetro da "
+"ferramenta."
+
+#: main.py:410 main.py:464
+msgid "Please enter values for both X and Y offsets."
+msgstr "Informe os valores dos offsets X e Y."
+
+#: main.py:417 main.py:471
+msgid "Please enter valid numbers for X and Y offsets."
+msgstr "Informe números válidos para os offsets X e Y."
+
+#: main.py:496
+msgid "Please enter values for both probe height and tool diameter."
+msgstr "Informe os valores da altura da sonda e do diâmetro da ferramenta."
+
+#: main.py:503
+msgid "Please enter valid numbers for probe height and tool diameter."
+msgstr ""
+"Informe números válidos para a altura da sonda e o diâmetro da ferramenta."
+
+#: main.py:527
+msgid "Press the Wireless Probe until the green LED blinks quickly."
+msgstr "Pressione a Sonda Sem Fio até o LED verde piscar rapidamente."
+
+#: main.py:528
+msgid "Pairing Success!"
+msgstr "Pareamento Bem-sucedido!"
+
+#: main.py:529
+msgid "Pairing Timeout!"
+msgstr "Tempo Esgotado no Pareamento!"
+
+#: main.py:583
+msgid "Please enter values for height, X points, and Y points."
+msgstr "Informe os valores de altura, pontos em X e pontos em Y."
+
+#: main.py:591
+msgid "Please enter valid numbers for height, X points, and Y points."
+msgstr "Informe números válidos para altura, pontos em X e pontos em Y."
+
+#: main.py:810
+msgid "from Headstock"
+msgstr "da Cabeça de Fixação"
+
+#: main.py:816
+msgid "from Anchor2"
+msgstr "do Ponto de Referência 2"
+
+#: main.py:818
+msgid "from Anchor1"
+msgstr "do Ponto de Referência 1"
+
+#: main.py:824
+msgid "Fixed Pos"
+msgstr "Posição Fixa"
+
+#: main.py:826
+msgid "from"
+msgstr "de"
+
+#: main.py:827 makera.kv:1630
+msgid "Work Origin"
+msgstr "Origem de Trabalho"
+
+#: main.py:827 makera.kv:1636
+msgid "Path Origin"
+msgstr "Origem do Caminho"
+
+#: main.py:830
+msgid "X Points: "
+msgstr "Pontos X: "
+
+#: main.py:831
+msgid "Y Points: "
+msgstr "Pontos Y: "
+
+#: main.py:832
+msgid "Height: "
+msgstr "Altura: "
+
+#: main.py:840
+msgid " Offsets: "
+msgstr " Offsets: "
+
+#: main.py:841
+msgid " -X: "
+msgstr " -X: "
+
+#: main.py:842
+msgid " +X: "
+msgstr " +X: "
+
+#: main.py:843
+msgid " -Y: "
+msgstr " -Y: "
+
+#: main.py:844
+msgid " +Y: "
+msgstr " +Y: "
+
+#: main.py:883
+msgid "Please enter a value for X offset."
+msgstr "Informe um valor para o offset X."
+
+#: main.py:889
+msgid "Please enter a valid number for X offset."
+msgstr "Informe um número válido para o offset X."
+
+#: main.py:912
+msgid "Please enter a value for Y offset."
+msgstr "Informe um valor para o offset Y."
+
+#: main.py:918
+msgid "Please enter a valid number for Y offset."
+msgstr "Informe um número válido para o offset Y."
+
+#: main.py:941
+msgid "Please enter a value for Z offset."
+msgstr "Informe um valor para o offset Z."
+
+#: main.py:947
+msgid "Please enter a valid number for Z offset."
+msgstr "Informe um número válido para o offset Z."
+
+#: main.py:970
+msgid "Please enter a value for A offset."
+msgstr "Informe um valor para o offset A."
+
+#: main.py:976
+msgid "Please enter a valid number for A offset."
+msgstr "Informe um número válido para o offset A."
+
+#: main.py:1018
+msgid "Please enter a value for A position."
+msgstr "Informe um valor para a posição A."
+
+#: main.py:1024
+msgid "Please enter a valid number for A position."
+msgstr "Informe um número válido para a posição A."
+
+#: main.py:1272
+msgid "Save Changes"
+msgstr "Salvar Alterações"
+
+#: main.py:1272 makera.kv:1258 makera.kv:1293 makera.kv:1382 makera.kv:1536
+#: makera.kv:1595 makera.kv:1679 makera.kv:1756 makera.kv:2000 makera.kv:4240
+#: makera.kv:4295 makera.kv:4350 makera.kv:4405 makera.kv:4460 makera.kv:4516
+#: makera.kv:4573 makera.kv:5391 makera.kv:5454
+msgid "Ok"
+msgstr "Ok"
+
+#: main.py:1274
+msgid "Close without saving"
+msgstr "Fechar sem salvar"
+
+#: main.py:1274 makera.kv:1811 makera.kv:2159 makera.kv:2403 makera.kv:2479
+#: makera.kv:2963 makera.kv:3202 makera.kv:5383
+#: addons/probing/ProbingPopup.kv:493
+msgid "Close"
+msgstr "Fechar"
+
+#: main.py:1287
+msgid "Please enter a value for rotation angle."
+msgstr "Informe um valor para o ângulo de rotação."
+
+#: main.py:1293
+msgid "Please enter a valid number for rotation angle."
+msgstr "Informe um número válido para o ângulo de rotação."
+
+#: main.py:2292 makera.kv:2053
+msgid "Controller"
+msgstr "Controller"
+
+#: main.py:2307
+msgid "Pendant"
+msgstr "Pendant"
+
+#: main.py:2373 main.py:2405
+msgid " New version detected: v"
+msgstr " Nova versão detectada: v"
+
+#: main.py:2373 main.py:2405
+msgid " Current: v"
+msgstr " Atual: v"
+
+#: main.py:2376 main.py:2408
+msgid " Current version: v"
+msgstr " Versão atual: v"
+
+#: main.py:2392
+msgid "Language setting applied, restart Controller app to take effect !"
+msgstr "Idioma aplicado, reinicie o Controller para ter efeito!"
+
+#: main.py:2536
+msgid "Timeout, Connection lost!"
+msgstr "Tempo Esgotado, Conexão Perdida!"
+
+#: main.py:2576
+msgid "Documents"
+msgstr "Documentos"
+
+#: main.py:2578
+msgid "Downloads"
+msgstr "Downloads"
+
+#: main.py:2580
+msgid "Desktop"
+msgstr "Área de Trabalho"
+
+#: main.py:2593
+msgid "Storage"
+msgstr "Armazenamento"
+
+#: main.py:2647 main.py:2691
+msgid "Recent Places"
+msgstr "Locais Recentes"
+
+#: main.py:2707
+msgid "Cannot connect, machine is busy or not available."
+msgstr "Não foi possível conectar, a máquina está ocupada ou indisponível."
+
+#: main.py:2709
+msgid "No previous machine network address stored."
+msgstr "Nenhum endereço de rede de máquina salvo anteriormente."
+
+#: main.py:2714
+msgid "Searching for nearby machines..."
+msgstr "Procurando máquinas próximas..."
+
+#: main.py:2729
+msgid "None found, enter address manually..."
+msgstr "Nenhuma encontrada, insira o endereço manualmente..."
+
+#: main.py:2743
+msgid "Input machine network address:"
+msgstr "Insira o endereço de rede da máquina:"
+
+#: main.py:2858
+msgid "Error loading dir"
+msgstr "Erro ao carregar diretório"
+
+#: main.py:2860
+msgid "Timeout loading dir"
+msgstr "Tempo esgotado ao carregar diretório"
+
+#: main.py:2868
+msgid "Error deleting"
+msgstr "Erro ao excluir"
+
+#: main.py:2870
+msgid "Timeout deleting"
+msgstr "Tempo esgotado ao excluir"
+
+#: main.py:2878
+msgid "Error renaming"
+msgstr "Erro ao renomear"
+
+#: main.py:2880
+msgid "Timeout renaming"
+msgstr "Tempo esgotado ao renomear"
+
+#: main.py:2888
+msgid "Error making dir:"
+msgstr "Erro ao criar diretório:"
+
+#: main.py:2890
+msgid "Timeout making dir:"
+msgstr "Tempo esgotado ao criar diretório:"
+
+#: main.py:2898
+msgid "Error getting WiFi info!"
+msgstr "Erro ao obter informações do WiFi!"
+
+#: main.py:2900
+msgid "Timeout getting WiFi info!"
+msgstr "Tempo esgotado ao obter informações do WiFi!"
+
+#: main.py:2910
+msgid "Timeout connecting WiFi!"
+msgstr "Tempo esgotado ao conectar ao WiFi!"
+
+#: main.py:2920
+msgid "Delete File or Dir"
+msgstr "Excluir Arquivo ou Diretório"
+
+#: main.py:2921
+msgid "Confirm to delete file or dir"
+msgstr "Confirme para excluir arquivo ou diretório"
+
+#: main.py:2936 main.py:2950
+msgid "Machine Is Halted: "
+msgstr "Máquina Parada: "
+
+#: main.py:2938 main.py:2952
+msgid "Machine Is Halted!"
+msgstr "Máquina Parada!"
+
+#: main.py:2956
+msgid "Please manually switch off/on the machine!"
+msgstr "Por favor, desligue/ligue a máquina manualmente!"
+
+#: main.py:2959 main.py:2971
+msgid "Confirm to reset machine?"
+msgstr "Confirma reiniciar a máquina?"
+
+#: main.py:2962
+msgid "Confirm to unlock machine?"
+msgstr "Confirma desbloquear a máquina?"
+
+#: main.py:2970
+msgid "Machine Is Sleeping"
+msgstr "Máquina em Repouso"
+
+#: main.py:2985
+msgid "Changing Tool"
+msgstr "Trocando Ferramenta"
+
+#: main.py:2986
+msgid "Please change to tool: "
+msgstr "Por favor, troque para a ferramenta: "
+
+#: main.py:2986
+msgid "Then press 'Confirm' or main button to proceed"
+msgstr "Então pressione 'Confirmar' ou o botão principal para continuar"
+
+#: main.py:3022
+msgid "Change name"
+msgstr "Alterar nome"
+
+#: main.py:3030
+msgid "Input new folder name:"
+msgstr "Insira o nome da nova pasta:"
+
+#: main.py:3051
+msgid "Input WiFi password of"
+msgstr "Insira a senha do WiFi"
+
+#: main.py:3063 main.py:3094
+msgid "File Already Exists"
+msgstr "Arquivo já existe"
+
+#: main.py:3064 main.py:3095
+msgid "Confirm to overwrite file:"
+msgstr "Confirma sobrescrever o arquivo:"
+
+#: main.py:3071
+msgid "Updating Firmware"
+msgstr "Atualizando Firmware"
+
+#: main.py:3072
+msgid ""
+"Are you sure you want to update the firmware? A machine reset will be "
+"required to apply the new firmware."
+msgstr ""
+"Tem certeza de que deseja atualizar o firmware? Será necessário reiniciar a "
+"máquina para aplicar o novo firmware."
+
+#: main.py:3086
+msgid "Loading file"
+msgstr "Carregando arquivo"
+
+#: main.py:3112
+msgid "Opening local file"
+msgstr "Abrindo arquivo local"
+
+#: main.py:3168
+msgid ""
+"Error loading machine config setting. Possibly malformed value.\n"
+"Skipping setting key: "
+msgstr ""
+"Erro ao carregar configuração da máquina. Valor possivelmente malformado.\n"
+"Ignorando a chave: "
+
+#: main.py:3178
+msgid "Download config file error"
+msgstr "Erro ao baixar arquivo de configuração"
+
+#: main.py:3194
+msgid "Load config..."
+msgstr "Carregando configuração..."
+
+#: main.py:3194
+msgid "Checking"
+msgstr "Verificando"
+
+#: main.py:3221
+msgid "Download config file error!"
+msgstr "Erro ao baixar arquivo de configuração!"
+
+#: main.py:3223
+msgid "Download file error!"
+msgstr "Erro ao baixar arquivo!"
+
+#: main.py:3237
+msgid "Synchronize version and time..."
+msgstr "Sincronizando versão e hora..."
+
+#: main.py:3244
+msgid "Open cached file"
+msgstr "Abrindo arquivo em cache"
+
+#: main.py:3254
+msgid "Downloading is canceled manually."
+msgstr "Download cancelado manualmente."
+
+#: main.py:3298
+msgid "Downloading"
+msgstr "Baixando"
+
+#: main.py:3312 main.py:3314
+msgid "WiFi: Searching for network..."
+msgstr "WiFi: Procurando rede..."
+
+#: main.py:3339
+msgid "WiFi: Connected"
+msgstr "WiFi: Conectado"
+
+#: main.py:3339
+msgid "WiFi: Not Connected"
+msgstr "WiFi: Não Conectado"
+
+#: main.py:3342
+msgid "Close Connection"
+msgstr "Fechar Conexão"
+
+#: main.py:3383
+msgid "Can not load coordinate value:"
+msgstr "Não foi possível carregar o valor da coordenada:"
+
+#: main.py:3390
+msgid "Can not load laser offset value:"
+msgstr "Não foi possível carregar o valor do offset do laser:"
+
+#: main.py:3451
+msgid "Connecting to"
+msgstr "Conectando a"
+
+#: main.py:3583
+msgid "Uploading"
+msgstr "Enviando"
+
+#: main.py:3605
+msgid "Uploading is canceled manually."
+msgstr "Upload cancelado manualmente."
+
+#: main.py:3614
+msgid "Upload file error!"
+msgstr "Erro ao enviar arquivo!"
+
+#: main.py:3655
+msgid "Decompressing"
+msgstr "Descomprimindo"
+
+#: main.py:3670
+msgid "Update Finished"
+msgstr "Atualização Concluída"
+
+#: main.py:3671
+msgid "Confirm to reset the machine?"
+msgstr "Confirma reiniciar a máquina?"
+
+#: main.py:3795 makera.kv:3302
+msgid "disconnect"
+msgstr "desconectar"
+
+#: main.py:3930 main.py:3949
+msgid "Laser"
+msgstr "Laser"
+
+#: main.py:3937
+msgid "None"
+msgstr "Nenhum"
+
+#: main.py:3947 makera.kv:3161
+msgid "Probe"
+msgstr "Sonda"
+
+#: main.py:3951
+msgid "3DProb"
+msgstr "Sonda3D"
+
+#: main.py:4040
+msgid " No Remote File Selected"
+msgstr " Nenhum Arquivo Remoto Selecionado"
+
+#: main.py:4317
+msgid "Load config error, Key:"
+msgstr "Erro ao carregar configuração, Chave:"
+
+#: main.py:4475
+msgid "Enable Pendant"
+msgstr "Habilitar Pendant"
+
+#: main.py:4480 makera.kv:3588
+msgid "No Pendant"
+msgstr "Sem Pendant"
+
+#: main.py:4547
+msgid "Settings applied, need machine reset to take effect !"
+msgstr ""
+"Configurações aplicadas, é necessário reiniciar a máquina para ter efeito!"
+
+#: main.py:4553
+msgid "UI Density changed, restart application to apply."
+msgstr "Densidade da interface alterada, reinicie o aplicativo para aplicar."
+
+#: main.py:4568
+msgid "Restore Settings"
+msgstr "Restaurar Configurações"
+
+#: main.py:4569
+msgid "Confirm to restore settings from default ?"
+msgstr "Confirma restaurar as configurações padrão?"
+
+#: main.py:4583
+msgid "Save As Default"
+msgstr "Salvar como Padrão"
+
+#: main.py:4584
+msgid "Confirm to save current settings as default ?"
+msgstr "Confirma salvar as configurações atuais como padrão?"
+
+#: main.py:4592
+msgid "Entering Laser Mode"
+msgstr "Entrando no Modo Laser"
+
+#: main.py:4594
+msgid ""
+"You are about to enable laser mode. \n"
+"\n"
+"When enabled the current tool will be dropped, the spindle fan locked to 90%, \n"
+"and the empty spindle nose will be set as the tool and length probed.\n"
+"\n"
+" It's recommended to remove the laser dust cap, and put on safety glasses now.\n"
+"\n"
+"Are you ready to proceed ?"
+msgstr ""
+"Você está prestes a ativar o modo laser. \n"
+"\n"
+"Ao ativar, a ferramenta atual será solta, a ventoinha do spindle será travada em 90%, \n"
+"e o nariz vazio do spindle será definido como ferramenta e terá o comprimento sondado.\n"
+"\n"
+" Recomenda-se remover a tampa antipoeira do laser e colocar óculos de proteção agora.\n"
+"\n"
+"Está pronto para continuar?"
+
+#: main.py:4827
+msgid "Opening file error:"
+msgstr "Erro ao abrir arquivo:"
+
+#: main.py:4827
+msgid "Please make sure the GCode file is valid"
+msgstr "Certifique-se de que o arquivo GCode é válido"
+
+#: main.py:4911
+msgid "Carvera Controller Community"
+msgstr "Carvera Controller Community"
+
+#: ui.py:42
+msgid "Open editor…"
+msgstr "Abrir editor…"
+
+#: ui.py:53
+msgid "<unnamed>"
+msgstr "<sem nome>"
+
+#: ui.py:55
+msgid "<invalid>"
+msgstr "<inválido>"
+
+#: ui.py:80
+msgid "Name:"
+msgstr "Nome:"
+
+#: ui.py:87
+msgid "G-code:"
+msgstr "G-code:"
+
+#: ui.py:92
+msgid "Edit command"
+msgstr "Editar comando"
+
+#: ui.py:98
+msgid "Save"
+msgstr "Salvar"
+
+#: ui.py:101 makera.kv:1255 makera.kv:1290 makera.kv:1319 makera.kv:1350
+#: makera.kv:1409 makera.kv:1532 makera.kv:1591 makera.kv:1675 makera.kv:1752
+#: makera.kv:1996 makera.kv:4236 makera.kv:4291 makera.kv:4346 makera.kv:4401
+#: makera.kv:4456 makera.kv:4512 makera.kv:4569 makera.kv:5450
+#: addons/probing/preview/ProbingPreviewPopup.kv:26
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: makera.kv:306
+msgid "Jog Speed:"
+msgstr "Velocidade de Jog:"
+
+#: makera.kv:308
+msgid "Match Feed"
+msgstr "Igual ao Avanço"
+
+#: makera.kv:316
+msgid "2000 mm/min"
+msgstr "2000 mm/min"
+
+#: makera.kv:323
+msgid "1200 mm/min"
+msgstr "1200 mm/min"
+
+#: makera.kv:330
+msgid "600 mm/min"
+msgstr "600 mm/min"
+
+#: makera.kv:337
+msgid "300 mm/min"
+msgstr "300 mm/min"
+
+#: makera.kv:344
+msgid "100 mm/min"
+msgstr "100 mm/min"
+
+#: makera.kv:359
+msgid "Set X Origin"
+msgstr "Definir Origem X"
+
+#: makera.kv:361
+msgid "X = 0"
+msgstr "X = 0"
+
+#: makera.kv:370
+msgid "Set X"
+msgstr "X =..."
+
+#: makera.kv:387
+msgid "Set Y Origin"
+msgstr "Definir Origem Y"
+
+#: makera.kv:389
+msgid "Y = 0"
+msgstr "Y = 0"
+
+#: makera.kv:398
+msgid "Set Y"
+msgstr "Y =..."
+
+#: makera.kv:416
+msgid "Set Z Origin"
+msgstr "Definir Origem Z"
+
+#: makera.kv:418
+msgid "Z = 0"
+msgstr "Z = 0"
+
+#: makera.kv:427
+msgid "Set Z"
+msgstr "Z =..."
+
+#: makera.kv:436
+msgid "Auto Leveling"
+msgstr "Auto nivel"
+
+#: makera.kv:450
+msgid "max:"
+msgstr "máx:"
+
+#: makera.kv:454
+msgid "Clear"
+msgstr "Limpar"
+
+#: makera.kv:455
+msgid ""
+"Clear any existing autolevel offsets. When autolevel offsets are enabled the"
+" Z axis dropdown will be blue"
+msgstr ""
+"Limpa os offsets de nivelamento automático existentes. Quando os offsets de "
+"nivelamento estão ativos, o menu do eixo Z fica azul"
+
+#: makera.kv:472
+msgid "Set A Origin"
+msgstr "Definir Origem A"
+
+#: makera.kv:474
+msgid "A = 0"
+msgstr "A = 0"
+
+#: makera.kv:483
+msgid "Set A"
+msgstr "Definir A"
+
+#: makera.kv:492
+msgid "Shrink"
+msgstr "Reduzir"
+
+#: makera.kv:493
+msgid ""
+"Reset A Axis value to 0-360 while keeping the offset. Eg 374 becomes 14"
+msgstr ""
+"Redefine o valor do eixo A para 0-360 mantendo o offset. Ex.: 374 vira 14"
+
+#: makera.kv:502
+msgid "Fast Move"
+msgstr "Mov. Ráp."
+
+#: makera.kv:523 makera.kv:5416
+msgid "Set Rotation"
+msgstr "Definir Rotação"
+
+#: makera.kv:535 makera.kv:538 makera.kv:539
+msgid "Activate WCS"
+msgstr "Ativar WCS"
+
+#: makera.kv:543 makera.kv:4595
+msgid "WCS Settings"
+msgstr "Configurações de WCS"
+
+#: makera.kv:562
+msgid "Feed Status"
+msgstr "Feed St."
+
+#: makera.kv:576 makera.kv:658
+msgid "Scale:"
+msgstr "Escala:"
+
+#: makera.kv:581 makera.kv:662
+msgid "Target:"
+msgstr "Alvo:"
+
+#: makera.kv:585
+msgid "Speed Scaling"
+msgstr "Escala Veloc."
+
+#: makera.kv:622 makera.kv:724 makera.kv:934 makera.kv:3508
+msgid "Reset"
+msgstr "Reiniciar"
+
+#: makera.kv:644
+msgid "Spindle Status"
+msgstr "Status do Fuso"
+
+#: makera.kv:666
+msgid "Temp:"
+msgstr "Temp:"
+
+#: makera.kv:669 makera.kv:2709
+msgid "Auto Vacuum"
+msgstr "Aspiração Auto"
+
+#: makera.kv:688
+msgid "RPM Scaling"
+msgstr "Escala de RPM"
+
+#: makera.kv:745
+msgid "Tool Status"
+msgstr "Status Ferr."
+
+#: makera.kv:759
+msgid "TLO:  "
+msgstr "TLO:  "
+
+#: makera.kv:763
+msgid "WP:  "
+msgstr "Sonda:  "
+
+#: makera.kv:771 makera.kv:776 makera.kv:777
+msgid "Change..."
+msgstr "Trocar..."
+
+#: makera.kv:780
+msgid "Calibrate"
+msgstr "Calibrar"
+
+#: makera.kv:787
+msgid "Drop"
+msgstr "Soltar"
+
+#: makera.kv:798 makera.kv:803 makera.kv:804
+msgid "Set..."
+msgstr "Definir..."
+
+#: makera.kv:807
+msgid "Clamp"
+msgstr "Travar"
+
+#: makera.kv:815
+msgid "Unclamp"
+msgstr "Destravar"
+
+#: makera.kv:835
+msgid "Laser Status"
+msgstr "Status do Laser"
+
+#: makera.kv:849
+msgid "scale:"
+msgstr "escala:"
+
+#: makera.kv:852
+msgid "Enable Laser"
+msgstr "Ativar Laser"
+
+#: makera.kv:876
+msgid "Laser Test"
+msgstr "Teste do Laser"
+
+#: makera.kv:895
+msgid "Power Scaling"
+msgstr "Escala Potên."
+
+#: makera.kv:956
+msgid "Run File View"
+msgstr "Tela de Execução de Arquivo"
+
+#: makera.kv:966
+msgid "Manual Move View"
+msgstr "Tela de Movimento Manual"
+
+#: makera.kv:979
+msgid "Diagnostics Menu"
+msgstr "Menu de Diagnóstico"
+
+#: makera.kv:990
+msgid "Wifi Setup"
+msgstr "Configuração de Wi-Fi"
+
+#: makera.kv:1001
+msgid "Pair Probe"
+msgstr "Parear Sonda"
+
+#: makera.kv:1010
+msgid "Update Firmware/Controller"
+msgstr "Atualizar Firmware/Controller"
+
+#: makera.kv:1023
+msgid "Language Selection"
+msgstr "Seleção de Idioma"
+
+#: makera.kv:1033
+msgid "Settings"
+msgstr "Configurações"
+
+#: makera.kv:1042
+msgid "Send Bug Report"
+msgstr "Enviar Relatório de Erro"
+
+#: makera.kv:1073
+msgid "Reconnect"
+msgstr "Reconectar"
+
+#: makera.kv:1084
+msgid "Scan Wi-Fi..."
+msgstr "Buscar Wi-Fi..."
+
+#: makera.kv:1091
+msgid " USB..."
+msgstr " USB..."
+
+#: makera.kv:1109
+msgid "Disconnect"
+msgstr "Desconectar"
+
+#: makera.kv:1121
+msgid "Upload..."
+msgstr "Enviar..."
+
+#: makera.kv:1127 makera.kv:2083 makera.kv:2131 makera.kv:2457
+msgid "Download"
+msgstr "Baixar"
+
+#: makera.kv:1133 makera.kv:2227
+msgid "Delete"
+msgstr "Excluir"
+
+#: makera.kv:1139 makera.kv:2219
+msgid "Rename"
+msgstr "Renomear"
+
+#: makera.kv:1243
+msgid "Select Language"
+msgstr "Selecionar Idioma"
+
+#: makera.kv:1275
+msgid "Input Box"
+msgstr "Caixa de Entrada"
+
+#: makera.kv:1311
+msgid "Confirm Box"
+msgstr "Caixa de Confirmação"
+
+#: makera.kv:1315 makera.kv:1376
+msgid "Confirm to continue?"
+msgstr "Confirma continuar?"
+
+#: makera.kv:1325
+msgid "Confirm"
+msgstr "Confirmar"
+
+#: makera.kv:1342
+msgid "Machine Is Halted"
+msgstr "A Máquina Está Parada"
+
+#: makera.kv:1346
+msgid "Choose unlock option:"
+msgstr "Escolha a opção de desbloqueio:"
+
+#: makera.kv:1354
+msgid "Unlock and Stay in Position"
+msgstr "Desbloquear e Manter Posição"
+
+#: makera.kv:1360
+msgid "Unlock and Move to Safe Z"
+msgstr "Desbloquear e Ir para Z Seguro"
+
+#: makera.kv:1430
+msgid "Auto-Set By Offset"
+msgstr "Definição Automática por Offset"
+
+#: makera.kv:1448
+msgid "Anchor1"
+msgstr "Pto. Ref. 1"
+
+#: makera.kv:1460
+msgid "Anchor2"
+msgstr "Pto. Ref. 2"
+
+#: makera.kv:1472
+msgid "4Axis Origin"
+msgstr "Origem 4Eixos"
+
+#: makera.kv:1484
+msgid "Current Pos"
+msgstr "Posição Atual"
+
+#: makera.kv:1492 makera.kv:1642
+msgid "X Offset:"
+msgstr "Offset X:"
+
+#: makera.kv:1498 makera.kv:1648
+msgid "Enter X Offset"
+msgstr "Inserir Offset X"
+
+#: makera.kv:1506 makera.kv:1656
+msgid "Y Offset:"
+msgstr "Offset Y:"
+
+#: makera.kv:1512 makera.kv:1662
+msgid "Enter Y Offset"
+msgstr "Inserir Offset Y"
+
+#: makera.kv:1523
+msgid "Note: Work origin will be set immediately when clicking OK."
+msgstr ""
+"Nota: A origem de trabalho será definida imediatamente ao clicar em OK."
+
+#: makera.kv:1540
+msgid "Set By XYZ Probe"
+msgstr "Definir por Sonda XYZ"
+
+#: makera.kv:1551 makera.kv:1712
+msgid "Block Thickness:"
+msgstr "Altura da Sonda:"
+
+#: makera.kv:1557 makera.kv:1718
+msgid "Thickness of probing block"
+msgstr "Espessura do bloco de sondagem"
+
+#: makera.kv:1558 makera.kv:1719
+msgid ""
+"The mm thickness between the conductive surface of the probe block and the "
+"workpiece. Used as part of the probing calculation to determine the Z height"
+msgstr ""
+"A espessura em mm entre a superfície condutiva do bloco de sondagem e a "
+"peça. Usada no cálculo de sondagem para determinar a altura Z"
+
+#: makera.kv:1566 makera.kv:1727
+msgid "Tool Diameter:"
+msgstr "Diâmetro da Ferramenta:"
+
+#: makera.kv:1572 makera.kv:1733
+msgid "Tool Diameter"
+msgstr "Diâmetro da Ferramenta"
+
+#: makera.kv:1580 makera.kv:1741
+msgid ""
+"Note: Please make sure the probe is stably positioned and the magnet head is"
+" attached to the tool."
+msgstr ""
+"Nota: Certifique-se de que a sonda está posicionada de forma estável e a "
+"cabeça magnética está presa à ferramenta."
+
+#: makera.kv:1619
+msgid "Z Probe Config"
+msgstr "Configuração da Sonda Z"
+
+#: makera.kv:1702
+msgid "XYZ Probe At Current Position"
+msgstr "Sonda XYZ na Posição Atual"
+
+#: makera.kv:1777
+msgid "Pairing Wireless Probe"
+msgstr "Pareando Sonda Sem Fio"
+
+#: makera.kv:1791
+msgid "Start Pairing"
+msgstr "Iniciar Pareamento"
+
+#: makera.kv:1841
+msgid "Auto Leveling Config"
+msgstr "Configuração de Nivelamento Automático"
+
+#: makera.kv:1859
+msgid "Clearance Height:   "
+msgstr "Altura de Liberação:   "
+
+#: makera.kv:1871
+msgid "Min"
+msgstr "Mín"
+
+#: makera.kv:1873
+msgid "Max"
+msgstr "Máx"
+
+#: makera.kv:1875
+msgid "Step"
+msgstr "Passo"
+
+#: makera.kv:1877
+msgid "Points"
+msgstr "Pontos"
+
+#: makera.kv:1935
+msgid "Offsets:   "
+msgstr "Offsets:   "
+
+#: makera.kv:1943
+msgid "Left X-"
+msgstr "Esquerda X-"
+
+#: makera.kv:1945
+msgid "Right X+"
+msgstr "Direita X+"
+
+#: makera.kv:1947
+msgid "Front Y-"
+msgstr "Frente Y-"
+
+#: makera.kv:1949
+msgid "Back Y+"
+msgstr "Trás Y+"
+
+#: makera.kv:1956
+msgid "Enter -X Offset"
+msgstr "Inserir Offset -X"
+
+#: makera.kv:1964
+msgid "Enter +X Offset"
+msgstr "Inserir Offset +X"
+
+#: makera.kv:1972
+msgid "Enter -Y Offset"
+msgstr "Inserir Offset -Y"
+
+#: makera.kv:1980
+msgid "Enter +Y Offset"
+msgstr "Inserir Offset +Y"
+
+#: makera.kv:2025
+msgid "Upgrade"
+msgstr "Atualizar"
+
+#: makera.kv:2035
+msgid " Check Updates on Startup"
+msgstr " Verificar Atualizações na Inicialização"
+
+#: makera.kv:2063 makera.kv:2111
+msgid " Update Log:"
+msgstr " Registro de Atualizações:"
+
+#: makera.kv:2101 makera.kv:2437
+msgid "Firmware"
+msgstr "Firmware"
+
+#: makera.kv:2137
+msgid "Update"
+msgstr "Atualizar"
+
+#: makera.kv:2154
+msgid "Check for Updates"
+msgstr "Verificar Atualizações"
+
+#: makera.kv:2199
+msgid "Remote"
+msgstr "Remoto"
+
+#: makera.kv:2235
+msgid "New Folder"
+msgstr "Nova Pasta"
+
+#: makera.kv:2242
+msgid "Upload File"
+msgstr "Enviar Arquivo"
+
+#: makera.kv:2323 makera.kv:2565
+msgid "Search"
+msgstr "Pesquisar"
+
+#: makera.kv:2352 makera.kv:2594
+msgid "Name "
+msgstr "Nome "
+
+#: makera.kv:2359 makera.kv:2601
+msgid "Date Modified "
+msgstr "Data de Modificação "
+
+#: makera.kv:2369 makera.kv:2611
+msgid " Size"
+msgstr " Tamanho"
+
+#: makera.kv:2407
+msgid "Clear Selection"
+msgstr "Limpar Seleção"
+
+#: makera.kv:2416
+msgid "Select"
+msgstr "Selecionar"
+
+#: makera.kv:2437
+msgid "Local"
+msgstr "Local"
+
+#: makera.kv:2457
+msgid "View"
+msgstr "Visualizar"
+
+#: makera.kv:2464
+msgid "Upload"
+msgstr "Enviar"
+
+#: makera.kv:2471
+msgid "Upload and Select"
+msgstr "Enviar e Selecionar"
+
+#: makera.kv:2565
+msgid "firmware"
+msgstr "firmware"
+
+#: makera.kv:2665
+msgid "Config and Run"
+msgstr "Configurar e Executar"
+
+#: makera.kv:2665
+msgid " Config and Do "
+msgstr " Configurar e Executar "
+
+#: makera.kv:2696
+msgid "Background:"
+msgstr "Fundo:"
+
+#: makera.kv:2747
+msgid " Set Work Origin"
+msgstr " Definir Origem de Trabalho"
+
+#: makera.kv:2765
+msgid " (0, 0) from Anchor1"
+msgstr " (0, 0) do Ponto de Referência 1"
+
+#: makera.kv:2778 makera.kv:2860 makera.kv:2919
+msgid "Config"
+msgstr "Configuração"
+
+#: makera.kv:2799
+msgid " Scan Margin"
+msgstr " Margem de Varredura"
+
+#: makera.kv:2832
+msgid " Auto Z Probe"
+msgstr " Sonda Z Automática"
+
+#: makera.kv:2847
+msgid " (10, 10) from Path Origin"
+msgstr " (10, 10) da Origem do Caminho"
+
+#: makera.kv:2891
+msgid " Auto Leveling"
+msgstr " Nivelamento Automático"
+
+#: makera.kv:2905
+msgid " X Points: 10, Y Points: 10, Height: 5"
+msgstr " Pontos X: 10, Pontos Y: 10, Altura: 5"
+
+#: makera.kv:2967
+msgid "Run"
+msgstr "Executar"
+
+#: makera.kv:2967
+msgid "Do "
+msgstr "Executar "
+
+#: makera.kv:3085
+msgid "   Diagnostic Panel"
+msgstr "   Painel de Diagnóstico"
+
+#: makera.kv:3097
+msgid "Spindle Motor"
+msgstr "Motor do Spindle"
+
+#: makera.kv:3101 makera.kv:3130
+msgid "Spindle Fan"
+msgstr "Ventoinha do Spindle"
+
+#: makera.kv:3104
+msgid "Vacuum"
+msgstr "Aspiração"
+
+#: makera.kv:3104
+msgid "PowerFan"
+msgstr "Ventilador da Fonte"
+
+#: makera.kv:3107
+msgid "Engraving Laser"
+msgstr "Laser de Gravação"
+
+#: makera.kv:3111
+msgid "Enclosure Light"
+msgstr "Luz do Gabinete"
+
+#: makera.kv:3115
+msgid "Air Assist"
+msgstr "Ar Auxiliar"
+
+#: makera.kv:3141
+msgid "ToolSensorPWR"
+msgstr "Alimentação do Sensor de Ferramenta"
+
+#: makera.kv:3141
+msgid "Probe Laser"
+msgstr "Laser da Sonda"
+
+#: makera.kv:3145
+msgid "WPChargePWR"
+msgstr "Alimentação da Carga da Sonda Sem Fio"
+
+#: makera.kv:3145
+msgid "Beep"
+msgstr "Bipe"
+
+#: makera.kv:3151
+msgid "X- Limit"
+msgstr "Limite X-"
+
+#: makera.kv:3154
+msgid "Y- Limit"
+msgstr "Limite Y-"
+
+#: makera.kv:3157
+msgid "ATC Limit"
+msgstr "Limite do ATC"
+
+#: makera.kv:3164
+msgid "Tool Sensor"
+msgstr "Sensor de Ferramenta"
+
+#: makera.kv:3168 makera.kv:4168
+msgid "E-Stop"
+msgstr "Parada de Emergência"
+
+#: makera.kv:3173
+msgid "X+ Limit"
+msgstr "Limite X+"
+
+#: makera.kv:3176
+msgid "Y+ Limit"
+msgstr "Limite Y+"
+
+#: makera.kv:3179
+msgid "Z+ Limit"
+msgstr "Limite Z+"
+
+#: makera.kv:3182
+msgid "Tool Length Setter"
+msgstr "Medidor de Comprimento de Ferramenta"
+
+#: makera.kv:3185
+msgid "Cover Switch"
+msgstr "Interruptor da Tampa"
+
+#: makera.kv:3191
+msgid "Changes in values are applied after 2 seconds."
+msgstr "Alterações nos valores são aplicadas após 2 segundos."
+
+#: makera.kv:3220
+msgid " Settings"
+msgstr " Configurações"
+
+#: makera.kv:3229
+msgid "Apply"
+msgstr "Aplicar"
+
+#: makera.kv:3348
+msgid "Coordinate System"
+msgstr "Sistema de Coordenadas"
+
+#: makera.kv:3363
+msgid "Feed Rate Override"
+msgstr "Override de Avanço"
+
+#: makera.kv:3374
+msgid "Spindle and Vacuum Overrides"
+msgstr "Overrides de Spindle e Aspiração"
+
+#: makera.kv:3385
+msgid "Tool Settings"
+msgstr "Configurações de Ferramenta"
+
+#: makera.kv:3396
+msgid "Laser Settings"
+msgstr "Configurações do Laser"
+
+#: makera.kv:3504
+msgid "Unlock"
+msgstr "Desbloquear"
+
+#: makera.kv:3512
+msgid "Home"
+msgstr "Referência"
+
+#: makera.kv:3517
+msgid "Margin..."
+msgstr "Margem..."
+
+#: makera.kv:3528
+msgid "ZProbe..."
+msgstr "Sonda Z..."
+
+#: makera.kv:3539
+msgid "AutoLevel..."
+msgstr "Niv. Autom."
+
+#: makera.kv:3551 makera.kv:3554 makera.kv:3555
+msgid "Goto..."
+msgstr "Ir para..."
+
+#: makera.kv:3558
+msgid "Set Origin"
+msgstr "Def. Origem"
+
+#: makera.kv:3562
+msgid "Jog Controls"
+msgstr "Controles de Jog"
+
+#: makera.kv:3570
+msgid "Probing..."
+msgstr "Sondando..."
+
+#: makera.kv:3575
+msgid "Light"
+msgstr "Luz"
+
+#: makera.kv:3581
+msgid "Ext. Control"
+msgstr "Controle Ext."
+
+#: makera.kv:3611
+msgid "Jog Speed: Match Feed"
+msgstr "Velocidade de Jog: Igual ao Avanço"
+
+#: makera.kv:3620
+msgid "Keyboard Jog Mode"
+msgstr "Modo de Jog por Teclado"
+
+#: makera.kv:3738
+msgid ""
+"Press to switch to MDI console to see console messages and send individual "
+"gcodes"
+msgstr ""
+"Pressione para alternar para o console MDI, ver mensagens do console e "
+"enviar G-codes individuais"
+
+#: makera.kv:3751
+msgid "Jump to first page in file"
+msgstr "Ir para a primeira página do arquivo"
+
+#: makera.kv:3759
+msgid "Go to last page in file"
+msgstr "Voltar para a página anterior do arquivo"
+
+#: makera.kv:3767
+msgid "Go to next page in file"
+msgstr "Ir para a próxima página do arquivo"
+
+#: makera.kv:3775
+msgid "Jump to last page in file"
+msgstr "Ir para a última página do arquivo"
+
+#: makera.kv:3811
+msgid "FILE"
+msgstr "FILE"
+
+#: makera.kv:3812
+msgid "Return to file view"
+msgstr "Voltar para a visualização do arquivo"
+
+#: makera.kv:3818
+msgid "Enter command..."
+msgstr "Inserir comando..."
+
+#: makera.kv:3827
+msgid "send"
+msgstr "enviar"
+
+#: makera.kv:3828
+msgid ""
+"The MDI is a console that allows you to send individual gcodes, and commands"
+" such as to change config values on the machine"
+msgstr ""
+"O MDI é um console que permite enviar G-codes individuais e comandos, como "
+"alterar valores de configuração da máquina"
+
+#: makera.kv:4061
+msgid "SettingPage"
+msgstr "Página de Configurações"
+
+#: makera.kv:4084
+msgid "Select File"
+msgstr "Selecionar Arquivo"
+
+#: makera.kv:4100
+msgid "Start File"
+msgstr "Iniciar Arquivo"
+
+#: makera.kv:4112
+msgid "Pause File at Next Safe Opportunity and Enable MDI Control"
+msgstr ""
+"Pausar o arquivo na próxima oportunidade segura e habilitar o controle MDI"
+
+#: makera.kv:4118
+msgid "Abort File Now"
+msgstr "Abortar o Arquivo Agora"
+
+#: makera.kv:4128
+msgid "Pause File Without MDI"
+msgstr "Pausar o Arquivo sem MDI"
+
+#: makera.kv:4206
+msgid "Set X Current Pos"
+msgstr "Definir Posição Atual X"
+
+#: makera.kv:4222
+msgid "Enter X Pos"
+msgstr "Inserir Posição X"
+
+#: makera.kv:4261
+msgid "Set Y Current Pos"
+msgstr "Definir Posição Atual Y"
+
+#: makera.kv:4277
+msgid "Enter Y Pos"
+msgstr "Inserir Posição Y"
+
+#: makera.kv:4316
+msgid "Set Z Current Pos"
+msgstr "Definir Posição Atual Z"
+
+#: makera.kv:4332
+msgid "Enter Z Pos"
+msgstr "Inserir Posição Z"
+
+#: makera.kv:4371
+msgid "Set A Current Pos"
+msgstr "Definir Posição Atual A"
+
+#: makera.kv:4387 makera.kv:4555
+msgid "Enter A Pos"
+msgstr "Inserir Posição A"
+
+#: makera.kv:4426
+msgid "Set Current Tool Number"
+msgstr "Definir o Número da Ferramenta Atual"
+
+#: makera.kv:4442
+msgid "Enter New Tool Number"
+msgstr "Inserir Novo Número de Ferramenta"
+
+#: makera.kv:4482
+msgid "Change Current Tool"
+msgstr "Trocar a Ferramenta Atual"
+
+#: makera.kv:4498
+msgid "New Tool Number"
+msgstr "Novo Número de Ferramenta"
+
+#: makera.kv:4539
+msgid "Rapidly move the A to"
+msgstr "Mover Rapidamente o Eixo A para"
+
+#: makera.kv:5387
+msgid "Clear All"
+msgstr "Limpar Tudo"
+
+#: makera.kv:5434
+msgid "Enter rotation angle in degrees"
+msgstr "Insira o ângulo de rotação em graus"
+
+#: addons/probing/ProbingPopup.kv:36
+msgid "Outside Corners"
+msgstr "Cantos Externos"
+
+#: addons/probing/ProbingPopup.kv:83
+msgid "Inside Corners"
+msgstr "Cantos Internos"
+
+#: addons/probing/ProbingPopup.kv:128
+msgid "Single Axis"
+msgstr "Eixo Único"
+
+#: addons/probing/ProbingPopup.kv:200
+msgid "Bore/Pocket"
+msgstr "Furo/Bolsão"
+
+#: addons/probing/ProbingPopup.kv:246
+msgid "Boss/Block"
+msgstr "Ressalto/Bloco"
+
+#: addons/probing/ProbingPopup.kv:292
+msgid "Angle"
+msgstr "Ângulo"
+
+#: addons/probing/ProbingPopup.kv:485
+msgid ""
+"Note: Most of these operations require a true 3 axis probe, not the manual "
+"probe supplied with the Carvera. See the documentation for more info"
+msgstr ""
+"Nota: a maioria dessas operações exige uma sonda 3D de 3 eixos de verdade, "
+"não a sonda manual fornecida com a Carvera. Consulte a documentação para "
+"mais informações"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:20
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:19
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:20
+msgid "X distance to probe"
+msgstr "Distância a sondar em X"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:33
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:32
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:33
+msgid "Y distance to probe"
+msgstr "Distância a sondar em Y"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:46
+#: addons/probing/operations/Bore/BoreSettings.kv:44
+#: addons/probing/operations/Boss/BossSettings.kv:58
+#: addons/probing/operations/Angle/AngleSettings.kv:57
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:45
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:60
+msgid "Effective Diameter of Probe Tip. Measure with M460"
+msgstr "Diâmetro efetivo da ponta da sonda. Meça com M460"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:60
+#: addons/probing/operations/Bore/BoreSettings.kv:58
+#: addons/probing/operations/Boss/BossSettings.kv:73
+#: addons/probing/operations/Angle/AngleSettings.kv:72
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:60
+msgid ""
+"Distance to probe straight down before performing remainder of probing "
+"operations"
+msgstr ""
+"Distância a sondar diretamente para baixo antes de executar o restante das "
+"operações de sondagem"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:73
+#: addons/probing/operations/Bore/BoreSettings.kv:71
+#: addons/probing/operations/Boss/BossSettings.kv:86
+#: addons/probing/operations/Angle/AngleSettings.kv:85
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:73
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:74
+msgid "Optional probing feed rate override"
+msgstr "Override opcional do avanço de sondagem"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:86
+#: addons/probing/operations/Bore/BoreSettings.kv:84
+#: addons/probing/operations/Boss/BossSettings.kv:99
+#: addons/probing/operations/Angle/AngleSettings.kv:98
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:86
+msgid "Optional rapid feed rate override"
+msgstr "Override opcional do avanço rápido"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:99
+#: addons/probing/operations/Bore/BoreSettings.kv:97
+#: addons/probing/operations/Boss/BossSettings.kv:112
+#: addons/probing/operations/Angle/AngleSettings.kv:111
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:99
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:87
+msgid "Number of times to repeat the probing operation"
+msgstr "Número de repetições da operação de sondagem"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:112
+#: addons/probing/operations/Bore/BoreSettings.kv:110
+#: addons/probing/operations/Boss/BossSettings.kv:125
+#: addons/probing/operations/Angle/AngleSettings.kv:124
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:112
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:100
+msgid "Distance away from surface to retract before double tapping the probe"
+msgstr "Distância de recuo da superfície antes do segundo toque da sonda"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:125
+#: addons/probing/operations/Bore/BoreSettings.kv:123
+#: addons/probing/operations/Boss/BossSettings.kv:138
+#: addons/probing/operations/Angle/AngleSettings.kv:137
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:125
+msgid ""
+"If Pocket Depth is enabled, how far above the surface to raise before "
+"continuing the operation"
+msgstr ""
+"Se a profundidade de bolsão estiver habilitada, quanto subir acima da "
+"superfície antes de continuar a operação"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:138
+#: addons/probing/operations/Bore/BoreSettings.kv:135
+#: addons/probing/operations/Boss/BossSettings.kv:150
+#: addons/probing/operations/Angle/AngleSettings.kv:149
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:137
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:112
+msgid "Degrees to rotate the XY coordinate plane when probing."
+msgstr "Graus de rotação do plano de coordenadas XY ao sondar."
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:152
+msgid ""
+"How far below the start height to move down for probing the sides of the "
+"part"
+msgstr ""
+"Quanto descer abaixo da altura inicial para sondar as laterais da peça"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:169
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:155
+msgid "This switch will set your current WCS to the corner you are probing"
+msgstr "Esta chave define o WCS atual para o canto que você está sondando"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:185
+#: addons/probing/operations/Boss/BossSettings.kv:197
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:171
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:146
+msgid "Disabled"
+msgstr "Desabilitado"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:194
+#: addons/probing/operations/Boss/BossSettings.kv:206
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:180
+msgid "X/Y"
+msgstr "X/Y"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:203
+#: addons/probing/operations/Boss/BossSettings.kv:215
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:189
+msgid "X/Y/Z"
+msgstr "X/Y/Z"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:215
+#: addons/probing/operations/Bore/BoreSettings.kv:165
+#: addons/probing/operations/Boss/BossSettings.kv:227
+#: addons/probing/operations/Angle/AngleSettings.kv:192
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:201
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:176
+msgid ""
+"Enable this switch if you have a normally closed probe instead of a normally"
+" open one"
+msgstr ""
+"Habilite esta chave se sua sonda for normalmente fechada em vez de "
+"normalmente aberta"
+
+#: addons/probing/operations/Bore/BoreSettings.kv:18
+msgid "Radial X distance to probe"
+msgstr "Distância radial a sondar em X"
+
+#: addons/probing/operations/Bore/BoreSettings.kv:31
+msgid "Radial Y distance to probe"
+msgstr "Distância radial a sondar em Y"
+
+#: addons/probing/operations/Bore/BoreSettings.kv:150
+msgid ""
+"This switch will set your current WCS to the center of the block/boss you "
+"are probing"
+msgstr ""
+"Esta chave define o WCS atual para o centro do bloco/ressalto que você está "
+"sondando"
+
+#: addons/probing/operations/Boss/BossSettings.kv:19
+msgid "Boss Diameter in X"
+msgstr "Diâmetro do Ressalto em X"
+
+#: addons/probing/operations/Boss/BossSettings.kv:32
+msgid "Boss Diameter in Y"
+msgstr "Diâmetro do Ressalto em Y"
+
+#: addons/probing/operations/Boss/BossSettings.kv:45
+msgid ""
+"When Probing a boss, this is added to the X and Y values when moving outside"
+" the boss. Defaults to 4mm"
+msgstr ""
+"Ao sondar um ressalto, este valor é somado a X e Y ao mover para fora do "
+"ressalto. Padrão: 4 mm"
+
+#: addons/probing/operations/Boss/BossSettings.kv:164
+msgid ""
+"How far below the start height to move down for probing the sides of the "
+"boss/block"
+msgstr ""
+"Quanto descer abaixo da altura inicial para sondar as laterais do "
+"ressalto/bloco"
+
+#: addons/probing/operations/Boss/BossSettings.kv:181
+msgid ""
+"This switch will set your current WCS to the center of the bore/pocket you "
+"are probing"
+msgstr ""
+"Esta chave define o WCS atual para o centro do furo/bolsão que você está "
+"sondando"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:18
+msgid "Distance from center along X to move before probing back toward part"
+msgstr ""
+"Distância do centro ao longo de X a mover antes de sondar de volta em "
+"direção à peça"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:31
+msgid "Distance from center along Y to move before probing back toward part"
+msgstr ""
+"Distância do centro ao longo de Y a mover antes de sondar de volta em "
+"direção à peça"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:44
+msgid ""
+"How far below the start height to move down for probing the sides of the "
+"Angle/block"
+msgstr ""
+"Quanto descer abaixo da altura inicial para sondar as laterais do "
+"ângulo/bloco"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:163
+msgid ""
+"If set, the probe will trace the probed angle after the operation finishes"
+msgstr ""
+"Se habilitado, a sonda percorrerá o ângulo sondado após o término da "
+"operação"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:177
+msgid ""
+"This switch will set your current WCS rotation to the probed rotation angle"
+msgstr ""
+"Esta chave define a rotação do WCS atual para o ângulo de rotação sondado"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:46
+msgid "Z distance to probe"
+msgstr "Distância a sondar em Z"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:130
+msgid ""
+"This switch will set your current WCS to the surface you are probing. It "
+"will only set the currently selected axis/axes"
+msgstr ""
+"Esta chave define o WCS atual para a superfície que você está sondando. "
+"Apenas o(s) eixo(s) selecionado(s) será(ão) definido(s)"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:155
+msgid "X or Y"
+msgstr "X ou Y"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:164
+msgid "Z"
+msgstr "Z"
+
+#: addons/probing/preview/ProbingPreviewPopup.kv:29
+msgid "Start"
+msgstr "Iniciar"

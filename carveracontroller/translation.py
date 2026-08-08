@@ -11,6 +11,7 @@ from kivy.lang import Observable
 
 LANGS = {
     "en": "English",
+    "pt-BR": "Português (Brasil)",
     "zh-CN": "中文简体(Simplified Chinese)",
 }
 
