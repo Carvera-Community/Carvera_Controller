@@ -4793,7 +4793,36 @@ class Makera(RelativeLayout):
                 config_path = os.path.join(self.temp_dir, "config.txt")
                 if not os.path.exists(config_path):
                     raise FileNotFoundError(f"Cached config not found: {config_path}")
-                with open(config_path) as f:
+
+                # BUGFIX #1: Check for QuickLZ compression (first two bytes 0x00 0x00)
+                # and decompress if needed. The firmware compresses files for XMODEM
+                # transfer (ftype = lz), but config downloads didn't go through the
+                # normal decompress path, causing 'charmap codec' decode errors.
+                with open(config_path, "rb") as f_raw:
+                    first_bytes = f_raw.read(2)
+                if first_bytes == b"\x00\x00":
+                    logger.info("Config file is QuickLZ-compressed. Decompressing.")
+                    decompressed_path = config_path + ".decompressed"
+                    if self.decompress_file(config_path, decompressed_path):
+                        try:
+                            os.replace(decompressed_path, config_path)
+                        except OSError:
+                            shutil.copyfile(decompressed_path, config_path)
+                            try:
+                                os.remove(decompressed_path)
+                            except OSError:
+                                pass
+                    else:
+                        logger.error("Failed to decompress config file. Trying raw read anyway.")
+                        try:
+                            os.remove(decompressed_path)
+                        except OSError:
+                            pass
+
+                # BUGFIX #2: Always read as UTF-8 with errors='replace' to avoid
+                # Windows 'charmap' codec errors when the default locale charmap
+                # does not support every byte.
+                with open(config_path, encoding="utf-8", errors="replace") as f:
                     config_string = "[dummy_section]\n" + f.read()
                 # remove notes
                 config_string = re.sub(r"#.*", "", config_string)
