@@ -250,6 +250,7 @@ from .GcodeViewer import (
     VISIBILITY_MAX_TOOLS,
     GCodeViewer,
 )
+from .status_server import StatusServer
 from .ui import widget_helpers
 from .ui.PlayProgressBar import play_percent_from_line, tool_change_markers_to_percents
 from .ui.popups.adv_calibrate import AdvCalibratePopup
@@ -5904,6 +5905,37 @@ class Makera(RelativeLayout):
     def _current_remaining_sec(self):
         return max(0.0, self._remaining_anchor_sec - (time.time() - self._remaining_anchor_time))
 
+    def get_status_snapshot(self):
+        """Read-only job-progress snapshot for the local status web server.
+
+        May be called from the status server's request-handling thread, so
+        this must only read simple attributes/properties, never mutate
+        widget state.
+        """
+        app = App.get_running_app()
+        if app is None:
+            return {"connected": False}
+
+        if app.playing and app.state not in self._PROGRESS_TIMER_PAUSED_STATES:
+            remaining_sec = self._current_remaining_sec()
+        elif app.playing:
+            # Frozen while held/paused, same as the main progress display.
+            remaining_sec = self._remaining_anchor_sec
+        else:
+            remaining_sec = 0.0
+        elapsed_sec = CNC.vars.get("playedseconds", 0) or 0
+
+        return {
+            "connected": app.state != NOT_CONNECTED,
+            "playing": bool(app.playing),
+            "state": app.state,
+            "filename": os.path.basename(app.selected_remote_filename or app.selected_local_filename or ""),
+            "percent": float(self.wpb_play.value) if getattr(self, "wpb_play", None) else 0.0,
+            "elapsed_sec": elapsed_sec,
+            "remaining_sec": remaining_sec,
+            "total_sec": elapsed_sec + remaining_sec,
+        }
+
     def _update_progress_smooth(self, dt):
         """Refresh elapsed/remaining display every second while playing."""
         app = App.get_running_app()
@@ -8188,6 +8220,9 @@ class MakeraApp(App):
             Clock.unschedule(self.root.switch_status)
         if hasattr(self.root, "check_model_metadata"):
             Clock.unschedule(self.root.check_model_metadata)
+        if self.status_server is not None:
+            self.status_server.stop()
+            self.status_server = None
         # Stop the main run loop
         self.root.stop_run()
 
@@ -8196,10 +8231,16 @@ class MakeraApp(App):
         self.use_kivy_settings = True
         self.title = tr._("Carvera Controller Community") + " v" + __version__
         self.icon = os.path.join(os.path.dirname(__file__), "icon.png")
+        self.status_server = None
 
         return Makera(ctl_version=__version__)
 
     def on_start(self):
+        if Config.getboolean("carvera", "status_server_enabled", fallback=False):
+            port = Config.getint("carvera", "status_server_port", fallback=8765)
+            self.status_server = StatusServer(self.root.get_status_snapshot, port=port)
+            self.status_server.start()
+
         # Workaround for Android blank screen issue
         # https://github.com/kivy/python-for-android/issues/2720
         viewport_update_count = 0
