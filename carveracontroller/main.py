@@ -5924,17 +5924,52 @@ class Makera(RelativeLayout):
         else:
             remaining_sec = 0.0
         elapsed_sec = CNC.vars.get("playedseconds", 0) or 0
+        filename = os.path.basename(app.selected_remote_filename or app.selected_local_filename or "")
+        toolpath_points = len(getattr(self.gcode_viewer, "raw_positions", None) or []) // 3
 
         return {
             "connected": app.state != NOT_CONNECTED,
             "playing": bool(app.playing),
             "state": app.state,
-            "filename": os.path.basename(app.selected_remote_filename or app.selected_local_filename or ""),
+            "filename": filename,
             "percent": float(self.wpb_play.value) if getattr(self, "wpb_play", None) else 0.0,
             "elapsed_sec": elapsed_sec,
             "remaining_sec": remaining_sec,
             "total_sec": elapsed_sec + remaining_sec,
+            "played_line": self.played_lines,
+            "x": CNC.vars.get("wx", 0.0),
+            "y": CNC.vars.get("wy", 0.0),
+            "z": CNC.vars.get("wz", 0.0),
+            # Cheap fingerprint so the browser only re-fetches the (much bigger)
+            # toolpath geometry when the loaded file actually changes.
+            "toolpath_revision": f"{filename}:{toolpath_points}",
         }
+
+    def get_toolpath_snapshot(self):
+        """Read-only toolpath geometry for the local status web server's 3D view.
+
+        Reuses the already-parsed vertex data GCodeViewer built for its own
+        OpenGL render, so nothing gets re-parsed. May be called from the
+        status server's request-handling thread; only reads plain lists.
+        """
+        gv = getattr(self, "gcode_viewer", None)
+        positions = list(getattr(gv, "raw_positions", None) or [])
+        feeds = list(getattr(gv, "raw_feed_rates", None) or [])
+        lines = list(getattr(gv, "raw_linenumbers", None) or [])
+
+        # Guard against reading mid-load, when these lists (built incrementally
+        # as the file streams in) may briefly have mismatched lengths.
+        count = min(len(positions) // 3, len(feeds), len(lines))
+        positions = positions[: count * 3]
+        feeds = feeds[:count]
+        lines = lines[:count]
+
+        bounds = None
+        if count:
+            xs, ys, zs = positions[0::3], positions[1::3], positions[2::3]
+            bounds = {"min": [min(xs), min(ys), min(zs)], "max": [max(xs), max(ys), max(zs)]}
+
+        return {"points": positions, "feed": feeds, "line": lines, "bounds": bounds}
 
     def _update_progress_smooth(self, dt):
         """Refresh elapsed/remaining display every second while playing."""
@@ -8238,7 +8273,9 @@ class MakeraApp(App):
     def on_start(self):
         if Config.getboolean("carvera", "status_server_enabled", fallback=False):
             port = Config.getint("carvera", "status_server_port", fallback=8765)
-            self.status_server = StatusServer(self.root.get_status_snapshot, port=port)
+            self.status_server = StatusServer(
+                self.root.get_status_snapshot, toolpath_provider=self.root.get_toolpath_snapshot, port=port
+            )
             self.status_server.start()
 
         # Workaround for Android blank screen issue
