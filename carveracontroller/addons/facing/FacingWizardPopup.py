@@ -59,12 +59,10 @@ from .probe_grid_gcode import (
     probe_grid_z_datum_shift_after_probe_gcode,
 )
 from .stock_geometry import (
-    CORNER_BL,
-    CORNER_BR,
-    CORNER_TL,
-    CORNER_TR,
+    STOCK_ORIGIN_CORNER_BL,
     rect_with_xy_margin,
     stock_rect_from_origin_corner,
+    stock_origin_pairs,
 )
 
 logger = logging.getLogger(__name__)
@@ -124,15 +122,6 @@ def _milling_direction_pairs():
     ]
 
 
-def _stock_corner_pairs():
-    return [
-        (tr._("Bottom-left (+X width, +Y length)"), CORNER_BL),
-        (tr._("Bottom-right (-X width, +Y length)"), CORNER_BR),
-        (tr._("Top-left (+X width, -Y length)"), CORNER_TL),
-        (tr._("Top-right (-X width, -Y length)"), CORNER_TR),
-    ]
-
-
 class FacingSavePresetContent(BoxLayout):
     pass
 
@@ -143,7 +132,7 @@ class FacingWizardPopup(ModalView):
     def __init__(self, **kwargs):
         self._m6_collet_pairs_list = None
         self._probe_tool_pairs_list = None
-        self._stock_corner_pairs_list = None
+        self._stock_origin_pairs_list = None
         self._milling_direction_pairs_list = None
         super().__init__(**kwargs)
         self.bind(on_open=self._on_open_wizard, on_dismiss=self._on_dismiss_wizard)
@@ -469,8 +458,8 @@ class FacingWizardPopup(ModalView):
             self._m6_collet_pairs_list = _m6_collet_pairs()
         if self._probe_tool_pairs_list is None:
             self._probe_tool_pairs_list = _probe_tool_pairs()
-        if self._stock_corner_pairs_list is None:
-            self._stock_corner_pairs_list = _stock_corner_pairs()
+        if self._stock_origin_pairs_list is None:
+            self._stock_origin_pairs_list = stock_origin_pairs()
         if self._milling_direction_pairs_list is None:
             self._milling_direction_pairs_list = _milling_direction_pairs()
 
@@ -489,11 +478,11 @@ class FacingWizardPopup(ModalView):
             if spp.text not in spp.values:
                 spp.text = self._probe_tool_pairs_list[0][0]
 
-            self._stock_corner_pairs_list = _stock_corner_pairs()
+            self._stock_origin_pairs_list = stock_origin_pairs()
             spcorner = self.ids.spn_stock_corner
-            spcorner.values = [p[0] for p in self._stock_corner_pairs_list]
+            spcorner.values = [p[0] for p in self._stock_origin_pairs_list]
             if spcorner.text not in spcorner.values:
-                spcorner.text = self._stock_corner_pairs_list[0][0]
+                spcorner.text = self._stock_origin_pairs_list[0][0]
 
             self._milling_direction_pairs_list = _milling_direction_pairs()
             spmd = self.ids.spn_milling_dir
@@ -535,10 +524,10 @@ class FacingWizardPopup(ModalView):
     def _stock_origin_corner_from_ui(self) -> str:
         self._ensure_wizard_lists()
         text = self.ids.spn_stock_corner.text
-        for label, val in self._stock_corner_pairs_list:
+        for label, val in self._stock_origin_pairs_list:
             if text == label:
                 return val
-        return CORNER_BL
+        return STOCK_ORIGIN_CORNER_BL
 
     def _milling_direction_from_ui(self) -> str:
         self._ensure_wizard_lists()

@@ -11,10 +11,11 @@ from dataclasses import dataclass
 from carveracontroller.translation import tr
 
 from .stock_geometry import (
-    CORNER_BL,
-    CORNER_BR,
-    CORNER_TL,
-    CORNER_TR,
+    STOCK_ORIGIN_CORNER_BL,
+    STOCK_ORIGIN_CORNER_BR,
+    STOCK_ORIGIN_CORNER_CEN,
+    STOCK_ORIGIN_CORNER_TL,
+    STOCK_ORIGIN_CORNER_TR,
     stock_rect_from_origin_corner,
 )
 
@@ -140,7 +141,7 @@ def compute_facing_z_levels(p: FacingParams) -> list[float]:
 
 
 def _rows_along_x(corner: str, ya: float, yb: float, step: float) -> list[float]:
-    if corner in (CORNER_BL, CORNER_BR):
+    if corner in (STOCK_ORIGIN_CORNER_BL, STOCK_ORIGIN_CORNER_BR, STOCK_ORIGIN_CORNER_CEN):
         ys: list[float] = []
         y = ya
         while y <= yb + 1e-6:
@@ -156,7 +157,7 @@ def _rows_along_x(corner: str, ya: float, yb: float, step: float) -> list[float]
 
 
 def _cols_along_y(corner: str, xa: float, xb: float, step: float) -> list[float]:
-    if corner in (CORNER_BL, CORNER_TL):
+    if corner in (STOCK_ORIGIN_CORNER_BL, STOCK_ORIGIN_CORNER_TL, STOCK_ORIGIN_CORNER_CEN):
         xs: list[float] = []
         x = xa
         while x <= xb + 1e-6:
@@ -179,9 +180,10 @@ def _climb_is_forward(corner: str, raster_along_x: bool) -> bool:
     Raster along Y, stepover +X (bl/tl): climb = +Y  -> forward=True
     Raster along Y, stepover -X (br/tr): climb = -Y  -> forward=False
     """
+
     if raster_along_x:
-        return corner in (CORNER_TL, CORNER_TR)
-    return corner in (CORNER_BL, CORNER_TL)
+        return corner in (STOCK_ORIGIN_CORNER_TL, STOCK_ORIGIN_CORNER_TR)
+    return corner in (STOCK_ORIGIN_CORNER_BL, STOCK_ORIGIN_CORNER_TL, STOCK_ORIGIN_CORNER_CEN)
 
 
 def iter_raster_passes(
@@ -204,7 +206,11 @@ def iter_raster_passes(
         fixed_forward = None
 
     if along_x:
-        forward = fixed_forward if fixed_forward is not None else c in (CORNER_BL, CORNER_TL)
+        forward = (
+            fixed_forward
+            if fixed_forward is not None
+            else c in (STOCK_ORIGIN_CORNER_BL, STOCK_ORIGIN_CORNER_TL, STOCK_ORIGIN_CORNER_CEN)
+        )
         for y in _rows_along_x(c, ya, yb, step):
             xs = xa if forward else xb
             xe = xb if forward else xa
@@ -212,7 +218,11 @@ def iter_raster_passes(
             if fixed_forward is None:
                 forward = not forward
     else:
-        forward = fixed_forward if fixed_forward is not None else c in (CORNER_BL, CORNER_BR)
+        forward = (
+            fixed_forward
+            if fixed_forward is not None
+            else c in (STOCK_ORIGIN_CORNER_BL, STOCK_ORIGIN_CORNER_BR, STOCK_ORIGIN_CORNER_CEN)
+        )
         for x in _cols_along_y(c, xa, xb, step):
             ys = ya if forward else yb
             ye = yb if forward else ya

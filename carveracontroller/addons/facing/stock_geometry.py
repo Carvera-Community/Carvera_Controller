@@ -1,11 +1,25 @@
+from carveracontroller.translation import tr
+
+
 """
 Stock rectangle in WCS when a chosen stock corner is at the origin.
 """
 
-CORNER_BL = "bl"
-CORNER_BR = "br"
-CORNER_TL = "tl"
-CORNER_TR = "tr"
+STOCK_ORIGIN_CORNER_BL = "bl"
+STOCK_ORIGIN_CORNER_BR = "br"
+STOCK_ORIGIN_CORNER_TL = "tl"
+STOCK_ORIGIN_CORNER_TR = "tr"
+STOCK_ORIGIN_CORNER_CEN = "center"
+
+
+def stock_origin_pairs():
+    return [
+        (tr._("Bottom-left (+X width, +Y length)"), STOCK_ORIGIN_CORNER_BL),
+        (tr._("Bottom-right (-X width, +Y length)"), STOCK_ORIGIN_CORNER_BR),
+        (tr._("Top-left (+X width, -Y length)"), STOCK_ORIGIN_CORNER_TL),
+        (tr._("Top-right (-X width, -Y length)"), STOCK_ORIGIN_CORNER_TR),
+        (tr._("Center (X width / 2, Y length / 2)"), STOCK_ORIGIN_CORNER_CEN),
+    ]
 
 
 def stock_rect_from_origin_corner(
@@ -17,15 +31,17 @@ def stock_rect_from_origin_corner(
     w = width_mm
     sl = length_mm
     c = corner.strip().lower()
-    if c == CORNER_BL:
+    if c == STOCK_ORIGIN_CORNER_BL:
         return (0.0, 0.0, w, sl)
-    if c == CORNER_BR:
+    if c == STOCK_ORIGIN_CORNER_BR:
         return (-w, 0.0, 0.0, sl)
-    if c == CORNER_TL:
+    if c == STOCK_ORIGIN_CORNER_TL:
         return (0.0, -sl, w, 0.0)
-    if c == CORNER_TR:
+    if c == STOCK_ORIGIN_CORNER_TR:
         return (-w, -sl, 0.0, 0.0)
-    raise ValueError("stock corner must be bl, br, tl, or tr")
+    if c == STOCK_ORIGIN_CORNER_CEN:
+        return (-w / 2, -sl / 2, w / 2, sl / 2)
+    raise ValueError("stock corner must be bl, br, tl, or tr, cen")
 
 
 def rect_with_xy_margin(
