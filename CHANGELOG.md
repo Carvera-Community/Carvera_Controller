@@ -1,4 +1,4 @@
-[unreleased]
+[2.2.0-RC3]
 - Enhancement: The step size is now synchronized between the main screen and the Probing screen
 - Fixed: Y+/Y- jogging buttons on the Probing screen respect the configured Y axis inversion setting
 
