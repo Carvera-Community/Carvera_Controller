@@ -61,8 +61,8 @@ from .probe_grid_gcode import (
 from .stock_geometry import (
     STOCK_ORIGIN_CORNER_BL,
     rect_with_xy_margin,
-    stock_rect_from_origin_corner,
     stock_origin_pairs,
+    stock_rect_from_origin_corner,
 )
 
 logger = logging.getLogger(__name__)

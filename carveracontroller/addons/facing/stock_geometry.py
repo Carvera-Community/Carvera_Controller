@@ -1,6 +1,5 @@
 from carveracontroller.translation import tr
 
-
 """
 Stock rectangle in WCS when a chosen stock corner is at the origin.
 """
