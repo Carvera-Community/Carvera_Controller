@@ -2,7 +2,10 @@
 
 import hashlib
 import logging
+import struct
 from io import BytesIO
+
+import quicklz
 
 from carveracontroller.protocols.framing import (
     PTYPE_FILE_CAN,
@@ -12,6 +15,7 @@ from carveracontroller.protocols.framing import (
     PTYPE_FILE_VIEW,
     build_frame,
 )
+from carveracontroller.quicklz_container import finalize_download_payload
 from carveracontroller.XMODEM import ACK, CAN, CRC, EOT, XMODEM
 
 # What stock Z1 firmware sends instead of a digest: 32 characters, but not hex.
@@ -202,6 +206,23 @@ def test_framed_defers_md5_check_for_lz_payload():
     assert result == len(lz_payload)
     assert output == lz_payload
     assert modem.deferred_download_md5 == advertised
+
+
+def test_framed_quicklz_payload_decodes_to_exact_advertised_file(tmp_path):
+    original = b"alpha_steps_per_mm 400\nbeta_steps_per_mm 400\n" * 100
+    compressed = quicklz.compress(original)
+    wire_payload = struct.pack(">I", len(compressed)) + compressed + struct.pack(">H", sum(original) & 0xFFFF)
+
+    result, output, _writes, modem = _receive_framed(original, wire_payload)
+
+    assert result == len(wire_payload)
+    assert output == wire_payload
+    downloaded = tmp_path / "config.txt.tmp"
+    downloaded.write_bytes(output)
+    info = finalize_download_payload(downloaded, modem.deferred_download_md5)
+    assert info.was_compressed is True
+    assert downloaded.read_bytes() == original
+    assert hashlib.md5(downloaded.read_bytes()).hexdigest() == hashlib.md5(original).hexdigest()
 
 
 def test_framed_short_circuits_when_uppercase_local_md5_matches():
