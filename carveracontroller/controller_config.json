@@ -322,5 +322,21 @@
         "section": "carvera",
         "key": "show_playbar_tool_change_markers",
         "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Enable Job Status Web Server",
+        "desc": "Serves a read-only web page showing job progress (elapsed/remaining time, % complete) on your local network, so another device can watch it. This opens a network port, so it is off by default. Restart the controller after changing this.",
+        "section": "carvera",
+        "key": "status_server_enabled",
+        "default": "false"
+    },
+    {
+        "type": "numeric",
+        "title": "Job Status Web Server Port",
+        "desc": "TCP port the read-only job status web page is served on. Restart the controller after changing this.",
+        "section": "carvera",
+        "key": "status_server_port",
+        "default": "8765"
     }
 ]
