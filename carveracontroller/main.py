@@ -2536,6 +2536,7 @@ class Makera(RelativeLayout):
 
     alarm_triggered = False
     tool_triggered = False
+    _job_abort_requested = False
 
     used_tools = ListProperty()
     upcoming_tool = 0
@@ -2949,6 +2950,13 @@ class Makera(RelativeLayout):
 
         # Set default controller config values
         for setting in controller_config_definition:
+            # Some settings (e.g. shell-based job event commands) only make sense on
+            # certain platforms - the OS sandbox on iOS/Android blocks spawning
+            # processes, so hide those entries there rather than offer a control
+            # that silently does nothing.
+            platforms = setting.pop("platforms", None)
+            if platforms is not None and kivy_platform not in platforms:
+                continue
             if "default" in setting:
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
                 # The bool switch only recognises "0" and "1". An earlier default
@@ -3426,6 +3434,80 @@ class Makera(RelativeLayout):
         self.config_popup.btn_apply.disabled = True
         self.message_popup.lb_content.text = tr._("Language setting applied, restart Controller app to take effect !")
         self.message_popup.open()
+
+    # -----------------------------------------------------------------------
+    def abort_current_job(self):
+        """Abort the currently running job, marking it as user-cancelled so the
+        job-end event script (if configured) reports 'cancelled' rather than 'failed'."""
+        self._job_abort_requested = True
+        self.controller.abortCommand()
+
+    # -----------------------------------------------------------------------
+    def _run_job_event_command(self, event, outcome=None):
+        """Run the user-configured shell command for a job lifecycle event.
+
+        event: "start" or "end"
+        outcome: for "end" events, one of "success" or "failed_or_cancelled"
+
+        The command is read from the "Controller" settings and only runs if
+        job event commands are enabled there. It is executed asynchronously
+        in a background thread so it never blocks the UI or status polling.
+
+        Desktop only: iOS/Android sandbox app processes and block spawning
+        arbitrary subprocesses, so this is a no-op there even if a synced
+        config file has it enabled.
+        """
+        if kivy_platform in ("ios", "android"):
+            return
+
+        try:
+            if not Config.getboolean("carvera", "enable_job_event_commands", fallback=False):
+                return
+            if event == "start":
+                command = Config.get("carvera", "job_start_command", fallback="").strip()
+            elif outcome == "success":
+                command = Config.get("carvera", "job_success_command", fallback="").strip()
+            else:
+                command = Config.get("carvera", "job_fail_or_cancel_command", fallback="").strip()
+        except Exception:
+            logger.exception("Failed to read job event command configuration")
+            return
+
+        if not command:
+            return
+
+        app = App.get_running_app()
+        filename = ""
+        if app is not None:
+            filename = app.selected_remote_filename or app.selected_local_filename or ""
+
+        env = os.environ.copy()
+        env["CARVERA_JOB_EVENT"] = event
+        env["CARVERA_JOB_OUTCOME"] = outcome or ""
+        env["CARVERA_JOB_FILE"] = filename
+
+        def _run(command=command, env=env, event=event, outcome=outcome):
+            try:
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
+                if result.returncode != 0:
+                    logger.warning(
+                        "Job event command exited with code %s (event=%s, outcome=%s): %s",
+                        result.returncode,
+                        event,
+                        outcome,
+                        result.stderr.strip(),
+                    )
+            except Exception:
+                logger.exception("Job event command failed (event=%s, outcome=%s)", event, outcome)
+
+        threading.Thread(target=_run, daemon=True, name=f"job-event-{event}").start()
 
     # -----------------------------------------------------------------------
     def play(self, file_name, start_line):
@@ -4434,7 +4516,7 @@ class Makera(RelativeLayout):
                 + tr._("Then press ' Confirm' or main button to proceed")
             )
 
-        self.confirm_popup.cancel = partial(self.controller.abortCommand)
+        self.confirm_popup.cancel = partial(self.abort_current_job)
         self.confirm_popup.confirm = partial(self.changeTool)
         self.confirm_popup.open(self)
 
@@ -6960,6 +7042,14 @@ class Makera(RelativeLayout):
 
             # update progress bar and set selected
             if machine_not_playing:
+                if app.playing:
+                    # Job just ended - fire the configured end-of-job script.
+                    if self._job_abort_requested or CNC.vars["state"] in ("Alarm", NOT_CONNECTED):
+                        job_outcome = "failed_or_cancelled"
+                    else:
+                        job_outcome = "success"
+                    self._job_abort_requested = False
+                    self._run_job_event_command("end", job_outcome)
                 # not playing - check if we were playing before (interrupted playback)
                 if self.played_lines > 0:
                     # Playback was interrupted, update resume at line with last executed line
@@ -6986,6 +7076,10 @@ class Makera(RelativeLayout):
                 else:
                     self.progress_info = tr._(" No Remote File Selected") + last_job_elapsed
             else:
+                if not app.playing:
+                    # Job just started - fire the configured start-of-job script.
+                    self._job_abort_requested = False
+                    self._run_job_event_command("start")
                 app.playing = True
                 if self.played_lines != CNC.vars["playedlines"]:
                     self.played_lines = CNC.vars["playedlines"]

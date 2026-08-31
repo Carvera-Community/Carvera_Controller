@@ -3496,7 +3496,7 @@
                     tooltip_txt: tr._('Abort File Now')
                     disabled: (app.state != 'Run' and app.state != 'Pause') or not app.playing
                     on_release:
-                        app.root.controller.abortCommand()
+                        app.root.abort_current_job()
                 Label:
                     size_hint_x: None
                     width: '3dp'
