@@ -1,0 +1,422 @@
+#:import tr carveracontroller.__main__.tr
+
+<FileBrowserLocationTab>:
+    selected: False
+    tab_text: ''
+    icon: ''
+    orientation: 'horizontal'
+    spacing: dp(10)
+    padding: dp(8), 0
+    canvas.before:
+        Color:
+            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: (50/255, 164/255, 206/255, 1) if self.selected else (0, 0, 0, 0)
+        Rectangle:
+            pos: self.x, self.y
+            size: self.width, dp(3)
+    Widget:
+        size_hint_x: 1
+    Image:
+        source: root.icon
+        size_hint: None, None
+        size: dp(26), dp(26)
+        pos_hint: {'center_y': 0.5}
+        allow_stretch: True
+        keep_ratio: True
+        color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+    Label:
+        text: root.tab_text
+        size_hint_x: None
+        width: self.texture_size[0]
+        color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+        bold: root.selected
+        font_size: dp(16)
+        valign: 'middle'
+    Widget:
+        size_hint_x: 1
+
+<FileBrowserIconButton>:
+    padding: dp(6)
+    Image:
+        source: root.icon
+        allow_stretch: True
+        keep_ratio: True
+        color: (110/255, 110/255, 110/255, 1) if root.disabled else (1, 1, 1, 1)
+
+<FileBrowserActionButton>:
+    text: root.btn_text
+    size_hint_x: None
+    width: self.texture_size[0] + (dp(44) if self.icon else dp(24))
+    padding: (dp(32) if self.icon else dp(12)), 0
+    halign: 'left'
+    valign: 'middle'
+    text_size: None, self.height
+    canvas.after:
+        Color:
+            rgba: self.color
+        Rectangle:
+            source: root.icon
+            pos: self.x + dp(10), self.center_y - dp(10)
+            size: (dp(20), dp(20)) if root.icon else (0, 0)
+
+<FileBrowserBadge>:
+    size_hint: None, None
+    width: (self.texture_size[0] + dp(16)) if self.text else 0
+    height: dp(22) if self.text else 0
+    opacity: 1 if self.text else 0
+    font_size: dp(12)
+    bold: True
+    color: 1, 1, 1, 1
+    halign: 'center'
+    valign: 'middle'
+    text_size: None, self.height
+    canvas.before:
+        Color:
+            rgba: (32/255, 114/255, 148/255, 1) if self.text else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(4)]
+
+<FileBrowserPathChip>:
+    valign: 'middle'
+    halign: 'left'
+    font_size: dp(14)
+    shorten: True
+    shorten_from: 'right'
+
+<FileBrowserRow>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: dp(28) if self.kind == 'header' else (dp(40) if self.kind == 'folder' else dp(56))
+    padding: dp(8), 0
+    spacing: dp(8)
+    canvas.before:
+        Color:
+            rgba: (40/255, 40/255, 40/255, 1) if self.kind == 'header' else ((80/255, 80/255, 80/255, 1) if self.selected or self.checked else ((56/255, 56/255, 56/255, 1) if int(self.row_index) % 2 == 0 else (48/255, 48/255, 48/255, 1)))
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Widget:
+        size_hint_x: None
+        width: dp(22) if root.show_checkbox else 0
+        canvas.after:
+            Color:
+                rgba: (200/255, 200/255, 200/255, 1) if root.show_checkbox else (0, 0, 0, 0)
+            Line:
+                rectangle: self.center_x - dp(7), self.center_y - dp(7), dp(14), dp(14)
+                width: 1
+            Color:
+                rgba: (50/255, 164/255, 206/255, 1) if root.show_checkbox and root.checked else (0, 0, 0, 0)
+            Rectangle:
+                pos: self.center_x - dp(5), self.center_y - dp(5)
+                size: dp(10), dp(10)
+    Widget:
+        size_hint_x: None
+        width: 0 if root.kind == 'header' else dp(24)
+        canvas.after:
+            Color:
+                rgba: (250/255, 250/255, 250/255, 1) if root.kind != 'header' else (0, 0, 0, 0)
+            Rectangle:
+                source: root.icon
+                pos: self.center_x - dp(10), self.center_y - dp(10)
+                size: dp(20), dp(20)
+    BoxLayout:
+        orientation: 'vertical'
+        spacing: dp(2)
+        Widget:
+            size_hint_y: 1
+        Label:
+            text: root.filename
+            size_hint_y: None
+            height: dp(20)
+            color: (150/255, 150/255, 150/255, 1) if root.kind == 'header' else (230/255, 230/255, 230/255, 1)
+            bold: root.kind == 'header' or root.is_current_job
+            font_size: dp(13) if root.kind == 'header' else dp(15)
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.size
+            shorten: True
+            shorten_from: 'right'
+        Label:
+            size_hint_y: None
+            height: 0 if root.kind != 'file' else dp(16)
+            opacity: 1 if root.kind == 'file' else 0
+            text: root.subtitle
+            color: 150/255, 150/255, 150/255, 1
+            font_size: dp(12)
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.size
+            shorten: True
+            shorten_from: 'right'
+        Widget:
+            size_hint_y: 1
+    FileBrowserBadge:
+        text: root.current_badge
+        pos_hint: {'center_y': 0.5}
+
+<FileBrowserPopup>:
+    size_hint: 0.82, 0.85
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    auto_dismiss: False
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(12), dp(12), dp(12), dp(16)
+        spacing: dp(8)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(36)
+            Label:
+                text: root.title_text
+                bold: True
+                font_size: dp(18)
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+        BoxLayout:
+            size_hint_y: None
+            height: 0 if root.firmware_mode else dp(36)
+            opacity: 0 if root.firmware_mode else 1
+            spacing: dp(8)
+            Label:
+                text: tr._('Current file:')
+                size_hint_x: None
+                width: self.texture_size[0]
+                color: 180/255, 180/255, 180/255, 1
+                font_size: dp(14)
+                valign: 'middle'
+            Label:
+                text: root.job_filename
+                size_hint_x: None
+                width: self.texture_size[0]
+                color: (230/255, 230/255, 230/255, 1) if root.can_clear_job else (150/255, 150/255, 150/255, 1)
+                bold: root.can_clear_job
+                font_size: dp(14)
+                halign: 'left'
+                valign: 'middle'
+                text_size: None, self.height
+            FileBrowserBadge:
+                text: root.job_badge_text
+                pos_hint: {'center_y': 0.5}
+            Widget:
+                size_hint_x: 1
+            FileBrowserActionButton:
+                size_hint_x: None
+                size_hint_y: None
+                height: dp(32)
+                width: (self.texture_size[0] + dp(24)) if root.can_clear_job else 0
+                opacity: 1 if root.can_clear_job else 0
+                disabled: not root.can_clear_job
+                pos_hint: {'center_y': 0.5}
+                btn_text: tr._('Clear')
+                on_release: root.on_clear_job()
+        BoxLayout:
+            size_hint_y: None
+            height: 0 if root.firmware_mode else dp(48)
+            opacity: 0 if root.firmware_mode else 1
+            spacing: dp(4)
+            FileBrowserLocationTab:
+                tab_text: tr._('This device')
+                icon: 'data/laptop.png'
+                selected: root.location == 'device'
+                on_release: root.set_location('device')
+            FileBrowserLocationTab:
+                tab_text: tr._('Your machine')
+                icon: 'data/makera.png'
+                selected: root.location == 'machine'
+                on_release: root.set_location('machine')
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: dp(6)
+            BoxLayout:
+                size_hint_y: None
+                height: dp(36)
+                spacing: dp(6)
+                canvas.before:
+                    Color:
+                        rgba: 56/255, 56/255, 56/255, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                FileBrowserIconButton:
+                    id: btn_up
+                    size_hint_x: None
+                    width: dp(44)
+                    icon: 'data/folder-arrow-up.png'
+                    on_release: root.go_up()
+                ScrollView:
+                    id: breadcrumb_scroll
+                    do_scroll_y: False
+                    do_scroll_x: True
+                    scroll_x: 0
+                    bar_width: dp(4)
+                    BoxLayout:
+                        id: breadcrumb_box
+                        size_hint_x: None
+                        width: self.minimum_width
+                        spacing: dp(2)
+                        padding: dp(4), 0
+                BoxLayout:
+                    size_hint_x: None
+                    width: dp(148) if self.opacity > 0 else 0
+                    padding: dp(4)
+                    DirectoryView:
+                        id: btn_places
+                        data_text: root.curr_dir_name
+                        selected: True
+                        on_release: root.open_places_dropdown(self)
+            BoxLayout:
+                size_hint_y: None
+                height: dp(36)
+                spacing: 0
+                FileBrowserActionButton:
+                    id: btn_sort
+                    size_hint_x: None
+                    width: dp(110)
+                    btn_text: root.sort_button_text
+                    on_release: root.open_sort_dropdown(self)
+                Widget:
+                    size_hint_x: None
+                    width: dp(6)
+                BoxLayout:
+                    size_hint_x: 1 if (not root.compact or root.search_expanded) else None
+                    width: dp(36) if root.compact and not root.search_expanded else self.width
+                    canvas.before:
+                        Color:
+                            rgba: 80/255, 80/255, 80/255, 1
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [dp(8)]
+                    TextInput:
+                        id: ti_search
+                        hint_text: tr._('Search')
+                        multiline: False
+                        padding: dp(10), dp(6)
+                        cursor_color: 1, 1, 1, 1
+                        foreground_color: 1, 1, 1, 1
+                        background_color: 0, 0, 0, 0
+                        background_normal: ''
+                        background_active: ''
+                        opacity: 0 if root.compact and not root.search_expanded else 1
+                        disabled: root.compact and not root.search_expanded
+                        on_text: root.on_search_from_input(self.text)
+                    Button:
+                        size_hint_x: None
+                        width: dp(36) if root.compact and not root.search_expanded else (dp(36) if root.search_text else 0)
+                        text: '...' if root.compact and not root.search_expanded else '×'
+                        font_size: dp(16)
+                        color: 1, 1, 1, 1
+                        background_color: 0, 0, 0, 0
+                        background_normal: ''
+                        background_active: ''
+                        opacity: 1 if root.compact or root.search_text else 0
+                        on_release:
+                            if root.compact and not root.search_expanded:\
+                            root.toggle_search_expanded()
+                            else:\
+                            root.clear_search()
+                BoxLayout:
+                    id: extra_tools
+                    size_hint_x: None
+                    spacing: dp(6) if root.show_multi_button and root.show_new_folder_button else 0
+                    padding: (dp(6) if root.show_multi_button or root.show_new_folder_button else 0), 0, 0, 0
+                    width: 0 if not (root.show_multi_button or root.show_new_folder_button) else self.minimum_width
+                    FileBrowserActionButton:
+                        id: btn_multi
+                        size_hint_x: None
+                        width: (self.texture_size[0] + dp(44)) if root.show_multi_button else 0
+                        opacity: 1 if root.show_multi_button else 0
+                        disabled: not root.show_multi_button
+                        icon: 'data/checkbox-multiple-outline.png'
+                        btn_text: tr._('Select')
+                        on_release:
+                            if root.multi_select_mode:\
+                            root.cancel_multi_select()
+                            else:\
+                            root.toggle_multi_select()
+                    FileBrowserActionButton:
+                        id: btn_new_folder
+                        size_hint_x: None
+                        width: (self.texture_size[0] + dp(44)) if root.show_new_folder_button else 0
+                        opacity: 1 if root.show_new_folder_button else 0
+                        disabled: not root.show_new_folder_button
+                        icon: 'data/folder-plus.png'
+                        btn_text: tr._('New folder')
+                        on_release: root.on_new_folder()
+            BoxLayout:
+                orientation: 'vertical'
+                spacing: 0
+                Label:
+                    size_hint_y: None
+                    height: dp(24) if root.listing_banner_text else 0
+                    opacity: 1 if root.listing_banner_text else 0
+                    text: root.listing_banner_text
+                    color: 50/255, 164/255, 206/255, 1
+                    font_size: dp(13)
+                    halign: 'left'
+                    valign: 'middle'
+                    text_size: self.size
+                FloatLayout:
+                    FileBrowserList:
+                        id: file_list
+                        size_hint: 1, 1
+                        pos_hint: {'x': 0, 'y': 0}
+                        opacity: 0 if root.show_empty_state else 1
+                        viewclass: 'FileBrowserRow'
+                        do_scroll_x: False
+                        do_scroll_y: True
+                        scroll_type: ['bars', 'content']
+                        scroll_wheel_distance: dp(114)
+                        bar_width: dp(10)
+                        RecycleBoxLayout:
+                            default_size: None, dp(56)
+                            default_size_hint: 1, None
+                            size_hint_y: None
+                            height: self.minimum_height
+                            orientation: 'vertical'
+                            spacing: dp(1)
+                    FileBrowserEmptyOverlay:
+                        active: root.show_empty_state
+                        orientation: 'vertical'
+                        size_hint: 1, 1
+                        pos_hint: {'x': 0, 'y': 0}
+                        opacity: 1 if root.show_empty_state else 0
+                        padding: dp(24)
+                        spacing: dp(12)
+                        Label:
+                            text: root.empty_state_text
+                            color: 180/255, 180/255, 180/255, 1
+                            font_size: dp(15)
+                            halign: 'center'
+                            valign: 'middle'
+                            text_size: self.size
+                        Button:
+                            id: btn_ios_browse
+                            size_hint: None, None
+                            size: dp(160), dp(40)
+                            pos_hint: {'center_x': 0.5}
+                            text: tr._('Browse…')
+                            opacity: 0
+                            disabled: True
+                            on_release: root.pick_ios_file()
+        BoxLayout:
+            id: footer_bar
+            size_hint_y: None
+            height: dp(40)
+            spacing: dp(8)
+            BoxLayout:
+                id: footer_actions
+                spacing: dp(8)
+            FileBrowserActionButton:
+                id: btn_close
+                size_hint_x: None
+                icon: 'data/close.png'
+                btn_text: tr._('Close')
+                flat: True
+                on_release: root.dismiss()
