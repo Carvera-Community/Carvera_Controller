@@ -24,7 +24,8 @@ sudo apt install -y \
     libtool \
     pkg-config \
     mtdev-tools \
-    libhidapi-hidraw0
+    libhidapi-hidraw0 \
+    libusb-1.0-0
 
 
 print_status "Installing linuxdeploy (AppImage)"

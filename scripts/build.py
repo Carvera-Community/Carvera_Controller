@@ -82,6 +82,16 @@ def build_pyinstaller_args(
         logger.info(f"Output file icon: {ROOT_ASSETS_PATH.joinpath('icon-src.png')}")
         build_args += ["--icon", f"{ROOT_ASSETS_PATH.joinpath('icon-src.png')}"]
 
+    logger.info("Collect libusb and pyusb backend")
+    build_args += [
+        "--collect-all",
+        "libusb_package",
+        "--hiddenimport",
+        "usb",
+        "--hiddenimport",
+        "usb.backend.libusb1",
+    ]
+
     logger.info(f"Add bundled package assets: {PACKAGE_PATH}")
     build_args += ["--add-data", f"{PACKAGE_PATH}:carveracontroller"]
 

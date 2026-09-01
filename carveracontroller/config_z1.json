@@ -21,6 +21,64 @@
         "default": "0.0"
     },
     {
+        "type": "numeric",
+        "title": "LED brightness",
+        "desc": "Status light brightness (0 - 255)",
+        "section": "Basic",
+        "key": "light.ledBrightness",
+        "default": "15"
+    },
+    {
+        "type": "title",
+        "title": "Accessories",
+        "section": "Basic"
+    },
+    {
+        "type": "numeric",
+        "title": "Chip clear power",
+        "desc": "External output power when auto chip clearing is on (0 - 100)",
+        "section": "Basic",
+        "key": "accessory.chip_clear_power",
+        "default": "80"
+    },
+    {
+        "type": "numeric",
+        "title": "Auto blow power",
+        "desc": "Spindle fan power used by auto blow (0 - 100)",
+        "section": "Basic",
+        "key": "accessory.auto_blowing_power",
+        "default": "30"
+    },
+    {
+        "type": "title",
+        "title": "Bed cleaning",
+        "section": "Basic"
+    },
+    {
+        "type": "numeric",
+        "title": "Cleaning cycles",
+        "desc": "Number of sweep cycles (1 - 10)",
+        "section": "Basic",
+        "key": "bed_cleaning.cycles",
+        "default": "1"
+    },
+    {
+        "type": "numeric",
+        "title": "Sweep spacing",
+        "desc": "Distance between successive sweep rows (mm)",
+        "section": "Basic",
+        "key": "bed_cleaning.spacing",
+        "default": "40"
+    },
+    {
+        "type": "numeric",
+        "title": "Cleaning fan power",
+        "desc": "Spindle fan power during bed cleaning (0 - 100)",
+        "section": "Basic",
+        "key": "accessory.bed_cleaning_fan_power",
+        "default": "100"
+    },
+    {
         "type": "title",
         "title": "Safety",
         "section": "Basic"
@@ -92,22 +150,6 @@
         "section": "Advanced",
         "key": "coordinate.anchor1_y",
         "default": "-194.72"
-    },
-    {
-        "type": "numeric",
-        "title": "Anchor2 X Offset",
-        "desc": "Anchor2 X Offset relative to anchor1",
-        "section": "Advanced",
-        "key": "coordinate.anchor2_offset_x",
-        "default": "20.0"
-    },
-    {
-        "type": "numeric",
-        "title": "Anchor2 Y Offset",
-        "desc": "Anchor2 Y Offset relative to anchor1",
-        "section": "Advanced",
-        "key": "coordinate.anchor2_offset_y",
-        "default": "20.0"
     },
     {
         "type": "numeric",
@@ -190,6 +232,54 @@
         "default": "-3.0"
     },
     {
+        "type": "numeric",
+        "title": "Bed cleaning X min",
+        "desc": "Rear-left X of the bed cleaning sweep (mm)",
+        "section": "Advanced",
+        "key": "bed_cleaning.x_min",
+        "default": "-192.4"
+    },
+    {
+        "type": "numeric",
+        "title": "Bed cleaning X max",
+        "desc": "Front-right X of the bed cleaning sweep (mm)",
+        "section": "Advanced",
+        "key": "bed_cleaning.x_max",
+        "default": "-11.6"
+    },
+    {
+        "type": "numeric",
+        "title": "Bed cleaning Y min",
+        "desc": "Rear Y of the bed cleaning sweep (mm)",
+        "section": "Advanced",
+        "key": "bed_cleaning.y_min",
+        "default": "-194.3"
+    },
+    {
+        "type": "numeric",
+        "title": "Bed cleaning Y max",
+        "desc": "Front Y of the bed cleaning sweep (mm)",
+        "section": "Advanced",
+        "key": "bed_cleaning.y_max",
+        "default": "-1.0"
+    },
+    {
+        "type": "numeric",
+        "title": "Bed cleaning park Y",
+        "desc": "Y parking position after a cleaning cycle (mm)",
+        "section": "Advanced",
+        "key": "bed_cleaning.park_y",
+        "default": "-14.6"
+    },
+    {
+        "type": "numeric",
+        "title": "Bed cleaning front X",
+        "desc": "Front-edge X used to dump chips off the bed (mm)",
+        "section": "Advanced",
+        "key": "bed_cleaning.front_x",
+        "default": "-2.0"
+    },
+    {
         "type": "bool",
         "title": "Soft Limits",
         "desc": "Enabled to precheck if gCode commands will exceed the travel limits",
@@ -212,6 +302,14 @@
         "section": "Advanced",
         "key": "soft_endstop.y_min",
         "default": "-206.0"
+    },
+    {
+        "type": "numeric",
+        "title": "Rotary Y Min Coordinate",
+        "desc": "Minimum Y axis coordinate with the rotary module installed",
+        "section": "Advanced",
+        "key": "soft_endstop.rotary_y_min",
+        "default": "-160.0"
     },
     {
         "type": "numeric",

@@ -38,7 +38,7 @@ version = 0.0.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.1,pyserial==3.5,pyquicklz==1.4.1,filetype==1.2.0,android
+requirements = python3,kivy==2.3.1,pyserial==3.5,pyquicklz==1.4.1,filetype==1.2.0,numpy,android,charset-normalizer==2.1.1
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -108,7 +108,8 @@ android.permissions = android.permission.INTERNET, android.permission.MANAGE_EXT
 android.api = 34
 
 # (int) Minimum API your APK / AAB will support.
-#android.minapi = 29
+# NumPy (python-for-android recipe) requires minapi/ndk_api >= 24.
+android.minapi = 24
 
 # (int) Android SDK version to use
 #android.sdk = 20
@@ -117,7 +118,7 @@ android.api = 34
 #android.ndk = 23b
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
-#android.ndk_api = 21
+android.ndk_api = 24
 
 # (bool) Use --private data storage (True) or --dir public storage (False)
 #android.private_storage = True

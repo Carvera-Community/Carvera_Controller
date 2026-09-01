@@ -2,14 +2,16 @@ from kivy.core.text import Label as CoreLabel
 from kivy.factory import Factory
 from kivy.graphics import Color, Line, Rectangle
 from kivy.metrics import dp
-from kivy.properties import ListProperty, NumericProperty
+from kivy.properties import ListProperty, NumericProperty, ObjectProperty
 from kivy.uix.boxlayout import BoxLayout
 
+from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
 from carveracontroller.CNC import LASER_TOOL_NUMBER, PROBE_3D_TOOL_NUMBER, ZPROBE_TOOL_NUMBER
 from carveracontroller.GcodeViewer import tool_marker_palette_rgb
 
 DEFAULT_MARKER_LABEL_BG_COLOR = (210 / 255, 210 / 255, 210 / 255, 1)
 MARKER_LABEL_TEXT_COLOR = (30 / 255, 30 / 255, 30 / 255, 1)
+MARKER_HIT_PAD = dp(6)
 
 
 def play_percent_from_line(line_no, line_count):
@@ -18,13 +20,66 @@ def play_percent_from_line(line_no, line_count):
     return min(100.0, line_no / float(line_count) * 100.0)
 
 
+def unpack_tool_marker(entry):
+    """Return (percent, label, line_no) from a 2- or 3-tuple marker."""
+    percent = entry[0]
+    label = entry[1]
+    line_no = entry[2] if len(entry) > 2 else None
+    return percent, label, line_no
+
+
 def tool_change_markers_to_percents(markers, line_count):
     if line_count <= 0:
         return []
     percents = []
     for line_no, label in markers:
-        percents.append((play_percent_from_line(line_no, line_count), label))
+        percents.append((play_percent_from_line(line_no, line_count), label, line_no))
     return percents
+
+
+def next_tool_change_after_line(markers, current_line):
+    """Return (line_no, label) of the next tool change after current_line, or None."""
+    for line_no, label in markers:
+        if line_no > current_line:
+            return (line_no, label)
+    return None
+
+
+def seconds_from_start(*, gcode_remaining_target=None, total_time=None, percent_target=None):
+    """Seconds from program start until a line (loaded file, not yet playing)."""
+    if not total_time:
+        return None
+    if gcode_remaining_target is not None:
+        elapsed = max(0.0, total_time - gcode_remaining_target)
+        if elapsed > 0:
+            return elapsed
+    if percent_target:
+        return max(0.0, total_time * percent_target / 100.0)
+    return 0.0 if gcode_remaining_target is not None else None
+
+
+def seconds_until_target(
+    *,
+    gcode_remaining_now=None,
+    gcode_remaining_target=None,
+    live_remaining=None,
+    percent_now=None,
+    percent_target=None,
+):
+    """Seconds from the live play position until a future line."""
+    if gcode_remaining_now is not None and gcode_remaining_target is not None:
+        delta = gcode_remaining_now - gcode_remaining_target
+        if delta <= 0:
+            return 0.0
+        if live_remaining is not None and gcode_remaining_now > 0:
+            return max(0.0, live_remaining * (delta / gcode_remaining_now))
+        return delta
+    if live_remaining is not None and percent_now is not None and percent_target is not None:
+        remaining_pct = 100.0 - percent_now
+        if percent_target <= percent_now or remaining_pct <= 0:
+            return 0.0
+        return max(0.0, live_remaining * (percent_target - percent_now) / remaining_pct)
+    return None
 
 
 def _marker_label_bg_color(label):
@@ -114,15 +169,70 @@ def _layout_tool_marker_labels(items, track_w, gap=None):
     return items
 
 
+def _rect_contains(rect, x, y):
+    left, bottom, width, height = rect
+    return left <= x <= left + width and bottom <= y <= bottom + height
+
+
+class _MarkerHoverToolTip(ToolTipButton):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("text", "")
+        kwargs.setdefault("size_hint", (None, None))
+        kwargs.setdefault("size", (0, 0))
+        kwargs.setdefault("opacity", 0)
+        kwargs.setdefault("background_normal", "")
+        kwargs.setdefault("background_down", "")
+        kwargs.setdefault("background_color", (0, 0, 0, 0))
+        kwargs.setdefault("border", (0, 0, 0, 0))
+        kwargs.setdefault("color", (0, 0, 0, 0))
+        super().__init__(**kwargs)
+
+    def collide_point(self, x, y):
+        parent = self.parent
+        if parent is None:
+            return False
+        return parent._hitbox_at(x, y) is not None
+
+    def to_widget(self, x, y, relative=False):
+        parent = self.parent
+        if parent is None:
+            return super().to_widget(x, y, relative)
+        return parent.to_widget(x, y, relative)
+
+    def on_mouse_pos(self, *args):
+        parent = self.parent
+        if parent is None:
+            self.tooltip_txt = ""
+            super().on_mouse_pos(*args)
+            return
+        pos = args[1]
+        hitbox = parent._hitbox_at(*parent.to_widget(*pos))
+        self.tooltip_txt = parent._marker_tooltip_text(hitbox) if hitbox else ""
+        super().on_mouse_pos(*args)
+
+    def on_touch_down(self, touch):
+        return False
+
+    def on_touch_move(self, touch):
+        return False
+
+    def on_touch_up(self, touch):
+        return False
+
+
 class PlayProgressBar(BoxLayout):
     value = NumericProperty(0)
     color = ListProperty([52 / 255, 166 / 255, 208 / 255, 1])
     tool_markers = ListProperty([])
+    marker_tooltip_provider = ObjectProperty(None, allownone=True)
 
     LABEL_ROW_H = dp(12)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._marker_hitboxes = []
+        self._hover_tip = _MarkerHoverToolTip()
+        self.add_widget(self._hover_tip)
         with self.canvas.before:
             Color(50 / 255, 50 / 255, 50 / 255, 1)
             self._bg_rect = Rectangle(pos=self.pos, size=(0, 0))
@@ -161,7 +271,8 @@ class PlayProgressBar(BoxLayout):
     def _prepare_marker_draw_items(self, value, track_w):
         layout_w = track_w + self._fill_offset()
         items = []
-        for percent, label in value:
+        for entry in value:
+            percent, label, line_no = unpack_tool_marker(entry)
             local_x = self._position_for_percent(track_w, percent)
             label_bg_color = _marker_label_bg_color(label)
             core = CoreLabel(
@@ -176,6 +287,7 @@ class PlayProgressBar(BoxLayout):
                 {
                     "percent": percent,
                     "label": label,
+                    "line_no": line_no,
                     "local_x": local_x,
                     "label_w": label_w,
                     "label_h": label_h,
@@ -195,6 +307,7 @@ class PlayProgressBar(BoxLayout):
 
     def _update_markers(self, _instance, value):
         self.canvas.after.clear()
+        self._marker_hitboxes = []
         track_w = self._track_width()
         bar_h = self.height if self.width > 0 else 0
         if track_w <= 0 or bar_h <= 0 or not value:
@@ -225,6 +338,48 @@ class PlayProgressBar(BoxLayout):
                     pos=(label_x, label_y),
                     size=(label_w, label_h),
                 )
+        self._marker_hitboxes = self._hitboxes_for_items(draw_items, ox, oy, bar_h, label_pad)
+
+    def _hitboxes_for_items(self, draw_items, ox, oy, bar_h, label_pad):
+        hitboxes = []
+        for item in draw_items:
+            rects = []
+            x = ox + item["local_x"]
+            rects.append((x - MARKER_HIT_PAD, oy, MARKER_HIT_PAD * 2, bar_h))
+            if item.get("show_label", True):
+                label_x = ox + item["left"] - label_pad
+                label_y = self._label_y_for_row(oy, item["row"], item["label_h"]) - label_pad / 2.0
+                rects.append(
+                    (
+                        label_x,
+                        label_y,
+                        item["label_w"] + label_pad * 2,
+                        item["label_h"] + label_pad,
+                    )
+                )
+            hitboxes.append(
+                {
+                    "label": item["label"],
+                    "line_no": item.get("line_no"),
+                    "local_x": x,
+                    "rects": rects,
+                }
+            )
+        return hitboxes
+
+    def _hitbox_at(self, x, y):
+        hits = [box for box in self._marker_hitboxes if any(_rect_contains(rect, x, y) for rect in box["rects"])]
+        if not hits:
+            return None
+        return min(hits, key=lambda box: abs(box["local_x"] - x))
+
+    def _marker_tooltip_text(self, hitbox):
+        provider = self.marker_tooltip_provider
+        if callable(provider):
+            text = provider(hitbox["label"], hitbox["line_no"])
+            if text:
+                return text
+        return hitbox["label"]
 
 
 Factory.register("PlayProgressBar", cls=PlayProgressBar)

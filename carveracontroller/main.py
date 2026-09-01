@@ -85,11 +85,13 @@ import re
 import subprocess
 import tempfile
 
+import kivy.lang.builder as _kivy_builder
+import kivy.uix.widget as _kivy_widget
 from kivy.app import App
 from kivy.clock import Clock, mainthread
 from kivy.config import Config
 from kivy.factory import Factory
-from kivy.graphics import Color, Ellipse, Line, PopMatrix, PushMatrix, Rectangle, Rotate, Translate
+from kivy.graphics import Color, Ellipse, InstructionGroup, Line, PopMatrix, PushMatrix, Rectangle, Rotate, Translate
 from kivy.metrics import Metrics, dp
 from kivy.properties import (
     BooleanProperty,
@@ -99,7 +101,7 @@ from kivy.properties import (
     ObjectProperty,
     StringProperty,
 )
-from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.behaviors import ButtonBehavior, FocusBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
@@ -120,6 +122,28 @@ from kivy.uix.stencilview import StencilView
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
+
+def _safe_widget_destructor(uid, _ref):
+    # Kivy 2.3.1 does `del _widget_destructors[uid]` in a weakref callback.
+    # Python 3.12+ GC can invoke that after the uid is already gone, which
+    # prints KeyError on quit. USB/libusb teardown makes that extra collection
+    # more likely than serial or WiFi.
+    # https://github.com/kivy/kivy/issues/5005
+    _kivy_widget._widget_destructors.pop(uid, None)
+    _kivy_builder.Builder.unbind_widget(uid)
+
+
+_kivy_widget._widget_destructor = _safe_widget_destructor
+
+from carveracontroller.addons.beds.catalog import is_known_machine
+from carveracontroller.addons.beds.store import (
+    get_bed,
+    load_store,
+    resolve_mesh_path,
+    selected_id,
+)
+from carveracontroller.addons.beds.ui.BedSettingsPopup import BedSettingsPopup
+from carveracontroller.addons.cam import CamMetadata, extract_cam_metadata
 from carveracontroller.addons.facing.FacingWizardPopup import FacingWizardPopup
 from carveracontroller.addons.pendant import (
     SUPPORTED_PENDANTS,
@@ -128,6 +152,18 @@ from carveracontroller.addons.pendant import (
     SettingPendantSelector,
 )
 from carveracontroller.addons.probing.ProbingPopup import ProbingPopup
+from carveracontroller.addons.stock.stock_defaults import (
+    bounds_from_settings,
+    carver_mode_from_settings,
+    checkpoint_level_from_settings,
+    default_settings,
+    material_from_settings,
+    mesh_while_playing_from_settings,
+    shape_from_settings,
+    voxel_resolution_from_settings,
+)
+from carveracontroller.addons.stock.stock_estimate import auto_stock_for_loaded_file, header_stock_usable
+from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPopup
 from carveracontroller.serial_listeners import dispatch_serial_line
 
 
@@ -206,9 +242,16 @@ from .addons.camera.Z1Camera import (
     has_camera,
     set_resolution,
 )
+from .addons.intellisense.engine import highlight_mdi_line
+from .addons.intellisense.ui import (
+    IntellisenseExplainRowMixin,
+    handle_mdi_intellisense_key,
+    hide_gcode_explain,
+    hide_mdi_intellisense,
+    update_mdi_intellisense,
+)
 from .addons.probing.ProbingControls import ProbeButton
 from .addons.tool_visualization import (
-    extract_tool_table,
     format_tool_tooltip,
 )
 from .addons.tooltips.Tooltips import Tooltip, ToolTipButton, ToolTipDropDown
@@ -251,7 +294,13 @@ from .GcodeViewer import (
     GCodeViewer,
 )
 from .ui import widget_helpers
-from .ui.PlayProgressBar import play_percent_from_line, tool_change_markers_to_percents
+from .ui.PlayProgressBar import (
+    next_tool_change_after_line,
+    play_percent_from_line,
+    seconds_from_start,
+    seconds_until_target,
+    tool_change_markers_to_percents,
+)
 from .ui.popups.adv_calibrate import AdvCalibratePopup
 from .ui.popups.set_position import (
     ChangeToolPopup,
@@ -262,6 +311,8 @@ from .ui.popups.set_position import (
     SetYPopup,
     SetZPopup,
 )
+
+HALT_REASON_ESTOP = 13
 
 
 def load_halt_translations(tr: translation.Lang):
@@ -329,14 +380,27 @@ class MDITextInput(TextInput):
         self.past_mdi_commands = []
         self.active_past_mdi_index = 0
         self.bind(focus=self.on_focus)
+        self.bind(text=self._on_mdi_text)
 
     def on_focus(self, instance, have_focus):
         if have_focus:
-            Window.bind(on_key_down=self.on_keyboard_down)
+            Clock.schedule_once(lambda _dt: update_mdi_intellisense(self), 0)
         else:
-            Window.unbind(on_key_down=self.on_keyboard_down)
+            hide_mdi_intellisense()
 
-    def on_keyboard_down(self, window, key, scancode, codepoint, modifiers):
+    def _on_mdi_text(self, _instance, _value):
+        if self.focus:
+            update_mdi_intellisense(self)
+
+    def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        key = keycode[0] if isinstance(keycode, (tuple, list)) else keycode
+        if handle_mdi_intellisense_key(self, key, modifiers):
+            return True
+        if self._handle_navigation_key(key, modifiers):
+            return True
+        return super().keyboard_on_key_down(window, keycode, text, modifiers)
+
+    def _handle_navigation_key(self, key, modifiers):
         ENTER_KEY = 13
         UP_ARROW_KEY = 273
         DOWN_ARROW_KEY = 274
@@ -381,6 +445,7 @@ class MDITextInput(TextInput):
         cmd_to_send = self.text.strip()
         if not cmd_to_send:
             return
+        hide_mdi_intellisense()
         self.past_mdi_commands.append(cmd_to_send)
         self.active_past_mdi_index = len(self.past_mdi_commands)
         app = App.get_running_app()
@@ -388,9 +453,70 @@ class MDITextInput(TextInput):
 
 
 class GcodePlaySlider(Slider):
+    """Preview timeline scrubber with a thin green cut-simulation progress strip
+    and blue checkpoint markers."""
+
+    sim_progress = NumericProperty(0.0)  # 0–100, path-distance percent carved by the voxel sim
+    sim_checkpoints = ListProperty([])  # path-distance percents (0–100) of stored checkpoints
+    _SIM_BAR_COLOR = (0.25, 0.82, 0.35, 0.95)
+    _SIM_MARKER_COLOR = (0.3, 0.55, 0.95, 1.0)
+    _SIM_BAR_HEIGHT = dp(3)
+    _SIM_MARKER_WIDTH = dp(2)
+    _SIM_MARKER_HEIGHT = dp(7)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._pending_line_update = None  # Track pending scheduled line update
+        with self.canvas.after:
+            self._sim_color = Color(*self._SIM_BAR_COLOR)
+            self._sim_rect = Rectangle(pos=(0, 0), size=(0, 0))
+            self._sim_marker_group = InstructionGroup()
+        self.bind(
+            pos=self._update_sim_bar,
+            size=self._update_sim_bar,
+            padding=self._update_sim_bar,
+            min=self._update_sim_bar,
+            max=self._update_sim_bar,
+            sim_progress=self._update_sim_bar,
+            sim_checkpoints=self._update_sim_bar,
+        )
+
+    def _update_sim_bar(self, *_args):
+        if not hasattr(self, "_sim_rect"):
+            return
+        progress = float(self.sim_progress or 0.0)
+        pad = float(self.padding)
+        track_w = max(0.0, self.width - 2.0 * pad) if self.width > 0 else 0.0
+        bar_h = float(self._SIM_BAR_HEIGHT)
+        bar_y = self.y + dp(1)
+
+        if progress <= 0 or track_w <= 0 or self.height <= 0:
+            self._sim_rect.size = (0, 0)
+        else:
+            fill_w = track_w * min(100.0, progress) / 100.0
+            self._sim_rect.pos = (self.x + pad, bar_y)
+            self._sim_rect.size = (fill_w, bar_h)
+
+        # Checkpoint ticks on the sim strip (full track so future restore points stay visible).
+        group = getattr(self, "_sim_marker_group", None)
+        if group is None:
+            return
+        group.clear()
+        if track_w <= 0 or self.height <= 0:
+            return
+        marker_w = float(self._SIM_MARKER_WIDTH)
+        marker_h = float(self._SIM_MARKER_HEIGHT)
+        marker_y = bar_y + (bar_h - marker_h) / 2.0
+        for pct in self.sim_checkpoints or []:
+            try:
+                p = float(pct)
+            except (TypeError, ValueError):
+                continue
+            if p < 0.0 or p > 100.0:
+                continue
+            x = self.x + pad + track_w * (p / 100.0) - marker_w / 2.0
+            group.add(Color(*self._SIM_MARKER_COLOR))
+            group.add(Rectangle(pos=(x, marker_y), size=(marker_w, marker_h)))
 
     def on_touch_down(self, touch):
         if self.disabled:
@@ -708,7 +834,7 @@ class OriginPopup(ModalView):
         else:
             laser_x = CNC.vars["laser_module_offset_x"] if CNC.vars["lasermode"] else 0.0
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
-            if self.coord_popup.config["origin"]["anchor"] == 2:
+            if self.coord_popup.config["origin"]["anchor"] == 2 and app.has_anchor2:
                 x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
                 y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
             elif self.coord_popup.config["origin"]["anchor"] == 1:
@@ -723,7 +849,8 @@ class OriginPopup(ModalView):
         widget_helpers.bind_auto_select_to_text_input(self.txt_y_offset)
 
     def selected_anchor(self):
-        if self.cbx_anchor2.active:
+        app = App.get_running_app()
+        if self.cbx_anchor2.active and app.has_anchor2:
             return 2
         if self.cbx_4axis_origin.active:
             return 3
@@ -745,7 +872,7 @@ class OriginPopup(ModalView):
             if self.cbx_anchor1.active:
                 x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"], 4)
                 y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"], 4)
-            elif self.cbx_anchor2.active:
+            elif self.cbx_anchor2.active and app.has_anchor2:
                 x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
                 y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
             elif self.cbx_current_position.active:
@@ -1101,11 +1228,43 @@ class FilePopup(ModalView):
         self.btn_select.disabled = (not single_select) or select_dir
 
 
+def background_image_model(name):
+    """Return the machine model a built-in background belongs to, or None if unknown."""
+    if name.startswith("CA1") or name.startswith("Air "):
+        return "CA1"
+    if name.startswith("C1"):
+        return "C1"
+    if name.startswith("Z1"):
+        return "Z1"
+    return None
+
+
+def filter_background_images(builtin_names, custom_names, model):
+    """Built-ins matching `model`, then unprefixed custom images (always shown)."""
+    matching = [name for name in builtin_names if background_image_model(name) == model]
+    matching.sort(key=str.casefold)
+    custom = sorted(custom_names, key=str.casefold)
+    return matching + custom
+
+
+def select_background_image(saved, matching):
+    """Pick a spinner value. persist is False when falling back so a mismatched saved setting is kept."""
+    values = ["None"] + list(matching)
+    if saved in values:
+        return saved, True
+    if matching:
+        return matching[0], False
+    return "None", False
+
+
 class CoordPopup(ModalView):
     config = {}
     mode = StringProperty()
     vacuummode = ObjectProperty()
     extoutmode = ObjectProperty()
+    autoblowmode = ObjectProperty()
+    autobedcleanmode = ObjectProperty()
+    ionizermode = ObjectProperty()
     origin_popup = ObjectProperty()
     zprobe_popup = ObjectProperty()
     auto_level_popup = ObjectProperty()
@@ -1132,33 +1291,54 @@ class CoordPopup(ModalView):
         self.mode = "Run"  # 'Margin' / 'ZProbe' / 'Leveling'
         super().__init__(**kwargs)
         self.user_play_file_image_dir = Config.get("carvera", "custom_bkg_img_dir")
-        self.background_image_files = []
+        self.custom_background_image_files = []
+        self.builtin_background_image_files = []
+        self._suppress_background_image_config_write = False
 
         default_bkg_images = os.path.join(os.path.dirname(__file__), "data/play_file_image_backgrounds")
 
         if os.path.exists(self.user_play_file_image_dir):
-            self.background_image_files = [
+            self.custom_background_image_files = [
                 f.replace(".png", "") for f in os.listdir(self.user_play_file_image_dir) if f.endswith(".png")
             ]
 
         for f in os.listdir(default_bkg_images):
             if f.endswith(".png"):
-                self.background_image_files.append(f.replace(".png", ""))
+                self.builtin_background_image_files.append(f.replace(".png", ""))
 
-        # Ensure the spinner is updated after initialization
         Clock.schedule_once(self.populate_spinner, 0)
+        app = App.get_running_app()
+        if app is not None:
+            app.bind(model=self._on_machine_model_changed)
 
-    def populate_spinner(self, dt):
-        if "background_image_spinner" in self.ids:
-            self.ids.background_image_spinner.values = ["None"] + self.background_image_files
-            saved_image = Config.get("carvera", "background_image")
-            if saved_image in self.ids.background_image_spinner.values:
-                self.ids.background_image_spinner.text = saved_image
-                self.update_background_image(saved_image)
+    def _on_machine_model_changed(self, _instance, _value):
+        self.populate_spinner()
+
+    def populate_spinner(self, dt=None):
+        if "background_image_spinner" not in self.ids:
+            return
+        app = App.get_running_app()
+        model = app.model if app is not None else ""
+        matching = filter_background_images(
+            self.builtin_background_image_files, self.custom_background_image_files, model
+        )
+        saved_image = Config.get("carvera", "background_image")
+        selected, persist = select_background_image(saved_image, matching)
+        spinner = self.ids.background_image_spinner
+        self._suppress_background_image_config_write = not persist
+        try:
+            spinner.values = ["None"] + matching
+            if spinner.text != selected:
+                spinner.text = selected
+            else:
+                self.update_background_image(selected)
+        finally:
+            self._suppress_background_image_config_write = False
 
     def update_background_image(self, filename):
-        Config.set("carvera", "background_image", filename)
-        Config.write()
+        if not self._suppress_background_image_config_write:
+            Config.set("carvera", "background_image", filename)
+            Config.write()
 
         if filename != "None":
             old_source = os.path.join(os.path.dirname(__file__), "data/play_file_image_backgrounds", filename)
@@ -1215,10 +1395,14 @@ class CoordPopup(ModalView):
         Clock.schedule_once(self.cnc_workspace.draw, 0)
 
         # init origin popup
-        self.origin_popup.cbx_anchor1.active = self.config["origin"]["anchor"] == 1
-        self.origin_popup.cbx_anchor2.active = self.config["origin"]["anchor"] == 2
-        self.origin_popup.cbx_4axis_origin.active = self.config["origin"]["anchor"] == 3
-        self.origin_popup.cbx_current_position.active = self.config["origin"]["anchor"] == 4
+        origin_anchor = self.config["origin"]["anchor"]
+        if origin_anchor == 2 and not App.get_running_app().has_anchor2:
+            origin_anchor = 1
+            self.config["origin"]["anchor"] = 1
+        self.origin_popup.cbx_anchor1.active = origin_anchor == 1
+        self.origin_popup.cbx_anchor2.active = origin_anchor == 2
+        self.origin_popup.cbx_4axis_origin.active = origin_anchor == 3
+        self.origin_popup.cbx_current_position.active = origin_anchor == 4
         self.origin_popup.txt_x_offset.text = str(self.config["origin"]["x_offset"])
         self.origin_popup.txt_y_offset.text = str(self.config["origin"]["y_offset"])
 
@@ -1233,6 +1417,21 @@ class CoordPopup(ModalView):
             self.extoutmode = True
         else:
             self.extoutmode = False
+
+        if CNC.vars["autoblowmode"] == 1:
+            self.autoblowmode = True
+        else:
+            self.autoblowmode = False
+
+        if CNC.vars["autobedcleanmode"] == 1:
+            self.autobedcleanmode = True
+        else:
+            self.autobedcleanmode = False
+
+        if CNC.vars["ionizermode"] == 1:
+            self.ionizermode = True
+        else:
+            self.ionizermode = False
 
         # init margin widgets
         self.cbx_margin.active = self.config["margin"]["active"]
@@ -1265,7 +1464,7 @@ class CoordPopup(ModalView):
         else:
             laser_x = CNC.vars["laser_module_offset_x"] if CNC.vars["lasermode"] else 0.0
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
-            if self.config["origin"]["anchor"] == 2:
+            if self.config["origin"]["anchor"] == 2 and app.has_anchor2:
                 self.lb_origin.text = "(%g, %g) " % (
                     round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4),
                     round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4),
@@ -1875,6 +2074,31 @@ class OperationDropDown(ToolTipDropDown):
     pass
 
 
+class GcodeViewerDisplayMenuButton(ButtonBehavior, BoxLayout):
+    icon = StringProperty("")
+    active = BooleanProperty(False)
+    text = StringProperty("")
+
+
+class GcodeViewerDisplayDropDown(ToolTipDropDown):
+    show_grid = BooleanProperty(True)
+    ortho_projection = BooleanProperty(False)
+    show_stock = BooleanProperty(False)
+    show_bed = BooleanProperty(False)
+
+    def open(self, widget):
+        self._anchor = widget
+        if hasattr(widget, "active"):
+            widget.active = True
+        super().open(widget)
+
+    def on_dismiss(self):
+        anchor = getattr(self, "_anchor", None)
+        if anchor is not None and hasattr(anchor, "active"):
+            anchor.active = False
+        self._anchor = None
+
+
 class MachineButton(ToolTipButton):
     ip = StringProperty("")
     port = NumericProperty(2222)
@@ -1906,6 +2130,8 @@ class CNCWorkspace(Widget):
     config = {}
     bg_rect = ObjectProperty(None)
     bg_image = ""
+    # Height/width of the preview. C1 is ~0.7 (240/340); Z1 is square (200/200).
+    workspace_aspect = NumericProperty(0.7)
 
     # -----------------------------------------------------------------------
     def __init__(self, **kwargs):
@@ -1916,8 +2142,16 @@ class CNCWorkspace(Widget):
     def on_resize(self, *args):
         self.draw()
 
+    def _sync_workspace_aspect(self):
+        wx = float(CNC.vars.get("worksize_x") or 0)
+        wy = float(CNC.vars.get("worksize_y") or 0)
+        aspect = (wy / wx) if wx > 0 else 0.7
+        if abs(self.workspace_aspect - aspect) > 1e-4:
+            self.workspace_aspect = aspect
+
     def load_config(self, config):
         self.config = config
+        self._sync_workspace_aspect()
 
     def update_background_image(self, new_source):
         if new_source != "None":
@@ -1929,6 +2163,10 @@ class CNCWorkspace(Widget):
         self.draw()
 
     def draw(self, *args):
+        old_aspect = self.workspace_aspect
+        self._sync_workspace_aspect()
+        if abs(old_aspect - self.workspace_aspect) > 1e-4:
+            return
         if self.x <= 100:
             return
         self.canvas.clear()
@@ -1958,25 +2196,25 @@ class CNCWorkspace(Widget):
                         pos=(self.x, self.y), size=(CNC.vars["anchor_width"] * zoom, CNC.vars["anchor_length"] * zoom)
                     )
 
-                    # anchor2
-                    if self.config["origin"]["anchor"] == 2:
-                        Color(75 / 255, 75 / 255, 75 / 255, 1)
-                    else:
-                        Color(55 / 255, 55 / 255, 55 / 255, 1)
-                    Rectangle(
-                        pos=(
-                            self.x + CNC.vars["anchor2_offset_x"] * zoom,
-                            self.y + CNC.vars["anchor2_offset_y"] * zoom,
-                        ),
-                        size=(CNC.vars["anchor_length"] * zoom, CNC.vars["anchor_width"] * zoom),
-                    )
-                    Rectangle(
-                        pos=(
-                            self.x + CNC.vars["anchor2_offset_x"] * zoom,
-                            self.y + CNC.vars["anchor2_offset_y"] * zoom,
-                        ),
-                        size=(CNC.vars["anchor_width"] * zoom, CNC.vars["anchor_length"] * zoom),
-                    )
+                    if app.has_anchor2:
+                        if self.config["origin"]["anchor"] == 2:
+                            Color(75 / 255, 75 / 255, 75 / 255, 1)
+                        else:
+                            Color(55 / 255, 55 / 255, 55 / 255, 1)
+                        Rectangle(
+                            pos=(
+                                self.x + CNC.vars["anchor2_offset_x"] * zoom,
+                                self.y + CNC.vars["anchor2_offset_y"] * zoom,
+                            ),
+                            size=(CNC.vars["anchor_length"] * zoom, CNC.vars["anchor_width"] * zoom),
+                        )
+                        Rectangle(
+                            pos=(
+                                self.x + CNC.vars["anchor2_offset_x"] * zoom,
+                                self.y + CNC.vars["anchor2_offset_y"] * zoom,
+                            ),
+                            size=(CNC.vars["anchor_width"] * zoom, CNC.vars["anchor_length"] * zoom),
+                        )
 
                 else:
                     rotation_base_y_center = (CNC.vars["anchor_width"] + CNC.vars["rotation_offset_y"]) * zoom
@@ -2121,8 +2359,9 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
     def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
         mod = "ctrl" if sys.platform == "win32" else "meta"
         if text == "c" and self.selected and mod in modifiers:
-            if hasattr(self, "text"):
-                Clipboard.copy(self.text.strip())
+            line = getattr(self, "plain_text", None) or getattr(self, "text", "")
+            if line:
+                Clipboard.copy(line.strip())
             return True
         return False
 
@@ -2146,7 +2385,8 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
                 return True
             if touch.is_double_tap:
                 app = App.get_running_app()
-                app.root.manual_cmd.text = self.text.strip()
+                line = getattr(self, "plain_text", None) or self.text
+                app.root.manual_cmd.text = line.strip()
                 Clock.schedule_once(app.root.refocus_cmd)
             return self.parent.select_with_touch(self.index, touch)
 
@@ -2222,43 +2462,40 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
                 view = rv.view_adapter.views[key]
                 if view and hasattr(view, "selected") and view.selected is not None:
                     view.selected = key == index
-            # Defer only 3D viewer and slider update to avoid re-entry.
-            Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
-
-    def _update_3d_viewer_and_slider(self, selected_index=None):
-        """Update the 3D viewer and progress slider when a line is selected in the file viewer.
-        selected_index: when provided (e.g. from a scheduled callback), use this instead of self.index
-        since RecycleView may have recycled the widget by the time the callback runs."""
-        app = App.get_running_app()
-        if hasattr(app.root, "gcode_viewer") and app.root.gcode_viewer:
-            # Check if gcode_viewer has valid data before trying to use it
-            gcode_viewer = app.root.gcode_viewer
-            if not hasattr(gcode_viewer, "raw_linenumbers") or not gcode_viewer.raw_linenumbers:
-                return
-            if not hasattr(gcode_viewer, "lengths") or not gcode_viewer.lengths:
-                return
-
-            # Use provided index when from deferred callback (RecycleView reuses views)
-            index = selected_index if selected_index is not None else self.index
-            current_page = app.curr_page
-            actual_line_number = (current_page - 1) * MAX_LOAD_LINES + index + 1
-
-            # Skip set_selected_line in frame callback: GcodeViewer calls it from set_pos_by_distance
-            # before cur_line_index is updated, so it would overwrite our selection with the old line.
-            app.root._skip_next_set_selected_line_from_callback = True
-            try:
-                app.root.gcode_viewer.set_distance_by_lineidx(actual_line_number, 0.5)
-            except (IndexError, AttributeError):
-                pass
-
-            # Schedule the progress slider update for the next frame
-            if hasattr(app.root, "gcode_play_slider") and app.root.gcode_play_slider:
-                distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
-                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
-                Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, "value", slider_value), 0)
 
 
-class GCodeRow(RecycleDataViewBehavior, BoxLayout):
+class Row(IntellisenseExplainRowMixin, SelectableLabel):
+    """MDI history row with command-explanation hover and selection popups."""
+
+    highlighted_text = StringProperty("")
+    plain_text = StringProperty("")
+    highlight = BooleanProperty(False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind_intellisense_hover()
+
+    def refresh_view_attrs(self, rv, index, data):
+        self.intellisense_on_recycle()
+        result = super().refresh_view_attrs(rv, index, data)
+        self.plain_text = data.get("text", "") or ""
+        self.highlighted_text = data.get("highlighted_text") or ""
+        self.highlight = bool(data.get("highlight", False))
+        return result
+
+    def apply_selection(self, rv, index, is_selected):
+        super().apply_selection(rv, index, is_selected)
+        self.intellisense_on_selection(is_selected)
+
+    def _show_context_menu(self, pos):
+        hide_gcode_explain()
+        super()._show_context_menu(pos)
+
+
+Factory.register("Row", cls=Row)
+
+
+class GCodeRow(IntellisenseExplainRowMixin, RecycleDataViewBehavior, BoxLayout):
     """Single row in GCodeRV: line number, optional resume-flag icon, gcode text."""
 
     index = None
@@ -2273,8 +2510,13 @@ class GCodeRow(RecycleDataViewBehavior, BoxLayout):
     touch_start_pos = None
     _resume_bind_uids = None  # [txt_uid, cbx_uid] for unbind on recycle
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind_intellisense_hover()
+
     def refresh_view_attrs(self, rv, index, data):
         self.index = index
+        self.intellisense_on_recycle()
         # Unbind previous resume-line updates when recycled
         if self._resume_bind_uids:
             app = App.get_running_app()
@@ -2347,6 +2589,7 @@ class GCodeRow(RecycleDataViewBehavior, BoxLayout):
         return super().on_touch_up(touch)
 
     def _show_context_menu(self, pos):
+        hide_gcode_explain()
         app = App.get_running_app()
         for child in app.root.children:
             if isinstance(child, GCodeLineContextMenu):
@@ -2368,12 +2611,14 @@ class GCodeRow(RecycleDataViewBehavior, BoxLayout):
         self.selected = is_selected
         if not is_selected:
             Window.unbind(on_key_down=self.on_keyboard_down)
+            self.intellisense_on_selection(False)
         else:
             Window.bind(on_key_down=self.on_keyboard_down)
             for key in rv.view_adapter.views:
                 view = rv.view_adapter.views[key]
                 if view and hasattr(view, "selected") and view.selected is not None:
                     view.selected = key == index
+            self.intellisense_on_selection(True)
             Clock.schedule_once(lambda dt: self._update_3d_viewer_and_slider(selected_index=index), 0)
 
     def _update_3d_viewer_and_slider(self, selected_index=None):
@@ -2394,7 +2639,8 @@ class GCodeRow(RecycleDataViewBehavior, BoxLayout):
                 pass
             if hasattr(app.root, "gcode_play_slider") and app.root.gcode_play_slider:
                 distance = app.root.gcode_viewer.get_distance_by_lineidx(actual_line_number, 0.5)
-                slider_value = distance * 1000.0 / app.root.gcode_viewer_distance
+                total = app.root.gcode_viewer_distance
+                slider_value = (distance * 1000.0 / total) if total else 0.0
                 Clock.schedule_once(lambda dt: setattr(app.root.gcode_play_slider, "value", slider_value), 0)
 
     def on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
@@ -2810,6 +3056,10 @@ class GCodeRV(RecycleView):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.bind(scroll_y=self._on_intel_scroll)
+
+    def _on_intel_scroll(self, *_args):
+        hide_gcode_explain()
 
     def on_scroll_stop(self, touch):
         super().on_scroll_stop(touch)
@@ -2854,6 +3104,10 @@ class GCodeRV(RecycleView):
 class ManualRV(RecycleView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.bind(scroll_y=self._on_intel_scroll)
+
+    def _on_intel_scroll(self, *_args):
+        hide_gcode_explain()
 
 
 class TopBar(BoxLayout):
@@ -2936,6 +3190,7 @@ class Makera(RelativeLayout):
     status_drop_down = ObjectProperty()
 
     operation_drop_down = ObjectProperty()
+    gcode_viewer_display_drop_down = ObjectProperty()
 
     confirm_popup = ObjectProperty()
     unlock_popup = ObjectProperty()
@@ -2988,6 +3243,7 @@ class Makera(RelativeLayout):
     file_has_ocodes = False
     tool_change_markers = []
     tool_table = {}
+    cam_metadata = None
     document_unit = "mm"
 
     # Path visibility filters for the G-code viewer color-scheme panel.
@@ -3039,6 +3295,9 @@ class Makera(RelativeLayout):
         "spindle_scale": [0.0, 100],
         "vacuum_mode": [0.0, 0],
         "extout_mode": [0.0, 0],
+        "autoblow_mode": [0.0, 0],
+        "autobedclean_mode": [0.0, 0],
+        "ionizer_mode": [0.0, 0],
         "laser_mode": [0.0, 0],
         "laser_scale": [0.0, 100],
         "laser_test": [0.0, 0],
@@ -3131,6 +3390,7 @@ class Makera(RelativeLayout):
         self.func_drop_down = FuncDropDown()
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
+        self.gcode_viewer_display_drop_down = GcodeViewerDisplayDropDown()
         self.jog_speed_drop_down = JogSpeedDropDown(self.controller)
 
         self.confirm_popup = ConfirmPopup()
@@ -3145,6 +3405,8 @@ class Makera(RelativeLayout):
         self.probing_popup = ProbingPopup(self.controller)
         self.cmm_workbench_popup = None
         self.facing_popup = FacingWizardPopup()
+        self.stock_settings_popup = StockSettingsPopup()
+        self.bed_settings_popup = BedSettingsPopup()
         self.adv_calibrate_popup = AdvCalibratePopup()
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
         self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
@@ -3171,7 +3433,15 @@ class Makera(RelativeLayout):
         self.gcode_viewer.set_play_over_callback(self.gcode_play_over_call_back)
         self.gcode_viewer.set_error_popup_callback(self._on_gcode_cannot_visualise)
         self.gcode_viewer.time_estimate_progress_callback = self._on_time_estimate_progress
-        self.float_layout.tool_bar.show_grid = self.gcode_viewer.is_grid_visible()
+        self.gcode_viewer.bind(sim_progress=self._on_viewer_sim_progress)
+        self.gcode_viewer.bind(sim_checkpoints=self._on_viewer_sim_checkpoints)
+        self.gcode_viewer.bind(sim_hud_text=self._on_viewer_sim_hud_text)
+        self._on_viewer_sim_hud_text(self.gcode_viewer, self.gcode_viewer.sim_hud_text)
+        self.gcode_viewer_display_drop_down.show_grid = self.gcode_viewer.is_grid_visible()
+        self.gcode_viewer.bind(stock_visible=self._on_viewer_stock_visible)
+        self._on_viewer_stock_visible(self.gcode_viewer, self.gcode_viewer.stock_visible)
+        self.gcode_viewer.bind(bed_visible=self._on_viewer_bed_visible)
+        self._on_viewer_bed_visible(self.gcode_viewer, self.gcode_viewer.bed_visible)
         self.path_hidden_tools = set()
 
         # init camera live view
@@ -3254,6 +3524,8 @@ class Makera(RelativeLayout):
 
         self._load_gcode_highlight_settings()
         self._load_playbar_tool_change_marker_settings()
+        if self.wpb_play:
+            self.wpb_play.marker_tooltip_provider = self._playbar_tool_change_tooltip
 
         # blink timer
         Clock.schedule_interval(self.blink_state, 0.5)
@@ -3337,6 +3609,12 @@ class Makera(RelativeLayout):
             self.pendant.close()
         except Exception as e:
             logger.error(f"Error closing pendant: {e}")
+
+        try:
+            if getattr(self, "controller", None) is not None:
+                self.controller.close_manual()
+        except Exception as e:
+            logger.error(f"Error closing machine connection: {e}")
 
         # Save the last window size.
         # Seems that kivvy uses the window size before dpi scaling in the config,
@@ -3517,6 +3795,151 @@ class Makera(RelativeLayout):
         self.toggle_keyboard_jog_control(True)
         self.facing_popup.open()
 
+    def open_stock_settings_popup(self):
+        self._pre_modal_keyboard_jog = self.keyboard_jog_control
+        self.toggle_keyboard_jog_control(True)
+        popup = self.stock_settings_popup
+        popup.rotary_mode = bool(App.get_running_app().has_4axis)
+        popup.has_off_axis_y = bool(App.get_running_app().has_off_axis_y)
+        popup.open()
+
+    def open_bed_settings_popup(self):
+        self._pre_modal_keyboard_jog = self.keyboard_jog_control
+        self.toggle_keyboard_jog_control(True)
+        self.bed_settings_popup.open()
+
+    def apply_bed_settings(self) -> bool:
+        """Push the saved bed for the current machine into the 3D viewer."""
+        if self.gcode_viewer is None:
+            return False
+        app = App.get_running_app()
+        model = (getattr(app, "model", "") or "").strip() if app is not None else ""
+        file_loaded = bool(app is not None and (app.selected_remote_filename or app.selected_local_filename))
+        connected = app is not None and app.state != NOT_CONNECTED and is_known_machine(model)
+
+        # Only show the bed if there is a file loaded for the current machine
+        file_for_this_machine = (
+            self._selected_file_machine_key is None
+            or self._selected_file_machine_key == self._get_current_machine_connection_key()
+        )
+        if not file_loaded or not connected or not file_for_this_machine:
+            return bool(self.gcode_viewer.set_bed(None, visible=False))
+
+        store = load_store()
+        bed = get_bed(store, model, selected_id(store, model))
+        if bed is None:
+            return bool(self.gcode_viewer.set_bed(None, visible=False))
+        path = resolve_mesh_path(bed)
+        if path is None:
+            self.show_message_popup(tr._("Bed mesh is missing."), False)
+            self.gcode_viewer.set_bed(None, visible=False)
+            return False
+        ok = bool(
+            self.gcode_viewer.set_bed(
+                path,
+                mcs_xyz=(bed["mcs_x"], bed["mcs_y"], bed["mcs_z"]),
+                material=bed["material"],
+                visible=True,
+            )
+        )
+        if not ok:
+            self.show_message_popup(tr._("Could not load the bed mesh."), False)
+        return ok
+
+    def apply_stock_settings(self, settings: dict) -> bool:
+        """Push stock settings from the popup into the 3D viewer.
+
+        Must be called on the main thread (popup Apply is). Not ``@mainthread``:
+        Kivy's decorator always schedules and returns ``None``, so the popup
+        could not observe success/failure.
+        """
+        return self._apply_stock_settings_impl(settings)
+
+    def _apply_stock_settings_impl(self, settings: dict) -> bool:
+        """Apply stock settings on the calling thread (must already be main thread)."""
+        if self.gcode_viewer is None:
+            return False
+        try:
+            bounds = bounds_from_settings(settings)
+            simulate = bool(settings.get("simulate_cut", False)) and self.gcode_viewer.simulation_available()
+            self.gcode_viewer.set_stock(
+                bounds,
+                visible=bool(settings.get("show_stock", False)),
+                simulate_cut=simulate,
+                voxel_resolution=voxel_resolution_from_settings(settings),
+                checkpoint_level=checkpoint_level_from_settings(settings),
+                mesh_while_playing=mesh_while_playing_from_settings(settings),
+                carver_mode=carver_mode_from_settings(settings),
+                shape=shape_from_settings(settings),
+                material=material_from_settings(settings),
+            )
+        except Exception:
+            logger.exception("failed to apply stock settings")
+            return False
+        return True
+
+    def _reset_stock_settings(self, shape=None, origin=None, show_stock=False):
+        """Push a stock reset into the popup and viewer. Must already be main thread."""
+        popup = getattr(self, "stock_settings_popup", None)
+        if popup is not None:
+            settings = popup.reset_for_loaded_file(shape=shape, origin=origin, show_stock=show_stock)
+        else:
+            settings = default_settings()
+            if shape is not None:
+                settings["shape"] = shape.to_dict()
+            if origin is not None:
+                settings["origin"] = origin.to_dict()
+            settings["show_stock"] = bool(show_stock)
+            settings["simulate_cut"] = False
+        return self._apply_stock_settings_impl(settings)
+
+    def _should_auto_show_header_stock(self, cam_stock) -> bool:
+        """True when header stock exists and the viewer setting allows auto-display."""
+        if not header_stock_usable(cam_stock):
+            return False
+        raw = (
+            Config.get("carvera", "gcode_auto_show_stock")
+            if Config.has_option("carvera", "gcode_auto_show_stock")
+            else "1"
+        )
+        return raw not in ("0", "false", "False")
+
+    def _auto_stock_shape_origin(self):
+        """CAM-header stock if present, otherwise toolpath AABB estimate."""
+        metadata = getattr(self, "cam_metadata", None) or CamMetadata.empty()
+        viewer = getattr(self, "gcode_viewer", None)
+        app = App.get_running_app()
+        rotary = bool(app is not None and getattr(app, "has_4axis", False))
+        feed_z_max_mm = None
+        if viewer is not None:
+            if rotary:
+                feed_z_max_mm = viewer.raw_feed_z_max_mm()
+            elif getattr(viewer, "raw_feed_rates", None):
+                feed_z_max_mm = float(getattr(viewer, "z_max_mm", 0.0))
+        return auto_stock_for_loaded_file(
+            metadata.stock,
+            CNC.vars["xmin"],
+            CNC.vars["ymin"],
+            CNC.vars["zmin"],
+            CNC.vars["xmax"],
+            CNC.vars["ymax"],
+            CNC.vars["zmax"],
+            tool_table=self.tool_table,
+            unit_scale=unit_scale_to_mm(self.document_unit),
+            feed_z_max_mm=feed_z_max_mm,
+            rotary=rotary,
+        )
+
+    @mainthread
+    def reset_stock_for_loaded_file(self):
+        """Hide stock for a new file load (shape/origin filled later in load_end).
+
+        Must run on the main thread — touches popup widgets and rebuilds GL meshes.
+        Uses the last *applied* snapshot (not live UI) so an open popup's dirty
+        or invalid edits are discarded rather than committed.
+        """
+        self._reset_stock_settings()
+
     def open_adv_calibrate_popup(self):
         app = App.get_running_app()
         if not app.is_community_firmware:
@@ -3676,15 +4099,15 @@ class Makera(RelativeLayout):
         origin_y = self.coord_config["origin"]["y_offset"]
         app = App.get_running_app()
         if not app.has_4axis:
-            if self.coord_config["origin"]["anchor"] == 1:
-                origin_x += CNC.vars["anchor1_x"]
-                origin_y += CNC.vars["anchor1_y"]
-            elif self.coord_config["origin"]["anchor"] == 2:
+            if self.coord_config["origin"]["anchor"] == 2 and app.has_anchor2:
                 origin_x += CNC.vars["anchor1_x"] + CNC.vars["anchor2_offset_x"]
                 origin_y += CNC.vars["anchor1_y"] + CNC.vars["anchor2_offset_y"]
-            else:
+            elif self.coord_config["origin"]["anchor"] == 4:
                 origin_x += CNC.vars["mx"]
                 origin_y += CNC.vars["my"]
+            else:
+                origin_x += CNC.vars["anchor1_x"]
+                origin_y += CNC.vars["anchor1_y"]
         else:
             origin_x += CNC.vars["anchor1_x"] + CNC.vars["rotation_offset_x"]
             origin_y += CNC.vars["anchor1_y"] + CNC.vars["rotation_offset_y"]
@@ -3788,6 +4211,8 @@ class Makera(RelativeLayout):
         self.status_index = self.status_index + 1
         if self.status_index >= 6:
             self.status_index = 0
+        if self._progress_smooth_clock is not None:
+            self._update_progress_smooth(0)
 
     # -----------------------------------------------------------------------
     def check_model_metadata(self, *args):
@@ -3812,12 +4237,12 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def open_comports_drop_down(self, button):
-        """Show USB serial devices that have a VID/PID; labels are the USB serial number."""
+        """Show USB serial and vendor-class bulk devices; labels are the USB serial number."""
         self.comports_drop_down.clear_widgets()
-        devices = Utils.list_identifiable_usb_serial_ports()
+        devices = Utils.list_identifiable_usb_devices()
         if not devices:
             btn = Button(
-                text=tr._("No USB serial devices found"),
+                text=tr._("No USB devices found"),
                 size_hint_y=None,
                 height="35dp",
                 color=(180 / 255, 180 / 255, 180 / 255, 1),
@@ -3987,10 +4412,16 @@ class Makera(RelativeLayout):
         Config.write()
 
     def _store_usb_device_id_for_path(self, device_path):
-        for entry in Utils.list_identifiable_usb_serial_ports():
+        for entry in Utils.list_identifiable_usb_devices():
             if Utils.same_usb_device_path(entry["device_path"], device_path):
                 self._store_usb_device_identity(entry["device_id"], entry["serial"])
                 return
+        from carveracontroller.USBBulkStream import parse_usb_bulk_address
+
+        parsed = parse_usb_bulk_address(device_path)
+        if parsed:
+            vid, pid, serial = parsed
+            self._store_usb_device_identity(f"{vid:04X}:{pid:04X}", serial)
 
     def _resolve_usb_reconnect_path(self):
         """Resolve configured VID:PID (+ preferred serial) to a current OS path."""
@@ -4004,7 +4435,7 @@ class Makera(RelativeLayout):
         # Fall back to last path only if that path still maps to an identifiable USB device.
         last_path = getattr(self.controller, "connection_address", None)
         if last_path:
-            for entry in Utils.list_identifiable_usb_serial_ports():
+            for entry in Utils.list_identifiable_usb_devices():
                 if Utils.same_usb_device_path(entry["device_path"], last_path):
                     return entry["device_path"]
         return None
@@ -4237,11 +4668,19 @@ class Makera(RelativeLayout):
 
                     if msg == Controller.MSG_NORMAL:
                         logger.info(f"MDI Received: {line}")
-                        entry = {"text": line, "color": (103 / 255, 150 / 255, 186 / 255, 1)}
+                        entry = {
+                            "text": line,
+                            "color": (103 / 255, 150 / 255, 186 / 255, 1),
+                            "entry_type": "output",
+                        }
                         self._append_to_mdi([entry], log_to_mdi_data=line not in [" ", "ok", "Done ATC"])
                     elif msg == Controller.MSG_ERROR:
                         logger.error(f"MDI Received: {line}")
-                        entry = {"text": line, "color": (250 / 255, 105 / 255, 102 / 255, 1)}
+                        entry = {
+                            "text": line,
+                            "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                            "entry_type": "output",
+                        }
                         self._append_to_mdi([entry], log_to_mdi_data=line not in [" ", "ok", "Done ATC"])
                 except:
                     logger.error(sys.exc_info()[1])
@@ -4267,6 +4706,7 @@ class Makera(RelativeLayout):
             # update diagnose if needed
             if self.controller.diagnoseUpdate:
                 Clock.schedule_once(self.updateDiagnose, 0)
+                Clock.schedule_once(self._apply_estop_note_to_halt_popup, 0)
                 self.controller.diagnoseUpdate = False
 
             if self.controller.loadNUM == LOAD_DIR:
@@ -4426,6 +4866,7 @@ class Makera(RelativeLayout):
             self.unlock_popup.unlock_stay = partial(self.unlockMachine)
             self.unlock_popup.unlock_safe_z = partial(self.unlockMachineAndMoveToSafeZ)
             self.unlock_popup.open(self)
+            self._request_halt_estop_note()
             return
 
         # Use ConfirmPopup for halt_reason >= 20 (machine requires reset)
@@ -4456,6 +4897,50 @@ class Makera(RelativeLayout):
             self.confirm_popup.lb_content.text = action_text
 
         self.confirm_popup.open(self)
+        self._request_halt_estop_note()
+
+    # -----------------------------------------------------------------------
+    def _request_halt_estop_note(self):
+        # Wait for diagnoseUpdate to apply
+        self.controller.viewDiagnoseReport(True)
+
+    # -----------------------------------------------------------------------
+    def _apply_estop_note_to_halt_popup(self, *args):
+        app = App.get_running_app()
+        if app is None or app.state != "Alarm":
+            return
+
+        # Check if one of the two popups is opened
+        if getattr(self.unlock_popup, "_is_open", False) or getattr(self.unlock_popup, "showing", False):
+            popup = self.unlock_popup
+        elif getattr(self.confirm_popup, "_is_open", False) or getattr(self.confirm_popup, "showing", False):
+            popup = self.confirm_popup
+        else:
+            return
+
+        title = popup.lb_title.text
+        if not title or not (
+            title.startswith(tr._("Machine Is Halted: ")) or title.startswith(tr._("Machine Is Halted!"))
+        ):
+            return
+
+        note = tr._(
+            "The emergency stop is engaged and may be the cause of this alarm. "
+            "Disengage it before clearing the alarm or resetting the machine."
+        )
+        body = popup.lb_content.text or ""
+        if body == note:
+            base = ""
+        elif body.startswith(note + "\n\n"):
+            base = body[len(note) + 2 :]
+        else:
+            base = body
+
+        show_note = CNC.vars.get("st_e_stop", 0) and CNC.vars["halt_reason"] != HALT_REASON_ESTOP
+        if show_note:
+            popup.lb_content.text = note if not base else note + "\n\n" + base
+        else:
+            popup.lb_content.text = base
 
     # -----------------------------------------------------------------------
     def open_sleep_confirm_popup(self):
@@ -4861,6 +5346,10 @@ class Makera(RelativeLayout):
                     # Applying settings failed; retrying the download cannot fix panel/schema mismatches.
                     self._config_apply_failed = True
                 self.config_popup.btn_apply.disabled = len(self.setting_change_list) == 0
+                if getattr(self.gcode_viewer, "high_precision_time_estimate", False) and (
+                    self.gcode_viewer.raw_linenumbers and self.gcode_viewer.raw_feed_rates
+                ):
+                    self.gcode_viewer._compute_line_times_async(show_progress=False)
             except Exception as e:
                 logger.exception("Failed to load machine config")
                 self.config_loaded = False
@@ -4892,6 +5381,7 @@ class Makera(RelativeLayout):
             app.selected_remote_filename = ""
             self._last_loaded_file_key = None
             self._selected_file_machine_key = current_key
+            self.apply_bed_settings()
         self.updateStatus()
 
     def _get_current_machine_connection_key(self):
@@ -5159,6 +5649,11 @@ class Makera(RelativeLayout):
         if model != app.model:
             app.model = model.strip()
             model_changed = True
+        app.has_anchor2 = app.model != "Z1"
+        if not app.has_anchor2 and getattr(self, "coord_popup", None):
+            if self.coord_popup.config.get("origin", {}).get("anchor") == 2:
+                self.coord_popup.set_config("origin", "anchor", 1)
+                self.coord_popup.load_config()
         if app.model == "CA1":
             CNC.vars["rotation_base_width"] = 300
             CNC.vars["rotation_head_width"] = 56.5
@@ -5210,6 +5705,8 @@ class Makera(RelativeLayout):
                     self.config_loading = False
 
             Clock.schedule_once(_reload_machine_config, 0.1)
+        if model_changed:
+            self.apply_bed_settings()
 
     # -----------------------------------------------------------------------
     def downloadCallback(self, remote_path, packet_size, success_count, error_count):
@@ -5243,6 +5740,7 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.selected_local_filename = ""
         app.selected_remote_filename = ""
+        self.apply_bed_settings()
 
     # -----------------------------------------------------------------------
     def startLoadWiFi(self, button):
@@ -5888,21 +6386,106 @@ class Makera(RelativeLayout):
 
     # --------------------------------------------------------------`---------
     def _on_time_estimate_progress(self, state, percent):
-        """Callback for GcodeViewer time estimate computation: show progress popup while parsing feed speeds."""
+        """Callback for GcodeViewer time estimate computation.
+
+        'start'/'progress'/'done' drive the progress popup. 'updated' means a
+        silent refresh applied new times (no popup).
+        """
         if state == "start":
-            self.progressStart(tr._("Calculating run time time estimate..."), None)
+            self.progressStart(tr._("Calculating run time estimate..."), None)
         elif state == "progress":
             self.progressUpdate(percent, "", True)
         elif state == "done":
             self.progressFinish()
-            # Legend row durations become available once line_times are applied.
             self.refresh_gcode_color_legend()
+            self._refresh_idle_progress_info()
+        elif state == "updated":
+            self.refresh_gcode_color_legend()
+            self._refresh_idle_progress_info()
 
     # --------------------------------------------------------------`---------
     _PROGRESS_TIMER_PAUSED_STATES = frozenset({"Hold", "Pause", "Wait", "Tool"})
 
     def _current_remaining_sec(self):
         return max(0.0, self._remaining_anchor_sec - (time.time() - self._remaining_anchor_time))
+
+    def _seconds_until_line(self, line_no, live_remaining=None):
+        """Seconds until a line: from start when idle, from the playhead when running."""
+        if line_no is None or not self.selected_file_line_count:
+            return None
+        remaining_at = self.gcode_viewer.get_remaining_time_by_lineidx
+        total_time = self.gcode_viewer.total_time or 0.0
+        percent_target = play_percent_from_line(line_no, self.selected_file_line_count)
+        if live_remaining is None:
+            return seconds_from_start(
+                gcode_remaining_target=remaining_at(line_no, 0.0),
+                total_time=total_time,
+                percent_target=percent_target,
+            )
+        current_line = self.played_lines or 1
+        return seconds_until_target(
+            gcode_remaining_now=remaining_at(current_line, 0.5),
+            gcode_remaining_target=remaining_at(line_no, 0.0),
+            live_remaining=live_remaining,
+            percent_now=self.wpb_play.value,
+            percent_target=percent_target,
+        )
+
+    def _tool_change_display_name(self, label):
+        if label == "L":
+            return tr._("Laser")
+        if label == "P":
+            return tr._("Probe")
+        if label == "3DP":
+            return tr._("3D Probe")
+        return label
+
+    def _playbar_tool_change_tooltip(self, label, line_no):
+        app = App.get_running_app()
+        playing = bool(app and app.playing)
+        if playing and app.state in self._PROGRESS_TIMER_PAUSED_STATES:
+            live_remaining = max(0.0, self._remaining_anchor_sec)
+        elif playing:
+            live_remaining = self._current_remaining_sec()
+        else:
+            live_remaining = None
+        seconds = self._seconds_until_line(line_no, live_remaining)
+        tool_name = self._tool_change_display_name(label)
+        if seconds is None:
+            return tr._("Tool change to {}").format(tool_name)
+        if playing and seconds <= 0:
+            return tr._("Tool change to {} passed").format(tool_name)
+        return tr._("Tool change to {} in {}").format(tool_name, Utils.second2hour(int(seconds)))
+
+    def _format_file_progress_info(self, *, playing, remaining_sec=None):
+        """Progress-bar text while a file is selected, playing or idle."""
+        app = App.get_running_app()
+        path = (app.selected_remote_filename or app.selected_local_filename) if app else ""
+        filename = os.path.basename(path) if path else ""
+        if not playing:
+            duration_sec = self.gcode_viewer.total_time or 0.0
+            if duration_sec <= 0:
+                return f" {filename}" if filename else ""
+            return f" {filename} ({Utils.second2hour(int(duration_sec))} {tr._('estimated')})"
+        remaining = remaining_sec if remaining_sec is not None else 0.0
+        time_phrase = f"{Utils.second2hour(int(remaining))} to go"
+        next_change = next_tool_change_after_line(self.tool_change_markers, self.played_lines)
+        if next_change is not None and self.status_index % 2 == 1:
+            next_line, next_label = next_change
+            until_sec = self._seconds_until_line(next_line, remaining)
+            if until_sec is not None:
+                time_phrase = tr._("{} until {}").format(Utils.second2hour(int(until_sec)), next_label)
+        return (
+            f" {filename} ( {self.played_lines}/{self.selected_file_line_count} - {int(self.wpb_play.value)}%,"
+            f" {Utils.second2hour(int(CNC.vars.get('playedseconds', 0) or 0))} {tr._('elapsed')}, {time_phrase} )"
+        )
+
+    def _refresh_idle_progress_info(self):
+        app = App.get_running_app()
+        if app is None or app.playing:
+            return
+        if app.selected_remote_filename or app.selected_local_filename:
+            self.progress_info = self._format_file_progress_info(playing=False)
 
     def _update_progress_smooth(self, dt):
         """Refresh elapsed/remaining display every second while playing."""
@@ -5916,9 +6499,7 @@ class Makera(RelativeLayout):
         ):
             # While held/paused/disconnected, leave the last progress_info unchanged so both timers freeze.
             return
-        remaining_display = self._current_remaining_sec()
-        filename = os.path.basename(app.selected_remote_filename or app.selected_local_filename)
-        self.progress_info = f" {filename} ( {self.played_lines}/{self.selected_file_line_count} - {int(self.wpb_play.value)}%, {Utils.second2hour(CNC.vars['playedseconds'])} elapsed, {Utils.second2hour(int(remaining_display))} to go )"
+        self.progress_info = self._format_file_progress_info(playing=True, remaining_sec=self._current_remaining_sec())
 
     # --------------------------------------------------------------`---------
     def updateCompressProgress(self, value):
@@ -5984,6 +6565,7 @@ class Makera(RelativeLayout):
                     self.fw_version_checked = False
                     self.fw_version = ""
                     app.model = ""
+                    app.has_anchor2 = True
                     app.fw_version_digitized = 0
                     app.is_community_firmware = False
                     app.supports_auto_ext_out = False
@@ -5991,6 +6573,8 @@ class Makera(RelativeLayout):
                     self.camera_checked = False
                     self.camera_probe += 1  # discard the result of a probe still in flight
                     self.camera_stream.stop()
+                    if self.gcode_viewer is not None:
+                        self.gcode_viewer.set_bed(None, visible=False)
                     self.controller.is_community_firmware = False
                     self.machine_metadata_query_time = 0
 
@@ -6199,6 +6783,27 @@ class Makera(RelativeLayout):
                         extout_switch_play.set_flag = True
                         extout_switch_play.active = CNC.vars["extoutmode"]
 
+            for control_name, setter, var_name, switch_id in (
+                ("autoblow_mode", self.controller.setAutoBlowMode, "autoblowmode", "autoblow_switch_play"),
+                (
+                    "autobedclean_mode",
+                    self.controller.setAutoBedCleanMode,
+                    "autobedcleanmode",
+                    "autobedclean_switch_play",
+                ),
+                ("ionizer_mode", self.controller.setIonizerMode, "ionizermode", "ionizer_switch_play"),
+            ):
+                elapsed = now - self.control_list[control_name][0]
+                if elapsed < 2:
+                    if elapsed > 0.5:
+                        setter(self.control_list[control_name][1])
+                        self.control_list[control_name][0] = now - 2
+                elif elapsed > 3 and self.coord_popup._is_open:
+                    switch = self.coord_popup.ids[switch_id]
+                    if switch.active != CNC.vars[var_name]:
+                        switch.set_flag = True
+                        switch.active = CNC.vars[var_name]
+
             elapsed = now - self.control_list["spindle_scale"][0]
             if elapsed < 2:
                 if elapsed > 0.5:
@@ -6275,6 +6880,9 @@ class Makera(RelativeLayout):
             self.coord_system_data_view.minr_text = coord_system_name
             self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
 
+            if self.gcode_viewer is not None and self.gcode_viewer.bed_visible:
+                self.gcode_viewer.update_bed_wcs()
+
             # Update WCS Settings popup if it's open
             if hasattr(self, "wcs_settings_popup") and self.wcs_settings_popup.parent:
                 self.wcs_settings_popup.update_active_wcs_button(coord_system_name)
@@ -6337,7 +6945,6 @@ class Makera(RelativeLayout):
                 self.wpb_zprobe.value = 0
                 self.wpb_leveling.value = 0
                 self.wpb_play.value = 0
-                self.progress_info = ""
                 # Stop smooth progress updates
                 if self._progress_smooth_clock is not None:
                     self._progress_smooth_clock.cancel()
@@ -6346,11 +6953,8 @@ class Makera(RelativeLayout):
                 last_job_elapsed = ""
                 if CNC.vars["playedseconds"] > 0:
                     last_job_elapsed = " ( {} elapsed )".format(Utils.second2hour(CNC.vars["playedseconds"]))
-                # show file name on progress bar area
-                if app.selected_remote_filename != "":
-                    self.progress_info = " " + app.selected_remote_filename + last_job_elapsed
-                elif app.selected_local_filename != "":
-                    self.progress_info = " " + app.selected_local_filename + last_job_elapsed
+                if app.selected_remote_filename or app.selected_local_filename:
+                    self.progress_info = self._format_file_progress_info(playing=False)
                 else:
                     self.progress_info = tr._(" No Remote File Selected") + last_job_elapsed
             else:
@@ -6575,12 +7179,51 @@ class Makera(RelativeLayout):
 
     def execCallback(self, line):
         logger.info(f"MDI Sent: {line}")
-        entries = [{"text": cmd, "color": (200 / 255, 200 / 255, 200 / 255, 1)} for cmd in line.strip().split("\n")]
+        entries = [
+            {
+                "text": cmd,
+                "color": (200 / 255, 200 / 255, 200 / 255, 1),
+                "entry_type": "command",
+            }
+            for cmd in line.strip().split("\n")
+        ]
         self._append_to_mdi(entries, scroll_to_bottom=True)
+
+    def _format_mdi_entry(self, entry):
+        """Syntax-highlight sent MDI commands; keep machine output in status colors."""
+        text = str(entry.get("text") or "")
+        original_color = tuple(entry.get("original_color") or entry.get("color") or (1, 1, 1, 1))
+        plain = text.strip()
+        color = original_color
+        entry_type = entry.get("entry_type")
+        if entry_type is not None:
+            should_highlight = entry_type == "command"
+        elif "highlight" in entry:
+            should_highlight = bool(entry.get("highlight"))
+        else:
+            # Compatibility with MDI history entries saved before entry_type existed.
+            should_highlight = tuple(original_color[:3]) == (200 / 255, 200 / 255, 200 / 255)
+        entry_type = "command" if should_highlight else "output"
+        hl_enabled = getattr(self, "gcode_highlight_enabled", False)
+        hl_colors = getattr(self, "gcode_highlight_colors", None)
+        if hl_enabled and should_highlight and plain:
+            highlighted = highlight_mdi_line(plain, hl_colors)
+            if "[color=" in highlighted:
+                color = (1.0, 1.0, 1.0, 1.0)
+        else:
+            highlighted = escape_gcode_markup(plain)
+        formatted = dict(entry)
+        formatted["text"] = text
+        formatted["highlighted_text"] = highlighted
+        formatted["color"] = color
+        formatted["original_color"] = original_color
+        formatted["entry_type"] = entry_type
+        formatted["highlight"] = should_highlight
+        return formatted
 
     @mainthread
     def _append_to_mdi(self, entries, log_to_mdi_data=False, scroll_to_bottom=False):
-        self.manual_rv.data.extend(entries)
+        self.manual_rv.data.extend([self._format_mdi_entry(entry) for entry in entries])
         if log_to_mdi_data:
             App.get_running_app().mdi_data.extend(entries)
         if scroll_to_bottom:
@@ -6597,7 +7240,7 @@ class Makera(RelativeLayout):
         # Keep VID:PID + serial in sync even when reconnecting by resolved path.
         self._store_usb_device_id_for_path(device)
         label = device
-        for entry in Utils.list_identifiable_usb_serial_ports():
+        for entry in Utils.list_identifiable_usb_devices():
             if Utils.same_usb_device_path(entry["device_path"], device):
                 label = entry["label"]
                 break
@@ -6609,15 +7252,17 @@ class Makera(RelativeLayout):
 
     def _open_usb_worker(self, device):
         success = False
+        error_message = None
         try:
             success = bool(self.controller.open(CONN_USB, device))
             self.controller.connection_type = CONN_USB
-        except Exception:
+        except Exception as exc:
             logger.exception("USB connection failed for %s", device)
+            error_message = str(exc)
             success = False
-        Clock.schedule_once(lambda dt, ok=success: self._finish_usb_open(ok), 0)
+        Clock.schedule_once(lambda dt, ok=success, err=error_message: self._finish_usb_open(ok, err), 0)
 
-    def _finish_usb_open(self, success):
+    def _finish_usb_open(self, success, error_message=None):
         self._usb_connect_in_progress = False
         if self.progress_popup._is_open:
             self.progress_popup.dismiss()
@@ -6628,6 +7273,8 @@ class Makera(RelativeLayout):
             Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 10)
         else:
             logger.error("USB connection attempt finished without an active link")
+            if error_message:
+                self.show_message_popup(error_message, False)
         self.updateStatus()
 
     def attempt_usb_baud_upgrade_if_eligible(self, dt):
@@ -7311,7 +7958,9 @@ class Makera(RelativeLayout):
                 self.gcode_viewer.line_times = []
                 self.gcode_viewer.total_time = 0.0
                 self.gcode_viewer._invalidate_legend_durations()
+                self.gcode_viewer._begin_line_times_job(show_progress=False)
                 self.refresh_gcode_color_legend()
+                self._refresh_idle_progress_info()
 
         gcode_hl_changed = False
         if "gcode_highlight_enabled" in self.controller_setting_change_list:
@@ -7332,6 +7981,8 @@ class Makera(RelativeLayout):
             app = App.get_running_app()
             if hasattr(self, "gcode_rv") and self.gcode_rv.data:
                 self.load_page(app.curr_page)
+            if hasattr(self, "manual_rv") and self.manual_rv.data:
+                self.manual_rv.data = [self._format_mdi_entry(entry) for entry in self.manual_rv.data]
 
         if "show_playbar_tool_change_markers" in self.controller_setting_change_list:
             raw_enabled = self.controller_setting_change_list["show_playbar_tool_change_markers"]
@@ -7476,9 +8127,41 @@ class Makera(RelativeLayout):
         self.controller.defaultConfigCommand()
 
     # -----------------------------------------------------------------------
+    def _on_viewer_sim_progress(self, _instance, value):
+        """Mirror voxel-sim catch-up onto the preview timeline scrubber."""
+        slider = getattr(self, "gcode_play_slider", None)
+        if slider is not None:
+            slider.sim_progress = float(value or 0.0)
+
+    def _on_viewer_sim_checkpoints(self, _instance, value):
+        """Mirror sim checkpoint positions onto the preview timeline scrubber."""
+        slider = getattr(self, "gcode_play_slider", None)
+        if slider is not None:
+            slider.sim_checkpoints = list(value or [])
+
+    def _on_viewer_sim_hud_text(self, _instance, value):
+        """Mirror cut-simulation stats onto the viewer overlay label."""
+        label = getattr(self, "sim_stats_hud", None)
+        if label is not None:
+            label.text = value or ""
+
+    def _on_viewer_stock_visible(self, _instance, visible):
+        """Keep the Stock menu item highlight in sync with viewer visibility."""
+        dropdown = getattr(self, "gcode_viewer_display_drop_down", None)
+        if dropdown is not None:
+            dropdown.show_stock = bool(visible)
+
+    def _on_viewer_bed_visible(self, _instance, visible):
+        """Keep the Bed menu item highlight in sync with viewer visibility."""
+        dropdown = getattr(self, "gcode_viewer_display_drop_down", None)
+        if dropdown is not None:
+            dropdown.show_bed = bool(visible)
+
+    # -----------------------------------------------------------------------
     def gcode_play_call_back(self, distance, line_number):
         if not self.loading_file:
-            self.gcode_play_slider.value = distance * 1000.0 / self.gcode_viewer_distance
+            total = self.gcode_viewer_distance
+            self.gcode_play_slider.value = (distance * 1000.0 / total) if total else 0.0
             # Update line highlighting in file viewer during playback.
             # Skip when callback was triggered by a user click (set_distance_by_lineidx from click
             # invokes this before GcodeViewer updates cur_line_index, so line_number would be stale).
@@ -7606,6 +8289,7 @@ class Makera(RelativeLayout):
         self.used_tools = []
         self.upcoming_tool = 0
         self.tool_table = {}
+        self.cam_metadata = CamMetadata.empty()
         self.document_unit = "mm"
         self.gcode_viewer.tool_table = {}
         self.gcode_viewer.tool_unit_scale = 1.0
@@ -7614,6 +8298,11 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         app.curr_page = 1
         app.total_pages = 1
+        # Sync stock session toggles with cleared viewer (cancel load / clear file).
+        popup = getattr(self, "stock_settings_popup", None)
+        if popup is not None:
+            settings = popup.reset_for_loaded_file()
+            self._apply_stock_settings_impl(settings)
         self.updateStatus()
 
     # ------------------------------------------------------------------------
@@ -7643,7 +8332,7 @@ class Makera(RelativeLayout):
         self.cmd_manager.current = "gcode_cmd_page"
         self.gcode_rv.data = []
         self.init_path_visibility()
-        self.gcode_viewer.clearDisplay()
+        self.gcode_viewer.clearDisplay(close_progress=False)
         self.gcode_viewer.begin_new_file_load()
         self.gcode_viewer.set_display_offset(self.content.x, self.content.y)
         self.gcode_viewer.set_move_speed(GCODE_VIEW_SPEED)
@@ -7699,10 +8388,15 @@ class Makera(RelativeLayout):
         if parsed_list or is_end:
             self.gcode_viewer.load_array(parsed_list, is_end)
 
-        self.progress_popup.cancel = self.cancel_load_gcodes
-        self.progress_popup.btn_cancel.disabled = False
-
-        self.progress_popup.progress_value = line_no * 100.0 / self.selected_file_line_count
+        if is_end and getattr(self.gcode_viewer, "line_times_job_show_progress", False):
+            # load_array started the estimate; keep this popup until that job sends 'done'.
+            self.progress_popup.btn_cancel.disabled = True
+            self.progress_popup.progress_text = tr._("Calculating run time estimate...")
+            self.progress_popup.progress_value = 0
+        else:
+            self.progress_popup.cancel = self.cancel_load_gcodes
+            self.progress_popup.btn_cancel.disabled = False
+            self.progress_popup.progress_value = line_no * 100.0 / self.selected_file_line_count
 
         self.load_event.set()
 
@@ -7757,20 +8451,36 @@ class Makera(RelativeLayout):
             self._last_loaded_file_key = current_file_key
 
         app.has_4axis = self.cnc.has_4axis
+        app.has_off_axis_y = bool(self.cnc.has_off_axis_y)
         if app.has_4axis:
             self.coord_popup.set_config("leveling", "active", False)
             self.coord_popup.set_config("origin", "anchor", 3)
         else:
-            if (CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"]) >= 0 and (
-                CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"]
-            ) >= 0:
+            if (
+                app.has_anchor2
+                and (CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"]) >= 0
+                and (CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"]) >= 0
+            ):
                 self.coord_popup.set_config("origin", "anchor", 2)
             else:
                 self.coord_popup.set_config("origin", "anchor", 1)
+        shape, origin = self._auto_stock_shape_origin()
+        popup = getattr(self, "stock_settings_popup", None)
+        if popup is not None:
+            popup.rotary_mode = bool(app.has_4axis)
+            popup.has_off_axis_y = bool(app.has_off_axis_y)
+        metadata = getattr(self, "cam_metadata", None) or CamMetadata.empty()
+        self._reset_stock_settings(
+            shape=shape,
+            origin=origin,
+            show_stock=self._should_auto_show_header_stock(metadata.stock),
+        )
+        self.apply_bed_settings()
         self.coord_popup.load_config()
 
         self.file_popup.dismiss()
-        self.progress_popup.dismiss()
+        if not getattr(self.gcode_viewer, "line_times_job_show_progress", False):
+            self.progress_popup.dismiss()
 
         self.heartbeat_time = time.time()
         self.file_just_loaded = True
@@ -7806,6 +8516,7 @@ class Makera(RelativeLayout):
         self.used_tools = []
         self.tool_change_markers = []
         self.tool_table = {}
+        self.cam_metadata = CamMetadata.empty()
         self.document_unit = "mm"
         self.gcode_viewer.tool_table = {}
         self.gcode_viewer.tool_unit_scale = 1.0
@@ -7830,16 +8541,24 @@ class Makera(RelativeLayout):
                 if not self._verify_deferred_download_md5(filepath):
                     return
 
+            # Load all lines from the file
             self.cnc.init()
             f = open(filepath, encoding="utf-8")
             self.lines = f.readlines()
             self.selected_file_line_count = len(self.lines)
             f.close()
 
+            # Detect tools/stock metadata and set document unit if available
             self.document_unit = detect_document_unit(self.lines)
-            self.tool_table = extract_tool_table(self.lines)
+            self.cam_metadata = extract_cam_metadata(self.lines, unit_scale=unit_scale_to_mm(self.document_unit))
+            self.tool_table = self.cam_metadata.tool_table
             self.gcode_viewer.tool_table = self.tool_table
             self.gcode_viewer.tool_unit_scale = unit_scale_to_mm(self.document_unit)
+
+            # Hide previous stock immediately; dimensions are filled in load_end.
+            self.reset_stock_for_loaded_file()
+
+            # Load the first "page" of the file
             app = App.get_running_app()
             app.total_pages = int(self.selected_file_line_count / MAX_LOAD_LINES) + (
                 0 if self.selected_file_line_count % MAX_LOAD_LINES == 0 else 1
@@ -8112,13 +8831,16 @@ class Makera(RelativeLayout):
                 sanitized_to_send = "\n".join([line for line in to_send.split("\n") if line.strip().lower() != "clear"])
                 if sanitized_to_send != to_send:
                     self.manual_rv.data.append(
-                        {
-                            "text": "clear command can't be used together with other commands",
-                            "color": (250 / 255, 105 / 255, 102 / 255, 1),
-                        }
+                        self._format_mdi_entry(
+                            {
+                                "text": "clear command can't be used together with other commands",
+                                "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                            }
+                        )
                     )
                 self.controller.executeCommand(sanitized_to_send)
         self.manual_cmd.text = ""
+        hide_mdi_intellisense()
         Clock.schedule_once(self.refocus_cmd)
 
     # -----------------------------------------------------------------------
@@ -8142,7 +8864,9 @@ class MakeraApp(App):
     spindle_or_laser_is_on = BooleanProperty(False)
     jog_controls_enabled = BooleanProperty(False)
     has_4axis = BooleanProperty(False)
+    has_off_axis_y = BooleanProperty(False)
     has_atc = BooleanProperty(False)
+    has_anchor2 = BooleanProperty(True)
     lasering = BooleanProperty(False)
     show_gcode_ctl_bar = BooleanProperty(False)
     fw_has_update = BooleanProperty(False)
@@ -8167,6 +8891,9 @@ class MakeraApp(App):
     tooltip_delay = NumericProperty(0.5)
     mdi_data = ListProperty([])
     invert_y_axis_jogging = BooleanProperty(False)
+    jog_step_xy = StringProperty("10")
+    jog_step_z = StringProperty("1")
+    jog_step_a = StringProperty("90")
     active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
     jog_mode_text = StringProperty(tr._("Jog Mode:Step"))
     jog_speed_text = StringProperty(tr._("Jog Speed:Max"))
@@ -8365,7 +9092,9 @@ def set_config_defaults(default_lang):
     if not Config.has_option("carvera", "show_playbar_tool_change_markers"):
         Config.set("carvera", "show_playbar_tool_change_markers", "1")
 
-    # G-code viewer syntax highlighting defaults
+    # G-code viewer defaults
+    if not Config.has_option("carvera", "gcode_auto_show_stock"):
+        Config.set("carvera", "gcode_auto_show_stock", "1")
     if not Config.has_option("carvera", "gcode_highlight_enabled"):
         Config.set("carvera", "gcode_highlight_enabled", "1")
     if not Config.has_option("carvera", "gcode_color_comment"):
@@ -8394,6 +9123,8 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "gcode_color_param_ref", "181,206,168,255")
     if not Config.has_option("carvera", "gcode_color_math_keyword"):
         Config.set("carvera", "gcode_color_math_keyword", "215,186,125,255")
+    if not Config.has_option("carvera", "gcode_color_shell_command"):
+        Config.set("carvera", "gcode_color_shell_command", "47,117,181,255")
 
     Config.write()
 

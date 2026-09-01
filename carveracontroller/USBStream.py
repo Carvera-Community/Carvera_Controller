@@ -15,6 +15,8 @@ SERIAL_TIMEOUT = 0.3  # s
 # ==============================================================================
 class USBStream:
     serial = None
+    resets_on_open = True
+    supports_baud = True
 
     # ----------------------------------------------------------------------
     def __init__(self, log_sent_receive=False):

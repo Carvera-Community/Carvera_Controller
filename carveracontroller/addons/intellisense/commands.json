@@ -1,0 +1,3992 @@
+{
+  "title": "Carvera Community Firmware command reference",
+  "query_example": "commands[\"M3\"][\"parameters\"][\"S\"][\"default\"]",
+  "notes": [
+    "Keys are command IDs: G0, M3, M490.1, ls, $J.",
+    "parameters.<name>.required is true or false.",
+    "parameters.<name>.default is a number, string, or null when there is no fixed default.",
+    "default_source names a config key when the default comes from configuration.",
+    "3D-printer leftovers are listed because the firmware still parses them; they are not used on Carvera."
+  ],
+  "commands": {
+    "G0": {
+      "type": "gcode",
+      "description": "Rapid move to the programmed position. F on this line applies only to this move; without F the configured default seek rate is used, not the last G1 feed.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Feed for this G0 line only.",
+          "default": 3000,
+          "unit": "mm/min",
+          "default_source": "default_seek_rate"
+        }
+      }
+    },
+    "G1": {
+      "type": "gcode",
+      "description": "Linear move at the modal feed rate (mm/min in G94, inverse time in G93).",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Feed rate. Modal in G94; required on every G1/G2/G3 line in G93.",
+          "default": 1000,
+          "unit": "mm/min",
+          "default_source": "default_feed_rate"
+        }
+      }
+    },
+    "G2": {
+      "type": "gcode",
+      "description": "Clockwise arc in the selected plane to XYZ, rotating about the IJK offset from the start point.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "Arc center offset along the first plane axis.",
+          "default": null
+        },
+        "J": {
+          "required": false,
+          "description": "Arc center offset along the second plane axis.",
+          "default": null
+        },
+        "K": {
+          "required": false,
+          "description": "Arc center offset along the third plane axis.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Feed rate. Modal in G94; required in G93.",
+          "default": 1000,
+          "unit": "mm/min",
+          "default_source": "default_feed_rate"
+        }
+      }
+    },
+    "G3": {
+      "type": "gcode",
+      "description": "Counter-clockwise arc.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "Arc center offset along the first plane axis.",
+          "default": null
+        },
+        "J": {
+          "required": false,
+          "description": "Arc center offset along the second plane axis.",
+          "default": null
+        },
+        "K": {
+          "required": false,
+          "description": "Arc center offset along the third plane axis.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Feed rate. Modal in G94; required in G93.",
+          "default": 1000,
+          "unit": "mm/min",
+          "default_source": "default_feed_rate"
+        }
+      }
+    },
+    "G4": {
+      "type": "gcode",
+      "description": "Dwell for P seconds before continuing.",
+      "parameters": {
+        "P": {
+          "required": true,
+          "description": "Dwell time.",
+          "default": null,
+          "unit": "seconds"
+        }
+      }
+    },
+    "G10": {
+      "type": "gcode",
+      "description": "Set a workspace coordinate offset (LinuxCNC-style G10 L2/L20).",
+      "parameters": {
+        "L": {
+          "required": true,
+          "description": "2 set WCS origin from current coordinates; 20 set WCS so current position becomes the given values.",
+          "default": null
+        },
+        "P": {
+          "required": true,
+          "description": "Workspace number: 1 is G54, 2 is G55, and so on.",
+          "default": null
+        },
+        "X": {
+          "required": false,
+          "description": "X offset or coordinate.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y offset or coordinate.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Z offset or coordinate.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "A offset or coordinate.",
+          "default": null
+        }
+      }
+    },
+    "G17": {
+      "type": "gcode",
+      "description": "Select the XY plane for arcs (modal).",
+      "parameters": {}
+    },
+    "G18": {
+      "type": "gcode",
+      "description": "Select the XZ plane for arcs (modal).",
+      "parameters": {}
+    },
+    "G19": {
+      "type": "gcode",
+      "description": "Select the YZ plane for arcs (modal).",
+      "parameters": {}
+    },
+    "G20": {
+      "type": "gcode",
+      "description": "Inch mode. Community firmware currently halts if this is used because of known issues.",
+      "parameters": {},
+      "notes": "See firmware issue 209. Use G21."
+    },
+    "G21": {
+      "type": "gcode",
+      "description": "Millimeter mode (default). Coordinates are treated as millimeters.",
+      "parameters": {}
+    },
+    "G28": {
+      "type": "gcode",
+      "description": "Go to the configured clearance position.",
+      "parameters": {}
+    },
+    "G28.2": {
+      "type": "gcode",
+      "description": "Homing cycle",
+      "parameters": {}
+    },
+    "G29": {
+      "type": "gcode",
+      "description": "Probe a grid starting at the current XY position. Not used for level compensation.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "Distance of grid in X direction",
+          "unit": "mm"
+        },
+        "Y": {
+          "required": true,
+          "description": "Distance of grid in Y direction",
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Number of grid points in X",
+          "default": 15
+        },
+        "J": {
+          "required": false,
+          "description": "Number of grid points in Y",
+          "default": 15
+        },
+        "H": {
+          "required": false,
+          "description": "Probe height",
+          "unit": "mm"
+        }
+      }
+    },
+    "G30": {
+      "type": "gcode",
+      "description": "Simple Z probe. Probes downwards and reports the trigger position.",
+      "parameters": {
+        "Z": {
+          "required": false,
+          "description": "If given, set current Z to this value after a successful probe (G92 Z).",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed rate.",
+          "default": "zprobe.slow_feedrate",
+          "unit": "mm/min",
+          "default_source": "zprobe.slow_feedrate"
+        },
+        "R": {
+          "required": false,
+          "description": "Non-zero probes in the reverse Z direction.",
+          "default": 0
+        }
+      }
+    },
+    "G31": {
+      "type": "gcode",
+      "description": "Grid probe report, and enable leveling compensation (same family as G32).",
+      "parameters": {}
+    },
+    "G32": {
+      "type": "gcode",
+      "description": "Probe a grid and enable bed compensation until reset or M370.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Grid start X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Grid start Y.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Grid width.",
+          "default": null,
+          "unit": "mm"
+        },
+        "B": {
+          "required": false,
+          "description": "Grid length.",
+          "default": null,
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Number of points in X.",
+          "default": null
+        },
+        "J": {
+          "required": false,
+          "description": "Number of points in Y.",
+          "default": null
+        },
+        "H": {
+          "required": false,
+          "description": "Probe height.",
+          "default": null,
+          "unit": "mm"
+        }
+      }
+    },
+    "G33": {
+      "type": "gcode",
+      "description": "Record an X-axis flex profile and enable flex compensation.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Travel distance along X.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Y position for the profile.",
+          "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "Number of sample intervals.",
+          "default": null
+        }
+      }
+    },
+    "G38.2": {
+      "type": "gcode",
+      "description": "Probe toward the workpiece and stop on contact. Halts with an error if the probe does not trigger.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed rate.",
+          "default": null,
+          "unit": "mm/min"
+        }
+      }
+    },
+    "G38.3": {
+      "type": "gcode",
+      "description": "Probe toward the workpiece and stop on contact. Does not halt if the probe does not trigger.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed rate.",
+          "default": null,
+          "unit": "mm/min"
+        }
+      }
+    },
+    "G38.4": {
+      "type": "gcode",
+      "description": "Probe away from the workpiece and stop on loss of contact. Halts if contact is not lost.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed rate.",
+          "default": null,
+          "unit": "mm/min"
+        }
+      }
+    },
+    "G38.5": {
+      "type": "gcode",
+      "description": "Probe away from the workpiece and stop on loss of contact. Does not halt on failure.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed rate.",
+          "default": null,
+          "unit": "mm/min"
+        }
+      }
+    },
+    "G38.6": {
+      "type": "gcode",
+      "description": "Calibrate-Z style probe. Hard-disabled in Community firmware.",
+      "parameters": {}
+    },
+    "G53": {
+      "type": "gcode",
+      "description": "Next move uses machine coordinates. Must be alone or the first G code on the line, followed by G0/G1.",
+      "parameters": {}
+    },
+    "G54": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 1 (modal).",
+      "parameters": {}
+    },
+    "G55": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 2 (modal).",
+      "parameters": {}
+    },
+    "G56": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 3 (modal).",
+      "parameters": {}
+    },
+    "G57": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 4 (modal).",
+      "parameters": {}
+    },
+    "G58": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 5 (modal).",
+      "parameters": {}
+    },
+    "G59": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 6 (modal).",
+      "parameters": {}
+    },
+    "G59.1": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 7 (modal).",
+      "parameters": {}
+    },
+    "G59.2": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 8 (modal).",
+      "parameters": {}
+    },
+    "G59.3": {
+      "type": "gcode",
+      "description": "Select workspace coordinate system 9 (modal).",
+      "parameters": {}
+    },
+    "G90": {
+      "type": "gcode",
+      "description": "Absolute distance mode (default, modal).",
+      "parameters": {}
+    },
+    "G91": {
+      "type": "gcode",
+      "description": "Incremental distance mode (modal).",
+      "parameters": {}
+    },
+    "G92": {
+      "type": "gcode",
+      "description": "Set the G92 offset so the current position reports as the given coordinates.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        }
+      }
+    },
+    "G92.1": {
+      "type": "gcode",
+      "description": "Clear G92 offsets.",
+      "parameters": {}
+    },
+    "G92.4": {
+      "type": "gcode",
+      "description": "Manually set machine (MCS) position for the given axes. G92.4 A0 S0 shrinks A back into 0–360 for continuous rotary work.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        },
+        "S": {
+          "required": false,
+          "description": "With A0, shrink the A axis into 0–360 range.",
+          "default": null
+        }
+      }
+    },
+    "G93": {
+      "type": "gcode",
+      "description": "Inverse-time feed mode. On every G1/G2/G3, F is 1/minutes for that block and is required.",
+      "parameters": {}
+    },
+    "G94": {
+      "type": "gcode",
+      "description": "Feed per minute mode (default relative to G93). F is mm/min.",
+      "parameters": {}
+    },
+    "M1": {
+      "type": "mcode",
+      "description": "Optional stop. Pauses file playback only when optional-stop mode is enabled with M334.",
+      "parameters": {}
+    },
+    "M2": {
+      "type": "mcode",
+      "description": "End of program. Stops the spindle and air assist and ends playback.",
+      "parameters": {}
+    },
+    "M3": {
+      "type": "mcode",
+      "description": "Start the spindle clockwise. Requires a valid tool in the spindle. In laser mode this turns the laser on instead.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Spindle speed in RPM.",
+          "default": 10000,
+          "unit": "rpm",
+          "default_source": "spindle.default_rpm"
+        }
+      }
+    },
+    "M4": {
+      "type": "mcode",
+      "description": "Start the spindle counter-clockwise when the spindle implementation supports direction.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Spindle speed in RPM.",
+          "default": 10000,
+          "unit": "rpm",
+          "default_source": "spindle.default_rpm"
+        }
+      }
+    },
+    "M5": {
+      "type": "mcode",
+      "description": "Stop the spindle (or laser). Also turns off vacuum/ext-out if those follow-spindle modes are on.",
+      "parameters": {}
+    },
+    "M6": {
+      "type": "mcode",
+      "description": "Tool change. T0 is the wireless probe, T-1 is empty spindle, T1+ is a tool number. After the change the machine usually runs TLO calibration unless disabled.",
+      "parameters": {
+        "T": {
+          "required": true,
+          "description": "Tool number to change to. Special numbers are 0 probe, -1 none, 999990 3D Probe",
+          "default": null
+        },
+        "S": {
+          "required": false,
+          "description": "Collet type 1–6. On an ATC machine, move to the manual tool-change position first so the collet can be swapped.",
+          "default": null
+        },
+        "R": {
+          "required": false,
+          "description": "Repeat TLO measurement to find lowest point (for example on a face mill).",
+          "default": 1
+        },
+        "H": {
+          "required": false,
+          "description": "Custom TLO value. Skips automatic TLO calibration and uses this value.",
+          "default": null,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "1 run automatic TLO after the change, 0 skip it.",
+          "default": 1
+        }
+      }
+    },
+    "M7": {
+      "type": "mcode",
+      "description": "Start air flow on air assist.",
+      "parameters": {}
+    },
+    "M9": {
+      "type": "mcode",
+      "description": "Stop airflow on air assist.",
+      "parameters": {}
+    },
+    "M17": {
+      "type": "mcode",
+      "description": "Enable all stepper drivers for debug purposes",
+      "parameters": {}
+    },
+    "M18": {
+      "type": "mcode",
+      "description": "Disable stepper drivers. With no axis letters, all motors are turned off.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Disable X if present.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Disable Y if present.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Disable Z if present.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Disable A if present.",
+          "default": null
+        }
+      }
+    },
+    "M20": {
+      "type": "mcode",
+      "description": "List files at the SD card root. Does not recurse into subfolders.",
+      "parameters": {}
+    },
+    "M21": {
+      "type": "mcode",
+      "description": "Dummy SD-init command for Octoprint compatibility. Does nothing.",
+      "parameters": {}
+    },
+    "M23": {
+      "type": "mcode",
+      "description": "Select a G-code file on the SD card without starting it.",
+      "parameters": {
+        "filename": {
+          "required": true,
+          "description": "Path relative to the SD card, written after M23.",
+          "default": null
+        }
+      }
+    },
+    "M24": {
+      "type": "mcode",
+      "description": "Start playing the currently selected file.",
+      "parameters": {}
+    },
+    "M25": {
+      "type": "mcode",
+      "description": "Pause the currently playing file. Prefer M600 for a controlled suspend.",
+      "parameters": {}
+    },
+    "M26": {
+      "type": "mcode",
+      "description": "Reset the current file so it is ready to start over.",
+      "parameters": {}
+    },
+    "M27": {
+      "type": "mcode",
+      "description": "Report playback progress (Marlin-style), used to sync the controller display.",
+      "parameters": {}
+    },
+    "M30": {
+      "type": "mcode",
+      "description": "End of program in grbl-style mode. As an SD command it can also delete a file; on Carvera treat M2 as the normal program end.",
+      "parameters": {
+        "filename": {
+          "required": false,
+          "description": "File to delete when used as an SD remove command.",
+          "default": null
+        }
+      }
+    },
+    "M32": {
+      "type": "mcode",
+      "description": "Select a file and start playing it. For macros prefer M98.",
+      "parameters": {
+        "filename": {
+          "required": true,
+          "description": "Path of the file to play.",
+          "default": null
+        }
+      }
+    },
+    "M82": {
+      "type": "mcode",
+      "description": "Extruder absolute mode. Inherited 3D-printer command; not used on Carvera.",
+      "parameters": {}
+    },
+    "M83": {
+      "type": "mcode",
+      "description": "Extruder relative mode. Inherited 3D-printer command; not used on Carvera.",
+      "parameters": {}
+    },
+    "M84": {
+      "type": "mcode",
+      "description": "Disable all stepper drivers (same as M18 with no axes).",
+      "parameters": {}
+    },
+    "M92": {
+      "type": "mcode",
+      "description": "Set steps per millimeter for the given axes. Without values, reports current steps/mm.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        }
+      }
+    },
+    "M98": {
+      "type": "mcode",
+      "description": "Run a macro file, then return with M99.",
+      "parameters": {
+        "P": {
+          "required": true,
+          "description": "Macro path or name.",
+          "default": null
+        },
+        "L": {
+          "required": false,
+          "description": "Optional repeat count.",
+          "default": null
+        }
+      }
+    },
+    "M97": {
+      "type": "mcode",
+      "description": "Related macro/call helper used with file playback.",
+      "parameters": {}
+    },
+    "M99": {
+      "type": "mcode",
+      "description": "Return from a macro to the main program.",
+      "parameters": {}
+    },
+    "M105": {
+      "type": "mcode",
+      "description": "Report spindle temperature.",
+      "parameters": {}
+    },
+    "M112": {
+      "type": "mcode",
+      "description": "Emergency stop. Halts the machine immediately.",
+      "parameters": {}
+    },
+    "M114": {
+      "type": "mcode",
+      "description": "Report position. Subcodes select WCS, realtime WCS, machine, actuator, or last milestone.",
+      "parameters": {},
+      "notes": "M114.1 realtime WCS, M114.2 realtime MCS, M114.3 actuator, M114.4 last milestone, M114.5 extra."
+    },
+    "M115": {
+      "type": "mcode",
+      "description": "Report firmware version and capabilities.",
+      "parameters": {}
+    },
+    "M117": {
+      "type": "mcode",
+      "description": "Display the rest of the line as a message. Non-standard: arbitrary text follows the command.",
+      "parameters": {
+        "text": {
+          "required": false,
+          "description": "Message text after M117.",
+          "default": null
+        }
+      }
+    },
+    "M118": {
+      "type": "mcode",
+      "description": "Print the rest of the line to the console/host. Non-standard: arbitrary text follows the command.",
+      "parameters": {
+        "text": {
+          "required": false,
+          "description": "Text after M118, no space",
+          "default": null
+        }
+      }
+    },
+    "M119": {
+      "type": "mcode",
+      "description": "Report endstop and probe pin states.",
+      "parameters": {}
+    },
+    "M120": {
+      "type": "mcode",
+      "description": "Push current motion state (mode, feed, WCS) onto a stack.",
+      "parameters": {}
+    },
+    "M121": {
+      "type": "mcode",
+      "description": "Pop the motion state saved by M120.",
+      "parameters": {}
+    },
+    "M143": {
+      "type": "mcode",
+      "description": "Set maximum hotend temperature. 3D-printer leftover; no Carvera function.",
+      "parameters": {}
+    },
+    "M203": {
+      "type": "mcode",
+      "description": "Set or report maximum feedrates in mm/s. M203.1 sets maximum actuator feedrates.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        }
+      }
+    },
+    "M203.1": {
+      "type": "mcode",
+      "description": "Set maximum actuator (motor) feedrates.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        }
+      }
+    },
+    "M204": {
+      "type": "mcode",
+      "description": "Set default acceleration. S sets the default; X Y Z set per-axis acceleration.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Default acceleration.",
+          "default": null,
+          "unit": "mm/s^2"
+        },
+        "X": {
+          "required": false,
+          "description": "X acceleration.",
+          "default": null,
+          "unit": "mm/s^2"
+        },
+        "Y": {
+          "required": false,
+          "description": "Y acceleration.",
+          "default": null,
+          "unit": "mm/s^2"
+        },
+        "Z": {
+          "required": false,
+          "description": "Z acceleration.",
+          "default": null,
+          "unit": "mm/s^2"
+        }
+      }
+    },
+    "M205": {
+      "type": "mcode",
+      "description": "Set planner junction deviation and minimum planner speed.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "XY junction deviation.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Z junction deviation.",
+          "default": null
+        },
+        "S": {
+          "required": false,
+          "description": "Minimum planner speed.",
+          "default": null
+        }
+      }
+    },
+    "M206": {
+      "type": "mcode",
+      "description": "Set homing offsets for the given axes.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Target or offset on X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Target or offset on Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Target or offset on Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Target or offset on A (rotary), if present.",
+          "default": null
+        }
+      }
+    },
+    "M211": {
+      "type": "mcode",
+      "description": "Turn software endstops on or off.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "1 enable soft endstops, 0 disable.",
+          "default": 1
+        }
+      }
+    },
+    "M220": {
+      "type": "mcode",
+      "description": "Feed-rate override as a percentage of programmed feed.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Override percent.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "M221": {
+      "type": "mcode",
+      "description": "Documented in some tables as soft endstops; Community firmware uses M211 for that. Treat M221 as unused on Carvera unless a host sends it.",
+      "parameters": {}
+    },
+    "M223": {
+      "type": "mcode",
+      "description": "Spindle-speed override as a percentage. Clamped to 10–300%.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Override percent.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "M301": {
+      "type": "mcode",
+      "description": "Set hotend PID. 3D-printer leftover; no Carvera function.",
+      "parameters": {}
+    },
+    "M303": {
+      "type": "mcode",
+      "description": "PID autotune. 3D-printer leftover; no Carvera function.",
+      "parameters": {}
+    },
+    "M304": {
+      "type": "mcode",
+      "description": "PID autotune helper. 3D-printer leftover; no Carvera function.",
+      "parameters": {}
+    },
+    "M305": {
+      "type": "mcode",
+      "description": "Thermistor sensor settings. 3D-printer leftover; no Carvera function.",
+      "parameters": {}
+    },
+    "M306": {
+      "type": "mcode",
+      "description": "Set homing offset from the current position.",
+      "parameters": {}
+    },
+    "M321": {
+      "type": "mcode",
+      "description": "Enter laser mode. Drops the current tool and calibrates TLO against the collet so the laser offset matches the work surface.",
+      "parameters": {}
+    },
+    "M322": {
+      "type": "mcode",
+      "description": "Exit laser mode and return to CNC mode.",
+      "parameters": {}
+    },
+    "M323": {
+      "type": "mcode",
+      "description": "Enter laser test mode with very low power, used for refocusing the laser's lense.",
+      "parameters": {}
+    },
+    "M324": {
+      "type": "mcode",
+      "description": "Exit laser test mode.",
+      "parameters": {}
+    },
+    "M325": {
+      "type": "mcode",
+      "description": "Laser power override percentage.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Override percent.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "M331": {
+      "type": "mcode",
+      "description": "Enable auto chip clearing following the spindle on/off state. On C1 this is the vacuum; on CA1 and Z1 it is the external output.",
+      "parameters": {}
+    },
+    "M331.1": {
+      "type": "mcode",
+      "description": "Enable auto blow on Z1. The spindle fan will always run with this minimum power while the spindle is on.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Fan power while blowing.",
+          "default": 30,
+          "unit": "%",
+          "default_source": "accessory.auto_blowing_power"
+        }
+      }
+    },
+    "M331.2": {
+      "type": "mcode",
+      "description": "Runs a cleaning cycle when gcode playback finishes.",
+      "parameters": {}
+    },
+    "M331.4": {
+      "type": "mcode",
+      "description": "Turn on the ionizer on Z1.",
+      "parameters": {}
+    },
+    "M332": {
+      "type": "mcode",
+      "description": "Disable auto chip clearing (C1: vacuum, CA1/Z1: External Output pin).",
+      "parameters": {}
+    },
+    "M332.1": {
+      "type": "mcode",
+      "description": "Disable auto blow.",
+      "parameters": {}
+    },
+    "M332.2": {
+      "type": "mcode",
+      "description": "Disable automatic bed cleaning after jobs.",
+      "parameters": {}
+    },
+    "M332.4": {
+      "type": "mcode",
+      "description": "Turn off the ionizer.",
+      "parameters": {}
+    },
+    "M333": {
+      "type": "mcode",
+      "description": "Disable optional-stop mode. M1 will not pause.",
+      "parameters": {}
+    },
+    "M334": {
+      "type": "mcode",
+      "description": "Enable optional-stop mode. M1 will pause playback.",
+      "parameters": {}
+    },
+    "M335": {
+      "type": "mcode",
+      "description": "Related optional-stop / line-by-line helper. See line-by-line execution docs.",
+      "parameters": {}
+    },
+    "M336": {
+      "type": "mcode",
+      "description": "Related optional-stop / line-by-line helper. See line-by-line execution docs.",
+      "parameters": {}
+    },
+    "M337": {
+      "type": "mcode",
+      "description": "Set the LED bar color. (Works on all machines except for Carvera C1)",
+      "parameters": {
+        "R": {
+          "required": false,
+          "description": "Red 0–255.",
+          "default": null
+        },
+        "U": {
+          "required": false,
+          "description": "Green 0–255.",
+          "default": null
+        },
+        "B": {
+          "required": false,
+          "description": "Blue 0–255.",
+          "default": null
+        }
+      }
+    },
+    "M370": {
+      "type": "mcode",
+      "description": "Clear auto bed-leveling data and disable compensation until G32 is run again.",
+      "parameters": {}
+    },
+    "M374": {
+      "type": "mcode",
+      "description": "Save the autoleveling grid to the SD card.",
+      "parameters": {}
+    },
+    "M374.1": {
+      "type": "mcode",
+      "description": "Delete the saved autoleveling grid from the SD card.",
+      "parameters": {}
+    },
+    "M375": {
+      "type": "mcode",
+      "description": "Load the autoleveling grid from the SD card.",
+      "parameters": {}
+    },
+    "M375.1": {
+      "type": "mcode",
+      "description": "Print the current bed-leveling grid to the console.",
+      "parameters": {}
+    },
+    "M380": {
+      "type": "mcode",
+      "description": "Disable X-axis flex compensation.",
+      "parameters": {}
+    },
+    "M380.1": {
+      "type": "mcode",
+      "description": "Display flex-compensation data.",
+      "parameters": {}
+    },
+    "M380.2": {
+      "type": "mcode",
+      "description": "Save flex-compensation data.",
+      "parameters": {}
+    },
+    "M380.3": {
+      "type": "mcode",
+      "description": "Load flex-compensation data.",
+      "parameters": {}
+    },
+    "M380.4": {
+      "type": "mcode",
+      "description": "Delete saved flex-compensation data.",
+      "parameters": {}
+    },
+    "M400": {
+      "type": "mcode",
+      "description": "Wait until all queued moves have finished before running the next command.",
+      "parameters": {}
+    },
+    "M460": {
+      "type": "mcode",
+      "description": "Calibrate the 3D probe tip. Default is against a bore of known diameter.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "Known diameter or X size of the feature.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Known Y size. Defaults to X if omitted.",
+          "default": null,
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe for NC.",
+          "default": 0
+        }
+      }
+    },
+    "M460.1": {
+      "type": "mcode",
+      "description": "Calibrate probe tip diameter in a known bore. Prints a config-set line in MDI.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "Known bore diameter in X.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Known bore diameter in Y.",
+          "default": "same as X",
+          "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "Repeat measurements.",
+          "default": 1
+        },
+        "S": {
+          "required": false,
+          "description": "Save-position flag.",
+          "default": null
+        }
+      }
+    },
+    "M460.2": {
+      "type": "mcode",
+      "description": "Calibrate the probe on a known boss.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "Known boss diameter.",
+          "default": null,
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe.",
+          "default": 0
+        }
+      }
+    },
+    "M460.3": {
+      "type": "mcode",
+      "description": "Calibrate the probe using the anchor-2 bracket width from config.",
+      "parameters": {
+        "I": {
+          "required": false,
+          "description": "Invert probe.",
+          "default": 0
+        }
+      }
+    },
+    "M461": {
+      "type": "mcode",
+      "description": "Probe a bore or rectangular pocket for center and size. Start near the center. Saves #151/#152 size and #154/#155 center.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "X travel / half-size. At least one of X or Y is required.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Y travel / half-size.",
+          "default": null,
+          "unit": "mm"
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M462": {
+      "type": "mcode",
+      "description": "Probe a boss or rectangular block for center and size. Start near the center.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "X travel / half-size.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": true,
+          "description": "Y travel / half-size.",
+          "default": null,
+          "unit": "mm"
+        },
+        "J": {
+          "required": false,
+          "description": "Clearance when moving around the outside.",
+          "default": 4,
+          "unit": "mm"
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M463": {
+      "type": "mcode",
+      "description": "Probe an inside corner. Start diagonally inward. Sign of X/Y chooses direction.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "X probe travel.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": true,
+          "description": "Y probe travel.",
+          "default": null,
+          "unit": "mm"
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M464": {
+      "type": "mcode",
+      "description": "Probe an outside corner. Start diagonally outward. Sign of X/Y chooses the corner.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "X probe travel.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": true,
+          "description": "Y probe travel.",
+          "default": null,
+          "unit": "mm"
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M465": {
+      "type": "mcode",
+      "description": "Probe two points to measure an angle relative to X or Y. Result in #153 (degrees).",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Probe distance along X. Give X or Y, not both.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe distance along Y.",
+          "default": null
+        },
+        "V": {
+          "required": false,
+          "description": "Visualize-path distance.",
+          "default": 0
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M465.1": {
+      "type": "mcode",
+      "description": "Probe A-axis stock at +Y/2 and −Y/2 to find angular alignment. Angle stored in #153 (radians).",
+      "parameters": {
+        "Y": {
+          "required": true,
+          "description": "Total probing span; machine uses +Y/2 and −Y/2.",
+          "default": null,
+          "unit": "mm"
+        },
+        "H": {
+          "required": true,
+          "description": "Probe depth from the current position.",
+          "default": null,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Repeat cycles.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "V": {
+          "required": false,
+          "description": "Rotate A after probing if 1.",
+          "default": 0
+        },
+        "S": {
+          "required": false,
+          "description": "Save the A-axis offset if set.",
+          "default": null
+        }
+      }
+    },
+    "M465.2": {
+      "type": "mcode",
+      "description": "Same as M465.1 but positions from the configured 4th-axis offsets first.",
+      "parameters": {
+        "Y": {
+          "required": true,
+          "description": "Total probing span; machine uses +Y/2 and −Y/2.",
+          "default": null,
+          "unit": "mm"
+        },
+        "H": {
+          "required": true,
+          "description": "Probe depth from the current position.",
+          "default": null,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Repeat cycles.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "V": {
+          "required": false,
+          "description": "Rotate A after probing if 1.",
+          "default": 0
+        },
+        "S": {
+          "required": false,
+          "description": "Save the A-axis offset if set.",
+          "default": null
+        },
+        "X": {
+          "required": true,
+          "description": "Offset from the 4th-axis origin.",
+          "default": null,
+          "unit": "mm"
+        }
+      }
+    },
+    "M466": {
+      "type": "mcode",
+      "description": "Single-axis double-tap probe on X, Y, and/or Z. Results in #154/#155/#156.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "X probe travel.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y probe travel.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Z probe travel.",
+          "default": null
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M466.1": {
+      "type": "mcode",
+      "description": "Rectangle / square probe variant of the single-axis family.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "X size.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y size.",
+          "default": null
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M467": {
+      "type": "mcode",
+      "description": "Probe a square/rectangle feature (community square probe).",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "X size.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y size.",
+          "default": null
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter used to offset the result.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
+        }
+      }
+    },
+    "M469.1": {
+      "type": "mcode",
+      "description": "Calibrate Anchor 1 with the 3D probe. Check MDI for the config-set line to keep the result.",
+      "parameters": {
+        "I": {
+          "required": false,
+          "description": "1 invert probe (NC).",
+          "default": 0
+        }
+      }
+    },
+    "M469.2": {
+      "type": "mcode",
+      "description": "Calibrate Anchor 2 with the 3D probe.",
+      "parameters": {
+        "I": {
+          "required": false,
+          "description": "1 invert probe (NC).",
+          "default": 0
+        }
+      }
+    },
+    "M469.3": {
+      "type": "mcode",
+      "description": "Reserved/future ATC tool-position calibration with a 3-axis probe.",
+      "parameters": {}
+    },
+    "M469.4": {
+      "type": "mcode",
+      "description": "Calibrate A-axis headstock center with the 3D probe.",
+      "parameters": {
+        "I": {
+          "required": false,
+          "description": "1 invert probe.",
+          "default": 0
+        },
+        "Y": {
+          "required": false,
+          "description": "Headstock width override.",
+          "default": "rotation_width/2 + 5",
+          "unit": "mm"
+        },
+        "E": {
+          "required": false,
+          "description": "Downward probe travel.",
+          "default": "rotation_offset_z - 6",
+          "unit": "mm"
+        }
+      }
+    },
+    "M469.5": {
+      "type": "mcode",
+      "description": "Calibrate rotation_offset_z by probing a known-diameter pin in the 4th-axis chuck from four A orientations.",
+      "parameters": {}
+    },
+    "M469.6": {
+      "type": "mcode",
+      "description": "Calibrate A-axis centre of rotation. This is the current Controller calibration flow for the 4th axis.",
+      "parameters": {}
+    },
+    "M469.7": {
+      "type": "mcode",
+      "description": "Internal helper that writes a calibration result (P selects which offset). Issued by the M469.x scripts, not usually typed by hand.",
+      "parameters": {
+        "P": {
+          "required": false,
+          "description": "Which calibration result to store.",
+          "default": null
+        },
+        "X": {
+          "required": false,
+          "description": "X value.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y value.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Z value.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "A value.",
+          "default": null
+        },
+        "R": {
+          "required": false,
+          "description": "Pin diameter or related value.",
+          "default": null
+        }
+      }
+    },
+    "M470": {
+      "type": "mcode",
+      "description": "Set the wireless probe radio address.",
+      "parameters": {}
+    },
+    "M471": {
+      "type": "mcode",
+      "description": "Put the wireless probe into pairing mode.",
+      "parameters": {}
+    },
+    "M472": {
+      "type": "mcode",
+      "description": "Turn on the wireless probe laser.",
+      "parameters": {}
+    },
+    "M480": {
+      "type": "mcode",
+      "description": "Makera Studio probing compatibility wrappers around M461–M464. Prefer the community macros for new jobs.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      },
+      "notes": "M480.1–.4 outside corners, .5–.8 inside corners, .9 pocket, .10 boss. Requires a probe tool and a homed machine."
+    },
+    "M480.1": {
+      "type": "mcode",
+      "description": "Outside corner, top-left. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.2": {
+      "type": "mcode",
+      "description": "Outside corner, top-right. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.3": {
+      "type": "mcode",
+      "description": "Outside corner, bottom-right. Makera-compatible wrapper; same D/X/Y/Z as M480.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.4": {
+      "type": "mcode",
+      "description": "Outside corner, bottom-left. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.5": {
+      "type": "mcode",
+      "description": "Inside corner, top-left. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.6": {
+      "type": "mcode",
+      "description": "Inside corner, top-right. Makera-compatible wrapper; same D/X/Y/Z as M480.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.7": {
+      "type": "mcode",
+      "description": "Inside corner, bottom-right. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.8": {
+      "type": "mcode",
+      "description": "Inside corner, bottom-left. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.9": {
+      "type": "mcode",
+      "description": "Inside pocket / bore centre. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M480.10": {
+      "type": "mcode",
+      "description": "Outside boss centre. Makera-compatible wrapper.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "X": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "Probe travel / feature half-size.",
+          "default": 20,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Side-probe depth below the top surface.",
+          "default": 4,
+          "unit": "mm"
+        }
+      }
+    },
+    "M481": {
+      "type": "mcode",
+      "description": "Wi-Fi diagnostic / connection query. Prefer the wlan and ap console commands.",
+      "parameters": {}
+    },
+    "M482": {
+      "type": "mcode",
+      "description": "Wi-Fi diagnostic. Prefer console commands.",
+      "parameters": {}
+    },
+    "M483": {
+      "type": "mcode",
+      "description": "Wi-Fi diagnostic. Prefer console commands.",
+      "parameters": {}
+    },
+    "M485": {
+      "type": "mcode",
+      "description": "Report the current communication protocol mode.",
+      "parameters": {}
+    },
+    "M485.1": {
+      "type": "mcode",
+      "description": "Switch communication protocol to Smoothie.",
+      "parameters": {}
+    },
+    "M485.2": {
+      "type": "mcode",
+      "description": "Switch communication protocol to Makera.",
+      "parameters": {}
+    },
+    "M486.1": {
+      "type": "mcode",
+      "description": "Run a bed-cleaning cycle on Z1.",
+      "parameters": {
+        "N": {
+          "required": false,
+          "description": "Number of sweep cycles (1–10).",
+          "default": 1,
+          "default_source": "bed_cleaning.cycles"
+        },
+        "T": {
+          "required": false,
+          "description": "Distance between successive sweep rows.",
+          "default": 40,
+          "unit": "mm",
+          "default_source": "bed_cleaning.spacing"
+        }
+      }
+    },
+    "M489": {
+      "type": "mcode",
+      "description": "Query Wi-Fi module status. Prefer diagnose or wlan commands.",
+      "parameters": {}
+    },
+    "M490": {
+      "type": "mcode",
+      "description": "ATC home. Homing runs automatically when M490.1 or M490.2 needs it.",
+      "parameters": {}
+    },
+    "M490.1": {
+      "type": "mcode",
+      "description": "Tighten the spindle collet to secure a tool.",
+      "parameters": {}
+    },
+    "M490.2": {
+      "type": "mcode",
+      "description": "Loosen the spindle collet and drop the current tool.",
+      "parameters": {}
+    },
+    "M490.3": {
+      "type": "mcode",
+      "description": "ATC helper used in tool-change scripts (clamp/unclamp sequencing).",
+      "parameters": {}
+    },
+    "M491": {
+      "type": "mcode",
+      "description": "Calibrate TLO for the current tool on the tool setter.",
+      "parameters": {}
+    },
+    "M491.2": {
+      "type": "mcode",
+      "description": "TLO calibration with explicit tolerance/value used by internal scripts.",
+      "parameters": {
+        "H": {
+          "required": false,
+          "description": "Tolerance.",
+          "default": null
+        },
+        "P": {
+          "required": false,
+          "description": "TLO value.",
+          "default": null
+        }
+      }
+    },
+    "M492": {
+      "type": "mcode",
+      "description": "Internal: check whether the tool rack slot is empty.",
+      "parameters": {}
+    },
+    "M492.1": {
+      "type": "mcode",
+      "description": "Internal ATC rack helper.",
+      "parameters": {}
+    },
+    "M492.2": {
+      "type": "mcode",
+      "description": "Internal ATC rack helper.",
+      "parameters": {}
+    },
+    "M492.3": {
+      "type": "mcode",
+      "description": "Internal ATC rack helper.",
+      "parameters": {}
+    },
+    "M493": {
+      "type": "mcode",
+      "description": "Set or report the current tool number / TLO state.",
+      "parameters": {}
+    },
+    "M493.1": {
+      "type": "mcode",
+      "description": "Internal: set or report a tool-rack slot.",
+      "parameters": {
+        "R": {
+          "required": false,
+          "description": "Slot index.",
+          "default": null
+        }
+      }
+    },
+    "M493.2": {
+      "type": "mcode",
+      "description": "Set the active tool number without a full M6 cycle.",
+      "parameters": {
+        "T": {
+          "required": true,
+          "description": "Tool number.",
+          "default": null
+        }
+      }
+    },
+    "M493.3": {
+      "type": "mcode",
+      "description": "Set TLO directly.",
+      "parameters": {
+        "Z": {
+          "required": true,
+          "description": "TLO value.",
+          "default": null,
+          "unit": "mm"
+        }
+      }
+    },
+    "M493.5": {
+      "type": "mcode",
+      "description": "ATC pause / wait-for-user during a tool change.",
+      "parameters": {
+        "T": {
+          "required": false,
+          "description": "Tool number.",
+          "default": null
+        }
+      }
+    },
+    "M493.6": {
+      "type": "mcode",
+      "description": "Select collet type during ATC.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Collet 1–6.",
+          "default": null
+        }
+      }
+    },
+    "M494": {
+      "type": "mcode",
+      "description": "Turn on the probe / detector laser.",
+      "parameters": {}
+    },
+    "M494.1": {
+      "type": "mcode",
+      "description": "Turn on the probe laser (script alias).",
+      "parameters": {}
+    },
+    "M494.2": {
+      "type": "mcode",
+      "description": "Turn off the probe laser.",
+      "parameters": {}
+    },
+    "M495": {
+      "type": "mcode",
+      "description": "Controller automation: Runs one or more of these: margin, Z-probe, and/or auto-level from a path origin.",
+      "parameters": {
+        "X": {
+          "required": true,
+          "description": "Path origin X.",
+          "default": null
+        },
+        "Y": {
+          "required": true,
+          "description": "Path origin Y.",
+          "default": null
+        },
+        "C": {
+          "required": false,
+          "description": "Margin max X (with D).",
+          "default": null
+        },
+        "D": {
+          "required": false,
+          "description": "Margin max Y (with C).",
+          "default": null
+        },
+        "O": {
+          "required": false,
+          "description": "Z-probe X offset. With F, XY offset probe; without F, absolute Z probe.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Z-probe Y offset (with O).",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Leveling width (with B, I, J, H).",
+          "default": null
+        },
+        "B": {
+          "required": false,
+          "description": "Leveling length.",
+          "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "Leveling grid X count.",
+          "default": null
+        },
+        "J": {
+          "required": false,
+          "description": "Leveling grid Y count.",
+          "default": null
+        },
+        "H": {
+          "required": false,
+          "description": "Leveling probe height.",
+          "default": 5,
+          "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "If present, use the rotary-safe path movement to work origin.",
+          "default": null
+        },
+        "P": {
+          "required": false,
+          "description": "If present, go to path origin after.",
+          "default": null
+        }
+      }
+    },
+    "M495.3": {
+      "type": "mcode",
+      "description": "Three-axis probe along −Z, −X, and −Y (stock / 3D-probe metrology helper).",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Probe tip or tool diameter.",
+          "default": 3.175,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Probe height / stock thickness.",
+          "default": 9.0,
+          "unit": "mm"
+        }
+      }
+    },
+    "M496.1": {
+      "type": "mcode",
+      "description": "Go to the configured clearance position.",
+      "parameters": {}
+    },
+    "M496.2": {
+      "type": "mcode",
+      "description": "Go to work origin.",
+      "parameters": {}
+    },
+    "M496.3": {
+      "type": "mcode",
+      "description": "Go to Anchor 1.",
+      "parameters": {}
+    },
+    "M496.4": {
+      "type": "mcode",
+      "description": "Go to Anchor 2.",
+      "parameters": {}
+    },
+    "M496.5": {
+      "type": "mcode",
+      "description": "Go to a position relative to Anchor 1.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "X relative to Anchor 1.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y relative to Anchor 1.",
+          "default": null
+        }
+      }
+    },
+    "M497": {
+      "type": "mcode",
+      "description": "Wait for the motion queue to empty. Internal sequencing helper.",
+      "parameters": {}
+    },
+    "M497.1": {
+      "type": "mcode",
+      "description": "Internal ATC wait/marker.",
+      "parameters": {}
+    },
+    "M497.2": {
+      "type": "mcode",
+      "description": "Internal ATC wait/marker.",
+      "parameters": {}
+    },
+    "M497.3": {
+      "type": "mcode",
+      "description": "Internal ATC wait/marker.",
+      "parameters": {}
+    },
+    "M497.4": {
+      "type": "mcode",
+      "description": "Internal ATC wait/marker.",
+      "parameters": {}
+    },
+    "M497.5": {
+      "type": "mcode",
+      "description": "Internal ATC wait/marker.",
+      "parameters": {}
+    },
+    "M497.6": {
+      "type": "mcode",
+      "description": "Internal ATC wait/marker.",
+      "parameters": {}
+    },
+    "M498": {
+      "type": "mcode",
+      "description": "Report EEPROM/tool data: current tool, TLO, toolmz, refmz, and WCS offsets.",
+      "parameters": {}
+    },
+    "M498.2": {
+      "type": "mcode",
+      "description": "Erase EEPROM data. Do not run unless you intend to wipe stored offsets.",
+      "parameters": {}
+    },
+    "M499": {
+      "type": "mcode",
+      "description": "Print current tool information.",
+      "parameters": {}
+    },
+    "M499.1": {
+      "type": "mcode",
+      "description": "Print current tool information.",
+      "parameters": {}
+    },
+    "M499.2": {
+      "type": "mcode",
+      "description": "Print all ATC tool-location data.",
+      "parameters": {}
+    },
+    "M500": {
+      "type": "mcode",
+      "description": "Save volatile settings (including overrides that modules register) to config-override on the SD card.",
+      "parameters": {}
+    },
+    "M501": {
+      "type": "mcode",
+      "description": "Load the config-override file.",
+      "parameters": {}
+    },
+    "M502": {
+      "type": "mcode",
+      "description": "Delete config-override so the next boot uses only config.txt defaults.",
+      "parameters": {}
+    },
+    "M503": {
+      "type": "mcode",
+      "description": "Print live settings and show whether an override file is present.",
+      "parameters": {}
+    },
+    "M504": {
+      "type": "mcode",
+      "description": "Save settings to a named override file.",
+      "parameters": {
+        "filename": {
+          "required": false,
+          "description": "Override file name after the command.",
+          "default": null
+        }
+      }
+    },
+    "M561": {
+      "type": "mcode",
+      "description": "Clear bed compensation / set identity transform. Same idea as M370.",
+      "parameters": {}
+    },
+    "M565": {
+      "type": "mcode",
+      "description": "Set Z-probe XYZ offsets used by leveling strategies.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "X offset.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Y offset.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Z offset.",
+          "default": null
+        }
+      }
+    },
+    "M575": {
+      "type": "mcode",
+      "description": "Endstop repeatability test. Homes, taps each selected endstop, and reports trigger scatter.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Include X",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Include Y.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Include Z.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Include A.",
+          "default": null
+        },
+        "B": {
+          "required": false,
+          "description": "Include B.",
+          "default": null
+        },
+        "C": {
+          "required": false,
+          "description": "Include C.",
+          "default": null
+        },
+        "R": {
+          "required": false,
+          "description": "Samples per axis (1–50).",
+          "default": 5
+        },
+        "F": {
+          "required": false,
+          "description": "Tap feed override.",
+          "default": "axis slow homing rate",
+          "unit": "mm/min"
+        }
+      }
+    },
+    "M576": {
+      "type": "mcode",
+      "description": "Verify MD5 sidecars for uploaded files under /sd/gcodes/.",
+      "parameters": {}
+    },
+    "M576.1": {
+      "type": "mcode",
+      "description": "Same as M576.",
+      "parameters": {}
+    },
+    "M600": {
+      "type": "mcode",
+      "description": "Suspend playback (controlled pause).",
+      "parameters": {}
+    },
+    "M600.1": {
+      "type": "mcode",
+      "description": "Suspend playback and leave heaters on. Doesn't do anything special on non-3D Printers",
+      "parameters": {}
+    },
+    "M600.5": {
+      "type": "mcode",
+      "description": "Internal suspend marker used in ATC scripts.",
+      "parameters": {}
+    },
+    "M601": {
+      "type": "mcode",
+      "description": "Resume a suspended program. Same idea as the resume console command.",
+      "parameters": {}
+    },
+    "M665": {
+      "type": "mcode",
+      "description": "Set optional arm-solution variables. Delta leftover; not used on Carvera kinematics.",
+      "parameters": {}
+    },
+    "M670": {
+      "type": "mcode",
+      "description": "Temporarily set probe feed and height defaults until reset.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Slow probe feed.",
+          "default": null,
+          "unit": "mm/s"
+        },
+        "K": {
+          "required": false,
+          "description": "Fast probe feed.",
+          "default": null,
+          "unit": "mm/s"
+        },
+        "R": {
+          "required": false,
+          "description": "Return feed.",
+          "default": null,
+          "unit": "mm/s"
+        },
+        "Z": {
+          "required": false,
+          "description": "Max Z probe depth.",
+          "default": null,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Probe height.",
+          "default": null,
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe.",
+          "default": null
+        }
+      }
+    },
+    "M801": {
+      "type": "mcode",
+      "description": "Turn on the internal vacuum (C1) or the PSU fan (CA1).",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Power / PWM duty.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "M802": {
+      "type": "mcode",
+      "description": "Turn off the vacuum (C1) or PSU fan (CA1).",
+      "parameters": {}
+    },
+    "M811": {
+      "type": "mcode",
+      "description": "Turn on the spindle cooling fan.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Fan power.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "M812": {
+      "type": "mcode",
+      "description": "Turn off the spindle cooling fan.",
+      "parameters": {}
+    },
+    "M821": {
+      "type": "mcode",
+      "description": "Turn on the work light.",
+      "parameters": {}
+    },
+    "M822": {
+      "type": "mcode",
+      "description": "Turn off the work light.",
+      "parameters": {}
+    },
+    "M831": {
+      "type": "mcode",
+      "description": "Turn on the tool-detector sensor laser.",
+      "parameters": {}
+    },
+    "M832": {
+      "type": "mcode",
+      "description": "Turn off the tool-detector sensor laser.",
+      "parameters": {}
+    },
+    "M841": {
+      "type": "mcode",
+      "description": "Turn on wireless-probe charging power.",
+      "parameters": {}
+    },
+    "M842": {
+      "type": "mcode",
+      "description": "Turn off wireless-probe charging power.",
+      "parameters": {}
+    },
+    "M851": {
+      "type": "mcode",
+      "description": "Turn on the extended output / external vacuum.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "PWM duty.",
+          "default": "switch default value",
+          "unit": "%"
+        }
+      }
+    },
+    "M852": {
+      "type": "mcode",
+      "description": "Turn off the extended output / external vacuum.",
+      "parameters": {}
+    },
+    "M861": {
+      "type": "mcode",
+      "description": "Beep on Carvera Air.",
+      "parameters": {}
+    },
+    "M862": {
+      "type": "mcode",
+      "description": "Stop the Carvera Air beep.",
+      "parameters": {}
+    },
+    "M881": {
+      "type": "mcode",
+      "description": "Set the 2.4 GHz wireless-probe channel and start transmitting.",
+      "parameters": {
+        "S": {
+          "required": true,
+          "description": "Channel number.",
+          "default": null
+        }
+      }
+    },
+    "M882": {
+      "type": "mcode",
+      "description": "Turn off the wireless-probe radio / related 2.4 GHz transmit.",
+      "parameters": {}
+    },
+    "M885": {
+      "type": "mcode",
+      "description": "Turn off hard endstops until the next power cycle. Ignored while homing.",
+      "parameters": {}
+    },
+    "M886": {
+      "type": "mcode",
+      "description": "Turn hard endstops back on.",
+      "parameters": {}
+    },
+    "M887": {
+      "type": "mcode",
+      "description": "Turn off the homed-before-move check.",
+      "parameters": {}
+    },
+    "M888": {
+      "type": "mcode",
+      "description": "Turn on the homed-before-move check (default).",
+      "parameters": {}
+    },
+    "M889": {
+      "type": "mcode",
+      "description": "ATC/home-check related helper used with M887/M888.",
+      "parameters": {}
+    },
+    "M890": {
+      "type": "mcode",
+      "description": "ATC/public-data helper related to home or tool checks.",
+      "parameters": {}
+    },
+    "M891": {
+      "type": "mcode",
+      "description": "ATC/public-data helper related to home or tool checks.",
+      "parameters": {}
+    },
+    "M956": {
+      "type": "mcode",
+      "description": "Report spindle speed. Prefer M957.",
+      "parameters": {}
+    },
+    "M957": {
+      "type": "mcode",
+      "description": "Report current spindle speed and on/off status.",
+      "parameters": {}
+    },
+    "M958": {
+      "type": "mcode",
+      "description": "Set spindle PID terms and report the current settings. Doesn't seem to actually be implemented",
+      "parameters": {
+        "P": {
+          "required": false,
+          "description": "Proportional term.",
+          "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "Integral term.",
+          "default": null
+        },
+        "D": {
+          "required": false,
+          "description": "Derivative term.",
+          "default": null
+        }
+      }
+    },
+    "M999": {
+      "type": "mcode",
+      "description": "Clear a halt / alarm lock so motion commands are accepted again. Home afterwards; position is unknown.",
+      "parameters": {}
+    },
+    "M1000": {
+      "type": "mcode",
+      "description": "Pass the rest of the line, lowercased, to SimpleShell. For hosts that cannot send raw shell commands.",
+      "parameters": {
+        "command": {
+          "required": true,
+          "description": "Shell command text after M1000.",
+          "default": null
+        }
+      }
+    },
+    "ls": {
+      "type": "shell",
+      "description": "List files in a directory on the SD card.",
+      "parameters": {
+        "-s": {
+          "required": false,
+          "description": "Include file sizes.",
+          "default": null
+        },
+        "-e": {
+          "required": false,
+          "description": "End the listing with an EOF marker for host transfers.",
+          "default": null
+        },
+        "folder": {
+          "required": false,
+          "description": "Directory to list. Defaults to the current working directory.",
+          "default": null
+        }
+      }
+    },
+    "cd": {
+      "type": "shell",
+      "description": "Change the current working directory.",
+      "parameters": {
+        "folder": {
+          "required": true,
+          "description": "Absolute or relative path.",
+          "default": null
+        }
+      }
+    },
+    "pwd": {
+      "type": "shell",
+      "description": "Print the current working directory.",
+      "parameters": {}
+    },
+    "cat": {
+      "type": "shell",
+      "description": "Print a file.",
+      "parameters": {
+        "file": {
+          "required": true,
+          "description": "File to print.",
+          "default": null
+        },
+        "limit": {
+          "required": false,
+          "description": "Maximum number of lines.",
+          "default": null
+        },
+        "-e": {
+          "required": false,
+          "description": "Send EOF after the file.",
+          "default": null
+        },
+        "-d": {
+          "required": false,
+          "description": "Delay between lines in milliseconds.",
+          "default": 10,
+          "unit": "ms"
+        }
+      }
+    },
+    "echo": {
+      "type": "shell",
+      "description": "Echo the rest of the line back to the host.",
+      "parameters": {
+        "text": {
+          "required": false,
+          "description": "Text to echo.",
+          "default": null
+        }
+      }
+    },
+    "rm": {
+      "type": "shell",
+      "description": "Delete a file.",
+      "parameters": {
+        "file": {
+          "required": true,
+          "description": "File to delete.",
+          "default": null
+        },
+        "-e": {
+          "required": false,
+          "description": "EOF/error framing for hosts.",
+          "default": null
+        }
+      }
+    },
+    "mv": {
+      "type": "shell",
+      "description": "Rename or move a file.",
+      "parameters": {
+        "file": {
+          "required": true,
+          "description": "Existing path.",
+          "default": null
+        },
+        "newfile": {
+          "required": true,
+          "description": "New path.",
+          "default": null
+        },
+        "-e": {
+          "required": false,
+          "description": "EOF/error framing for hosts.",
+          "default": null
+        }
+      }
+    },
+    "mkdir": {
+      "type": "shell",
+      "description": "Create a directory.",
+      "parameters": {
+        "path": {
+          "required": true,
+          "description": "Directory to create.",
+          "default": null
+        }
+      }
+    },
+    "remount": {
+      "type": "shell",
+      "description": "Remount the SD card.",
+      "parameters": {}
+    },
+    "reset": {
+      "type": "shell",
+      "description": "Reboot the controller board.",
+      "parameters": {}
+    },
+    "break": {
+      "type": "shell",
+      "description": "Break into the debugger (MRI), if enabled in the build.",
+      "parameters": {}
+    },
+    "help": {
+      "type": "shell",
+      "description": "List console commands.",
+      "parameters": {}
+    },
+    "?": {
+      "type": "shell",
+      "description": "Same as help when typed as a shell command. As a single control character it is the status query.",
+      "parameters": {}
+    },
+    "ftype": {
+      "type": "shell",
+      "description": "Print the file types accepted for upload.",
+      "parameters": {}
+    },
+    "version": {
+      "type": "shell",
+      "description": "Print the firmware version string.",
+      "parameters": {}
+    },
+    "mem": {
+      "type": "shell",
+      "description": "Show free memory.",
+      "parameters": {
+        "-v": {
+          "required": false,
+          "description": "Verbose heap walk.",
+          "default": null
+        }
+      }
+    },
+    "get": {
+      "type": "shell",
+      "description": "Query machine state. The first word selects what to print.",
+      "parameters": {
+        "what": {
+          "required": true,
+          "description": "One of: pos, wcs, state, status, fk, ik, temp, compensation, wp, msc.",
+          "default": null
+        },
+        "-m": {
+          "required": false,
+          "description": "With fk/ik, also move to the computed position.",
+          "default": null
+        },
+        "coords": {
+          "required": false,
+          "description": "For fk/ik: comma-separated coordinates.",
+          "default": null
+        }
+      }
+    },
+    "switch": {
+      "type": "shell",
+      "description": "Get or set a named switch (light, vacuum, air, and others).",
+      "parameters": {
+        "name": {
+          "required": true,
+          "description": "Switch name (light, vacuum, air, and others).",
+          "default": null
+        },
+        "value": {
+          "required": false,
+          "description": "0/1 or on/off. Omit to read the current state.",
+          "default": null
+        }
+      }
+    },
+    "net": {
+      "type": "shell",
+      "description": "Print network / IP configuration.",
+      "parameters": {}
+    },
+    "ap": {
+      "type": "shell",
+      "description": "Control the machine Wi-Fi access point.",
+      "parameters": {
+        "ssid": {
+          "required": false,
+          "description": "ap ssid <name> changes the AP name.",
+          "default": null
+        },
+        "password": {
+          "required": false,
+          "description": "ap password <text> sets the AP password.",
+          "default": null
+        },
+        "enable": {
+          "required": false,
+          "description": "ap enable turns the AP on.",
+          "default": null
+        },
+        "disable": {
+          "required": false,
+          "description": "ap disable turns the AP off.",
+          "default": null
+        },
+        "channel": {
+          "required": false,
+          "description": "Optional channel when used as ap <channel>.",
+          "default": null
+        }
+      }
+    },
+    "wlan": {
+      "type": "shell",
+      "description": "Scan, connect, or disconnect to a Wi-Fi network.",
+      "parameters": {
+        "ssid": {
+          "required": false,
+          "description": "Network name. Omit with no other args to scan.",
+          "default": null
+        },
+        "password": {
+          "required": false,
+          "description": "Network password when connecting.",
+          "default": null
+        },
+        "-d": {
+          "required": false,
+          "description": "Disconnect from the current STA network.",
+          "default": null
+        },
+        "-e": {
+          "required": false,
+          "description": "EOF framing for host transfers.",
+          "default": null
+        }
+      }
+    },
+    "diagnose": {
+      "type": "shell",
+      "description": "Print diagnostic status including spindle, laser, switches, endstops, probe, ATC pins, e-stop, and Wi-Fi.",
+      "parameters": {}
+    },
+    "sleep": {
+      "type": "shell",
+      "description": "Cut 12 V/24 V supplies and put the controller to sleep (halt).",
+      "parameters": {}
+    },
+    "power": {
+      "type": "shell",
+      "description": "Control machine power rails used by sleep/wake.",
+      "parameters": {}
+    },
+    "load": {
+      "type": "shell",
+      "description": "Load a configuration override file.",
+      "parameters": {
+        "file": {
+          "required": false,
+          "description": "Override file. Defaults to config-override.",
+          "default": null
+        }
+      }
+    },
+    "save": {
+      "type": "shell",
+      "description": "Save a configuration override file.",
+      "parameters": {
+        "file": {
+          "required": false,
+          "description": "Override file. Defaults to config-override.",
+          "default": null
+        }
+      }
+    },
+    "calc_thermistor": {
+      "type": "shell",
+      "description": "Calculate Steinhart–Hart coefficients from three T,R points.",
+      "parameters": {
+        "-s0": {
+          "required": false,
+          "description": "Optional scale flag.",
+          "default": null
+        },
+        "points": {
+          "required": true,
+          "description": "T1,R1,T2,R2,T3,R3",
+          "default": null
+        }
+      }
+    },
+    "thermistors": {
+      "type": "shell",
+      "description": "List predefined thermistors.",
+      "parameters": {}
+    },
+    "md5sum": {
+      "type": "shell",
+      "description": "Print the MD5 of a file. Does not compare to upload sidecars; use M576 for that.",
+      "parameters": {
+        "file": {
+          "required": true,
+          "description": "Path to hash.",
+          "default": null
+        }
+      }
+    },
+    "time": {
+      "type": "shell",
+      "description": "Print the controller clock as a timestamp.",
+      "parameters": {}
+    },
+    "test": {
+      "type": "shell",
+      "description": "Built-in motion tests.",
+      "parameters": {
+        "jog": {
+          "required": false,
+          "description": "test jog <axis> <distance> <iterations> [feedrate]",
+          "default": null
+        },
+        "square": {
+          "required": false,
+          "description": "test square <size> <iterations> [feedrate]",
+          "default": null
+        },
+        "circle": {
+          "required": false,
+          "description": "test circle <radius> <iterations> [feedrate]",
+          "default": null
+        },
+        "raw": {
+          "required": false,
+          "description": "test raw <axis> <steps> <steps/sec>",
+          "default": null
+        }
+      }
+    },
+    "model": {
+      "type": "shell",
+      "description": "Print or identify the machine model.",
+      "parameters": {}
+    },
+    "check_4th": {
+      "type": "shell",
+      "description": "Factory/service test for the 4th axis.",
+      "parameters": {}
+    },
+    "check_led": {
+      "type": "shell",
+      "description": "Factory/service LED test.",
+      "parameters": {}
+    },
+    "fset": {
+      "type": "shell",
+      "description": "Write a factory-setting bit. Service command.",
+      "parameters": {}
+    },
+    "enable_4th_hd": {
+      "type": "shell",
+      "description": "Enable 4th-axis high-current / HD drive settings.",
+      "parameters": {}
+    },
+    "disable_4th_hd": {
+      "type": "shell",
+      "description": "Disable 4th-axis high-current / HD drive settings.",
+      "parameters": {}
+    },
+    "baud": {
+      "type": "shell",
+      "description": "Query or temporarily set the USB serial baud rate. The new rate reverts to the configured default after 15 s with no serial traffic.",
+      "parameters": {
+        "rate": {
+          "required": false,
+          "description": "Baud rate, 1–4000000. Omit to print the current rate.",
+          "default": 115200,
+          "default_source": "uart.baud_rate"
+        }
+      }
+    },
+    "debugmode": {
+      "type": "shell",
+      "description": "Enable firmware diagnostic output as real time console messages.",
+      "parameters": {
+        "mode": {
+          "required": false,
+          "description": "slowticker, cpuload, or off.",
+          "default": "off"
+        }
+      }
+    },
+    "config-get": {
+      "type": "shell",
+      "description": "Read one configuration key.",
+      "parameters": {
+        "source": {
+          "required": false,
+          "description": "Usually sd. Optional; defaults to the writable config source.",
+          "default": null
+        },
+        "setting": {
+          "required": true,
+          "description": "Settings key name, for example acceleration.",
+          "default": null
+        }
+      }
+    },
+    "config-set": {
+      "type": "shell",
+      "description": "Write one configuration key to a writable source (typically the SD config).",
+      "parameters": {
+        "source": {
+          "required": true,
+          "description": "Usually sd.",
+          "default": null
+        },
+        "setting": {
+          "required": true,
+          "description": "Key name.",
+          "default": null
+        },
+        "value": {
+          "required": true,
+          "description": "New value.",
+          "default": null
+        }
+      }
+    },
+    "config-delete": {
+      "type": "shell",
+      "description": "Remove a key line from a writable config source.",
+      "parameters": {
+        "source": {
+          "required": true,
+          "description": "Usually sd.",
+          "default": null
+        },
+        "setting": {
+          "required": true,
+          "description": "Key to delete.",
+          "default": null
+        }
+      }
+    },
+    "config-load": {
+      "type": "shell",
+      "description": "Reload configuration from files.",
+      "parameters": {}
+    },
+    "config-get-all": {
+      "type": "shell",
+      "description": "Dump keys from a config file.",
+      "parameters": {
+        "file": {
+          "required": false,
+          "description": "Config path.",
+          "default": "/sd/config.txt"
+        },
+        "-e": {
+          "required": false,
+          "description": "EOF framing.",
+          "default": null
+        }
+      }
+    },
+    "config-restore": {
+      "type": "shell",
+      "description": "Restore configuration from a backup/restore path used by the controller.",
+      "parameters": {}
+    },
+    "config-default": {
+      "type": "shell",
+      "description": "Reset toward compiled/default configuration.",
+      "parameters": {}
+    },
+    "play": {
+      "type": "shell",
+      "description": "Play a G-code file. The machine must be homed.",
+      "parameters": {
+        "file": {
+          "required": true,
+          "description": "Path to the file.",
+          "default": null
+        },
+        "-v": {
+          "required": false,
+          "description": "Verbose.",
+          "default": null
+        },
+        "-O": {
+          "required": false,
+          "description": "Pre-scan O-code subroutines.",
+          "default": null
+        }
+      }
+    },
+    "progress": {
+      "type": "shell",
+      "description": "Show progress of the file currently playing.",
+      "parameters": {}
+    },
+    "abort": {
+      "type": "shell",
+      "description": "Stop file playback and clear the queue.",
+      "parameters": {}
+    },
+    "suspend": {
+      "type": "shell",
+      "description": "Suspend playback.",
+      "parameters": {}
+    },
+    "resume": {
+      "type": "shell",
+      "description": "Resume a suspended program.",
+      "parameters": {}
+    },
+    "goto": {
+      "type": "shell",
+      "description": "After pausing a job, jump playback to a line number in the file.",
+      "parameters": {
+        "line": {
+          "required": true,
+          "description": "line number.",
+          "default": null
+        }
+      }
+    },
+    "buffer": {
+      "type": "shell",
+      "description": "Queue a G-code line into the player buffer.",
+      "parameters": {
+        "line": {
+          "required": true,
+          "description": "G-code text.",
+          "default": null
+        }
+      }
+    },
+    "upload": {
+      "type": "shell",
+      "description": "Receive a stream and save it as the named file.",
+      "parameters": {
+        "filename": {
+          "required": true,
+          "description": "Destination path.",
+          "default": null
+        }
+      }
+    },
+    "download": {
+      "type": "shell",
+      "description": "Send a file to the host.",
+      "parameters": {
+        "filename": {
+          "required": true,
+          "description": "Source path.",
+          "default": null
+        }
+      }
+    },
+    "$G": {
+      "type": "shell",
+      "description": "Print modal state (same as get state).",
+      "parameters": {}
+    },
+    "$I": {
+      "type": "shell",
+      "description": "Print modal state for smoopi-style hosts (same as get state, no trailing ok).",
+      "parameters": {}
+    },
+    "$X": {
+      "type": "shell",
+      "description": "Unlock after a halt (same idea as M999).",
+      "parameters": {}
+    },
+    "$H": {
+      "type": "shell",
+      "description": "Home. Unlocks first if halted. In grbl mode this issues G28.2; otherwise G28.",
+      "parameters": {}
+    },
+    "$#": {
+      "type": "shell",
+      "description": "Print WCS and offset tables (grbl-style).",
+      "parameters": {}
+    },
+    "$J": {
+      "type": "shell",
+      "description": "Jog. Incremental unless -c is given, which starts continuous jog that needs keep-alives and ^Y to stop.",
+      "parameters": {
+        "-c": {
+          "required": false,
+          "description": "Continuous jog until stop or keep-alive timeout.",
+          "default": null
+        },
+        "-r": {
+          "required": false,
+          "description": "Send ok when finished (for $J in a file).",
+          "default": null
+        },
+        "axis": {
+          "required": true,
+          "description": "One or more of Xn Yn Zn An Bn Cn. Sign chooses direction; magnitude is used as a step or direction for continuous.",
+          "default": null
+        },
+        "S": {
+          "required": false,
+          "description": "Speed as a scale of the axis max rate.",
+          "default": 1.0
+        },
+        "F": {
+          "required": false,
+          "description": "Feed in mm/min. Overrides S if both are given.",
+          "default": null
+        }
+      }
+    },
+    "$F": {
+      "type": "shell",
+      "description": "Feed override.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Percent, clamped 10–1000.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "$O": {
+      "type": "shell",
+      "description": "Spindle-speed override.",
+      "parameters": {
+        "S": {
+          "required": false,
+          "description": "Percent, clamped 10–300.",
+          "default": 100,
+          "unit": "%"
+        }
+      }
+    },
+    "$S": {
+      "type": "shell",
+      "description": "Switch helper used as $S <name> [value].",
+      "parameters": {}
+    }
+  }
+}

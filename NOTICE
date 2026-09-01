@@ -44,6 +44,21 @@ This product includes the following third-party libraries:
    - License: MIT License
    - URL: https://github.com/kivy-garden/garden.ddd/tree/master
 
+8. pyusb
+   - Author: Wander Lairson Costa, pyusb contributors
+   - License: BSD License
+   - URL: https://github.com/pyusb/pyusb
+
+9. libusb
+   - Author: libusb contributors
+   - License: LGPL 2.1
+   - URL: https://libusb.info/
+
+10. libusb-package
+   - Author: Arm Ltd, pyOCD contributors
+   - License: Apache 2.0
+   - URL: https://github.com/pyocd/libusb-package
+
 Notices for files provided by third-party libraries are included below. These
 notices are provided for informational purposes only. The licenses and details
 of these libraries apply to their respective source code.
@@ -54,6 +69,9 @@ of these libraries apply to their respective source code.
 - pyserial is distributed under the terms of the BSD License.
 - libusb/hidapi is distributed under the terms of the GPL 3.0.
 - kivy.ddd is distributed under the terms of the MIT License.
+- pyusb is distributed under the terms of the BSD License.
+- libusb is distributed under the terms of the LGPL 2.1.
+- libusb-package is distributed under the terms of the Apache 2.0 License.
 
 ===============================================================================
 This product includes the following third-party icons:
@@ -65,10 +83,40 @@ This product includes the following third-party icons:
    - Used in: carveracontroller/data/axis-arrow.png
 
 2. camera.png
-   - Author: Austin Andrews
+   - Author: Google
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/camera/
    - Used in: carveracontroller/data/camera.png
+
+3. grid.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/grid/
+   - Used in: carveracontroller/data/GcodeViewer/grid.png
+
+4. monitor-edit.png
+   - Author: Michael Richins
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/monitor-edit/
+   - Used in: carveracontroller/data/GcodeViewer/display-settings.png
+
+5. perspective-less.png
+   - Author: Michael Irigoyen
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/perspective-less/
+   - Used in: carveracontroller/data/GcodeViewer/ortho.png
+
+6. cube.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/cube/
+   - Used in: carveracontroller/data/GcodeViewer/stock.png
+
+7. card.png
+   - Author: Rynco Li
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/card/
+   - Used in: carveracontroller/data/GcodeViewer/bed.png
 
 ===============================================================================
 Please see the respective license files for detailed information.

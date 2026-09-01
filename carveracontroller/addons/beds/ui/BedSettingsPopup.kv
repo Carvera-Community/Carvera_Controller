@@ -1,0 +1,240 @@
+#:import tr carveracontroller.__main__.tr
+
+#:set LABEL_W 0.38
+#:set FIELD_W 0.62
+
+<BedSettingsPopup>:
+    size_hint: 0.52, None
+    height: dp(260)
+    auto_dismiss: False
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(16)
+        spacing: dp(10)
+
+        Label:
+            text: tr._('Bed visualization')
+            size_hint_y: None
+            height: dp(36)
+            font_size: '20sp'
+            bold: True
+
+        Label:
+            id: lbl_help
+            text: root.help_text
+            size_hint_y: None
+            text_size: self.width, None
+            height: max(dp(40), self.texture_size[1] + dp(4))
+            halign: 'left'
+            valign: 'top'
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(40)
+            spacing: dp(8)
+            Spinner:
+                id: spn_bed
+                values: ['']
+                text: ''
+                size_hint_x: 1
+                on_text: root.on_bed_selected()
+            Button:
+                text: tr._('Add')
+                size_hint_x: None
+                width: dp(72)
+                on_release: root.on_add()
+            Button:
+                text: tr._('Modify')
+                size_hint_x: None
+                width: dp(88)
+                disabled: root.modify_disabled
+                on_release: root.on_modify()
+            Button:
+                text: tr._('Delete')
+                size_hint_x: None
+                width: dp(80)
+                disabled: root.delete_disabled
+                on_release: root.on_delete()
+
+        Widget:
+            size_hint_y: 1
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(44)
+            spacing: dp(8)
+            Button:
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                text: tr._('Apply')
+                on_release: root.on_apply_and_close()
+
+
+<BedEditorPopup>:
+    size_hint: 0.56, None
+    height: dp(420)
+    auto_dismiss: False
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(16)
+        spacing: dp(10)
+
+        Label:
+            text: root.title_text
+            size_hint_y: None
+            height: dp(36)
+            font_size: '20sp'
+            bold: True
+
+        ScrollView:
+            id: form_scroll
+            size_hint_y: 1
+            do_scroll_x: False
+            bar_width: dp(14)
+            scroll_type: ['bars', 'content']
+
+            BoxLayout:
+                id: form_body
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(6)
+                padding: 0, 0, dp(22), 0
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(8)
+                    Label:
+                        text: tr._('Name')
+                        size_hint_x: LABEL_W
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                    TextInput:
+                        id: ti_name
+                        multiline: False
+                        hint_text: tr._('Required')
+                        size_hint_x: FIELD_W
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(8)
+                    Label:
+                        text: tr._('Plate model')
+                        size_hint_x: LABEL_W
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                    BoxLayout:
+                        size_hint_x: FIELD_W
+                        spacing: dp(6)
+                        Spinner:
+                            id: spn_model
+                            values: ['']
+                            text: ''
+                            on_text: root.on_model_selected()
+                        Button:
+                            text: tr._('Browse')
+                            size_hint_x: None
+                            width: dp(88)
+                            disabled: root.browse_disabled
+                            on_release: root.on_browse()
+
+                Label:
+                    text: root.custom_file_hint
+                    size_hint_y: None
+                    height: dp(22) if root.custom_file_hint else 0
+                    opacity: 1 if root.custom_file_hint else 0
+                    text_size: self.size
+                    halign: 'right'
+                    valign: 'middle'
+                    font_size: '12sp'
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(8)
+                    Label:
+                        text: tr._('Material')
+                        size_hint_x: LABEL_W
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                    Spinner:
+                        id: spn_material
+                        values: ['']
+                        text: ''
+                        size_hint_x: FIELD_W
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(8)
+                    Label:
+                        text: tr._('Machine X (mm)')
+                        size_hint_x: LABEL_W
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                    TextInput:
+                        id: txt_mcs_x
+                        multiline: False
+                        input_filter: 'float'
+                        hint_text: tr._('Required')
+                        size_hint_x: FIELD_W
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(8)
+                    Label:
+                        text: tr._('Machine Y (mm)')
+                        size_hint_x: LABEL_W
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                    TextInput:
+                        id: txt_mcs_y
+                        multiline: False
+                        input_filter: 'float'
+                        hint_text: tr._('Required')
+                        size_hint_x: FIELD_W
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(8)
+                    Label:
+                        text: tr._('Machine Z (mm)')
+                        size_hint_x: LABEL_W
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                    TextInput:
+                        id: txt_mcs_z
+                        multiline: False
+                        input_filter: 'float'
+                        hint_text: tr._('Required')
+                        size_hint_x: FIELD_W
+
+                Label:
+                    text: root.thickness_hint
+                    size_hint_y: None
+                    text_size: self.width, None
+                    height: max(dp(36), self.texture_size[1] + dp(4))
+                    halign: 'left'
+                    valign: 'top'
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(44)
+            spacing: dp(8)
+            Button:
+                text: tr._('Cancel')
+                on_release: root.on_cancel()
+            Button:
+                text: tr._('Save')
+                on_release: root.on_save()

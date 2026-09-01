@@ -1,0 +1,342 @@
+#:import tr carveracontroller.__main__.tr
+
+# Shared form column split: labels stay readable, controls get most of the width.
+#:set LABEL_W 0.4
+#:set FIELD_W 0.6
+
+<StockSettingsPopup>:
+    size_hint: 0.58, None
+    auto_dismiss: False
+    BoxLayout:
+        id: content_box
+        orientation: 'vertical'
+        size_hint: 1, 1
+        padding: dp(16)
+        spacing: dp(10)
+
+        Label:
+            id: lbl_title
+            text: tr._('Stock settings')
+            size_hint_y: None
+            height: dp(36)
+            font_size: '20sp'
+            bold: True
+
+        Label:
+            id: lbl_help
+            text: tr._('Define the workpiece block shown in the 3D viewer and optionally simulate material removal during playback. Origin placement matches how you set WCS on the machine.')
+            size_hint_y: None
+            text_size: self.width, None
+            height: max(dp(48), self.texture_size[1] + dp(4))
+            halign: 'left'
+            valign: 'top'
+
+        ScrollView:
+            id: form_scroll
+            size_hint_y: 1
+            do_scroll_x: False
+            bar_width: dp(14)
+            scroll_type: ['bars', 'content']
+
+            BoxLayout:
+                id: form_body
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(6)
+                # Right padding clears the overlay scrollbar (Facing uses ~dp(22) with bar_width dp(14)).
+                padding: 0, 0, dp(22), 0
+
+                BoxLayout:
+                    id: dim_form
+                    orientation: 'vertical'
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: dp(6)
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Show stock')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        BoxLayout:
+                            size_hint_x: FIELD_W
+                            CheckBox:
+                                id: chk_show_stock
+                                active: False
+                                size_hint_x: None
+                                width: dp(32)
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Material')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        Spinner:
+                            id: spn_material
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Shape')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        Spinner:
+                            id: spn_shape
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            id: lbl_width
+                            text: tr._('Width (mm)')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        TextInput:
+                            id: txt_width
+                            text: '100'
+                            multiline: False
+                            input_filter: 'float'
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        id: row_length
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            id: lbl_length
+                            text: tr._('Length (mm)')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        TextInput:
+                            id: txt_length
+                            text: '100'
+                            multiline: False
+                            input_filter: 'float'
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        id: row_height
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            id: lbl_height
+                            text: tr._('Height (mm)')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        TextInput:
+                            id: txt_height
+                            text: '10'
+                            multiline: False
+                            input_filter: 'float'
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        id: row_corner
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            id: lbl_corner
+                            text: tr._('WCS origin')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        Spinner:
+                            id: spn_corner
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        id: row_z_ref
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            id: lbl_z_ref
+                            text: tr._('Origin Z')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        Spinner:
+                            id: spn_z_ref
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Stock offset X/Y/Z (mm)')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                        BoxLayout:
+                            size_hint_x: FIELD_W
+                            spacing: dp(4)
+                            TextInput:
+                                id: txt_offset_x
+                                text: '0'
+                                multiline: False
+                                input_filter: 'float'
+                            TextInput:
+                                id: txt_offset_y
+                                text: '0'
+                                multiline: False
+                                input_filter: 'float'
+                            TextInput:
+                                id: txt_offset_z
+                                text: '0'
+                                multiline: False
+                                input_filter: 'float'
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Simulate cut')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                            disabled: not root.simulation_available or not chk_show_stock.active
+                        BoxLayout:
+                            size_hint_x: FIELD_W
+                            CheckBox:
+                                id: chk_simulate
+                                active: False
+                                disabled: not root.simulation_available or not chk_show_stock.active
+                                size_hint_x: None
+                                width: dp(32)
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Update during playback')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+                        BoxLayout:
+                            size_hint_x: FIELD_W
+                            CheckBox:
+                                id: chk_mesh_while_playing
+                                active: False
+                                disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+                                size_hint_x: None
+                                width: dp(32)
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Carver')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+                        Spinner:
+                            id: spn_carver_mode
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Simulation resolution')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+                        Spinner:
+                            id: spn_voxel_resolution
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        Label:
+                            text: tr._('Checkpoint retention')
+                            size_hint_x: LABEL_W
+                            text_size: self.size
+                            halign: 'left'
+                            valign: 'middle'
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+                        Spinner:
+                            id: spn_checkpoint_level
+                            values: ['']
+                            text: ''
+                            size_hint_x: FIELD_W
+                            disabled: not chk_simulate.active or not root.simulation_available or not chk_show_stock.active
+
+                Label:
+                    text: root.simulation_hint if not root.simulation_available else ''
+                    size_hint_y: None
+                    height: dp(18) if not root.simulation_available else 0
+                    opacity: 0 if root.simulation_available else 1
+                    font_size: '12sp'
+                    color: 0.9, 0.7, 0.3, 1
+                    text_size: self.width, None
+                    halign: 'left'
+
+        BoxLayout:
+            id: btn_row
+            size_hint_y: None
+            height: dp(44)
+            spacing: dp(10)
+            Button:
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                text: tr._('Apply')
+                on_release: root.on_apply_and_close()

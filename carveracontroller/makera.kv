@@ -14,6 +14,7 @@
 #:import PROBE_3D_TOOL_NUMBER carveracontroller.CNC.PROBE_3D_TOOL_NUMBER
 #:include ui/GcodeColorSchemePanel.kv
 #:include addons/tooltips/Tooltips.kv
+#:include addons/intellisense/Intellisense.kv
 #:include ui/LocalFilePicker.kv
 #:include ui/DirectoryView.kv
 #:include ui/DropDownSplitter.kv
@@ -22,6 +23,8 @@
 #:include ui/popups/adv_calibrate/adv_calibrate.kv
 #:include addons/cmm_workbench/ui/CMMWorkbenchPopup.kv
 #:include addons/facing/FacingWizardPopup.kv
+#:include addons/stock/ui/StockSettingsPopup.kv
+#:include addons/beds/ui/BedSettingsPopup.kv
 #:include addons/camera/CameraControls.kv
 
 <Label>:
@@ -46,8 +49,10 @@
             pos: self.pos
             size: (self.width - dp(5)) * (self.value / 100.0) + 5 if self.width > 0 else 0, self.height if self.width > 0 else 0
 
-<MCQCheckBox@CheckBox>:
+<CheckBox>:
     color: 255, 255, 255, 1
+
+<MCQCheckBox@CheckBox>:
     size_hint: 0.15, 1
 
 <MCQLabel@ButtonBehavior+Label>:
@@ -58,8 +63,8 @@
 <CNCWorkspace>:
     size_hint_x: None
     size_hint_y: None
-    width: self.parent.width if self.parent.width > 0 and self.parent.height / self.parent.width > 0.7 else self.parent.height / 0.7
-    height: self.parent.height if self.parent.width > 0 and self.parent.height / self.parent.width < 0.7 else self.parent.width * 0.7
+    width: self.parent.width if self.parent.width > 0 and self.parent.height / self.parent.width > self.workspace_aspect else self.parent.height / self.workspace_aspect
+    height: self.parent.height if self.parent.width > 0 and self.parent.height / self.parent.width < self.workspace_aspect else self.parent.width * self.workspace_aspect
 
 <IconButton>:
     width: '50dp'
@@ -138,6 +143,40 @@
     height: dp(48) if app.show_gcode_ctl_bar else 0
     size_hint_y: None
 
+<GcodeViewerDisplayMenuButton>:
+    icon: ''
+    text: ''
+    active: False
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: '44dp'
+    padding: [dp(10), 0]
+    spacing: dp(8)
+    canvas.before:
+        Color:
+            rgba: (50/255, 164/255, 206/255, 0.45) if self.state == 'down' else (80/255, 80/255, 80/255, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Widget:
+        size_hint_x: None
+        width: dp(28)
+        canvas:
+            Color:
+                rgba: tuple(app.active_color) if (root.active and not root.disabled) else ((110/255, 110/255, 110/255, 1) if root.disabled else (250/255, 250/255, 250/255, 1))
+            Rectangle:
+                source: root.icon
+                pos: self.center_x - dp(12), self.center_y - dp(12)
+                size: dp(24) if root.icon else 0, dp(24) if root.icon else 0
+    Label:
+        text: root.text
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        font_size: '14sp'
+        color: tuple(app.active_color) if (root.active and not root.disabled) else ((110/255, 110/255, 110/255, 1) if root.disabled else (250/255, 250/255, 250/255, 1))
+
+
 <WiFiButton>:
     orientation: 'horizontal'
     size_hint_y: None
@@ -189,7 +228,9 @@
 <ButtonLabel@ButtonBehavior+Label>:
     valign: 'center'
 
-<Row@SelectableLabel>:
+<Row>:
+    markup: True
+    text: root.highlighted_text or root.plain_text
     canvas.before:
         Color:
             rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
@@ -199,6 +240,7 @@
     text_size: self.size
     halign: 'left'
     shorten: True
+    shorten_from: 'right'
 
 <GCodeRow>:
     orientation: 'horizontal'
@@ -231,6 +273,7 @@
         valign: 'middle'
         text_size: self.size
         shorten: True
+        shorten_from: 'right'
 
 <DataRow@SelectableBoxLayout>:
     canvas.before:
@@ -1236,6 +1279,48 @@
 
 <ComPortsDropDown>:
 
+<GcodeViewerDisplayDropDown>:
+    auto_width: False
+    width: dp(220)
+    canvas.before:
+        Color:
+            rgba: 60/255, 60/255, 60/255, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    GcodeViewerDisplayMenuButton:
+        icon: 'data/GcodeViewer/grid.png'
+        text: tr._('Grid')
+        active: root.show_grid
+        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+        on_release:
+            root.show_grid = not root.show_grid
+            app.root.gcode_viewer.set_grid_visible(root.show_grid)
+    GcodeViewerDisplayMenuButton:
+        icon: 'data/GcodeViewer/ortho.png'
+        text: tr._('Ortho')
+        active: root.ortho_projection
+        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+        on_release:
+            root.ortho_projection = not root.ortho_projection
+            app.root.gcode_viewer.set_ortho_projection(root.ortho_projection)
+    GcodeViewerDisplayMenuButton:
+        icon: 'data/GcodeViewer/stock.png'
+        text: tr._('Stock...')
+        active: root.show_stock
+        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+        on_release:
+            root.dismiss()
+            app.root.open_stock_settings_popup()
+    GcodeViewerDisplayMenuButton:
+        icon: 'data/GcodeViewer/bed.png'
+        text: tr._('Bed...')
+        active: root.show_bed
+        disabled: (app.selected_remote_filename == '' and app.selected_local_filename == '') or app.state == 'N/A' or app.model not in ['C1', 'CA1', 'Z1']
+        on_release:
+            root.dismiss()
+            app.root.open_bed_settings_popup()
+
 <OperationDropDown>:
     Button:
         text: tr._('Upload...')
@@ -1707,13 +1792,13 @@
                         group: 'anchor'
                         active: False
                         on_press: root.update_offsets()
-                        disabled: app.has_4axis
+                        disabled: app.has_4axis or not app.has_anchor2
                     MCQLabel:
                         on_press: 
                             cbx_anchor2._do_press()
                             root.update_offsets()
                         text: tr._('Anchor2')
-                        disabled: app.has_4axis
+                        disabled: app.has_4axis or not app.has_anchor2
                     MCQCheckBox:
                         id: cbx_4axis_origin
                         group: 'anchor'
@@ -2996,7 +3081,8 @@
                 BoxLayout:
                     padding: '0.5dp'
                     size_hint_y: None
-                    height: '30dp'
+                    height: '30dp' if app.model == 'C1' else '0dp'
+                    opacity: 1 if app.model == 'C1' else 0
                     disabled: app.model != 'C1'
                     Label:
                         text: tr._("Auto Vacuum")
@@ -3055,6 +3141,108 @@
                         on_active:
                             if self.set_flag: self.set_flag = False
                             else: app.root.update_control('extout_mode', self.active)
+
+                BoxLayout:
+                    padding: '0.5dp'
+                    size_hint_y: None
+                    height: '30dp' if app.model == 'Z1' else '0dp'
+                    opacity: 1 if app.model == 'Z1' else 0
+                    disabled: app.model != 'Z1'
+                    Label:
+                        text: tr._("Auto Blow")
+                        halign: "left"
+                        valign: "middle"
+                        font_size: '13sp'
+                        text_size: self.size
+
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
+                    ToolTipSwitch:
+                        id: autoblow_switch_play
+                        tooltip_txt: tr._("The spindle fan will always run with this minimum power while the spindle is on.")
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
+                        set_flag: False
+                        active: True if root.autoblowmode == 1 else False
+                        on_active:
+                            if self.set_flag: self.set_flag = False
+                            else: app.root.update_control('autoblow_mode', self.active)
+
+                BoxLayout:
+                    padding: '0.5dp'
+                    size_hint_y: None
+                    height: '30dp' if app.model == 'Z1' else '0dp'
+                    opacity: 1 if app.model == 'Z1' else 0
+                    disabled: app.model != 'Z1'
+                    Label:
+                        text: tr._("Auto Bed Clean")
+                        halign: "left"
+                        valign: "middle"
+                        font_size: '13sp'
+                        text_size: self.size
+
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
+                    ToolTipSwitch:
+                        id: autobedclean_switch_play
+                        tooltip_txt: tr._("Runs a cleaning cycle when gcode playback finishes.")
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
+                        set_flag: False
+                        active: True if root.autobedcleanmode == 1 else False
+                        on_active:
+                            if self.set_flag: self.set_flag = False
+                            else: app.root.update_control('autobedclean_mode', self.active)
+
+                BoxLayout:
+                    padding: '0.5dp'
+                    size_hint_y: None
+                    height: '30dp' if app.model == 'Z1' else '0dp'
+                    opacity: 1 if app.model == 'Z1' else 0
+                    disabled: app.model != 'Z1'
+                    Label:
+                        text: tr._("Ionizer")
+                        halign: "left"
+                        valign: "middle"
+                        font_size: '13sp'
+                        text_size: self.size
+
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
+                    ToolTipSwitch:
+                        id: ionizer_switch_play
+                        tooltip_txt: tr._("Turn on the static electricity removal unit on Z1.")
+                        canvas.before:
+                            Color:
+                                rgba: 50/255, 50/255, 50/255, 1
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
+                        set_flag: False
+                        active: True if root.ionizermode == 1 else False
+                        on_active:
+                            if self.set_flag: self.set_flag = False
+                            else: app.root.update_control('ionizer_mode', self.active)
 
                 Label:
                     size_hint_y: None
@@ -3588,6 +3776,7 @@
     cmd_manager: cmd_manager
     gcode_viewer_container: gcode_viewer_container
     gcode_play_slider: gcode_play_slider
+    sim_stats_hud: sim_stats_hud
 
     BoxLayout:
         padding: [app.safe_area_padding[0] + dp(5), app.safe_area_padding[1] + dp(5), app.safe_area_padding[2] + dp(5), app.safe_area_padding[3] + dp(5)]
@@ -3780,7 +3969,8 @@
                                         center: 0.5, 0.5
                                         size_hint_y: None
                                         height: '40dp'
-                                        text: '10'
+                                        text: app.jog_step_xy
+                                        on_text: app.jog_step_xy = self.text
                                         values: '10', '1', '0.1', '0.01', '0.005'
                                     Label:
 
@@ -3927,7 +4117,7 @@
                                                 height: '35dp'
                                                 disabled: app.state != 'Idle'
                                                 text: tr._('Goto...')
-                                                values: 'Clearance', 'Work Origin', 'Path Origin', 'Anchor1', 'Anchor2'
+                                                values: ['Clearance', 'Work Origin', 'Path Origin', 'Anchor1', 'Anchor2'] if app.has_anchor2 else ['Clearance', 'Work Origin', 'Path Origin', 'Anchor1']
                                                 on_text:
                                                     if self.text != tr._("Goto..."): app.root.controller.gotoPosition(self.text)
                                                     if self.text != tr._("Goto..."): self.text = tr._('Goto...')
@@ -4055,7 +4245,8 @@
                                         center: 0.5, 0.5
                                         size_hint_y: None
                                         height: '40dp'
-                                        text: '90'
+                                        text: app.jog_step_a
+                                        on_text: app.jog_step_a = self.text
                                         values: '90', '10', '1', '0.1'
                                     Label:
                                 GridBoxLayout:
@@ -4065,7 +4256,8 @@
                                         center: 0.5, 0.5
                                         size_hint_y: None
                                         height: '40dp'
-                                        text: '1'
+                                        text: app.jog_step_z
+                                        on_text: app.jog_step_z = self.text
                                         values: '10', '1', '0.1', '0.01', '0.005'
                                     Label:
                                 GridBoxLayout:
@@ -4127,6 +4319,7 @@
                                                 scroll_type: ['bars', 'content']
                                                 scroll_wheel_distance: dp(114)
                                                 bar_width: dp(20)
+                                                do_scroll_x: False
                                                 viewclass: 'GCodeRow'
                                                 SelectableRecycleBoxLayout:
                                                     default_size: None, dp(20)
@@ -4200,6 +4393,7 @@
                                                 scroll_type: ['bars', 'content']
                                                 scroll_wheel_distance: dp(114)
                                                 bar_width: dp(20)
+                                                do_scroll_x: False
                                                 viewclass: 'Row'
                                                 SelectableRecycleBoxLayout:
                                                     default_size: None, dp(20)
@@ -4286,13 +4480,23 @@
                                         CameraControls:
                                             id: camera_controls
                                             pos_hint: {'x': 0, 'top': 1}
+                            Label:
+                                id: sim_stats_hud
+                                size_hint: None, None
+                                size: self.texture_size
+                                text: ''
+                                font_size: '11sp'
+                                color: 0.92, 0.90, 0.78, 0.92
+                                halign: 'left'
+                                valign: 'bottom'
+                                opacity: 0 if not self.text else 1
+                                x: float_layout.x + dp(10)
+                                y: gcode_ctl_bar.top + dp(6)
                             GcodeColorSchemePanel:
                                 id: color_scheme_panel
                             BoxLayout:
                                 id: tool_bar
                                 orbit: True
-                                show_grid: True
-                                ortho_projection: False
                                 size_hint: None, None
                                 width: self.minimum_width
                                 height: dp(48) if app.show_gcode_ctl_bar else 0
@@ -4340,22 +4544,17 @@
                                     on_release:
                                         root.gcode_viewer.restore_default_view()
                                 GcodeViewerToolBarButton:
-                                    width: '50dp'
-                                    active: tool_bar.show_grid
-                                    icon: 'data/GcodeViewer/grid.png'
+                                    width: '56dp'
+                                    padding: [0, 0, dp(12), 0]
+                                    icon: 'data/GcodeViewer/display-settings.png'
+                                    tooltip_txt: tr._('Display settings')
                                     disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                    on_release:
-                                        tool_bar.show_grid = not tool_bar.show_grid
-                                        root.gcode_viewer.set_grid_visible(tool_bar.show_grid)
-                                GcodeViewerToolBarButton:
-                                    width: '44dp'
-                                    valign: 'middle'
-                                    text: 'Ortho'
-                                    active: tool_bar.ortho_projection
-                                    disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
-                                    on_release:
-                                        tool_bar.ortho_projection = not tool_bar.ortho_projection
-                                        root.gcode_viewer.set_ortho_projection(tool_bar.ortho_projection)
+                                    on_release: root.gcode_viewer_display_drop_down.open(self)
+                                    canvas.after:
+                                        Color:
+                                            rgba: tuple(app.active_color) if (self.active and not self.disabled) else ((110/255, 110/255, 110/255, 1) if self.disabled else (219/255, 219/255, 219/255, 1))
+                                        Triangle:
+                                            points: [self.right - dp(13), self.center_y + dp(3), self.right - dp(5), self.center_y + dp(3), self.right - dp(9), self.center_y - dp(3)]
 
                             BoxLayout:
                                 id: gcode_ctl_bar

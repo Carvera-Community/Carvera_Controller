@@ -352,9 +352,13 @@ def usb_port_short_name(device_path):
 
 
 def same_usb_device_path(a, b):
-    """Compare serial device paths; case-insensitive on Windows (COM3 vs com3)."""
+    """Compare serial / USB bulk device paths; case-insensitive on Windows (COM3 vs com3)."""
     if not a or not b:
         return False
+    from .USBBulkStream import is_usb_bulk_address
+
+    if is_usb_bulk_address(a) or is_usb_bulk_address(b):
+        return a.casefold() == b.casefold()
     if sys.platform.startswith("win"):
         return a.lower() == b.lower()
     return a == b
@@ -416,10 +420,15 @@ def list_identifiable_usb_serial_ports(port_iter=None):
                 "vid": int(port.vid),
                 "pid": int(port.pid),
                 "serial": (getattr(port, "serial_number", None) or "").strip(),
+                "transport": "serial",
             }
         )
 
-    # Disambiguate identical labels (empty/cloned serials) with the OS short name.
+    return _disambiguate_usb_device_labels(devices)
+
+
+def _disambiguate_usb_device_labels(devices):
+    """Disambiguate identical labels (empty/cloned serials) with the OS short name."""
     label_counts = {}
     for entry in devices:
         label_counts[entry["label"]] = label_counts.get(entry["label"], 0) + 1
@@ -433,7 +442,23 @@ def list_identifiable_usb_serial_ports(port_iter=None):
     return devices
 
 
-def find_usb_device_path_by_id(device_id=None, serial=None, port_iter=None):
+def list_identifiable_usb_devices(port_iter=None, bulk_devices=None):
+    """
+    List USB serial ports and vendor-class bulk devices (e.g. Makera Z1).
+
+    Bulk devices already exposed as OS serial ports are omitted. When
+    ``port_iter`` is provided (tests), live USB bulk scanning is skipped unless
+    ``bulk_devices`` is passed explicitly.
+    """
+    from .USBBulkStream import list_usb_bulk_devices, merge_usb_device_lists
+
+    serial_devices = list_identifiable_usb_serial_ports(port_iter=port_iter)
+    if bulk_devices is None:
+        bulk_devices = [] if port_iter is not None else list_usb_bulk_devices()
+    return _disambiguate_usb_device_labels(merge_usb_device_lists(serial_devices, bulk_devices))
+
+
+def find_usb_device_path_by_id(device_id=None, serial=None, port_iter=None, bulk_devices=None):
     """
     Resolve a stored USB identity to the current OS path.
 
@@ -442,7 +467,7 @@ def find_usb_device_path_by_id(device_id=None, serial=None, port_iter=None):
     """
     vid_pid, legacy_serial = parse_usb_device_id(device_id) if device_id else (None, "")
     prefer_serial = (serial or legacy_serial or "").strip()
-    devices = list_identifiable_usb_serial_ports(port_iter=port_iter)
+    devices = list_identifiable_usb_devices(port_iter=port_iter, bulk_devices=bulk_devices)
 
     if prefer_serial:
         serial_matches = [entry for entry in devices if same_usb_serial(entry["serial"], prefer_serial)]

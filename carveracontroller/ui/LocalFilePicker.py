@@ -29,7 +29,7 @@ class LocalFilePickerSheet(BoxLayout):
     curr_path_list = ListProperty([])
     curr_dir_name = StringProperty("")
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.curr_full_path_list: list[str] = []
         self._common_dirs: list[dict] = []

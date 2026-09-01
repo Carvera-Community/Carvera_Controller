@@ -20,7 +20,14 @@ def test_diagnose_rssi_field():
     ctrl = Controller(CNC(), lambda _line: None, False)
     ctrl.parseBigParentheses("{S:0,5000|L:0,0|F:1,0|V:0,1|G:0|T:0|R:0|I:0|RSSI:-57}")
     assert CNC.vars["sw_spindle"] == 0
+    assert CNC.vars["st_e_stop"] == 0
     assert CNC.vars["RSSI"] == -57
+
+
+def test_diagnose_estop_pin_engaged():
+    ctrl = Controller(CNC(), lambda _line: None, False)
+    ctrl.parseBigParentheses("{S:0,5000|I:1|RSSI:-57}")
+    assert CNC.vars["st_e_stop"] == 1
 
 
 def test_diagnose_with_junk_after_brace():

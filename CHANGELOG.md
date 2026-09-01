@@ -1,8 +1,31 @@
+[unreleased]
+- Enhancement: Tool-change flags have tooltip showing time until the change
+- Enhancement: Remaining time text alternates with time until the next tool change and playback completion
+- Enhancement: Selected files show estimated run time on the playback bar before the job starts
+- Enhancement: Intellisense-like popups explaining commands in lines selected in the gcode viewer and MDI terminal
+- Enhancement: Support for connect to the Makera Z1 over USB
+- Enhancement: Add Auto Blow, Auto Bed Clean, and Ionizer toggles to the Config and Run screen on Z1
+- Enhancement: Add Z1 bed background
+- Enhancement: Machine bed background images in the config-n-run preview screen now filtered to show images that match the machine model connected
+- Enhancement: Add stock settings and simulation to the G-Code viewer
+- Enhancement: Alarm popup now notes an engaged e-stop when the halt reason is not the e-stop code
+- Enhancement: Use machine limits when available to calculate time estimates
+- Enhancement: Add bed settings and visualization to the G-Code viewer
+- Change: Hide Auto Vacuum on the Config and Run screen when the machine is not a C1
+- Change: Config and Run preview now uses now uses the configured worksize_x/y for the bed size
+- Fixed: Harden the gcode parser against "zero length" movement, and prevent division by zero in play slider
+- Fixed: Time estimates ignoring speed for some 4th-axis moves
+- Fixed: Allow to select the bottom element of the MDI, Gcode and probing confirmation lists
+
+[2.2.0-RC3]
+- Enhancement: The step size is now synchronized between the main screen and the Probing screen
+- Fixed: Y+/Y- jogging buttons on the Probing screen respect the configured Y axis inversion setting
 
 [2.2.0-RC2]
 - Enhancement: Adds "Allow Jogging When Spindle or Laser Is On" option (disabled by default). "Allow Jogging When Machine Running" will now be enabled by default. Existing configs that already allowed jogging while the machine is running also enable the new spindle/laser option.
 - Enhancement: Windows and Android artifacts are now signed
 - Enhancement: Abort CMM workbench operations when an invalid machine state is detected
+- Enhancement: Windows and Android artifacts are now signed
 - Fixed: Prevent a probing modal crash if E is not provided when using the angle operation
 - Fixed: Default Values on Probing screens caused probing to fail unexpectedly 
 - Fixed: Remaining job time no longer resumes counting after aborting playback and disconnecting
@@ -14,7 +37,8 @@
 - Fixed: Machine time sync now includes daylight saving, SD card timestamps now match the PC clock when daylight savings is in effect
 - Changed: added help button to probing screen confirmation/error popup for clarity
 - Changed: Moved Z1 Camera to a collapsible area in the Gcode Viewer. Collapsible splitter is only shown if a supported camera is found.
-- Change: Moved tools visibility controls to the color scheme panel
+- Changed: Moved tools visibility controls to the color scheme panel
+- Changed: Moved tools visibility controls to the color scheme panel
 
 [2.2.0-RC1]
 - Enhancement: Read tool definitions from post-processor outputs and use them in the G-code viewer

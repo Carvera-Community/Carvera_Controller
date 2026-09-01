@@ -1,9 +1,11 @@
-"""Base class for CAM tool table parsers."""
+"""Base class for CAM G-code header parsers."""
 
 from abc import ABC, abstractmethod
 
-# Characters that make a line "safe" to skip over while looking for a tool
-# table header (comment, blank, program-marker or variable-assignment lines).
+from carveracontroller.addons.cam.metadata import CamMetadata
+
+# Characters that make a line "safe" to skip over while looking for a CAM
+# header (comment, blank, program-marker or variable-assignment lines).
 # Mirrors the characters CNC.parseLine() itself treats as non-motion lines.
 HEADER_SAFE_PREFIXES = ("%", "(", "#", ";")
 
@@ -12,8 +14,8 @@ HEADER_SAFE_PREFIXES = ("%", "(", "#", ";")
 MAX_HEADER_LINES = 5000
 
 
-class ToolTableParser(ABC):
-    """Extracts a tool table from the raw lines of a G-code file.
+class CamHeaderParser(ABC):
+    """Extracts CAM metadata from the raw lines of a G-code file.
 
     Implementations should be conservative: if the file does not look like
     it was produced by the CAM/post processor they support, `parse()` should
@@ -32,11 +34,22 @@ class ToolTableParser(ABC):
         """
         raise NotImplementedError
 
+    def parse_metadata(self, lines, unit_scale=1.0) -> CamMetadata:
+        """Parse tools and stock from the same header scan.
+
+        Default wraps :meth:`parse` with ``stock=None``. Override when a
+        post processor also emits stock comments so both are read in one pass.
+
+        ``unit_scale`` converts document-unit stock sizes/offsets to millimetres
+        (1.0 for mm files, 25.4 for inch files). Tools are left in document units.
+        """
+        return CamMetadata(parser_name=self.name, tool_table=self.parse(lines) or {}, stock=None)
+
     @staticmethod
     def iter_header_lines(lines, max_lines=MAX_HEADER_LINES):
         """Lazily yield the leading blank/comment-only lines of a file.
 
-        CAM post processors write tool tables as a block of comments at the
+        CAM post processors write metadata as a block of comments at the
         very top of the file, before any real G-code. So instead of scanning
         the whole (potentially huge) file, parsers that rely on this stop
         pulling from `lines` as soon as the first "real" line is seen (or

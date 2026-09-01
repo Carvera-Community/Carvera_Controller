@@ -21,6 +21,7 @@ from functools import partial
 from . import Utils
 from .CNC import CMDPAT, CNC, LASER_TOOL_NUMBER, PARENPAT, SEMIPAT, ZPROBE_TOOL_NUMBER
 from .protocols import MessageKind, ProtocolSession
+from .USBBulkStream import USBBulkStream, is_usb_bulk_address
 from .USBStream import USBStream
 from .WIFIStream import WIFIStream
 
@@ -95,6 +96,7 @@ class Controller:
 
     stop = threading.Event()
     usb_stream = None
+    usb_bulk_stream = None
     wifi_stream = None
     stream = None
     modem = None
@@ -102,6 +104,7 @@ class Controller:
 
     def __init__(self, cnc, callback, log_sent_receive=False):
         self.usb_stream = USBStream(log_sent_receive)
+        self.usb_bulk_stream = USBBulkStream(log_sent_receive)
         self.wifi_stream = WIFIStream(log_sent_receive)
 
         # Reconnection properties
@@ -199,6 +202,8 @@ class Controller:
         """Keep transports' file-transfer mode aligned with the comms session."""
         if self.usb_stream is not None:
             self.usb_stream.uses_framed_transfer = uses_framed_transfer
+        if self.usb_bulk_stream is not None:
+            self.usb_bulk_stream.uses_framed_transfer = uses_framed_transfer
         if self.wifi_stream is not None:
             self.wifi_stream.uses_framed_transfer = uses_framed_transfer
         if self.comms.ready:
@@ -555,6 +560,27 @@ class Controller:
             self.executeCommand("M331.3\n")
         else:
             self.executeCommand("M332.3\n")
+
+    def setAutoBlowMode(self, mode):
+        CNC.vars["autoblowmode"] = 1 if mode else 0
+        if mode:
+            self.executeCommand("M331.1\n")
+        else:
+            self.executeCommand("M332.1\n")
+
+    def setAutoBedCleanMode(self, mode):
+        CNC.vars["autobedcleanmode"] = 1 if mode else 0
+        if mode:
+            self.executeCommand("M331.2\n")
+        else:
+            self.executeCommand("M332.2\n")
+
+    def setIonizerMode(self, mode):
+        CNC.vars["ionizermode"] = 1 if mode else 0
+        if mode:
+            self.executeCommand("M331.4\n")
+        else:
+            self.executeCommand("M332.4\n")
 
     def setLaserMode(self, mode):
         if mode:
@@ -1524,10 +1550,7 @@ class Controller:
         if self.stream is None and self.thread is None:
             return
         self.stopRun()
-        thread = self.thread
-        self.thread = None
-        if thread is not None and thread.is_alive() and thread is not threading.current_thread():
-            thread.join(timeout=1.0)
+        self._join_stream_io()
         if self.stream is not None:
             try:
                 self.stream.close()
@@ -1537,9 +1560,29 @@ class Controller:
         self.comms.reset()
         self.clearRun()
 
+    def _join_stream_io(self):
+        thread = self.thread
+        self.thread = None
+        if thread is not None and thread.is_alive() and thread is not threading.current_thread():
+            thread.join(timeout=1.0)
+
+    def _usb_transport_for_address(self, address):
+        if is_usb_bulk_address(address):
+            return self.usb_bulk_stream
+        return self.usb_stream
+
+    def _connection_method_label(self, conn_type=None, address=None):
+        if conn_type is None:
+            conn_type = self.connection_type
+        if address is None:
+            address = self.connection_address
+        if conn_type == CONN_USB:
+            return "USB" if is_usb_bulk_address(address) else "USB serial"
+        return "WiFi"
+
     def open(self, conn_type, address):
         # init connection
-        method = "USB serial" if conn_type == CONN_USB else "WiFi"
+        method = self._connection_method_label(conn_type, address)
         # Single user-visible connect log (monitorSerial emits one MDI Received line).
         self.log.put((self.MSG_NORMAL, f"Connecting via {method}: {address}"))
 
@@ -1552,7 +1595,7 @@ class Controller:
         # Keep self.stream unset until open + protocol detect finish so heartbeat
         # cannot treat a half-open link as a live connection and tear it down.
         if conn_type == CONN_USB:
-            transport = self.usb_stream
+            transport = self._usb_transport_for_address(address)
             self._baud_upgrade_attempted = False
         else:
             transport = self.wifi_stream
@@ -1561,13 +1604,19 @@ class Controller:
             # Switching WiFi ↔ USB (or reconnecting) must tear down the old link first.
             self._close_existing_connection()
 
-            if not transport.open(address):
+            try:
+                opened = transport.open(address)
+            except Exception as exc:
+                self.log.put((self.MSG_ERROR, str(exc)))
+                raise
+
+            if not opened:
                 self.log.put((self.MSG_ERROR, "Connection Failed!"))
                 return False
 
-            if conn_type == CONN_USB:
-                # USB open toggles DTR and resets the machine; wait for firmware boot
-                # before protocol probe / status polling.
+            if conn_type == CONN_USB and getattr(transport, "resets_on_open", True):
+                # USB serial open toggles DTR and resets the machine; wait for firmware boot
+                # before protocol probe / status polling. Vendor bulk USB does not reset.
                 time.sleep(2.0)
 
             CNC.vars["state"] = CONNECTED
@@ -1587,8 +1636,12 @@ class Controller:
             self.thread = threading.Thread(target=self.streamIO)
             self.thread.start()
             self._refresh_heartbeat = True
-            # USB needs a longer post-reset grace; WiFi is usually ready immediately.
-            self._heartbeat_grace_until = time.time() + (20.0 if conn_type == CONN_USB else 5.0)
+            # USB serial needs a longer post-reset grace; bulk USB and WiFi are ready sooner.
+            if conn_type == CONN_USB and getattr(transport, "resets_on_open", True):
+                grace = 20.0
+            else:
+                grace = 5.0
+            self._heartbeat_grace_until = time.time() + grace
             return True
         finally:
             self._connecting = False
@@ -1604,8 +1657,7 @@ class Controller:
         except Exception:
             self.log.put((self.MSG_ERROR, "Controller stop thread error!"))
         self._runLines = 0
-        time.sleep(0.5)
-        self.thread = None
+        self._join_stream_io()
         try:
             self.stream.close()
         except Exception:
@@ -1623,7 +1675,7 @@ class Controller:
         """Close connection manually (user initiated) - don't auto-reconnect"""
         if self.stream is None:
             return
-        method = "USB serial" if self.connection_type == CONN_USB else "WiFi"
+        method = self._connection_method_label()
         address = self.connection_address or "unknown"
         self.log.put((self.MSG_NORMAL, f"Disconnected via {method}: {address}"))
         try:
@@ -1631,8 +1683,7 @@ class Controller:
         except Exception:
             self.log.put((self.MSG_ERROR, "Controller stop thread error!"))
         self._runLines = 0
-        time.sleep(0.5)
-        self.thread = None
+        self._join_stream_io()
         try:
             self.stream.close()
         except Exception:
@@ -1745,8 +1796,8 @@ class Controller:
         if self.loadNUM == 0 and self.sendNUM == 0:
             if self.stream is None or not self.protocol_ready:
                 return
-            self.executeCommand("diagnose\n")
             self.sio_diagnose = sio_diagnose
+            self.executeCommand("diagnose\n")
 
     # ----------------------------------------------------------------------
     def hardReset(self):
@@ -2001,6 +2052,11 @@ class Controller:
 
     def _flush_rx(self):
         """Discard any unread host RX bytes and reset the protocol parser."""
+        if self.stream is not None and hasattr(self.stream, "reset_input_buffer"):
+            try:
+                self.stream.reset_input_buffer()
+            except Exception:
+                pass
         serial_port = getattr(self.stream, "serial", None) if self.stream else None
         if serial_port is not None:
             try:

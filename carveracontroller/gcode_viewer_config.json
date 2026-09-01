@@ -1,6 +1,14 @@
 [
     {
         "type": "bool",
+        "title": "Automatically display stock when available",
+        "desc": "Show the stock model in the 3D viewer when stock dimensions are parsed from the G-code header. You can still toggle stock from the viewer toolbar.",
+        "section": "carvera",
+        "key": "gcode_auto_show_stock",
+        "default": "true"
+    },
+    {
+        "type": "bool",
         "title": "Enable Syntax Highlighting",
         "desc": "Colorize G-code tokens in the file viewer. Disable on low-end machines for better scroll performance.",
         "section": "carvera",
@@ -110,5 +118,13 @@
         "section": "carvera",
         "key": "gcode_color_math_keyword",
         "default": "215,186,125,255"
+    },
+    {
+        "type": "colorpicker",
+        "title": "Shell Commands",
+        "desc": "Color for Shell command names in the MDI history and IntelliSense popups (ls, cat, $J, etc.).",
+        "section": "carvera",
+        "key": "gcode_color_shell_command",
+        "default": "47,117,181,255"
     }
 ]

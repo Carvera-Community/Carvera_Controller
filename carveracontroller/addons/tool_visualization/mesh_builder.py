@@ -269,7 +269,7 @@ def _tool_diameter(tool_def, scale):
     return fallback_tool_dimensions(scale)[0]
 
 
-def _effective_tool_diameter(tool_def, scale):
+def effective_tool_diameter(tool_def, scale):
     """Return the outer cutting diameter used for sizing and proportions."""
     diameter = _tool_diameter(tool_def, scale)
     if tool_def and getattr(tool_def, "tool_type", None) is ToolType.RADIUS_MILL:
@@ -285,7 +285,7 @@ def _fallback_stickout_extra(tool_def, diameter):
     return max(diameter, shank_diameter) * FALLBACK_STICKOUT_DIAMETER_FACTOR
 
 
-def _profile_length(tool_def, scale, diameter, shared_length=None):
+def profile_length(tool_def, scale, diameter, shared_length=None):
     """Return the overall stick-out to draw, in file units.
 
     Shoulder and flute lengths only describe the cutting end, so when the file
@@ -393,7 +393,7 @@ def _inferred_shoulder_length(tool_def, flute, overall):
     return flute + extra
 
 
-def _resolve_section_lengths(tool_def, fallback_overall):
+def resolve_section_lengths(tool_def, fallback_overall):
     """Return `(flute_z, shoulder_z, overall_z)` in file units.
 
     - flute_z: cutting flutes (gold)
@@ -406,7 +406,7 @@ def _resolve_section_lengths(tool_def, fallback_overall):
     missing after a tip inference, a short cutting-diameter shoulder is added so
     the shank does not start at the tip. Explicit flute with no shoulder still
     steps at the flute length. Missing stick-out comes from `fallback_overall`
-    (see `_profile_length`).
+    (see `profile_length`).
     """
     if not tool_def:
         return fallback_overall, fallback_overall, fallback_overall
@@ -754,9 +754,9 @@ def _tool_profile_with_shank(tool_def, length=None, scale=1.0):
     Missing diameters use the fixed on-screen fallback size.
     """
     diameter = _tool_diameter(tool_def, scale)
-    effective_diameter = _effective_tool_diameter(tool_def, scale)
-    fallback_overall = _profile_length(tool_def, scale, effective_diameter, length)
-    flute_z, shoulder_z, overall_z = _resolve_section_lengths(tool_def, fallback_overall)
+    effective_diameter = effective_tool_diameter(tool_def, scale)
+    fallback_overall = profile_length(tool_def, scale, effective_diameter, length)
+    flute_z, shoulder_z, overall_z = resolve_section_lengths(tool_def, fallback_overall)
     tool_type = getattr(tool_def, "tool_type", ToolType.UNKNOWN) if tool_def else ToolType.UNKNOWN
     corner_radius = _safe_corner_radius(tool_def, diameter, tool_type)
     taper_angle_deg = _safe_taper_angle_deg(tool_def)

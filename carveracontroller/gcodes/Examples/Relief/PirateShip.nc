@@ -1,3 +1,9 @@
+(Exported by FreeCAD)
+(Post Processor: makera_post)
+(Output Time:2026-08-01 02:06:29.567349)
+(@FC|TOOL|number=1|name=3.175*25mm flat end mill|id=3.175_25mm_flat_end_mill|type=Endmill|diameter=3.175|shankdiameter=3.175|flutelength=25|length=50)
+(@FC|TOOL|number=2|name=30°*0.2mm V-Bit|id=30deg_0.2mm_V_Bit|type=VBit|diameter=3.175|shankdiameter=3.175|tipdiameter=0.2|cuttingedgeangle=30|length=50)
+(begin preamble)
 T1M6
 G17
 G0Z5.000

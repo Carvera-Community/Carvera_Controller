@@ -1,3 +1,6 @@
 # Make the `pip install -U pip` a no-op so that p4a doesn't get pip 26
 # See https://github.com/kivy/python-for-android/issues/3339
 pip<26
+
+# See https://github.com/kivy/python-for-android/issues/2755
+charset-normalizer==2.1.1
