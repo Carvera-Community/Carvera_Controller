@@ -168,6 +168,7 @@ def finalize_download_payload(
     wire_size = path.stat().st_size
     container = inspect_quicklz_container(path) if decode_quicklz else None
     decoded_path: str | None = None
+    digest: str | None
 
     try:
         if container is not None:
