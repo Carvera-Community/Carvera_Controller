@@ -29,7 +29,7 @@ from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
 from carveracontroller.translation import tr
 
 from . import sources
-from .file_list import FileBrowserList, FileBrowserRow  # noqa: F401 — Factory register
+from .file_list import FileBrowserList, FileBrowserRow, FileBrowserThumb
 from .sources import (
     CONFIG_LAST_LOCATION,
     DEFAULT_SORT_REVERSE,
@@ -55,6 +55,12 @@ from .sources import (
     machine_parent_dir,
     trim_breadcrumb_pairs,
     upload_dest_tooltip,
+)
+from .thumbnail import (
+    is_gcode_path,
+    local_cache_key,
+    machine_cache_key,
+    thumbnail_cache_for_app,
 )
 
 
@@ -193,11 +199,13 @@ class FileBrowserPopup(ModalView):
     _last_range_index = -1
     _bound_app = False
     _list_events_bound = False
+    _thumb_gen = 0
 
     def __init__(self, **kwargs):
         self._device_entries = []
         self._machine_entries = []
         self._breadcrumb_paths = []
+        self._thumb_gen = 0
         self.device_dir = default_device_dir()
         super().__init__(**kwargs)
         self._sort_dropdown = DropDown(auto_width=False, width="160dp")
@@ -331,10 +339,14 @@ class FileBrowserPopup(ModalView):
         self._device_entries = list_device_directory(self.device_dir)
         self._rebuild_list(reset_scroll=True)
         self._sync_chrome()
+        self._schedule_local_thumbnail_extract()
 
     def apply_machine_listing(self, file_list, *args):
         self._machine_entries = list(file_list or [])
         self.machine_dir = os.path.normpath(self.machine_dir or MACHINE_BASE_DIR)
+        makera = _makera()
+        if makera is not None:
+            makera.flush_pending_machine_thumbnail()
         if self.location == LOCATION_MACHINE:
             self._rebuild_list(reset_scroll=True)
         self._sync_chrome()
@@ -571,6 +583,87 @@ class FileBrowserPopup(ModalView):
             return False
         return is_local_preview(app.selected_remote_filename or "", app.selected_local_filename or "")
 
+    def _thumbnail_cache(self):
+        app = App.get_running_app()
+        if app is None:
+            return None
+        return thumbnail_cache_for_app(app.user_data_dir)
+
+    def _fill_entry_thumbnails(self, entries: list) -> None:
+        for entry in entries:
+            entry["thumbnail"] = ""
+        if self.firmware_mode:
+            return
+        cache = self._thumbnail_cache()
+        if cache is None:
+            return
+        conn = ""
+        if self.location == LOCATION_MACHINE:
+            makera = _makera()
+            if makera is None:
+                return
+            conn = makera._get_current_machine_connection_key() or ""
+            if not conn:
+                return
+        for entry in entries:
+            if entry.get("is_dir"):
+                continue
+            name = entry.get("name") or ""
+            path = entry.get("path") or ""
+            if not is_gcode_path(name) and not is_gcode_path(path):
+                continue
+            if self.location == LOCATION_DEVICE:
+                key = local_cache_key(path)
+                mtime = entry.get("date")
+            else:
+                key = machine_cache_key(conn, path)
+                mtime = entry.get("date_raw") or ""
+            result = cache.lookup(key, int(entry.get("size") or 0), mtime)
+            entry["thumbnail"] = result.image_path or ""
+
+    def _schedule_local_thumbnail_extract(self) -> None:
+        if self.firmware_mode or self.location != LOCATION_DEVICE:
+            return
+        cache = self._thumbnail_cache()
+        if cache is None:
+            return
+        self._thumb_gen += 1
+        gen = self._thumb_gen
+        directory = self.device_dir
+        entries = list(self._device_entries)
+        threading.Thread(
+            target=self._extract_local_thumbnails,
+            args=(gen, directory, entries, cache),
+            daemon=True,
+        ).start()
+
+    def _extract_local_thumbnails(self, gen: int, directory: str, entries: list, cache) -> None:
+        changed = False
+        for entry in entries:
+            if gen != self._thumb_gen:
+                return
+            if entry.get("is_dir"):
+                continue
+            path = entry.get("path") or ""
+            if not is_gcode_path(path):
+                continue
+            size = int(entry.get("size") or 0)
+            mtime = entry.get("date")
+            key = local_cache_key(path)
+            if cache.lookup(key, size, mtime).hit:
+                continue
+            cache.ingest_file(path, key, size, mtime)
+            changed = True
+        if changed:
+            Clock.schedule_once(lambda *_: self._on_local_thumbnails_ready(gen, directory), 0)
+
+    def _on_local_thumbnails_ready(self, gen: int, directory: str) -> None:
+        if gen != self._thumb_gen:
+            return
+        if self.location != LOCATION_DEVICE or self.device_dir != directory:
+            return
+        self._rebuild_list()
+
     def _rebuild_list(self, *, reset_scroll: bool = False):
         rv = self.ids.get("file_list")
         if rv is None:
@@ -581,8 +674,10 @@ class FileBrowserPopup(ModalView):
                 rv.scroll_y = 1
             return
         selected_paths = list(self.selected_machine_paths) if self.location == LOCATION_MACHINE else []
+        entries = self._current_entries()
+        self._fill_entry_thumbnails(entries)
         rv.data = group_and_sort_entries(
-            self._current_entries(),
+            entries,
             sort_key=self._sort_key,
             reverse=self._sort_reverse,
             keyword=self.search_text,

@@ -118,6 +118,7 @@ def test_current_job_badge_and_selection():
     assert file_row["current_badge"] == "Current"
     assert file_row["selected"] is True
     assert "G-code" in file_row["subtitle"]
+    assert file_row["thumbnail"] == ""
 
 
 def test_current_preview_badge():
@@ -136,6 +137,20 @@ def test_current_preview_badge():
     assert current_row_badge(is_current=True, is_preview=False, translate=IDENTITY) == "Current"
     assert current_row_badge(is_current=True, is_preview=True, translate=IDENTITY) == "Current (Preview)"
     assert current_row_badge(is_current=False, is_preview=True, translate=IDENTITY) == ""
+
+
+def test_row_passes_through_thumbnail_for_files_only():
+    entries = [
+        _entry("tools", is_dir=True),
+        _entry("job.nc", path="/sd/gcodes/job.nc"),
+    ]
+    entries[1]["thumbnail"] = "/tmp/job.png"
+    entries[0]["thumbnail"] = "/tmp/should-ignore.png"
+    rows = group_and_sort_entries(entries, translate=IDENTITY)
+    folder = next(row for row in rows if row["kind"] == KIND_FOLDER)
+    file_row = next(row for row in rows if row["kind"] == KIND_FILE)
+    assert folder["thumbnail"] == ""
+    assert file_row["thumbnail"] == "/tmp/job.png"
 
 
 def test_current_file_banner_source_and_clear():

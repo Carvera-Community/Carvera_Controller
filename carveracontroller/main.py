@@ -166,6 +166,11 @@ from carveracontroller.addons.stock.stock_estimate import auto_stock_for_loaded_
 from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPopup
 from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.ui.file_browser import FileBrowserPopup
+from carveracontroller.ui.file_browser.thumbnail import (
+    is_gcode_path,
+    machine_cache_key,
+    thumbnail_cache_for_app,
+)
 
 
 # Custom Property to monitor CNC.vars["sw_light"] changes
@@ -2884,6 +2889,7 @@ class Makera(RelativeLayout):
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
         self.file_popup = FileBrowserPopup()
+        self._pending_machine_thumb = None
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
@@ -4955,6 +4961,65 @@ class Makera(RelativeLayout):
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(key))
         return os.path.join(self.temp_dir, f"config_{safe}.txt")
 
+    def _gcode_thumbnail_cache(self):
+        cache = thumbnail_cache_for_app()
+        if cache is not None:
+            return cache
+        app = App.get_running_app()
+        if app is None:
+            return None
+        return thumbnail_cache_for_app(app.user_data_dir)
+
+    def _machine_listing_identity(self, remote_path):
+        """Return ``(size, date_raw)`` from the current machine listing."""
+        norm = os.path.normpath(remote_path or "").replace("\\", "/")
+        for entry in getattr(self.file_popup, "_machine_entries", None) or []:
+            path = os.path.normpath(entry.get("path") or "").replace("\\", "/")
+            if path == norm:
+                return int(entry.get("size") or 0), str(entry.get("date_raw") or "")
+        return None, None
+
+    def _ingest_machine_gcode_thumbnail(self, remote_path, local_path):
+        if self.file_popup.firmware_mode or self.downloading_config:
+            return
+        if not is_gcode_path(remote_path) and not is_gcode_path(local_path):
+            return
+        cache = self._gcode_thumbnail_cache()
+        if cache is None:
+            return
+        conn = self._get_current_machine_connection_key() or "unknown"
+        size, date_raw = self._machine_listing_identity(remote_path)
+        if size is None:
+            try:
+                size = os.path.getsize(local_path)
+            except OSError:
+                return
+            date_raw = ""
+        cache.ingest_file(local_path, machine_cache_key(conn, remote_path), size, date_raw)
+
+    def queue_machine_thumbnail(self, remote_path, source_file):
+        self._pending_machine_thumb = (os.path.normpath(remote_path or ""), source_file)
+
+    def flush_pending_machine_thumbnail(self):
+        pending = self._pending_machine_thumb
+        if not pending:
+            return
+        remote_path, source_file = pending
+        size, date_raw = self._machine_listing_identity(remote_path)
+        if size is None:
+            return
+        self._pending_machine_thumb = None
+        if self.file_popup.firmware_mode:
+            return
+        source = source_file[:-3] if str(source_file).endswith(".lz") else source_file
+        if not is_gcode_path(source) and not is_gcode_path(remote_path):
+            return
+        cache = self._gcode_thumbnail_cache()
+        if cache is None:
+            return
+        conn = self._get_current_machine_connection_key() or "unknown"
+        cache.ingest_file(source, machine_cache_key(conn, remote_path), size, date_raw)
+
     # -----------------------------------------------------------------------
     def doDownload(self, remote_path, local_path, show_progress=True):
         app = App.get_running_app()
@@ -5082,7 +5147,10 @@ class Makera(RelativeLayout):
                         partial(self.progressUpdate, 0, tr._("Open cached file") + " \n%s" % local_path, True), 0
                     )
                 # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
+                # Decompress QuickLZ in place first; ingesting the compressed
+                # payload would cache a false "no preview" hit.
                 self.load_gcode_file(local_path)
+                self._ingest_machine_gcode_thumbnail(remote_path, local_path)
 
             if not was_config_download:
                 self.update_recent_remote_dir_list(os.path.dirname(remote_path))
@@ -5778,6 +5846,8 @@ class Makera(RelativeLayout):
             # update recent folder
             if not self.file_popup.firmware_mode:
                 self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
+                remote_thumb = remotename[:-3] if str(remotename).endswith(".lz") else remotename
+                self.queue_machine_thumbnail(remote_thumb, self.original_upload_filepath)
 
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith(".lz"):
@@ -5848,6 +5918,7 @@ class Makera(RelativeLayout):
                             "is_dir": is_dir,
                             "size": int(file_infos[1]),
                             "date": timestamp,
+                            "date_raw": file_infos[2],
                         }
                     )
 

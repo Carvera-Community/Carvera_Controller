@@ -353,6 +353,7 @@ def _item_row(
         "show_checkbox": multi_select,
         "checked": path in selected,
         "selectable": True,
+        "thumbnail": "" if kind != KIND_FILE else str(entry.get("thumbnail") or ""),
     }
 
 
