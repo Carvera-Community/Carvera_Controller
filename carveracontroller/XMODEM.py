@@ -628,6 +628,7 @@ class XMODEM:
         expected_md5 = None
         received_md5 = hashlib.md5()
         first_bytes = bytearray()
+        packet_size = 0
         self.deferred_download_md5 = None
         self.download_md5_failed = False
         self.FileRcvState = FileTransState.WAIT_MD5
@@ -659,10 +660,18 @@ class XMODEM:
                             data_len = ((self.packetData[0] << 8) | self.packetData[1]) - 7
                             income_size += data_len
                             payload = self.packetData[7 : (data_len + 7)]
+                            self.log.debug(
+                                "PTYPE_FILE_DATA seq=%d/%d payload=%d bytes expected-max=%d first=%s",
+                                seq,
+                                total_packet,
+                                len(payload),
+                                total_packet * packet_size,
+                                bytes(payload[:32]).hex(" "),
+                            )
                             stream.write(payload)
                             received_md5.update(payload)
-                            if len(first_bytes) < 2:
-                                first_bytes.extend(payload[: 2 - len(first_bytes)])
+                            if len(first_bytes) < 32:
+                                first_bytes.extend(payload[: 32 - len(first_bytes)])
                             if sequence < total_packet:
                                 sequence += 1
                                 data = sequence.to_bytes(4, byteorder="big", signed=False)
@@ -697,6 +706,13 @@ class XMODEM:
                                 | (self.packetData[5] << 8)
                                 | self.packetData[6]
                             )
+                            packet_size = (self.packetData[7] << 8) | self.packetData[8]
+                            self.log.debug(
+                                "PTYPE_FILE_VIEW packets=%d packet-size=%d expected-max=%d",
+                                total_packet,
+                                packet_size,
+                                total_packet * packet_size,
+                            )
                             sequence = 1
                             data = sequence.to_bytes(4, byteorder="big", signed=False)
                             self._send_file_trans_command(PTYPE_FILE_DATA, data)
@@ -714,6 +730,7 @@ class XMODEM:
                         if cmd_type == PTYPE_FILE_MD5:
                             md5new = self.packetData[3 : len(self.packetData) - 2]
                             expected_md5 = bytes(md5new)
+                            self.log.debug("PTYPE_FILE_MD5 payload=%r", expected_md5)
                             if self._local_md5_matches_advertised(md5, expected_md5):
                                 self._send_file_trans_command(PTYPE_FILE_CAN, b"")
                                 return 0
@@ -1228,13 +1245,19 @@ class XMODEM:
                                 pass
                             return 0
                     else:
-                        income_size += len(data) - 1 - is_stx
                         data_len = data[0] << 8 | data[1] if is_stx else data[0]
                         payload = data[1 + is_stx : (data_len + 1 + is_stx)]
+                        income_size += len(payload)
+                        self.log.debug(
+                            "XMODEM file data seq=%d payload=%d bytes first=%s",
+                            sequence,
+                            len(payload),
+                            bytes(payload[:32]).hex(" "),
+                        )
                         stream.write(payload)
                         received_md5.update(payload)
-                        if len(first_bytes) < 2:
-                            first_bytes.extend(payload[: 2 - len(first_bytes)])
+                        if len(first_bytes) < 32:
+                            first_bytes.extend(payload[: 32 - len(first_bytes)])
                         success_count = success_count + 1
                         if callable(callback):
                             callback(packet_size, success_count, error_count)

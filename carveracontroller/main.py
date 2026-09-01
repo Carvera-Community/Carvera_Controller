@@ -74,6 +74,12 @@ from kivy.core.clipboard import Clipboard
 from kivy.utils import platform as kivy_platform
 
 from . import translation
+from .quicklz_container import (
+    DownloadIntegrityError,
+    QuickLZContainerError,
+    decompress_quicklz_container,
+    finalize_download_payload,
+)
 from .translation import tr
 
 logger = logging.getLogger(__name__)
@@ -4826,7 +4832,7 @@ class Makera(RelativeLayout):
                 config_path = self._machine_config_cache_path()
                 if not os.path.exists(config_path):
                     raise FileNotFoundError(f"Cached config not found: {config_path}")
-                with open(config_path) as f:
+                with open(config_path, encoding="utf-8") as f:
                     config_string = "[dummy_section]\n" + f.read()
                 # remove notes
                 config_string = re.sub(r"#.*", "", config_string)
@@ -4973,6 +4979,35 @@ class Makera(RelativeLayout):
         self.downloading = False
 
         self.heartbeat_time = time.time()
+
+        if download_result is not None and download_result > 0:
+            modem = getattr(getattr(self.controller, "stream", None), "modem", None)
+            expected_md5 = getattr(modem, "deferred_download_md5", None) if modem is not None else None
+            if modem is not None:
+                modem.deferred_download_md5 = None
+            try:
+                payload_info = finalize_download_payload(
+                    tmp_filename,
+                    expected_md5,
+                    decode_quicklz=not remote_path.lower().endswith(".lz"),
+                )
+                if payload_info.was_compressed:
+                    logger.info(
+                        "Decoded QuickLZ download payload for %s: wire=%d bytes, file=%d bytes, md5=%s",
+                        remote_path,
+                        payload_info.wire_size,
+                        payload_info.file_size,
+                        payload_info.md5 or "not advertised",
+                    )
+                    download_result = payload_info.file_size
+            except DownloadIntegrityError as e:
+                logger.error("Download error after QuickLZ decode: %s", e)
+                if modem is not None:
+                    modem.download_md5_failed = True
+                download_result = None
+            except (OSError, QuickLZContainerError) as e:
+                logger.error("Failed to decode downloaded QuickLZ payload for %s: %s", remote_path, e)
+                download_result = None
 
         if download_result is None:
             if os.path.exists(tmp_filename):
@@ -5600,45 +5635,12 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def decompress_file(self, input_filename, output_filename):
         try:
-            # 打开输入文件和输出文件
-            sum = 0
-            read_size = 0
-            with open(input_filename, "rb") as f_in, open(output_filename, "wb") as f_out:
-                # 获取文件大小（以字节为单位）
-                file_size = os.path.getsize(input_filename)
-                while True:
-                    if read_size == (file_size - 2):
-                        break
-                    # 读取块数据长度
-                    block = f_in.read(BLOCK_HEADER_SIZE)
-                    if not block:
-                        break
-                    blocksize = struct.unpack(">I", block)[0]
-                    read_size += BLOCK_HEADER_SIZE + blocksize
-                    # 读取块数据
-                    block = f_in.read(blocksize)
-                    # 解压缩数据
-                    decompressed_block = quicklz.decompress(block)
-                    # 计算sum和
-                    for byte in decompressed_block:
-                        sum += byte
-                    # 写入解压缩后的块数据的长度到输出文件
-                    f_out.write(decompressed_block)
-            # 判断校验和
-            with open(input_filename, "rb") as f_in:
-                f_in.seek(-2, 2)  # 从文件末尾向前移动2个字节
-                sumfile = f_in.read(2)
-            sumfile = struct.unpack(">H", sumfile)[0]
-            sumdata = sum & 0xFFFF
-
-            if sumfile != sumdata:
-                logger.error("deCompress failed: sum checksum mismatch")
-                return False
+            decompress_quicklz_container(input_filename, output_filename)
 
             logger.info(f"deCompress completed. deCompressed file saved as '{output_filename}'.")
             return True
 
-        except Exception as e:
+        except (OSError, QuickLZContainerError) as e:
             logger.error(f"deCompress failed: {e}")
             if os.path.exists(output_filename):
                 os.remove(output_filename)
