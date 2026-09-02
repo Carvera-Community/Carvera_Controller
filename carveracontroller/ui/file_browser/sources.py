@@ -115,19 +115,31 @@ def trim_breadcrumb_pairs(
     return [path for path, _label in pairs], [label for _path, label in pairs]
 
 
-def machine_dest_display(machine_dir: str) -> str:
-    """Folder uploads go to, trimmed like machine breadcrumbs (drop /sd)."""
+def device_tab_path_display(device_dir: str) -> str:
+    """Local folder shown under the This device tab, in this OS's path format."""
+    if not device_dir:
+        return ""
+    return os.path.normpath(device_dir)
+
+
+def machine_path_display(machine_dir: str) -> str:
+    """Machine folder as a POSIX /sd/... path (tab caption and upload tooltip)."""
     raw = (machine_dir or MACHINE_BASE_DIR).replace("\\", "/")
     parts = [part for part in raw.split("/") if part and part != "."]
-    if parts and parts[0].lower() == "sd":
-        parts = parts[1:]
     if not parts:
-        parts = ["gcodes"]
-    return " > ".join(parts)
+        parts = ["sd", "gcodes"]
+    return "/" + "/".join(parts)
+
+
+def machine_tab_path_display(machine_dir: str, *, connected: bool, translate: Translate) -> str:
+    """Machine folder (or disconnected status) shown under the Your machine tab."""
+    if not connected:
+        return translate("Not connected")
+    return machine_path_display(machine_dir)
 
 
 def upload_dest_tooltip(machine_dir: str, *, translate: Translate) -> str:
-    return translate("Upload to: %s") % machine_dest_display(machine_dir)
+    return translate("Upload to: %s") % machine_path_display(machine_dir)
 
 
 def machine_parent_dir(path: str) -> str | None:

@@ -4,9 +4,10 @@
     selected: False
     tab_text: ''
     icon: ''
-    orientation: 'horizontal'
-    spacing: dp(10)
-    padding: dp(8), 0
+    path_text: ''
+    orientation: 'vertical'
+    spacing: dp(2)
+    padding: dp(8), dp(10)
     canvas.before:
         Color:
             rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
@@ -18,26 +19,42 @@
         Rectangle:
             pos: self.x, self.y
             size: self.width, dp(3)
-    Widget:
-        size_hint_x: 1
-    Image:
-        source: root.icon
-        size_hint: None, None
-        size: dp(26), dp(26)
-        pos_hint: {'center_y': 0.5}
-        allow_stretch: True
-        keep_ratio: True
-        color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: dp(26)
+        spacing: dp(10)
+        Widget:
+            size_hint_x: 1
+        Image:
+            source: root.icon
+            size_hint: None, None
+            size: dp(26), dp(26)
+            pos_hint: {'center_y': 0.5}
+            allow_stretch: True
+            keep_ratio: True
+            color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+        Label:
+            text: root.tab_text
+            size_hint_x: None
+            width: self.texture_size[0]
+            color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+            bold: root.selected
+            font_size: dp(16)
+            valign: 'middle'
+        Widget:
+            size_hint_x: 1
     Label:
-        text: root.tab_text
-        size_hint_x: None
-        width: self.texture_size[0]
-        color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
-        bold: root.selected
-        font_size: dp(16)
+        text: root.path_text
+        size_hint_y: None
+        height: dp(16)
+        color: 150/255, 150/255, 150/255, 1
+        font_size: dp(12)
+        halign: 'center'
         valign: 'middle'
-    Widget:
-        size_hint_x: 1
+        text_size: self.size
+        shorten: True
+        shorten_from: 'left'
 
 <FileBrowserIconButton>:
     padding: dp(6)
@@ -232,17 +249,19 @@
                 on_release: root.on_clear_job()
         BoxLayout:
             size_hint_y: None
-            height: 0 if root.firmware_mode else dp(48)
+            height: 0 if root.firmware_mode else dp(64)
             opacity: 0 if root.firmware_mode else 1
             spacing: dp(4)
             FileBrowserLocationTab:
                 tab_text: tr._('This device')
                 icon: 'data/laptop.png'
+                path_text: root.device_tab_path
                 selected: root.location == 'device'
                 on_release: root.set_location('device')
             FileBrowserLocationTab:
                 tab_text: tr._('Your machine')
                 icon: 'data/makera.png'
+                path_text: root.machine_tab_path
                 selected: root.location == 'machine'
                 on_release: root.set_location('machine')
         BoxLayout:

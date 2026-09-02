@@ -13,6 +13,7 @@ from carveracontroller.ui.file_browser.sources import (
     compute_action_state,
     current_file_banner,
     current_row_badge,
+    device_tab_path_display,
     file_type_key,
     file_type_label,
     group_and_sort_entries,
@@ -20,9 +21,10 @@ from carveracontroller.ui.file_browser.sources import (
     is_machine_root,
     is_under_machine_root,
     list_device_directory,
-    machine_dest_display,
     machine_listing_has,
     machine_parent_dir,
+    machine_path_display,
+    machine_tab_path_display,
     row_icon,
     trim_breadcrumb_pairs,
     upload_dest_tooltip,
@@ -199,14 +201,36 @@ def test_machine_root_and_parent():
     assert is_under_machine_root("/tmp/gcodes") is False
 
 
-def test_machine_dest_display_matches_breadcrumb_root():
-    assert machine_dest_display("/sd/gcodes") == "gcodes"
-    assert machine_dest_display("/sd/gcodes/") == "gcodes"
-    assert machine_dest_display("/sd/gcodes/jobs") == "gcodes > jobs"
-    assert machine_dest_display("/sd/gcodes/jobs/batch") == "gcodes > jobs > batch"
-    assert machine_dest_display("\\sd\\gcodes\\jobs") == "gcodes > jobs"
-    assert machine_dest_display("") == "gcodes"
-    assert upload_dest_tooltip("/sd/gcodes/jobs", translate=IDENTITY) == "Upload to: gcodes > jobs"
+def test_machine_path_display_keeps_sd_root():
+    assert machine_path_display("/sd/gcodes") == "/sd/gcodes"
+    assert machine_path_display("/sd/gcodes/") == "/sd/gcodes"
+    assert machine_path_display("/sd/gcodes/jobs") == "/sd/gcodes/jobs"
+    assert machine_path_display("/sd/gcodes/jobs/batch") == "/sd/gcodes/jobs/batch"
+    assert machine_path_display("\\sd\\gcodes\\jobs") == "/sd/gcodes/jobs"
+    assert machine_path_display("") == "/sd/gcodes"
+    assert upload_dest_tooltip("/sd/gcodes/jobs", translate=IDENTITY) == "Upload to: /sd/gcodes/jobs"
+
+
+def test_device_tab_path_display_native_separators():
+    assert device_tab_path_display("") == ""
+    assert device_tab_path_display("/home/user/gcodes") == "/home/user/gcodes"
+    assert device_tab_path_display("/home/user/gcodes/") == "/home/user/gcodes"
+
+
+def test_device_tab_path_display_windows_format(monkeypatch):
+    import ntpath
+
+    monkeypatch.setattr(
+        "carveracontroller.ui.file_browser.sources.os.path.normpath",
+        ntpath.normpath,
+    )
+    assert device_tab_path_display("C:\\Users\\me\\gcodes\\jobs") == "C:\\Users\\me\\gcodes\\jobs"
+    assert device_tab_path_display("C:\\Users\\me\\gcodes\\jobs\\") == "C:\\Users\\me\\gcodes\\jobs"
+
+
+def test_machine_tab_path_display_connected_and_not():
+    assert machine_tab_path_display("/sd/gcodes/jobs", connected=True, translate=IDENTITY) == "/sd/gcodes/jobs"
+    assert machine_tab_path_display("/sd/gcodes/jobs", connected=False, translate=IDENTITY) == "Not connected"
 
 
 def test_trim_machine_breadcrumbs_drops_sd_and_empty_root():

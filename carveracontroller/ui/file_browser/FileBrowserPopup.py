@@ -45,6 +45,7 @@ from .sources import (
     compute_action_state,
     current_file_banner,
     default_device_dir,
+    device_tab_path_display,
     group_and_sort_entries,
     is_compact_width,
     is_ios_platform,
@@ -53,6 +54,7 @@ from .sources import (
     list_device_directory,
     machine_listing_has,
     machine_parent_dir,
+    machine_tab_path_display,
     trim_breadcrumb_pairs,
     upload_dest_tooltip,
 )
@@ -68,6 +70,7 @@ class FileBrowserLocationTab(ButtonBehavior, BoxLayout):
     selected = BooleanProperty(False)
     tab_text = StringProperty("")
     icon = StringProperty("")
+    path_text = StringProperty("")
 
 
 class FileBrowserIconButton(ButtonBehavior, BoxLayout):
@@ -185,6 +188,8 @@ class FileBrowserPopup(ModalView):
 
     machine_dir = StringProperty(MACHINE_BASE_DIR)
     device_dir = StringProperty("")
+    device_tab_path = StringProperty("")
+    machine_tab_path = StringProperty("")
     selected_device_file = StringProperty("")
     selected_machine_file = StringProperty("")
     selected_machine_filesize = NumericProperty(0)
@@ -856,6 +861,9 @@ class FileBrowserPopup(ModalView):
         self._update_listing_banner(app)
         self.sort_button_text = self._sort_label()
         self.curr_dir_name = os.path.basename(self.device_dir if self.location == LOCATION_DEVICE else self.machine_dir)
+        self.device_tab_path = device_tab_path_display(self.device_dir)
+        connected = app is not None and app.state != "N/A"
+        self.machine_tab_path = machine_tab_path_display(self.machine_dir, connected=connected, translate=tr._)
         self._rebuild_footer(state)
         self._sync_tool_buttons(state)
 
