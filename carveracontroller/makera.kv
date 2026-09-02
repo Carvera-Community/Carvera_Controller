@@ -3327,7 +3327,7 @@
                 BoxLayout:
                     size_hint_y: None
                     height: '25dp'
-                    disabled:  (root.mode != 'Run' and root.mode != 'ZProbe') or root.cbx_leveling.active or app.lasering
+                    disabled:  (root.mode != 'Run' and root.mode != 'ZProbe' and root.mode != 'Leveling') or app.lasering
                     canvas.before:
                         Color:
                             rgba: 65/255, 65/255, 65/255, 1
@@ -3336,11 +3336,7 @@
                             size: self.size
                     MCQCheckBox:
                         id: cbx_zprobe
-                        on_active:
-                            root.lb_zprobe.disabled = not self.active or (root.mode != 'Run' and root.mode != 'ZProbe') or root.cbx_leveling.active
-                            root.btn_zprobe.disabled = not self.active or app.has_4axis or (root.mode != 'Run' and root.mode != 'ZProbe') or root.cbx_leveling.active
-                            root.set_config('zprobe', 'active', self.active)
-                            root.toggle_config()
+                        on_active: root.on_zprobe_checkbox(self.active)
                     MCQLabel:
                         on_press: cbx_zprobe._do_press()
                         text: tr._(' Auto Z Probe')
@@ -3357,7 +3353,7 @@
                     id: lb_zprobe
                     size_hint_y: None
                     height: '25dp'
-                    disabled:  (root.mode != 'Run' and root.mode != 'ZProbe') or root.cbx_leveling.active or app.lasering
+                    disabled:  not cbx_zprobe.active or (root.mode != 'Run' and root.mode != 'ZProbe' and root.mode != 'Leveling') or app.lasering
                     text: tr._(" (10, 10) from Path Origin")
                     halign: "left"
                     valign: "middle"
@@ -3373,7 +3369,7 @@
                         id: btn_zprobe
                         text: tr._("Config")
                         font_size: '13sp'
-                        disabled:  (root.mode != 'Run' and root.mode != 'ZProbe') or root.cbx_leveling.active or app.has_4axis
+                        disabled:  not cbx_zprobe.active or (root.mode != 'Run' and root.mode != 'ZProbe' and root.mode != 'Leveling') or app.has_4axis
                         on_release: root.zprobe_popup.open()
 
                 BoxLayout:
@@ -3388,18 +3384,7 @@
                             size: self.size
                     MCQCheckBox:
                         id: cbx_leveling
-                        on_active:
-                            root.lb_leveling.disabled = not self.active or app.has_4axis or (root.mode != 'Run' and root.mode != 'Leveling')
-                            root.btn_leveling.disabled = not self.active or app.has_4axis or (root.mode != 'Run' and root.mode != 'Leveling')
-                            root.set_config('leveling', 'active', self.active)
-                            if self.active:\
-                            root.cbx_zprobe.active = True;\
-                            root.set_config('zprobe', 'active', True);\
-                            root.set_config('zprobe', 'origin', 2);\
-                            root.set_config('zprobe', 'x_offset', 0);\
-                            root.set_config('zprobe', 'y_offset', 0);\
-                            root.load_zprobe_label()
-                            root.toggle_config()
+                        on_active: root.on_leveling_checkbox(self.active)
                     MCQLabel:
                         on_press: cbx_leveling._do_press()
                         text: tr._(' Auto Leveling')
@@ -4107,7 +4092,7 @@
                                                 on_release:
                                                     root.coord_popup.mode = 'Leveling'
                                                     root.coord_popup.set_config('margin', 'active', False)
-                                                    root.coord_popup.set_config('zprobe', 'active', False)
+                                                    root.coord_popup.set_config('zprobe', 'active', True)
                                                     root.coord_popup.set_config('leveling', 'active', True)
                                                     root.coord_popup.load_config()
                                                     root.coord_popup.open()
