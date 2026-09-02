@@ -19,7 +19,13 @@ from .facing_gcode import (
     PATTERN_RASTER_Y,
     PATTERN_SPIRAL,
 )
-from .stock_geometry import CORNER_BL, CORNER_BR, CORNER_TL, CORNER_TR
+from .stock_geometry import (
+    STOCK_ORIGIN_CORNER_BL,
+    STOCK_ORIGIN_CORNER_BR,
+    STOCK_ORIGIN_CORNER_CEN,
+    STOCK_ORIGIN_CORNER_TL,
+    STOCK_ORIGIN_CORNER_TR,
+)
 
 PRESET_FILENAME = "facing-wizard-presets.json"
 STORE_VERSION = 1
@@ -104,7 +110,13 @@ def normalize_preset_data(data: dict[str, Any]) -> dict[str, Any]:
         if k in data:
             merged[k] = data[k]
     corner = str(merged.get("stock_origin_corner", default_values.DEFAULT_STOCK_ORIGIN_CORNER)).strip().lower()
-    if corner not in {CORNER_BL, CORNER_BR, CORNER_TL, CORNER_TR}:
+    if corner not in {
+        STOCK_ORIGIN_CORNER_BL,
+        STOCK_ORIGIN_CORNER_BR,
+        STOCK_ORIGIN_CORNER_TL,
+        STOCK_ORIGIN_CORNER_TR,
+        STOCK_ORIGIN_CORNER_CEN,
+    }:
         corner = default_values.DEFAULT_STOCK_ORIGIN_CORNER
     merged["stock_origin_corner"] = corner
 
@@ -216,11 +228,11 @@ def apply_preset_data(popup: Any, data: dict[str, Any]) -> None:
 
     popup._sync_milling_spinner_for_pattern()
 
-    corner_lab = _label_for_value(popup._stock_corner_pairs_list, blob["stock_origin_corner"])
+    corner_lab = _label_for_value(popup._stock_origin_pairs_list, blob["stock_origin_corner"])
     if corner_lab and corner_lab in ids.spn_stock_corner.values:
         ids.spn_stock_corner.text = corner_lab
     else:
-        ids.spn_stock_corner.text = popup._stock_corner_pairs_list[0][0]
+        ids.spn_stock_corner.text = popup._stock_origin_pairs_list[0][0]
 
     mill_lab = _label_for_value(popup._milling_direction_pairs_list, blob["milling_direction"])
     if mill_lab and mill_lab in ids.spn_milling_dir.values:
