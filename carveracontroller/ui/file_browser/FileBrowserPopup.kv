@@ -67,8 +67,8 @@
 <FileBrowserActionButton>:
     text: root.btn_text
     size_hint_x: None
-    width: self.texture_size[0] + (dp(44) if self.icon else dp(24))
-    padding: (dp(32) if self.icon else dp(12)), 0
+    width: self.texture_size[0] + ((dp(50) if self.icon else dp(20)) if self.flat else (dp(44) if self.icon else dp(24)))
+    padding: (0, 0) if self.flat else ((dp(32) if self.icon else dp(12)), 0)
     halign: 'left'
     valign: 'middle'
     text_size: None, self.height

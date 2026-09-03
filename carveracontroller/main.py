@@ -166,6 +166,14 @@ from carveracontroller.addons.stock.stock_estimate import auto_stock_for_loaded_
 from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPopup
 from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.ui.file_browser import FileBrowserPopup
+from carveracontroller.ui.file_browser.sources import (
+    LOCATION_DEVICE,
+    local_child_path,
+    local_sibling_path,
+    mkdir_local,
+    remove_local_path,
+    rename_local_path,
+)
 from carveracontroller.ui.file_browser.thumbnail import (
     is_gcode_path,
     machine_cache_key,
@@ -4363,13 +4371,19 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def open_del_confirm_popup(self):
-        selected_files = list(self.file_popup.selected_machine_paths)
+        if self.file_popup.location == LOCATION_DEVICE:
+            selected_files = list(self.file_popup.selected_device_paths)
+        else:
+            selected_files = list(self.file_popup.selected_machine_paths)
         if not selected_files:
             return
         self.confirm_popup.lb_title.text = tr._("Delete File or Dir")
         if len(selected_files) == 1:
             self.confirm_popup.lb_content.text = tr._("Confirm to delete file or dir") + "'%s'?" % (selected_files[0])
-            self.confirm_popup.confirm = partial(self.removeRemoteFile, selected_files[0])
+            if self.file_popup.location == LOCATION_DEVICE:
+                self.confirm_popup.confirm = partial(self.removeLocalFiles, selected_files)
+            else:
+                self.confirm_popup.confirm = partial(self.removeRemoteFile, selected_files[0])
         else:
             preview = "\n".join(selected_files[:5])
             if len(selected_files) > 5:
@@ -4378,7 +4392,10 @@ class Makera(RelativeLayout):
                 selected_files
             )
             self.confirm_popup.lb_content.text += "\n\n%s" % preview
-            self.confirm_popup.confirm = partial(self.removeRemoteFiles, selected_files)
+            if self.file_popup.location == LOCATION_DEVICE:
+                self.confirm_popup.confirm = partial(self.removeLocalFiles, selected_files)
+            else:
+                self.confirm_popup.confirm = partial(self.removeRemoteFiles, selected_files)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
 
@@ -4614,6 +4631,16 @@ class Makera(RelativeLayout):
         self.file_popup.list_device_dir(local_path)
 
     def open_rename_input_popup(self):
+        if self.file_popup.location == LOCATION_DEVICE:
+            src = self.file_popup.selected_device_file
+            if not src:
+                return
+            self.input_popup.lb_title.text = tr._("Change name") + "'%s' to:" % src
+            self.input_popup.txt_content.text = ""
+            self.input_popup.txt_content.password = False
+            self.input_popup.confirm = partial(self.renameLocalFile, src)
+            self.input_popup.open(self)
+            return
         self.input_popup.lb_title.text = tr._("Change name") + "'%s' to:" % (self.file_popup.selected_machine_file)
         self.input_popup.txt_content.text = ""
         self.input_popup.txt_content.password = False
@@ -4625,7 +4652,10 @@ class Makera(RelativeLayout):
         self.input_popup.lb_title.text = tr._("Input new folder name:")
         self.input_popup.txt_content.text = ""
         self.input_popup.txt_content.password = False
-        self.input_popup.confirm = self.createRemoteDir
+        if self.file_popup.location == LOCATION_DEVICE:
+            self.input_popup.confirm = self.createLocalDir
+        else:
+            self.input_popup.confirm = self.createRemoteDir
         self.input_popup.open(self)
 
     # -----------------------------------------------------------------------
@@ -4649,7 +4679,7 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def check_and_upload(self):
         filepath = self.file_popup.selected_device_file
-        if not filepath:
+        if not filepath or os.path.isdir(filepath):
             return
         filename = os.path.basename(os.path.normpath(filepath))
         if self.file_popup.machine_listing_has(filename):
@@ -4702,7 +4732,7 @@ class Makera(RelativeLayout):
 
     def check_upload_and_select(self):
         filepath = self.file_popup.selected_device_file
-        if not filepath:
+        if not filepath or os.path.isdir(filepath):
             return
         filename = os.path.basename(os.path.normpath(filepath))
         if self.file_popup.machine_listing_has(filename):
@@ -4718,7 +4748,7 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def view_local_file(self):
         filepath = self.file_popup.selected_device_file
-        if not filepath:
+        if not filepath or os.path.isdir(filepath):
             return
         app = App.get_running_app()
         app.selected_local_filename = filepath
@@ -5589,6 +5619,90 @@ class Makera(RelativeLayout):
         dirname = os.path.join(self.file_popup.machine_dir, self.input_popup.txt_content.text)
         self.controller.mkdirCommand(os.path.normpath(dirname))
         return True
+
+    # -----------------------------------------------------------------------
+    def removeLocalFiles(self, filenames):
+        errors = []
+        for path in list(filenames or []):
+            try:
+                remove_local_path(path)
+            except OSError as exc:
+                errors.append("%s: %s" % (path, exc))
+                continue
+            self._sync_local_job_path(path, "")
+        self.file_popup.cancel_multi_select()
+        self.file_popup.list_device_dir(self.file_popup.device_dir)
+        if errors:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Error deleting") + "\n" + "\n".join(errors[:5]), False),
+                0,
+            )
+
+    def renameLocalFile(self, filename):
+        dest = local_sibling_path(filename, self.input_popup.txt_content.text)
+        if not dest:
+            return False
+        if os.path.normpath(filename) == os.path.normpath(dest):
+            return False
+        if os.path.exists(dest):
+            self.confirm_popup.lb_title.text = tr._("File Already Exists")
+            self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (
+                os.path.basename(dest)
+            )
+            self.confirm_popup.cancel = None
+            self.confirm_popup.confirm = partial(self._apply_local_rename, filename, dest)
+            Clock.schedule_once(lambda *_: self.confirm_popup.open(self), 0)
+            return True
+        return self._apply_local_rename(filename, dest)
+
+    def _apply_local_rename(self, src, dest):
+        try:
+            rename_local_path(src, dest)
+        except OSError as exc:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Error renaming") + " '%s'!\n%s" % (src, exc), False),
+                0,
+            )
+            return True
+        self._sync_local_job_path(src, dest)
+        self.file_popup.list_device_dir(self.file_popup.device_dir)
+        return True
+
+    def createLocalDir(self):
+        name = self.input_popup.txt_content.text.strip()
+        dest = local_child_path(self.file_popup.device_dir, name)
+        if not dest:
+            return False
+        try:
+            mkdir_local(self.file_popup.device_dir, name)
+        except OSError:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Error making dir:") + " '%s'!" % name, False),
+                0,
+            )
+            return False
+        self.file_popup.list_device_dir(self.file_popup.device_dir)
+        return True
+
+    def _sync_local_job_path(self, old_path, new_path=""):
+        app = App.get_running_app()
+        if app is None:
+            return
+        local = (app.selected_local_filename or "").strip()
+        if not local:
+            return
+        old_norm = os.path.normpath(old_path)
+        local_norm = os.path.normpath(local)
+        replacement = os.path.normpath(new_path) if new_path else ""
+        if local_norm == old_norm:
+            app.selected_local_filename = replacement
+            return
+        prefix = old_norm + os.sep
+        if local_norm.startswith(prefix):
+            if not replacement:
+                app.selected_local_filename = ""
+            else:
+                app.selected_local_filename = replacement + local_norm[len(old_norm) :]
 
     # -----------------------------------------------------------------------
     def connectToWiFi(self):

@@ -10,6 +10,7 @@ from kivy.clock import Clock
 from kivy.config import Config
 from kivy.core.window import Window
 from kivy.factory import Factory
+from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.properties import (
     BooleanProperty,
@@ -98,6 +99,13 @@ class FileBrowserActionButton(ToolTipButton):
             destructive=self._sync_colors,
             disabled=self._sync_colors,
             flat=self._sync_colors,
+            pos=self._redraw_flat,
+            size=self._redraw_flat,
+            texture=self._redraw_flat,
+            texture_size=self._redraw_flat,
+            color=self._redraw_flat,
+            background_color=self._redraw_flat,
+            icon=self._redraw_flat,
         )
         self._sync_colors()
 
@@ -113,6 +121,7 @@ class FileBrowserActionButton(ToolTipButton):
                 self.background_normal = "atlas://data/images/defaulttheme/button_disabled"
                 self.background_down = "atlas://data/images/defaulttheme/button_disabled"
                 self.background_color = [1, 1, 1, 1]
+            self._redraw_flat()
             return
         self.color = [1, 1, 1, 1]
         if self.flat:
@@ -129,10 +138,31 @@ class FileBrowserActionButton(ToolTipButton):
                 )
             else:
                 self.background_color = [64 / 255, 64 / 255, 64 / 255, 1] if down else [88 / 255, 88 / 255, 88 / 255, 1]
+            self._redraw_flat()
             return
         self.background_normal = "atlas://data/images/defaulttheme/button"
         self.background_down = "atlas://data/images/defaulttheme/button_pressed"
         self.background_color = [1, 1, 1, 1]
+
+    def _redraw_flat(self, *_args):
+        """Left-align label on flat buttons so gaps match the 10dp icon inset."""
+        if not self.flat:
+            return
+        inset = dp(10)
+        icon_size = dp(20) if self.icon else 0
+        text_x = self.x + inset + (icon_size + inset if self.icon else 0)
+        text_h = self.texture_size[1] if self.texture_size else 0
+        self.canvas.clear()
+        with self.canvas:
+            Color(rgba=self.background_color)
+            Rectangle(pos=self.pos, size=self.size)
+            if self.texture:
+                Color(rgba=self.color)
+                Rectangle(
+                    texture=self.texture,
+                    size=self.texture_size,
+                    pos=(text_x, self.center_y - text_h / 2.0),
+                )
 
     def on_parent(self, _instance, parent):
         if parent is None:
@@ -195,6 +225,7 @@ class FileBrowserPopup(ModalView):
     selected_device_file = StringProperty("")
     selected_machine_file = StringProperty("")
     selected_machine_filesize = NumericProperty(0)
+    selected_device_paths = ListProperty([])
     selected_machine_paths = ListProperty([])
 
     _device_entries: list = []
@@ -409,17 +440,17 @@ class FileBrowserPopup(ModalView):
         self._rebuild_list(reset_scroll=True)
 
     def toggle_multi_select(self):
-        if self.location != LOCATION_MACHINE or self.firmware_mode:
+        if not self._multi_select_allowed():
             return
         self.multi_select_mode = not self.multi_select_mode
         if not self.multi_select_mode:
-            self.selected_machine_paths = []
+            self._restore_single_selection()
         self._rebuild_list()
         self._sync_chrome()
 
     def cancel_multi_select(self):
         self.multi_select_mode = False
-        self.selected_machine_paths = []
+        self._restore_single_selection()
         self._rebuild_list()
         self._sync_chrome()
 
@@ -688,7 +719,7 @@ class FileBrowserPopup(ModalView):
             if reset_scroll:
                 rv.scroll_y = 1
             return
-        selected_paths = list(self.selected_machine_paths) if self.location == LOCATION_MACHINE else []
+        selected_paths = self._selected_paths()
         entries = self._current_entries()
         self._fill_entry_thumbnails(entries)
         rv.data = group_and_sort_entries(
@@ -699,7 +730,7 @@ class FileBrowserPopup(ModalView):
             firmware_mode=self.firmware_mode,
             current_job_path=self._current_job_path(),
             current_is_preview=self._current_is_preview(),
-            multi_select=self.multi_select_mode and self.location == LOCATION_MACHINE,
+            multi_select=self.multi_select_mode and self._multi_select_allowed(),
             selected_paths=selected_paths,
             highlight_path=self._highlight_path,
         )
@@ -722,6 +753,7 @@ class FileBrowserPopup(ModalView):
         self.selected_device_file = ""
         self.selected_machine_file = ""
         self.selected_machine_filesize = 0
+        self.selected_device_paths = []
         self.selected_machine_paths = []
         self._last_range_index = -1
 
@@ -740,12 +772,9 @@ class FileBrowserPopup(ModalView):
             self._sync_chrome()
             return
         self._highlight_path = path
-        if self.location == LOCATION_DEVICE:
-            self.selected_device_file = path
-        else:
-            self.selected_machine_file = path
+        self._apply_selected_paths([path])
+        if self.location == LOCATION_MACHINE:
             self.selected_machine_filesize = intsize
-            self.selected_machine_paths = [path]
         self._rebuild_list()
         self._sync_chrome()
 
@@ -762,51 +791,43 @@ class FileBrowserPopup(ModalView):
             self.on_delete()
 
     def _on_toggle_checked(self, path: str):
-        paths = list(self.selected_machine_paths)
+        paths = self._selected_paths()
         if path in paths:
             paths.remove(path)
         else:
             paths.append(path)
-        self.selected_machine_paths = paths
-        if paths:
-            self.selected_machine_file = paths[-1]
-            self.selected_machine_filesize = self._size_for_path(paths[-1])
-        else:
-            self.selected_machine_file = ""
-            self.selected_machine_filesize = 0
+        self._apply_selected_paths(paths)
         self._rebuild_list()
         self._sync_chrome()
 
     def _on_long_press(self, path: str, index: int):
-        if self.location != LOCATION_MACHINE or self.firmware_mode:
+        if not self._multi_select_allowed():
             return
         if self._path_is_dir(path) and not self.multi_select_mode:
             self._highlight_path = path
-            self.selected_machine_file = path
-            self.selected_machine_filesize = 0
-            self.selected_machine_paths = [path]
+            self._apply_selected_paths([path])
             self._rebuild_list()
             self._sync_chrome()
             return
         if not self.multi_select_mode:
             self.multi_select_mode = True
-            self.selected_machine_paths = []
+            self._apply_selected_paths([])
         self._on_toggle_checked(path)
         self._last_range_index = index
 
     def _on_modifier_select(self, path: str, index: int, modifier: str):
-        if self.location != LOCATION_MACHINE or self.firmware_mode:
+        if not self._multi_select_allowed():
             return
         if not self.multi_select_mode:
             self.multi_select_mode = True
-            self.selected_machine_paths = []
+            self._apply_selected_paths([])
         if modifier == "shift" and self._last_range_index >= 0:
             rv = self.ids.get("file_list")
             if rv is None:
                 return
             start = min(self._last_range_index, index)
             end = max(self._last_range_index, index)
-            paths = list(self.selected_machine_paths)
+            paths = self._selected_paths()
             for i in range(start, end + 1):
                 if i < 0 or i >= len(rv.data):
                     continue
@@ -816,24 +837,64 @@ class FileBrowserPopup(ModalView):
                 p = row.get("path")
                 if p and p not in paths:
                     paths.append(p)
-            self.selected_machine_paths = paths
+            self._apply_selected_paths(paths)
             self._rebuild_list()
             self._sync_chrome()
             return
         self._last_range_index = index
         self._on_toggle_checked(path)
 
+    def _multi_select_allowed(self) -> bool:
+        if self.firmware_mode:
+            return False
+        if self.location == LOCATION_MACHINE:
+            return True
+        if self.location == LOCATION_DEVICE:
+            return not is_ios_platform()
+        return False
+
+    def _selected_paths(self) -> list:
+        if self.location == LOCATION_DEVICE:
+            return list(self.selected_device_paths)
+        return list(self.selected_machine_paths)
+
+    def _apply_selected_paths(self, paths: list) -> None:
+        paths = list(paths)
+        if self.location == LOCATION_DEVICE:
+            self.selected_device_paths = paths
+            self.selected_device_file = paths[-1] if paths else ""
+            return
+        self.selected_machine_paths = paths
+        if paths:
+            last = paths[-1]
+            self.selected_machine_file = last
+            self.selected_machine_filesize = 0 if self._path_is_dir(last) else self._size_for_path(last)
+        else:
+            self.selected_machine_file = ""
+            self.selected_machine_filesize = 0
+
+    def _restore_single_selection(self) -> None:
+        """Keep the last checked item as the single-select highlight when leaving multi-select."""
+        paths = self._selected_paths()
+        keep = paths[-1] if paths else ""
+        if keep:
+            self._highlight_path = keep
+            self._apply_selected_paths([keep])
+            return
+        self._highlight_path = ""
+        self._apply_selected_paths([])
+
     def _path_is_dir(self, path: str) -> bool:
         if not path:
             return False
         norm = os.path.normpath(path)
-        for entry in self._machine_entries:
+        for entry in self._current_entries():
             if os.path.normpath(entry.get("path") or "") == norm:
                 return bool(entry.get("is_dir"))
-        return False
+        return self.location == LOCATION_DEVICE and os.path.isdir(path)
 
     def _size_for_path(self, path: str) -> int:
-        for entry in self._machine_entries:
+        for entry in self._current_entries():
             if os.path.normpath(entry.get("path") or "") == os.path.normpath(path):
                 return int(entry.get("size") or 0)
         return 0
@@ -842,15 +903,14 @@ class FileBrowserPopup(ModalView):
         app = App.get_running_app()
         connected = app is not None and app.state != "N/A"
         idle = app is not None and app.state == "Idle"
-        if self.location == LOCATION_DEVICE:
-            selected_is_file = bool(self.selected_device_file)
-            selected_count = 1 if selected_is_file else 0
-        elif self.multi_select_mode:
+        paths = self._selected_paths()
+        highlight = self.selected_device_file if self.location == LOCATION_DEVICE else self.selected_machine_file
+        if self.multi_select_mode:
             selected_is_file = False
-            selected_count = len(self.selected_machine_paths)
+            selected_count = len(paths)
         else:
-            selected_is_file = bool(self.selected_machine_file) and not self._path_is_dir(self.selected_machine_file)
-            selected_count = len(self.selected_machine_paths) or (1 if self.selected_machine_file else 0)
+            selected_is_file = bool(highlight) and not self._path_is_dir(highlight)
+            selected_count = len(paths) or (1 if highlight else 0)
         return compute_action_state(
             location=self.location,
             firmware_mode=self.firmware_mode,
@@ -1004,13 +1064,14 @@ class FileBrowserPopup(ModalView):
         if bar is None:
             return
         bar.clear_widgets()
-        if state.show_preview:
+        if state.show_upload_and_use:
             bar.add_widget(
                 self._footer_btn(
-                    tr._("Preview"),
-                    self.on_preview,
-                    icon="data/eye.png",
-                    primary=state.primary == "preview",
+                    tr._("Upload & select"),
+                    self.on_upload_and_use,
+                    icon="data/play.png",
+                    primary=state.primary == "upload_and_use",
+                    tooltip=self._upload_dest_tooltip(),
                 )
             )
         if state.show_upload:
@@ -1023,14 +1084,13 @@ class FileBrowserPopup(ModalView):
                     tooltip=self._upload_dest_tooltip() if not self.firmware_mode else "",
                 )
             )
-        if state.show_upload_and_use:
+        if state.show_preview:
             bar.add_widget(
                 self._footer_btn(
-                    tr._("Upload & select"),
-                    self.on_upload_and_use,
-                    icon="data/play.png",
-                    primary=state.primary == "upload_and_use",
-                    tooltip=self._upload_dest_tooltip(),
+                    tr._("Preview"),
+                    self.on_preview,
+                    icon="data/eye.png",
+                    primary=state.primary == "preview",
                 )
             )
         if state.show_use_as_job:

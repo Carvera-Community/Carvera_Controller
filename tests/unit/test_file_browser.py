@@ -1,5 +1,7 @@
 """Unit tests for file browser listing, grouping, and action state."""
 
+import os
+
 from carveracontroller.ui.file_browser.sources import (
     ICON_FILE,
     ICON_FIRMWARE,
@@ -22,11 +24,16 @@ from carveracontroller.ui.file_browser.sources import (
     is_machine_root,
     is_under_machine_root,
     list_device_directory,
+    local_child_path,
     local_dir_has_file,
+    local_sibling_path,
     machine_listing_has,
     machine_parent_dir,
     machine_path_display,
     machine_tab_path_display,
+    mkdir_local,
+    remove_local_path,
+    rename_local_path,
     row_icon,
     trim_breadcrumb_pairs,
     upload_dest_tooltip,
@@ -271,6 +278,33 @@ def test_local_dir_has_file(tmp_path):
     assert local_dir_has_file(str(tmp_path), "") is False
 
 
+def test_local_child_and_sibling_paths(tmp_path):
+    src = str(tmp_path / "job.nc")
+    assert local_child_path(str(tmp_path), "folder") == str(tmp_path / "folder")
+    assert local_sibling_path(src, "renamed.nc") == str(tmp_path / "renamed.nc")
+    assert local_child_path(str(tmp_path), "") == ""
+    assert local_child_path(str(tmp_path), "../escape") == ""
+    assert local_child_path(str(tmp_path), "a/b") == ""
+    assert local_sibling_path(src, "..") == ""
+
+
+def test_local_mkdir_rename_and_remove(tmp_path):
+    folder = mkdir_local(str(tmp_path), "tools")
+    assert os.path.isdir(folder)
+    src = tmp_path / "job.nc"
+    src.write_text("g")
+    dest = str(tmp_path / "part.nc")
+    rename_local_path(str(src), dest)
+    assert os.path.isfile(dest)
+    assert not src.exists()
+    remove_local_path(dest)
+    assert not os.path.exists(dest)
+    nested = tmp_path / "tools" / "inner.nc"
+    nested.write_text("g")
+    remove_local_path(folder)
+    assert not os.path.exists(folder)
+
+
 def test_compact_width_helper():
     assert is_compact_width(400, threshold=720) is True
     assert is_compact_width(800, threshold=720) is False
@@ -291,6 +325,10 @@ def test_action_state_device_file_selected():
     assert state.show_upload is True
     assert state.show_upload_and_use is True
     assert state.show_download is False
+    assert state.show_rename is True
+    assert state.show_delete is True
+    assert state.show_new_folder is True
+    assert state.show_multi_toggle is True
     assert state.primary == "upload_and_use"
 
 
@@ -308,7 +346,46 @@ def test_action_state_device_requires_idle_for_upload():
     assert state.show_preview is True
     assert state.show_upload is False
     assert state.show_upload_and_use is False
+    assert state.show_rename is True
+    assert state.show_delete is True
+    assert state.show_new_folder is True
     assert state.primary == ""
+
+
+def test_action_state_device_folder_and_multi():
+    folder = compute_action_state(
+        location=LOCATION_DEVICE,
+        firmware_mode=False,
+        ios=False,
+        machine_connected=True,
+        machine_idle=True,
+        selected_is_file=False,
+        selected_count=1,
+        multi_select_mode=False,
+    )
+    assert folder.show_preview is False
+    assert folder.show_upload is False
+    assert folder.show_rename is True
+    assert folder.show_delete is True
+    assert folder.show_new_folder is True
+    assert folder.primary == ""
+    multi = compute_action_state(
+        location=LOCATION_DEVICE,
+        firmware_mode=False,
+        ios=False,
+        machine_connected=True,
+        machine_idle=True,
+        selected_is_file=False,
+        selected_count=2,
+        multi_select_mode=True,
+    )
+    assert multi.show_delete is True
+    assert multi.show_cancel_multi is True
+    assert multi.show_preview is False
+    assert multi.show_upload is False
+    assert multi.show_rename is False
+    assert multi.show_new_folder is False
+    assert multi.primary == "delete"
 
 
 def test_action_state_firmware_upload_only():
@@ -327,6 +404,8 @@ def test_action_state_firmware_upload_only():
     assert state.show_upload_and_use is False
     assert state.search_enabled is False
     assert state.show_download is False
+    assert state.show_rename is False
+    assert state.show_multi_toggle is False
     assert state.primary == "upload"
 
 
@@ -419,3 +498,5 @@ def test_action_state_ios_device_uses_browse():
     )
     assert state.show_ios_browse is True
     assert state.show_places is False
+    assert state.show_multi_toggle is False
+    assert state.show_rename is False

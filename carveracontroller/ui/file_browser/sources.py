@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -151,6 +152,43 @@ def local_dir_has_file(directory: str, filename: str) -> bool:
     if not directory or not filename:
         return False
     return os.path.isfile(os.path.join(directory, os.path.basename(filename)))
+
+
+def local_child_path(directory: str, name: str) -> str:
+    """Join *directory* with a single path component. Empty if *name* is unsafe."""
+    child = (name or "").strip()
+    if not directory or not child:
+        return ""
+    if os.path.sep in child or "/" in child or "\\" in child:
+        return ""
+    if child in (".", ".."):
+        return ""
+    return os.path.join(directory, child)
+
+
+def local_sibling_path(path: str, new_name: str) -> str:
+    if not path:
+        return ""
+    return local_child_path(os.path.dirname(path), new_name)
+
+
+def rename_local_path(src: str, dest: str) -> None:
+    os.replace(src, dest)
+
+
+def remove_local_path(path: str) -> None:
+    if os.path.isdir(path) and not os.path.islink(path):
+        shutil.rmtree(path)
+    else:
+        os.remove(path)
+
+
+def mkdir_local(parent: str, name: str) -> str:
+    dest = local_child_path(parent, name)
+    if not dest:
+        raise OSError("invalid folder name")
+    os.mkdir(dest)
+    return dest
 
 
 def machine_parent_dir(path: str) -> str | None:
@@ -431,13 +469,27 @@ def compute_action_state(
                 show_places=False,
                 search_enabled=False,
             )
+        if multi_select_mode:
+            return ActionState(
+                show_delete=selected_count > 0,
+                show_cancel_multi=True,
+                show_places=True,
+                search_enabled=True,
+                primary="delete" if selected_count > 0 else "",
+            )
+        single_file = selected_is_file and selected_count == 1
+        single_item = selected_count == 1
         return ActionState(
-            show_preview=selected_is_file,
-            show_upload=selected_is_file and machine_idle,
-            show_upload_and_use=selected_is_file and machine_idle,
+            show_preview=single_file,
+            show_upload=single_file and machine_idle,
+            show_upload_and_use=single_file and machine_idle,
+            show_rename=single_item,
+            show_delete=selected_count > 0,
+            show_new_folder=True,
+            show_multi_toggle=True,
             show_places=True,
             search_enabled=True,
-            primary="upload_and_use" if selected_is_file and machine_idle else "",
+            primary="upload_and_use" if single_file and machine_idle else "",
         )
 
     if not machine_connected:
