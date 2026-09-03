@@ -216,5 +216,11 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/memory/
    - Used in: carveracontroller/data/memory.png
 
+24. download.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/download/
+   - Used in: carveracontroller/data/download.png
+
 ===============================================================================
 Please see the respective license files for detailed information.

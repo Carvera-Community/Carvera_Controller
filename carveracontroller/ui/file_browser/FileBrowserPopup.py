@@ -46,12 +46,14 @@ from .sources import (
     current_file_banner,
     default_device_dir,
     device_tab_path_display,
+    download_dest_tooltip,
     group_and_sort_entries,
     is_compact_width,
     is_ios_platform,
     is_local_preview,
     is_under_machine_root,
     list_device_directory,
+    local_dir_has_file,
     machine_listing_has,
     machine_parent_dir,
     machine_tab_path_display,
@@ -321,6 +323,9 @@ class FileBrowserPopup(ModalView):
     def machine_listing_has(self, filename: str) -> bool:
         return machine_listing_has(self._machine_entries, filename)
 
+    def device_has_file(self, filename: str) -> bool:
+        return local_dir_has_file(self.device_dir, filename)
+
     def refresh_machine(self, *args):
         self._request_machine_listing(self.machine_dir)
 
@@ -444,6 +449,11 @@ class FileBrowserPopup(ModalView):
             return
         makera.check_and_download()
         self.dismiss()
+
+    def on_download(self):
+        makera = _makera()
+        if makera is not None:
+            makera.check_and_save_to_device()
 
     def on_rename(self):
         makera = _makera()
@@ -1032,6 +1042,15 @@ class FileBrowserPopup(ModalView):
                     primary=state.primary == "use_as_job",
                 )
             )
+        if state.show_download:
+            bar.add_widget(
+                self._footer_btn(
+                    tr._("Download"),
+                    self.on_download,
+                    icon="data/download.png",
+                    tooltip=self._download_dest_tooltip(),
+                )
+            )
         if state.show_rename:
             bar.add_widget(self._footer_btn(tr._("Rename"), self.on_rename, icon="data/pencil.png"))
         if state.show_delete:
@@ -1064,6 +1083,9 @@ class FileBrowserPopup(ModalView):
 
     def _upload_dest_tooltip(self) -> str:
         return upload_dest_tooltip(self.machine_dir, translate=tr._)
+
+    def _download_dest_tooltip(self) -> str:
+        return download_dest_tooltip(self.device_dir, translate=tr._)
 
     def _sort_label(self) -> str:
         names = {SORT_NAME: tr._("Name"), SORT_DATE: tr._("Date"), SORT_SIZE: tr._("Size")}

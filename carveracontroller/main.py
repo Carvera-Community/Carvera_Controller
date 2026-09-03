@@ -4753,6 +4753,33 @@ class Makera(RelativeLayout):
         threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
     # -----------------------------------------------------------------------
+    def check_and_save_to_device(self):
+        remote_path = self.file_popup.selected_machine_file
+        if not remote_path:
+            return
+        filename = os.path.basename(os.path.normpath(remote_path))
+        dest_dir = self.file_popup.device_dir
+        if not dest_dir:
+            return
+        dest = os.path.join(dest_dir, filename)
+        if self.file_popup.device_has_file(filename):
+            self.confirm_popup.lb_title.text = tr._("File Already Exists")
+            self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (filename)
+            self.confirm_popup.cancel = None
+            self.confirm_popup.confirm = partial(self.save_machine_file_to_device, remote_path, dest)
+            self.confirm_popup.open(self)
+        else:
+            self.save_machine_file_to_device(remote_path, dest)
+
+    def save_machine_file_to_device(self, remote_path, dest):
+        if not remote_path or not dest:
+            return
+        self.downloading_file = remote_path
+        self.downloading_size = self.file_popup.selected_machine_filesize
+        self.downloading_config = False
+        threading.Thread(target=self.doDownload, args=(remote_path, dest), kwargs={"open_after": False}).start()
+
+    # -----------------------------------------------------------------------
     def start_back_up_config(self):
         # Workaround for the fact that backup isn't a proper setting. If we don't clear it, the
         # settings panel will show a selected value like "Back up files now" and won't allow
@@ -5021,7 +5048,7 @@ class Makera(RelativeLayout):
         cache.ingest_file(source, machine_cache_key(conn, remote_path), size, date_raw)
 
     # -----------------------------------------------------------------------
-    def doDownload(self, remote_path, local_path, show_progress=True):
+    def doDownload(self, remote_path, local_path, show_progress=True, open_after=True):
         app = App.get_running_app()
         was_config_download = self.downloading_config
         if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
@@ -5142,15 +5169,18 @@ class Makera(RelativeLayout):
                 # Baud upgrade after config + sync commands have had time to finish.
                 Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 2.0)
             else:
-                if show_progress:
-                    Clock.schedule_once(
-                        partial(self.progressUpdate, 0, tr._("Open cached file") + " \n%s" % local_path, True), 0
-                    )
-                # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
-                # Decompress QuickLZ in place first; ingesting the compressed
-                # payload would cache a false "no preview" hit.
-                self.load_gcode_file(local_path)
-                self._ingest_machine_gcode_thumbnail(remote_path, local_path)
+                if open_after:
+                    if show_progress:
+                        Clock.schedule_once(
+                            partial(self.progressUpdate, 0, tr._("Open cached file") + " \n%s" % local_path, True), 0
+                        )
+                    # Decompress QuickLZ in place first; ingesting the compressed
+                    # payload would cache a false "no preview" hit.
+                    self.load_gcode_file(local_path)
+                    self._ingest_machine_gcode_thumbnail(remote_path, local_path)
+                else:
+                    if self._decompress_downloaded_file_in_place(local_path):
+                        self._ingest_machine_gcode_thumbnail(remote_path, local_path)
 
             if not was_config_download:
                 self.update_recent_remote_dir_list(os.path.dirname(remote_path))
@@ -5670,6 +5700,42 @@ class Makera(RelativeLayout):
             if os.path.exists(output_filename):
                 os.remove(output_filename)
             return None
+
+    # -----------------------------------------------------------------------
+    def _decompress_downloaded_file_in_place(self, filepath):
+        """Decompress a QuickLZ download in place without a `.lz/` sidecar folder."""
+        try:
+            with open(filepath, "rb") as f:
+                magic = f.read(2)
+        except OSError:
+            return False
+        if magic != b"\x00\x00":
+            return True
+
+        lz_tmp = filepath + ".lz"
+        try:
+            if os.path.exists(lz_tmp):
+                os.remove(lz_tmp)
+            os.rename(filepath, lz_tmp)
+        except OSError:
+            logger.error("Could not stage compressed download for decompress: %s", filepath)
+            return False
+
+        if not self.decompress_file(lz_tmp, filepath):
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                os.rename(lz_tmp, filepath)
+            except OSError:
+                pass
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Download file error!"), False), 0)
+            return False
+
+        try:
+            os.remove(lz_tmp)
+        except OSError:
+            pass
+        return self._verify_deferred_download_md5(filepath)
 
     # -----------------------------------------------------------------------
     def _verify_deferred_download_md5(self, filepath):

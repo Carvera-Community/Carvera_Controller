@@ -14,6 +14,7 @@ from carveracontroller.ui.file_browser.sources import (
     current_file_banner,
     current_row_badge,
     device_tab_path_display,
+    download_dest_tooltip,
     file_type_key,
     file_type_label,
     group_and_sort_entries,
@@ -21,6 +22,7 @@ from carveracontroller.ui.file_browser.sources import (
     is_machine_root,
     is_under_machine_root,
     list_device_directory,
+    local_dir_has_file,
     machine_listing_has,
     machine_parent_dir,
     machine_path_display,
@@ -209,6 +211,7 @@ def test_machine_path_display_keeps_sd_root():
     assert machine_path_display("\\sd\\gcodes\\jobs") == "/sd/gcodes/jobs"
     assert machine_path_display("") == "/sd/gcodes"
     assert upload_dest_tooltip("/sd/gcodes/jobs", translate=IDENTITY) == "Upload to: /sd/gcodes/jobs"
+    assert download_dest_tooltip("/home/user/gcodes", translate=IDENTITY) == "Download to: /home/user/gcodes"
 
 
 def test_device_tab_path_display_native_separators():
@@ -257,6 +260,17 @@ def test_list_device_directory_skips_dotfiles(tmp_path):
     assert files[0]["size"] > 0
 
 
+def test_local_dir_has_file(tmp_path):
+    (tmp_path / "job.nc").write_text("g")
+    (tmp_path / "tools").mkdir()
+    assert local_dir_has_file(str(tmp_path), "job.nc") is True
+    assert local_dir_has_file(str(tmp_path), "/sd/gcodes/job.nc") is True
+    assert local_dir_has_file(str(tmp_path), "missing.nc") is False
+    assert local_dir_has_file(str(tmp_path), "tools") is False
+    assert local_dir_has_file("", "job.nc") is False
+    assert local_dir_has_file(str(tmp_path), "") is False
+
+
 def test_compact_width_helper():
     assert is_compact_width(400, threshold=720) is True
     assert is_compact_width(800, threshold=720) is False
@@ -276,6 +290,7 @@ def test_action_state_device_file_selected():
     assert state.show_preview is True
     assert state.show_upload is True
     assert state.show_upload_and_use is True
+    assert state.show_download is False
     assert state.primary == "upload_and_use"
 
 
@@ -311,6 +326,7 @@ def test_action_state_firmware_upload_only():
     assert state.show_upload is True
     assert state.show_upload_and_use is False
     assert state.search_enabled is False
+    assert state.show_download is False
     assert state.primary == "upload"
 
 
@@ -326,9 +342,11 @@ def test_action_state_machine_file_and_folder():
         multi_select_mode=False,
     )
     assert file_state.show_use_as_job is True
+    assert file_state.show_download is True
     assert file_state.show_rename is True
     assert file_state.show_delete is True
     assert file_state.show_new_folder is True
+    assert file_state.primary == "use_as_job"
     folder_state = compute_action_state(
         location=LOCATION_MACHINE,
         firmware_mode=False,
@@ -340,8 +358,21 @@ def test_action_state_machine_file_and_folder():
         multi_select_mode=False,
     )
     assert folder_state.show_use_as_job is False
+    assert folder_state.show_download is False
     assert folder_state.show_rename is True
     assert folder_state.show_delete is True
+    busy = compute_action_state(
+        location=LOCATION_MACHINE,
+        firmware_mode=False,
+        ios=False,
+        machine_connected=True,
+        machine_idle=False,
+        selected_is_file=True,
+        selected_count=1,
+        multi_select_mode=False,
+    )
+    assert busy.show_use_as_job is True
+    assert busy.show_download is False
 
 
 def test_action_state_machine_disconnected_and_multi():
@@ -356,6 +387,7 @@ def test_action_state_machine_disconnected_and_multi():
         multi_select_mode=False,
     )
     assert disconnected.show_use_as_job is False
+    assert disconnected.show_download is False
     assert disconnected.search_enabled is False
     multi = compute_action_state(
         location=LOCATION_MACHINE,
@@ -370,6 +402,7 @@ def test_action_state_machine_disconnected_and_multi():
     assert multi.show_delete is True
     assert multi.show_cancel_multi is True
     assert multi.show_use_as_job is False
+    assert multi.show_download is False
     assert multi.primary == "delete"
 
 

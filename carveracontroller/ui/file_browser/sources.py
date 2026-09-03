@@ -142,6 +142,17 @@ def upload_dest_tooltip(machine_dir: str, *, translate: Translate) -> str:
     return translate("Upload to: %s") % machine_path_display(machine_dir)
 
 
+def download_dest_tooltip(device_dir: str, *, translate: Translate) -> str:
+    return translate("Download to: %s") % device_tab_path_display(device_dir)
+
+
+def local_dir_has_file(directory: str, filename: str) -> bool:
+    """True if a file (not a folder) with this basename already exists locally."""
+    if not directory or not filename:
+        return False
+    return os.path.isfile(os.path.join(directory, os.path.basename(filename)))
+
+
 def machine_parent_dir(path: str) -> str | None:
     norm = os.path.normpath(path or "")
     if not norm or is_machine_root(norm):
@@ -375,6 +386,7 @@ class ActionState:
     show_upload: bool = False
     show_upload_and_use: bool = False
     show_use_as_job: bool = False
+    show_download: bool = False
     show_rename: bool = False
     show_delete: bool = False
     show_new_folder: bool = False
@@ -444,6 +456,7 @@ def compute_action_state(
     single_item = selected_count == 1
     return ActionState(
         show_use_as_job=single_file,
+        show_download=single_file and machine_idle,
         show_rename=single_item,
         show_delete=selected_count > 0,
         show_new_folder=machine_idle,
