@@ -179,6 +179,12 @@ def rotate_mat_by_x_axis_angle(angle_in_degree):
     return mat_rot_x
 
 
+def rotate_point_then_center(point, center, rotation):
+    """Rotate a viewer-space point around the WCS origin, then center the scene."""
+    rotated = rotation.transform_point(point[0], point[1], point[2])
+    return [rotated[0] - center[0], rotated[1] - center[1], rotated[2] - center[2]]
+
+
 #####function
 def vec3_add(v1, v2):
     return [v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]]
@@ -2719,23 +2725,21 @@ class GCodeViewer(Widget):
         if pointer_updated_pos < len(self.positions):
             base_start = int(line_index_withratio)
             ratio = line_index_withratio - base_start
-            offset = 0.0
 
-            last_pos = vec3_sub(self.meshmanager.get_vertex_position(int(line_index_withratio)), self.lines_center)
+            last_world_pos = self.meshmanager.get_vertex_position(int(line_index_withratio))
+            self.pointermesh["offset"] = vec3_sub(last_world_pos, self.lines_center)
 
             if self.is_4_axis:
                 last_angle = self.angles_of_vertices[int(pointer_updated_pos / 3)]
 
             if ratio > 0.0 and pointer_updated_pos + 5 < len(self.positions):
-                next_pos = vec3_sub(
-                    self.meshmanager.get_vertex_position(int(line_index_withratio) + 1), self.lines_center
-                )
-                lerp_pos = [
-                    next_pos[0] * ratio + (1.0 - ratio) * last_pos[0],
-                    next_pos[1] * ratio + (1.0 - ratio) * last_pos[1],
-                    next_pos[2] * ratio + (1.0 - ratio) * last_pos[2],
+                next_world_pos = self.meshmanager.get_vertex_position(int(line_index_withratio) + 1)
+                lerp_world_pos = [
+                    next_world_pos[0] * ratio + (1.0 - ratio) * last_world_pos[0],
+                    next_world_pos[1] * ratio + (1.0 - ratio) * last_world_pos[1],
+                    next_world_pos[2] * ratio + (1.0 - ratio) * last_world_pos[2],
                 ]
-                self.pointermesh["offset"] = lerp_pos
+                self.pointermesh["offset"] = vec3_sub(lerp_world_pos, self.lines_center)
 
                 if self.is_4_axis:
                     next_angle = self.angles_of_vertices[int(pointer_updated_pos / 3) + 1]
@@ -2746,27 +2750,16 @@ class GCodeViewer(Widget):
                         rot = rotate_mat_by_x_axis_angle(-lerp_angle)
                         self.linemesh["rotation_mat"] = rot
                         self._set_stock_rotation_mat(rot)
-                        len_to_center = len_2d(
-                            [lerp_pos[1], lerp_pos[2]], [-self.lines_center[1], -self.lines_center[2]]
-                        )
-                        rot_point = self.linemesh["rotation_mat"].transform_point(lerp_pos[0], lerp_pos[1], lerp_pos[2])
-
-                        self.pointermesh["offset"] = rot_point
+                        self.pointermesh["offset"] = rotate_point_then_center(lerp_world_pos, self.lines_center, rot)
             else:
                 if self.is_4_axis:
                     if not self.rotate_line_or_knife:
                         self.pointermesh["rotation"] = rotate_mat_by_x_axis_angle(last_angle)
                     else:
                         rot = rotate_mat_by_x_axis_angle(-last_angle)
-                        self.linemesh["view_mat"] = self.linemesh["view_mat"].multiply(rot)
+                        self.linemesh["rotation_mat"] = rot
                         self._set_stock_rotation_mat(rot)
-
-                        len_to_center = len_3d(last_pos, [-self.lines_center[0], -self.lines_center[1], 0])
-                        self.pointermesh["offset"] = [
-                            -self.lines_center[0],
-                            -self.lines_center[1],
-                            len_to_center - self.lines_center[2],
-                        ]
+                        self.pointermesh["offset"] = rotate_point_then_center(last_world_pos, self.lines_center, rot)
 
         self.pointermesh["modelview_mat"] = self.m_viewMatrix
 
