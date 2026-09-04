@@ -242,9 +242,13 @@ class FileBrowserRow(RecycleDataViewBehavior, BoxLayout):
         rv = self.parent.recycleview
         modifiers = _touch_modifiers(touch)
 
-        if touch.is_double_tap and self.kind == KIND_FILE and not self.show_checkbox:
-            rv.dispatch("on_activate_file", self.path, int(self.intsize))
-            return True
+        if touch.is_double_tap and not self.show_checkbox:
+            if self.kind == KIND_FOLDER:
+                rv.dispatch("on_open_folder", self.path)
+                return True
+            if self.kind == KIND_FILE:
+                rv.dispatch("on_activate_file", self.path, int(self.intsize))
+                return True
 
         if {"ctrl", "control", "meta"} & modifiers:
             rv.dispatch("on_modifier_select", self.path, self.index, "ctrl")
@@ -255,10 +259,6 @@ class FileBrowserRow(RecycleDataViewBehavior, BoxLayout):
 
         if self.show_checkbox:
             rv.dispatch("on_toggle_checked", self.path)
-            return True
-
-        if self.kind == KIND_FOLDER:
-            rv.dispatch("on_open_folder", self.path)
             return True
 
         rv.dispatch("on_select_row", self.path, self.kind, int(self.intsize))

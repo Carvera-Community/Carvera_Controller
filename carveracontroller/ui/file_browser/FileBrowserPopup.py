@@ -33,7 +33,6 @@ from . import sources
 from .sources import (
     CONFIG_LAST_LOCATION,
     DEFAULT_SORT_REVERSE,
-    KIND_FILE,
     LOCATION_DEVICE,
     LOCATION_MACHINE,
     MACHINE_BASE_DIR,
@@ -770,9 +769,7 @@ class FileBrowserPopup(ModalView):
         self._rebuild_list()
         self._sync_chrome()
 
-    def _on_select_row(self, path: str, kind: str, intsize: int):
-        if kind != KIND_FILE:
-            return
+    def _on_select_row(self, path: str, _kind: str, intsize: int):
         if self._highlight_path == path:
             self._clear_list_selection()
             self._rebuild_list()
@@ -805,12 +802,6 @@ class FileBrowserPopup(ModalView):
 
     def _on_long_press(self, path: str, index: int):
         if not self._multi_select_allowed():
-            return
-        if self._path_is_dir(path) and not self.multi_select_mode:
-            self._highlight_path = path
-            self._apply_selected_paths([path])
-            self._rebuild_list()
-            self._sync_chrome()
             return
         if not self.multi_select_mode:
             self.multi_select_mode = True
