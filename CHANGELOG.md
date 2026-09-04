@@ -1,5 +1,6 @@
 [unreleased]
 - Enhancement: Replace the nested Remote/Local file popup with a single file browser
+- Enhancement: Auto enclosure/LED lights on connect and off on disconnect or app close. Controller setting is available to enable/disable this feature, default is enabled.
 - Enhancement: Tool-change flags have tooltip showing time until the change
 - Enhancement: Remaining time text alternates with time until the next tool change and playback completion
 - Enhancement: Selected files show estimated run time on the playback bar before the job starts
@@ -14,6 +15,7 @@
 - Enhancement: Add bed settings and visualization to the G-Code viewer
 - Change: Hide Auto Vacuum on the Config and Run screen when the machine is not a C1
 - Change: Config and Run preview now uses now uses the configured worksize_x/y for the bed size
+- Change: Auto Leveling auto-enables Auto Z Probe, but keeps the previous Z-probe location and allows the location config to be changed. Auto Z Probe can be turned off while leveling, but a warning is shown.
 - Fixed: Harden the gcode parser against "zero length" movement, and prevent division by zero in play slider
 - Fixed: Time estimates ignoring speed for some 4th-axis moves
 - Fixed: Allow to select the bottom element of the MDI, Gcode and probing confirmation lists

@@ -79,6 +79,15 @@ LOAD_CONN_WIFI = 8
 
 SEND_FILE = 1
 
+
+def session_light_commands(turn_on, is_community_firmware):
+    """G-code to apply for a connect (on) or disconnect (off) light change."""
+    commands = ["M821" if turn_on else "M822"]
+    if is_community_firmware:
+        commands.append("M337 B104" if turn_on else "M337 B0 U0 R0")
+    return commands
+
+
 CONN_USB = 0
 CONN_WIFI = 1
 
@@ -182,6 +191,7 @@ class Controller:
         self.diagnosing = False
 
         self.is_community_firmware = False
+        self._session_lights_applied = False
 
         # Connection-scoped comms protocol (detect on open; follows M485 switches)
         self.comms = ProtocolSession(on_change=self._on_comms_protocol_changed)
@@ -524,6 +534,33 @@ class Controller:
             self.executeCommand("M821\n")
         else:
             self.executeCommand("M822\n")
+
+    def _auto_lights_enabled(self):
+        if App is None:
+            return False
+        try:
+            from kivy.config import Config
+
+            return Config.getboolean("carvera", "auto_lights_on_connect", fallback=True)
+        except Exception:
+            return False
+
+    def apply_session_lights(self, turn_on, *, enabled=None):
+        """Turn enclosure/LED lights on at connect or off before disconnect."""
+        if turn_on and self._session_lights_applied:
+            return
+        if enabled is None:
+            enabled = self._auto_lights_enabled()
+        if not enabled:
+            # Remember that this session already decided, so connect is not retried.
+            if turn_on:
+                self._session_lights_applied = True
+            return
+        if self.stream is None:
+            return
+        for command in session_light_commands(turn_on, self.is_community_firmware):
+            self.executeCommand(command + "\n")
+        self._session_lights_applied = turn_on
 
     def setExternalControl(self, pwm=100):
         if pwm > 0:
@@ -1551,6 +1588,7 @@ class Controller:
             return
         self.stopRun()
         self._join_stream_io()
+        self.apply_session_lights(False)
         if self.stream is not None:
             try:
                 self.stream.close()
@@ -1627,6 +1665,7 @@ class Controller:
             CNC.vars["alarm_message"] = ""
             # Reset manual disconnect flag when connection is established
             self._manual_disconnect = False
+            self._session_lights_applied = False
             try:
                 self.clearRun()
             except Exception:
@@ -1658,6 +1697,7 @@ class Controller:
             self.log.put((self.MSG_ERROR, "Controller stop thread error!"))
         self._runLines = 0
         self._join_stream_io()
+        self.apply_session_lights(False)
         try:
             self.stream.close()
         except Exception:
@@ -1684,6 +1724,7 @@ class Controller:
             self.log.put((self.MSG_ERROR, "Controller stop thread error!"))
         self._runLines = 0
         self._join_stream_io()
+        self.apply_session_lights(False)
         try:
             self.stream.close()
         except Exception:

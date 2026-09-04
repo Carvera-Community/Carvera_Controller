@@ -225,6 +225,14 @@
         "default": "true"
     },
     {
+        "type": "bool",
+        "title": "Auto lights on connect",
+        "desc": "Turn the enclosure light on when connecting and off when disconnecting or closing the app. On Community Firmware, also sets the LED bar to blue on connect and off on disconnect",
+        "section": "carvera",
+        "key": "auto_lights_on_connect",
+        "default": "1"
+    },
+    {
         "type": "options",
         "title": "Preferred reconnection method",
         "desc": "Connection method used for auto-connect on app launch. After you connect manually, Reconnect uses the last successful method instead",
