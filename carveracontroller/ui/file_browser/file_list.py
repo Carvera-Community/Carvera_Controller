@@ -19,7 +19,7 @@ from kivy.uix.widget import Widget
 
 from carveracontroller.addons.tooltips.Tooltips import Tooltip, _compute_tooltip_box_size
 
-from .sources import KIND_FILE, KIND_FOLDER, KIND_HEADER
+from .sources import KIND_FILE, KIND_FOLDER
 
 THUMB_TOOLTIP_SIDE = 280
 
@@ -194,7 +194,7 @@ class FileBrowserThumb(Widget):
 
 
 class FileBrowserRow(RecycleDataViewBehavior, BoxLayout):
-    """One RecycleView row: section header, folder, or file."""
+    """One RecycleView row: folder or file."""
 
     index = None
     row_index = NumericProperty(0)
@@ -234,7 +234,7 @@ class FileBrowserRow(RecycleDataViewBehavior, BoxLayout):
             return False
         if "button" in touch.profile and str(touch.button).startswith("scroll"):
             return False
-        if self.kind == KIND_HEADER or not self.selectable:
+        if not self.selectable:
             return False
 
         self._touch_start_time = time.time()
@@ -268,7 +268,6 @@ class FileBrowserRow(RecycleDataViewBehavior, BoxLayout):
         if (
             self.collide_point(*touch.pos)
             and self.selectable
-            and self.kind != KIND_HEADER
             and self._touch_start_pos is not None
             and time.time() - self._touch_start_time >= 0.5
             and _same_position(touch.pos, self._touch_start_pos)

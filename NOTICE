@@ -186,37 +186,31 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/check/
    - Used in: carveracontroller/data/check.png
 
-19. close-circle-outline.png
-   - Author: Google
-   - License: Apache 2.0 License
-   - URL: https://pictogrammers.com/library/mdi/icon/close-circle-outline/
-   - Used in: carveracontroller/data/close-circle-outline.png
-
-20. folder.png
+19. folder.png
    - Author: Google
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/folder/
    - Used in: carveracontroller/data/folder-32.png
 
-21. file-outline.png
+20. file-outline.png
    - Author: Google
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/file-outline/
    - Used in: carveracontroller/data/file-outline.png
 
-22. file-code-outline.png
+21. file-code-outline.png
    - Author: Terren
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/file-code-outline/
    - Used in: carveracontroller/data/file-code-outline.png
 
-23. memory.png
+22. memory.png
    - Author: Google
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/memory/
    - Used in: carveracontroller/data/memory.png
 
-24. download.png
+23. download.png
    - Author: Google
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/download/

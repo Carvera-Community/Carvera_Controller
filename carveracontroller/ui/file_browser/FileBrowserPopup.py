@@ -30,7 +30,6 @@ from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
 from carveracontroller.translation import tr
 
 from . import sources
-from .file_list import FileBrowserList, FileBrowserRow, FileBrowserThumb
 from .sources import (
     CONFIG_LAST_LOCATION,
     DEFAULT_SORT_REVERSE,

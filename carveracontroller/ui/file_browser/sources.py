@@ -19,7 +19,6 @@ LOCATION_MACHINE = "machine"
 CONFIG_LAST_LOCATION = "file_browser_location"
 COMPACT_WIDTH_DP = 720
 
-KIND_HEADER = "header"
 KIND_FOLDER = "folder"
 KIND_FILE = "file"
 

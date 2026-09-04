@@ -4280,7 +4280,7 @@ class Makera(RelativeLayout):
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
-                    self.process_loaded_dir(self.fill_remote_dir)
+                    self.process_loaded_dir()
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     deleting_file = getattr(self, "deleting_remote_file", self.file_popup.selected_machine_file)
@@ -4618,18 +4618,6 @@ class Makera(RelativeLayout):
         self.controller.gotoSafeZ()
 
     # -----------------------------------------------------------------------
-    def set_local_folder_to_last_opened(self):
-        self.fetch_recent_local_dir_list()
-
-        # Find the most recent directory that is still present
-        local_path = ""
-        for dir in self.recent_local_dir_list:
-            if os.path.isdir(dir):
-                local_path = dir
-                break
-
-        self.file_popup.list_device_dir(local_path)
-
     def open_rename_input_popup(self):
         if self.file_popup.location == LOCATION_DEVICE:
             src = self.file_popup.selected_device_file
@@ -4657,16 +4645,6 @@ class Makera(RelativeLayout):
         else:
             self.input_popup.confirm = self.createRemoteDir
         self.input_popup.open(self)
-
-    # -----------------------------------------------------------------------
-    def open_upload_local_file_popup(self):
-        if sys.platform == "ios":
-            from . import ios_helpers
-
-            ios_helpers.pick_file()
-            return
-        self.file_popup.firmware_mode = False
-        self.file_popup.set_location("device")
 
     # -----------------------------------------------------------------------
     def open_wifi_password_input_popup(self):
@@ -6068,7 +6046,7 @@ class Makera(RelativeLayout):
         self.controller.stream.cancel_process()
 
     # -----------------------------------------------------------------------
-    def process_loaded_dir(self, *args):
+    def process_loaded_dir(self):
         is_dir = False
         file_list = []
         while self.controller.load_buffer.qsize() > 0:

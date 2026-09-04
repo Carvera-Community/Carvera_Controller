@@ -109,12 +109,12 @@
 <FileBrowserRow>:
     orientation: 'horizontal'
     size_hint_y: None
-    height: dp(28) if self.kind == 'header' else (dp(40) if self.kind == 'folder' else dp(56))
+    height: dp(40) if self.kind == 'folder' else dp(56)
     padding: dp(8), 0
     spacing: dp(8)
     canvas.before:
         Color:
-            rgba: (40/255, 40/255, 40/255, 1) if self.kind == 'header' else ((80/255, 80/255, 80/255, 1) if self.selected or self.checked else ((56/255, 56/255, 56/255, 1) if int(self.row_index) % 2 == 0 else (48/255, 48/255, 48/255, 1)))
+            rgba: (80/255, 80/255, 80/255, 1) if self.selected or self.checked else ((56/255, 56/255, 56/255, 1) if int(self.row_index) % 2 == 0 else (48/255, 48/255, 48/255, 1))
         Rectangle:
             pos: self.pos
             size: self.size
@@ -138,7 +138,7 @@
         show_tooltips: app.show_tooltips
         tooltip_delay: app.tooltip_delay
         size_hint_x: None
-        width: dp(48) if root.kind != 'header' and root.thumbnail else 0
+        width: dp(48) if root.thumbnail else 0
         opacity: 1 if root.thumbnail else 0
         canvas:
             Color:
@@ -149,14 +149,14 @@
                 size: (dp(48), dp(48)) if root.thumbnail else (0, 0)
     Widget:
         size_hint_x: None
-        width: dp(48) if root.kind != 'header' and not root.thumbnail else 0
+        width: dp(48) if not root.thumbnail else 0
         canvas.after:
             Color:
-                rgba: (250/255, 250/255, 250/255, 1) if root.kind != 'header' and not root.thumbnail else (0, 0, 0, 0)
+                rgba: (250/255, 250/255, 250/255, 1) if not root.thumbnail else (0, 0, 0, 0)
             Rectangle:
-                source: '' if root.kind == 'header' or root.thumbnail else root.icon
+                source: '' if root.thumbnail else root.icon
                 pos: self.center_x - dp(10), self.center_y - dp(10)
-                size: (0, 0) if root.kind == 'header' or root.thumbnail else (dp(20), dp(20))
+                size: (0, 0) if root.thumbnail else (dp(20), dp(20))
     BoxLayout:
         orientation: 'vertical'
         spacing: dp(2)
@@ -166,9 +166,9 @@
             text: root.filename
             size_hint_y: None
             height: dp(20)
-            color: (150/255, 150/255, 150/255, 1) if root.kind == 'header' else (230/255, 230/255, 230/255, 1)
-            bold: root.kind == 'header' or root.is_current_job
-            font_size: dp(13) if root.kind == 'header' else dp(15)
+            color: 230/255, 230/255, 230/255, 1
+            bold: root.is_current_job
+            font_size: dp(15)
             halign: 'left'
             valign: 'middle'
             text_size: self.size

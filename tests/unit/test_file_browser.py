@@ -9,7 +9,6 @@ from carveracontroller.ui.file_browser.sources import (
     ICON_GCODE,
     KIND_FILE,
     KIND_FOLDER,
-    KIND_HEADER,
     LOCATION_DEVICE,
     LOCATION_MACHINE,
     compute_action_state,
@@ -80,7 +79,6 @@ def test_group_and_sort_puts_folders_above_files():
     rows = group_and_sort_entries(entries, sort_key="name", reverse=False, translate=IDENTITY)
     kinds = [row["kind"] for row in rows]
     names = [row["filename"] for row in rows]
-    assert KIND_HEADER not in kinds
     assert kinds == [KIND_FOLDER, KIND_FOLDER, KIND_FILE, KIND_FILE]
     assert names == ["alpha", "zeta", "a.nc", "b.nc"]
 
@@ -105,14 +103,14 @@ def test_firmware_mode_keeps_dirs_and_bin_only():
         _entry("job.nc"),
     ]
     rows = group_and_sort_entries(entries, firmware_mode=True, translate=IDENTITY)
-    names = [row["filename"] for row in rows if row["kind"] != KIND_HEADER]
+    names = [row["filename"] for row in rows]
     assert names == ["keep", "fw.bin"]
 
 
 def test_search_filters_by_name():
     entries = [_entry("bracket.nc"), _entry("lid.nc"), _entry("tools", is_dir=True)]
     rows = group_and_sort_entries(entries, keyword="lid", translate=IDENTITY)
-    names = [row["filename"] for row in rows if row["kind"] != KIND_HEADER]
+    names = [row["filename"] for row in rows]
     assert names == ["lid.nc"]
 
 

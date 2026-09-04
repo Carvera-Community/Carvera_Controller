@@ -2,7 +2,6 @@
 
 Makera Studio writes a PNG as ``;``-prefixed base64 between
 ``;(thumbnail_image_begin)`` and ``;(thumbnail_image_end)`` after the program.
-This module is Kivy-free.
 """
 
 from __future__ import annotations
@@ -21,9 +20,9 @@ from typing import Any
 
 from PIL import Image
 
-logger = logging.getLogger(__name__)
+from .sources import GCODE_EXTENSIONS
 
-GCODE_EXTENSIONS = {".nc", ".gcode", ".ngc", ".cnc", ".tap", ".gc"}
+logger = logging.getLogger(__name__)
 
 THUMB_BEGIN = b";(thumbnail_image_begin)"
 THUMB_END = b";(thumbnail_image_end)"
@@ -31,7 +30,7 @@ PNG_MAGIC = b"\x89PNG"
 TAIL_READ_BYTES = 512 * 1024
 MAX_SIDE_PX = 256
 CACHE_VERSION = 1
-CACHE_MAX_IMAGES = 200
+CACHE_MAX_IMAGES = 256
 INDEX_NAME = "index.json"
 
 _CACHE_LOCK = threading.Lock()
