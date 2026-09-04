@@ -395,7 +395,7 @@ def test_download_config_files_downloads_silently(monkeypatch, tmp_path):
         assert call["show_progress"] is False
         assert call["open_after"] is False
         assert call["local_path"] == str(tmp_path / call["remote_path"].rsplit("/", 1)[-1])
-    assert set(CONFIG_FILES_TO_BACK_UP) >= set(call["remote_path"] for call in calls)
+    assert set(CONFIG_FILES_TO_BACK_UP) >= {call["remote_path"] for call in calls}
 
 
 def _download_host(tmp_path, *, downloading_config=False):

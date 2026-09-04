@@ -5584,9 +5584,7 @@ class Makera(RelativeLayout):
             superseded = machine_ls_is_superseded(sent_path, wanted_path)
             if not superseded:
                 if self.controller.loadERR:
-                    Clock.schedule_once(
-                        partial(self.loadError, tr._("Error loading dir") + " '%s'!" % (sent_path,)), 0
-                    )
+                    Clock.schedule_once(partial(self.loadError, tr._("Error loading dir") + " '%s'!" % (sent_path,)), 0)
                 elif timed_out:
                     Clock.schedule_once(
                         partial(self.loadError, tr._("Timeout loading dir") + " '%s'!" % (sent_path,)), 0
