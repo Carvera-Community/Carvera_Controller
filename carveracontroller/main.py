@@ -165,6 +165,23 @@ from carveracontroller.addons.stock.stock_defaults import (
 from carveracontroller.addons.stock.stock_estimate import auto_stock_for_loaded_file, header_stock_usable
 from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPopup
 from carveracontroller.serial_listeners import dispatch_serial_line
+from carveracontroller.ui.file_browser import FileBrowserPopup
+from carveracontroller.ui.file_browser.sources import (
+    LOCATION_DEVICE,
+    local_child_path,
+    local_sibling_path,
+    machine_child_entry_path,
+    machine_listing_callback_matches,
+    machine_ls_is_superseded,
+    mkdir_local,
+    remove_local_path,
+    rename_local_path,
+)
+from carveracontroller.ui.file_browser.thumbnail import (
+    is_gcode_path,
+    machine_cache_key,
+    thumbnail_cache_for_app,
+)
 
 
 # Custom Property to monitor CNC.vars["sw_light"] changes
@@ -1165,50 +1182,6 @@ class AutoLevelPopup(ModalView):
         else:
             app = App.get_running_app()
             Clock.schedule_once(partial(app.root.show_message_popup, error_message, False), 0)
-
-
-class FilePopup(ModalView):
-    firmware_mode = BooleanProperty(False)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def load_remote_page(self):
-        self.popup_manager.transition.direction = "right"
-        self.popup_manager.transition.duration = 0.3
-        self.popup_manager.current = "remote_page"
-        app = App.get_running_app()
-        if app.state == "Idle":
-            self.remote_rv.current_dir()
-
-    # -----------------------------------------------------------------------
-    def load_remote_root(self):
-        self.remote_rv.child_dir("")
-
-    # -----------------------------------------------------------------------
-    def update_local_buttons(self):
-        has_select = False
-        app = App.get_running_app()
-        for key in self.local_rv.view_adapter.views:
-            if (
-                self.local_rv.view_adapter.views[key].selected
-                and not self.local_rv.view_adapter.views[key].selected_dir
-            ):
-                has_select = True
-                break
-        self.btn_view.disabled = not has_select or self.firmware_mode
-        self.btn_upload.disabled = not has_select or app.state != "Idle"
-
-    # -----------------------------------------------------------------------
-    def update_remote_buttons(self):
-        selected_files = self.remote_rv.get_selected_files()
-        selected_infos = self.remote_rv.get_selected_file_infos()
-        has_select = len(selected_files) > 0
-        single_select = len(selected_files) == 1
-        select_dir = single_select and selected_infos[0].get("is_dir", False)
-        self.btn_delete.disabled = not has_select
-        self.btn_rename.disabled = not single_select
-        self.btn_select.disabled = (not single_select) or select_dir
 
 
 def background_image_model(name):
@@ -2672,397 +2645,6 @@ class GCodeRow(IntellisenseExplainRowMixin, RecycleDataViewBehavior, BoxLayout):
 Factory.register("GCodeRow", cls=GCodeRow)
 
 
-class SelectableBoxLayout(RecycleDataViewBehavior, BoxLayout):
-    """Add selection support to the Label"""
-
-    index = None
-    selected = BooleanProperty(False)
-    selected_dir = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-
-    def refresh_view_attrs(self, rv, index, data):
-        """Catch and handle the view changes"""
-        self.index = index
-        return super().refresh_view_attrs(rv, index, data)
-
-    def on_touch_down(self, touch):
-        """Add selection on touch down"""
-        if super().on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            rv = self.parent.recycleview
-            if getattr(rv, "multi_select_enabled", False) and self.touch_has_desktop_modifier(touch):
-                self.select_with_desktop_modifiers(rv, touch)
-                return True
-            if touch.is_double_tap:
-                if rv.data[self.index]["is_dir"]:
-                    rv.child_dir(rv.data[self.index]["filename"])
-                else:
-                    rv.dispatch("on_double_tap")
-                return True
-            if getattr(rv, "multi_select_enabled", False):
-                self.select_with_desktop_modifiers(rv, touch)
-                return True
-            return self.parent.select_with_touch(self.index, touch)
-
-    def touch_desktop_modifiers(self, touch):
-        modifiers = set()
-        for source in (
-            getattr(touch, "modifiers", None),
-            getattr(Window, "modifiers", None),
-            getattr(Window, "_modifiers", None),
-        ):
-            if callable(source):
-                source = source()
-            if source:
-                modifiers.update(source)
-        return modifiers
-
-    def touch_has_desktop_modifier(self, touch):
-        modifiers = self.touch_desktop_modifiers(touch)
-        return bool({"ctrl", "control", "meta", "shift"} & modifiers)
-
-    def select_with_desktop_modifiers(self, rv, touch):
-        layout = self.parent
-        modifiers = self.touch_desktop_modifiers(touch)
-        ctrl_down = bool({"ctrl", "control", "meta"} & modifiers)
-        shift_down = "shift" in modifiers
-
-        if shift_down and rv.last_selected_index >= 0:
-            if not ctrl_down:
-                layout.clear_selection()
-            start = min(rv.last_selected_index, self.index)
-            end = max(rv.last_selected_index, self.index)
-            for index in range(start, end + 1):
-                layout.select_node(index)
-        elif ctrl_down:
-            if self.index in layout.selected_nodes:
-                layout.deselect_node(self.index)
-            else:
-                layout.select_node(self.index)
-            rv.last_selected_index = self.index
-        else:
-            layout.clear_selection()
-            layout.select_node(self.index)
-            rv.last_selected_index = self.index
-
-        rv.update_selected_files_from_layout(current_index=self.index)
-        rv.dispatch("on_select")
-
-    def apply_selection(self, rv, index, is_selected):
-        """Respond to the selection of items in the view."""
-        self.selected = is_selected
-        if self.selected:
-            if rv.data[self.index]["is_dir"]:
-                self.selected_dir = True
-            else:
-                self.selected_dir = False
-            rv.set_curr_selected_file(rv.data[self.index]["filename"], rv.data[self.index]["intsize"])
-        if not getattr(rv, "multi_select_enabled", False):
-            rv.update_selected_files_from_layout(current_index=self.index if self.selected else None)
-            rv.dispatch("on_select")
-
-
-# -----------------------------------------------------------------------
-# Data Recycle View
-# -----------------------------------------------------------------------
-class DataRV(RecycleView):
-    curr_dir = ""
-    curr_dir_name = StringProperty("")
-
-    base_dir = ""
-    base_dir_win = ""
-
-    curr_sort_key = StringProperty("date")
-    curr_sort_reverse = BooleanProperty(True)
-    curr_sort_str = ListProperty(["", " ↓", ""])
-
-    curr_path_list = ListProperty([])
-    curr_full_path_list = []
-    curr_file_list_buff = []
-
-    default_sort_reverse = {"name": False, "date": True, "size": False}
-    search_event = None
-
-    curr_selected_file = StringProperty("")
-    curr_selected_filesize = NumericProperty(0)
-    curr_selected_is_dir = BooleanProperty(False)
-    curr_selected_files = ListProperty([])
-    curr_selected_file_infos = ListProperty([])
-    multi_select_enabled = BooleanProperty(False)
-    last_selected_index = NumericProperty(-1)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.register_event_type("on_select")
-        self.register_event_type("on_double_tap")
-
-    # -----------------------------------------------------------------------
-    def on_select(self):
-        pass
-
-    def on_double_tap(self):
-        pass
-
-    # -----------------------------------------------------------------------
-    def set_curr_selected_file(self, filename, filesize):
-        self.curr_selected_file = os.path.join(self.curr_dir, filename)
-        self.curr_selected_filesize = filesize
-        self.curr_selected_is_dir = os.path.isdir(self.curr_selected_file)
-
-    def get_selected_files(self):
-        return list(self.curr_selected_files)
-
-    def get_selected_file_infos(self):
-        return list(self.curr_selected_file_infos)
-
-    def file_info_for_index(self, index):
-        if index < 0 or index >= len(self.data):
-            return None
-        item = self.data[index]
-        path = os.path.join(self.curr_dir, item["filename"])
-        return {
-            "path": path,
-            "filename": item["filename"],
-            "filesize": item["intsize"],
-            "is_dir": item["is_dir"],
-            "index": index,
-        }
-
-    def update_selected_files_from_layout(self, current_index=None):
-        layout = getattr(self, "layout_manager", None)
-        selected_nodes = getattr(layout, "selected_nodes", [])
-        selected_indices = sorted(index for index in selected_nodes if 0 <= index < len(self.data))
-        infos = [info for info in (self.file_info_for_index(index) for index in selected_indices) if info is not None]
-        self.curr_selected_file_infos = infos
-        self.curr_selected_files = [info["path"] for info in infos]
-
-        current_info = None
-        if current_index is not None and current_index in selected_indices:
-            current_info = self.file_info_for_index(current_index)
-        elif infos:
-            current_info = infos[-1]
-
-        if current_info:
-            self.curr_selected_file = current_info["path"]
-            self.curr_selected_filesize = current_info["filesize"]
-            self.curr_selected_is_dir = current_info["is_dir"]
-        else:
-            self.curr_selected_file = ""
-            self.curr_selected_filesize = 0
-            self.curr_selected_is_dir = False
-
-    # -----------------------------------------------------------------------
-    def clear_selection(self):
-        layout = getattr(self, "layout_manager", None)
-        if layout is not None:
-            layout.clear_selection()
-        for key in self.view_adapter.views:
-            if self.view_adapter.views[key].selected != None:
-                self.view_adapter.views[key].selected = False
-        self.curr_selected_files = []
-        self.curr_selected_file_infos = []
-        self.curr_selected_file = ""
-        self.curr_selected_filesize = 0
-        self.curr_selected_is_dir = False
-        self.last_selected_index = -1
-
-    # -----------------------------------------------------------------------
-    def child_dir(self, child_dir):
-        new_path = os.path.join(self.curr_dir, child_dir)
-        self.list_dir(new_dir=new_path)
-
-    def fill_dir(self, sort_key=None, switch_reverse=True, keyword=None):
-        if sort_key == None:
-            sort_key = self.curr_sort_key
-        sort_reverse = self.curr_sort_reverse
-        if sort_key != self.curr_sort_key:
-            sort_reverse = self.default_sort_reverse[sort_key]
-            self.curr_sort_reverse = sort_reverse
-            self.curr_sort_key = sort_key
-        else:
-            if switch_reverse:
-                self.curr_sort_reverse = not self.curr_sort_reverse
-                sort_reverse = self.curr_sort_reverse
-        if sort_key == "name":
-            self.curr_sort_str = ["↓" if sort_reverse else "↑", "", ""]
-        elif sort_key == "date":
-            self.curr_sort_str = ["", "↓" if sort_reverse else "↑", ""]
-        elif sort_key == "size":
-            self.curr_sort_str = ["", "", "↓" if sort_reverse else "↑"]
-        self.curr_file_list_buff = sorted(self.curr_file_list_buff, key=lambda x: x[sort_key], reverse=sort_reverse)
-
-        filtered_list = []
-        app = App.get_running_app()
-        if app.root.file_popup.firmware_mode:
-            filtered_list = filter(lambda x: x["is_dir"] or Path(x["name"]).suffix == ".bin", self.curr_file_list_buff)
-        else:
-            if keyword == None or keyword.strip() == "":
-                filtered_list = self.curr_file_list_buff
-            else:
-                filtered_list = filter(lambda x: keyword.lower() in x["name"].lower(), self.curr_file_list_buff)
-
-        # fill out the list
-        self.clear_selection()
-        self.last_selected_index = -1
-        self.data = []
-        for rv_key, file in enumerate(filtered_list):
-            try:
-                self.data.append(
-                    {
-                        "rv_key": rv_key,
-                        "filename": file["name"],
-                        "intsize": file["size"],
-                        "filesize": "--" if file["is_dir"] else Utils.humansize(file["size"]),
-                        "filedate": Utils.humandate(file["date"]),
-                        "is_dir": file["is_dir"],
-                    }
-                )
-            except IndexError:
-                logger.error("Tried to write to recycle view data at same time as reading, ignore (indexError)")
-        # trigger
-        self.dispatch("on_select")
-
-    def goto_path(self, index):
-        if index < len(self.curr_full_path_list):
-            app = App.get_running_app()
-            app.root.file_popup.ti_local_search.text = ""
-            self.list_dir(new_dir=self.curr_full_path_list[index])
-
-    def delay_search(self, keyword):
-        # if keyword == None or keyword.strip() == '':
-        #    return
-        if self.search_event is not None:
-            self.search_event.cancel()
-        self.search_event = Clock.schedule_once(partial(self.execute_search, keyword), 1)
-
-    def execute_search(self, keyword, *args):
-        self.fill_dir(keyword=keyword, switch_reverse=False)
-        self.search_event = None
-
-
-# -----------------------------------------------------------------------
-# Remote Recycle View
-# -----------------------------------------------------------------------
-class RemoteRV(DataRV):
-    # -----------------------------------------------------------------------
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.register_event_type("on_select")
-        self.register_event_type("on_double_tap")
-
-        self.base_dir = "/sd/gcodes"
-        self.base_dir_win = "\\sd\\gcodes"
-
-        self.curr_dir = self.base_dir
-        self.curr_dir_name = "gcodes"
-
-    # -----------------------------------------------------------------------
-    def parent_dir(self):
-        normpath = os.path.normpath(self.curr_dir)
-        if normpath == self.base_dir or normpath == self.base_dir_win:
-            self.list_dir(new_dir=normpath)
-        else:
-            self.list_dir(new_dir=os.path.dirname(normpath))
-
-    # -----------------------------------------------------------------------
-    def current_dir(self, *args):
-        self.list_dir(new_dir=os.path.normpath(self.curr_dir))
-
-    # -----------------------------------------------------------------------
-    def list_dir(self, new_dir=None):
-        if new_dir == None:
-            new_dir = self.curr_dir
-
-        self.clear_selection()
-        self.curr_file_list_buff = []
-
-        app = App.get_running_app()
-        threading.Thread(target=app.root.loadRemoteDir, args=(new_dir,), daemon=True).start()
-        self.curr_dir = str(new_dir)
-        # self.curr_dir_name = os.path.normpath(self.curr_dir)
-
-    def on_double_tap(self):
-        app = App.get_running_app()
-        app.root.check_and_download()
-
-
-# -----------------------------------------------------------------------
-# Local Recycle View
-# -----------------------------------------------------------------------
-class LocalRV(DataRV):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.register_event_type("on_select")
-        self.register_event_type("on_double_tap")
-        if kivy_platform == "android":
-            self.curr_dir = os.path.abspath(".carveracontroller/gcodes")
-            if not os.path.exists(self.curr_dir):
-                self.curr_dir = os.path.join(os.path.dirname(__file__), "carveracontroller/gcodes")
-        else:
-            self.curr_dir = os.path.abspath("./gcodes")
-            if not os.path.exists(self.curr_dir):
-                self.curr_dir = os.path.join(os.path.dirname(__file__), "gcodes")
-        self.curr_dir_name = os.path.basename(os.path.normpath(self.curr_dir))
-
-    # -----------------------------------------------------------------------
-    def parent_dir(self):
-        self.list_dir(new_dir=os.path.abspath(os.path.join(self.curr_dir, os.pardir)))
-
-    # -----------------------------------------------------------------------
-    def list_dir(self, new_dir=None):
-        if new_dir == None:
-            new_dir = self.curr_dir
-
-        if not new_dir.endswith(os.path.sep):
-            new_dir += os.path.sep
-
-        self.curr_file_list_buff = []
-        for dirpath, dirnames, filenames in os.walk(new_dir):
-            for dirname in dirnames:
-                if not dirname.startswith("."):
-                    file_time = 0
-                    file_path = os.path.join(new_dir, dirname)
-                    try:
-                        file_time = os.stat(file_path).st_mtime
-                    except:
-                        continue
-                    self.curr_file_list_buff.append(
-                        {"name": dirname, "path": file_path, "is_dir": True, "size": 0, "date": file_time}
-                    )
-            for filename in filenames:
-                if not filename.startswith("."):
-                    file_size = 0
-                    file_time = 0
-                    file_path = os.path.join(new_dir, filename)
-                    try:
-                        file_size = os.stat(file_path).st_size
-                        file_time = os.stat(file_path).st_mtime
-                    except:
-                        continue
-                    self.curr_file_list_buff.append(
-                        {"name": filename, "path": file_path, "is_dir": False, "size": file_size, "date": file_time}
-                    )
-            break
-
-        self.fill_dir(switch_reverse=False)
-
-        self.curr_dir = os.path.normpath(new_dir)
-        self.curr_full_path_list, path_labels = Utils.directory_breadcrumb_paths(
-            self.curr_dir,
-            root_label_markers=(self.base_dir,),
-        )
-        self.curr_path_list = path_labels
-        self.curr_dir_name = path_labels[-1] if path_labels else ""
-
-    def on_double_tap(self):
-        app = App.get_running_app()
-        if app.root.file_popup.firmware_mode:
-            app.root.check_and_upload()
-        else:
-            app.root.check_upload_and_select()
-
-
 # -----------------------------------------------------------------------
 # GCode Recycle View
 # -----------------------------------------------------------------------
@@ -3167,25 +2749,11 @@ class ManualCMDPage(Screen):
     pass
 
 
-# -----------------------------------------------------------------------
-class PopupManager(ScreenManager):
-    pass
-
-
-class RemotePage(Screen):
-    pass
-
-
-class LocalPage(Screen):
-    pass
-
-
 class Makera(RelativeLayout):
     holding = 0
     pausing = 0
     waiting = 0
     tooling = 0
-    loading_dir = ""
 
     stop = threading.Event()
     load_event = threading.Event()
@@ -3348,7 +2916,8 @@ class Makera(RelativeLayout):
 
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
-        self.file_popup = FilePopup()
+        self.file_popup = FileBrowserPopup()
+        self._pending_machine_thumb = None
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
@@ -3436,10 +3005,10 @@ class Makera(RelativeLayout):
         self.wifi_ap_status_bar = None
 
         self.local_dir_drop_down = DropDown(auto_width=False, width="190dp")
-        self.local_dir_drop_down.bind(on_select=lambda instance, x: self.file_popup.local_rv.list_dir(x))
+        self.local_dir_drop_down.bind(on_select=lambda instance, x: self.file_popup.list_device_dir(x))
 
         self.remote_dir_drop_down = DropDown(auto_width=False, width="190dp")
-        self.remote_dir_drop_down.bind(on_select=lambda instance, x: self.file_popup.remote_rv.list_dir(x))
+        self.remote_dir_drop_down.bind(on_select=lambda instance, x: self.file_popup.list_machine_dir(x))
 
         # init gcode viewer
         self.gcode_viewer = GCodeViewer()
@@ -3500,6 +3069,10 @@ class Makera(RelativeLayout):
         self.last_connection_method = Config.get("carvera", "last_connection_method", fallback="") or ""
 
         self.fill_remote_dir_callback = None
+        self.fill_remote_dir_callback_path = None
+        self._machine_ls_lock = threading.Lock()
+        self._machine_ls_wanted_path = None
+        self._machine_ls_sent_path = None
 
         self.instantFSoverride = Config.get("carvera", "instantFSoverride") == "1"
 
@@ -3740,16 +3313,7 @@ class Makera(RelativeLayout):
         webbrowser.open(FW_DOWNLOAD_ADDRESS, new=2)
 
     def open_fw_upload(self):
-        self.file_popup.firmware_mode = True
-        if sys.platform == "ios":
-            from . import ios_helpers
-
-            ios_helpers.pick_file()
-        else:
-            self.file_popup.popup_manager.transition.duration = 0
-            self.file_popup.popup_manager.current = "local_page"
-            self.file_popup.open()
-            self.file_popup.local_rv.child_dir("")
+        self.file_popup.open_for_firmware()
 
     def open_online_docs(self):
         webbrowser.open("https://carvera-community.gitbook.io/docs/controller/")
@@ -4729,21 +4293,10 @@ class Makera(RelativeLayout):
 
             if self.controller.loadNUM == LOAD_DIR:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                    if self.controller.loadERR:
-                        Clock.schedule_once(
-                            partial(self.loadError, tr._("Error loading dir") + " '%s'!" % (self.loading_dir)), 0
-                        )
-                    elif t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                        Clock.schedule_once(
-                            partial(self.loadError, tr._("Timeout loading dir") + " '%s'!" % (self.loading_dir)), 0
-                        )
-                    self.controller.loadNUM = 0
-                    self.controller.loadEOF = False
-                    self.controller.loadERR = False
-                    self.process_loaded_dir(self.fill_remote_dir)
+                    self._finish_machine_ls(t)
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                    deleting_file = getattr(self, "deleting_remote_file", self.file_popup.remote_rv.curr_selected_file)
+                    deleting_file = getattr(self, "deleting_remote_file", self.file_popup.selected_machine_file)
                     delete_failed = self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT
                     if self.controller.loadERR:
                         Clock.schedule_once(
@@ -4761,14 +4314,14 @@ class Makera(RelativeLayout):
                     else:
                         self.pending_remote_delete_files = []
                         self.deleting_remote_file = ""
-                        Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
+                        Clock.schedule_once(self.file_popup.refresh_machine, 0)
             if self.controller.loadNUM == LOAD_MV:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
                         Clock.schedule_once(
                             partial(
                                 self.loadError,
-                                tr._("Error renaming") + " '%s'!" % (self.file_popup.remote_rv.curr_selected_file),
+                                tr._("Error renaming") + " '%s'!" % (self.file_popup.selected_machine_file),
                             ),
                             0,
                         )
@@ -4776,14 +4329,14 @@ class Makera(RelativeLayout):
                         Clock.schedule_once(
                             partial(
                                 self.loadError,
-                                tr._("Timeout renaming") + " '%s'!" % (self.file_popup.remote_rv.curr_selected_file),
+                                tr._("Timeout renaming") + " '%s'!" % (self.file_popup.selected_machine_file),
                             ),
                             0,
                         )
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
-                    Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
+                    Clock.schedule_once(self.file_popup.refresh_machine, 0)
             if self.controller.loadNUM == LOAD_MKDIR:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     if self.controller.loadERR:
@@ -4805,7 +4358,7 @@ class Makera(RelativeLayout):
                     self.controller.loadNUM = 0
                     self.controller.loadEOF = False
                     self.controller.loadERR = False
-                    Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
+                    Clock.schedule_once(self.file_popup.refresh_machine, 0)
             if self.controller.loadNUM == LOAD_WIFI:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.wifi_load_time > WIFI_LOAD_TIMEOUT:
                     if self.controller.loadERR:
@@ -4831,13 +4384,19 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def open_del_confirm_popup(self):
-        selected_files = self.file_popup.remote_rv.get_selected_files()
+        if self.file_popup.location == LOCATION_DEVICE:
+            selected_files = list(self.file_popup.selected_device_paths)
+        else:
+            selected_files = list(self.file_popup.selected_machine_paths)
         if not selected_files:
             return
         self.confirm_popup.lb_title.text = tr._("Delete File or Dir")
         if len(selected_files) == 1:
             self.confirm_popup.lb_content.text = tr._("Confirm to delete file or dir") + "'%s'?" % (selected_files[0])
-            self.confirm_popup.confirm = partial(self.removeRemoteFile, selected_files[0])
+            if self.file_popup.location == LOCATION_DEVICE:
+                self.confirm_popup.confirm = partial(self.removeLocalFiles, selected_files)
+            else:
+                self.confirm_popup.confirm = partial(self.removeRemoteFile, selected_files[0])
         else:
             preview = "\n".join(selected_files[:5])
             if len(selected_files) > 5:
@@ -4846,7 +4405,10 @@ class Makera(RelativeLayout):
                 selected_files
             )
             self.confirm_popup.lb_content.text += "\n\n%s" % preview
-            self.confirm_popup.confirm = partial(self.removeRemoteFiles, selected_files)
+            if self.file_popup.location == LOCATION_DEVICE:
+                self.confirm_popup.confirm = partial(self.removeLocalFiles, selected_files)
+            else:
+                self.confirm_popup.confirm = partial(self.removeRemoteFiles, selected_files)
         self.confirm_popup.cancel = None
         self.confirm_popup.open(self)
 
@@ -5069,25 +4631,21 @@ class Makera(RelativeLayout):
         self.controller.gotoSafeZ()
 
     # -----------------------------------------------------------------------
-    def set_local_folder_to_last_opened(self):
-        self.fetch_recent_local_dir_list()
-
-        # Find the most recent directory that is still present
-        local_path = ""
-        for dir in self.recent_local_dir_list:
-            if os.path.isdir(dir):
-                local_path = dir
-                break
-
-        self.file_popup.local_rv.child_dir(local_path)
-
     def open_rename_input_popup(self):
-        self.input_popup.lb_title.text = tr._("Change name") + "'%s' to:" % (
-            self.file_popup.remote_rv.curr_selected_file
-        )
+        if self.file_popup.location == LOCATION_DEVICE:
+            src = self.file_popup.selected_device_file
+            if not src:
+                return
+            self.input_popup.lb_title.text = tr._("Change name") + "'%s' to:" % src
+            self.input_popup.txt_content.text = ""
+            self.input_popup.txt_content.password = False
+            self.input_popup.confirm = partial(self.renameLocalFile, src)
+            self.input_popup.open(self)
+            return
+        self.input_popup.lb_title.text = tr._("Change name") + "'%s' to:" % (self.file_popup.selected_machine_file)
         self.input_popup.txt_content.text = ""
         self.input_popup.txt_content.password = False
-        self.input_popup.confirm = partial(self.renameRemoteFile, self.file_popup.remote_rv.curr_selected_file)
+        self.input_popup.confirm = partial(self.renameRemoteFile, self.file_popup.selected_machine_file)
         self.input_popup.open(self)
 
     # -----------------------------------------------------------------------
@@ -5095,22 +4653,11 @@ class Makera(RelativeLayout):
         self.input_popup.lb_title.text = tr._("Input new folder name:")
         self.input_popup.txt_content.text = ""
         self.input_popup.txt_content.password = False
-        self.input_popup.confirm = self.createRemoteDir
+        if self.file_popup.location == LOCATION_DEVICE:
+            self.input_popup.confirm = self.createLocalDir
+        else:
+            self.input_popup.confirm = self.createRemoteDir
         self.input_popup.open(self)
-
-    # -----------------------------------------------------------------------
-    def open_upload_local_file_popup(self):
-        # For iOS we use the native file picker
-        if sys.platform == "ios":
-            from . import ios_helpers
-
-            ios_helpers.pick_file()
-            return
-        self.file_popup.firmware_mode = False
-        self.file_popup.popup_manager.transition.direction = "left"
-        self.file_popup.popup_manager.transition.duration = 0.3
-        self.file_popup.popup_manager.current = "local_page"
-        self.set_local_folder_to_last_opened()
 
     # -----------------------------------------------------------------------
     def open_wifi_password_input_popup(self):
@@ -5122,9 +4669,11 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def check_and_upload(self):
-        filepath = self.file_popup.local_rv.curr_selected_file
+        filepath = self.file_popup.selected_device_file
+        if not filepath or os.path.isdir(filepath):
+            return
         filename = os.path.basename(os.path.normpath(filepath))
-        if len(list(filter(lambda person: person["filename"] == filename, self.file_popup.remote_rv.data))) > 0:
+        if self.file_popup.machine_listing_has(filename):
             # show message popup
             self.confirm_popup.lb_title.text = tr._("File Already Exists")
             self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (filename)
@@ -5173,9 +4722,11 @@ class Makera(RelativeLayout):
         Clock.schedule_once(load_file_delayed, 0.1)
 
     def check_upload_and_select(self):
-        filepath = self.file_popup.local_rv.curr_selected_file
+        filepath = self.file_popup.selected_device_file
+        if not filepath or os.path.isdir(filepath):
+            return
         filename = os.path.basename(os.path.normpath(filepath))
-        if len(list(filter(lambda person: person["filename"] == filename, self.file_popup.remote_rv.data))) > 0:
+        if self.file_popup.machine_listing_has(filename):
             # show message popup
             self.confirm_popup.lb_title.text = tr._("File Already Exists")
             self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (filename)
@@ -5187,7 +4738,9 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def view_local_file(self):
-        filepath = self.file_popup.local_rv.curr_selected_file
+        filepath = self.file_popup.selected_device_file
+        if not filepath or os.path.isdir(filepath):
+            return
         app = App.get_running_app()
         app.selected_local_filename = filepath
         app.selected_remote_filename = ""
@@ -5204,8 +4757,10 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def check_and_download(self):
-        remote_path = self.file_popup.remote_rv.curr_selected_file
-        remote_size = self.file_popup.remote_rv.curr_selected_filesize
+        remote_path = self.file_popup.selected_machine_file
+        if not remote_path:
+            return
+        remote_size = self.file_popup.selected_machine_filesize
         remote_post_path = remote_path.replace("/sd/", "").replace("\\sd\\", "")
         local_path = os.path.join(self.temp_dir, remote_post_path)
         app = App.get_running_app()
@@ -5217,6 +4772,33 @@ class Makera(RelativeLayout):
         self.downloading_size = remote_size
         self.downloading_config = False
         threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
+
+    # -----------------------------------------------------------------------
+    def check_and_save_to_device(self):
+        remote_path = self.file_popup.selected_machine_file
+        if not remote_path:
+            return
+        filename = os.path.basename(os.path.normpath(remote_path))
+        dest_dir = self.file_popup.device_dir
+        if not dest_dir:
+            return
+        dest = os.path.join(dest_dir, filename)
+        if self.file_popup.device_has_file(filename):
+            self.confirm_popup.lb_title.text = tr._("File Already Exists")
+            self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (filename)
+            self.confirm_popup.cancel = None
+            self.confirm_popup.confirm = partial(self.save_machine_file_to_device, remote_path, dest)
+            self.confirm_popup.open(self)
+        else:
+            self.save_machine_file_to_device(remote_path, dest)
+
+    def save_machine_file_to_device(self, remote_path, dest):
+        if not remote_path or not dest:
+            return
+        self.downloading_file = remote_path
+        self.downloading_size = self.file_popup.selected_machine_filesize
+        self.downloading_config = False
+        threading.Thread(target=self.doDownload, args=(remote_path, dest), kwargs={"open_after": False}).start()
 
     # -----------------------------------------------------------------------
     def start_back_up_config(self):
@@ -5237,7 +4819,8 @@ class Makera(RelativeLayout):
         Clock.schedule_once(partial(self.progressStart, tr._("Downloading config files..."), None), 0)
 
         self.fill_remote_dir_callback = self.download_config_files
-        self.file_popup.remote_rv.list_dir("/sd")
+        self.fill_remote_dir_callback_path = "/sd"
+        self.file_popup.list_machine_dir("/sd")
 
     # -----------------------------------------------------------------------
     def download_config_files(self, remote_paths):
@@ -5256,7 +4839,7 @@ class Makera(RelativeLayout):
             Clock.schedule_once(
                 partial(self.progressUpdate, progress, tr._("Downloading") + " \n%s" % remote_path, True), 0
             )
-            self.doDownload(remote_path, local_path, False)
+            self.doDownload(remote_path, local_path, show_progress=False, open_after=False)
             progress += 100.0 / len(matching_paths)
             Clock.schedule_once(
                 partial(self.progressUpdate, progress, tr._("Downloading") + " \n%s" % remote_path, True), 0
@@ -5303,7 +4886,7 @@ class Makera(RelativeLayout):
 
         # Workaround so that we don't expose the SD card root directory to the user
         # next time they open the gcode file browser
-        self.file_popup.remote_rv.curr_dir = self.file_popup.remote_rv.base_dir
+        self.file_popup.restore_machine_root()
 
         Clock.schedule_once(
             partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0
@@ -5427,10 +5010,72 @@ class Makera(RelativeLayout):
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(key))
         return os.path.join(self.temp_dir, f"config_{safe}.txt")
 
+    def _gcode_thumbnail_cache(self):
+        cache = thumbnail_cache_for_app()
+        if cache is not None:
+            return cache
+        app = App.get_running_app()
+        if app is None:
+            return None
+        return thumbnail_cache_for_app(app.user_data_dir)
+
+    def _machine_listing_identity(self, remote_path):
+        """Return ``(size, date_raw)`` from the current machine listing."""
+        norm = os.path.normpath(remote_path or "").replace("\\", "/")
+        for entry in getattr(self.file_popup, "_machine_entries", None) or []:
+            path = os.path.normpath(entry.get("path") or "").replace("\\", "/")
+            if path == norm:
+                return int(entry.get("size") or 0), str(entry.get("date_raw") or "")
+        return None, None
+
+    def _ingest_machine_gcode_thumbnail(self, remote_path, local_path):
+        if self.file_popup.firmware_mode or self.downloading_config:
+            return
+        if not is_gcode_path(remote_path) and not is_gcode_path(local_path):
+            return
+        cache = self._gcode_thumbnail_cache()
+        if cache is None:
+            return
+        conn = self._get_current_machine_connection_key() or "unknown"
+        size, date_raw = self._machine_listing_identity(remote_path)
+        if size is None:
+            try:
+                size = os.path.getsize(local_path)
+            except OSError:
+                return
+            date_raw = ""
+        cache.ingest_file(local_path, machine_cache_key(conn, remote_path), size, date_raw)
+
+    def queue_machine_thumbnail(self, remote_path, source_file):
+        self._pending_machine_thumb = (os.path.normpath(remote_path or ""), source_file)
+
+    def flush_pending_machine_thumbnail(self):
+        pending = self._pending_machine_thumb
+        if not pending:
+            return
+        remote_path, source_file = pending
+        size, date_raw = self._machine_listing_identity(remote_path)
+        if size is None:
+            return
+        self._pending_machine_thumb = None
+        if self.file_popup.firmware_mode:
+            return
+        source = source_file[:-3] if str(source_file).endswith(".lz") else source_file
+        if not is_gcode_path(source) and not is_gcode_path(remote_path):
+            return
+        cache = self._gcode_thumbnail_cache()
+        if cache is None:
+            return
+        conn = self._get_current_machine_connection_key() or "unknown"
+        cache.ingest_file(source, machine_cache_key(conn, remote_path), size, date_raw)
+
     # -----------------------------------------------------------------------
-    def doDownload(self, remote_path, local_path, show_progress=True):
+    def doDownload(self, remote_path, local_path, show_progress=True, open_after=True):
         app = App.get_running_app()
         was_config_download = self.downloading_config
+        # Config backup reuses downloading_config so /sd is not added to recents, but those
+        # files must not be applied as settings or opened in the viewer.
+        apply_config = was_config_download and open_after
         if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
             # os.mkdir(os.path.dirname(local_path))
             os.makedirs(os.path.dirname(local_path))
@@ -5489,7 +5134,7 @@ class Makera(RelativeLayout):
             md5_failed = bool(
                 getattr(getattr(getattr(self.controller, "stream", None), "modem", None), "download_md5_failed", False)
             )
-            if was_config_download:
+            if apply_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0.1)
                 error_msg = (
                     tr._(
@@ -5523,12 +5168,12 @@ class Makera(RelativeLayout):
                     os.rename(tmp_filename, local_path)
                 elif os.path.exists(tmp_filename):
                     os.remove(tmp_filename)
-                if was_config_download:
+                if apply_config:
                     logger.info("Config unchanged (MD5 match), using cached file")
                     self.controller.log.put(
                         (Controller.MSG_NORMAL, tr._("Config unchanged (MD5 match), using cached file"))
                     )
-            if was_config_download:
+            if apply_config:
                 if show_progress:
                     Clock.schedule_once(partial(self.progressUpdate, 100, "", True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
@@ -5548,13 +5193,18 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
                 # Baud upgrade after config + sync commands have had time to finish.
                 Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 2.0)
-            else:
+            elif open_after:
                 if show_progress:
                     Clock.schedule_once(
                         partial(self.progressUpdate, 0, tr._("Open cached file") + " \n%s" % local_path, True), 0
                     )
-                # Clock.schedule_once(partial(self.load_gcode_file, local_path), 0.1)
+                # Decompress QuickLZ in place first; ingesting the compressed
+                # payload would cache a false "no preview" hit.
                 self.load_gcode_file(local_path)
+                self._ingest_machine_gcode_thumbnail(remote_path, local_path)
+            else:
+                if self._decompress_downloaded_file_in_place(local_path):
+                    self._ingest_machine_gcode_thumbnail(remote_path, local_path)
 
             if not was_config_download:
                 self.update_recent_remote_dir_list(os.path.dirname(remote_path))
@@ -5563,7 +5213,7 @@ class Makera(RelativeLayout):
             if os.path.exists(tmp_filename):
                 os.remove(tmp_filename)
             self.controller.log.put((Controller.MSG_NORMAL, tr._("Downloading is canceled manually.")))
-            if was_config_download:
+            if apply_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0)
 
         if show_progress:
@@ -5898,14 +5548,55 @@ class Makera(RelativeLayout):
                 )
 
     # -----------------------------------------------------------------------
-    def loadRemoteDir(self, ls_dir):
-        self.loading_dir = ls_dir
+    def request_machine_ls(self, ls_dir):
+        """UI-thread: remember *ls_dir* as the folder to show, then list it if idle."""
+        with self._machine_ls_lock:
+            self._machine_ls_wanted_path = ls_dir
+            if self.controller.loadNUM == LOAD_DIR:
+                return
+        threading.Thread(target=self._run_machine_ls, daemon=True).start()
+
+    def _run_machine_ls(self):
+        """Start `ls` for the UI-requested folder if none is in flight."""
+        with self._machine_ls_lock:
+            target = self._machine_ls_wanted_path
+            if not target or self.controller.loadNUM == LOAD_DIR:
+                return
+            self._start_machine_ls(target)
+
+    def _start_machine_ls(self, ls_dir):
+        """Send `ls` for *ls_dir*. Caller must hold `_machine_ls_lock`."""
+        self._machine_ls_sent_path = ls_dir
+        while self.controller.load_buffer.qsize() > 0:
+            self.controller.load_buffer.get_nowait()
         self.controller.sendNUM = 0
         self.controller.loadNUM = LOAD_DIR
         self.controller.loadEOF = False
         self.controller.loadERR = False
         self.short_load_time = time.time()
         self.controller.lsCommand(os.path.normpath(ls_dir))
+
+    def _finish_machine_ls(self, now):
+        with self._machine_ls_lock:
+            timed_out = now - self.short_load_time > SHORT_LOAD_TIMEOUT
+            sent_path = self._machine_ls_sent_path
+            wanted_path = self._machine_ls_wanted_path
+            superseded = machine_ls_is_superseded(sent_path, wanted_path)
+            if not superseded:
+                if self.controller.loadERR:
+                    Clock.schedule_once(partial(self.loadError, tr._("Error loading dir") + " '%s'!" % (sent_path,)), 0)
+                elif timed_out:
+                    Clock.schedule_once(
+                        partial(self.loadError, tr._("Timeout loading dir") + " '%s'!" % (sent_path,)), 0
+                    )
+            self.controller.loadEOF = False
+            self.controller.loadERR = False
+            self.process_loaded_dir(sent_path)
+            if superseded and wanted_path:
+                self._start_machine_ls(wanted_path)
+            else:
+                self.controller.loadNUM = 0
+                self._machine_ls_sent_path = None
 
     # -----------------------------------------------------------------------
     def removeRemoteFile(self, filename):
@@ -5921,7 +5612,7 @@ class Makera(RelativeLayout):
     def removeNextRemoteFile(self, *args):
         if not getattr(self, "pending_remote_delete_files", []):
             self.deleting_remote_file = ""
-            Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
+            Clock.schedule_once(self.file_popup.refresh_machine, 0)
             return
         filename = self.pending_remote_delete_files.pop(0)
         self.startRemoteDelete(filename)
@@ -5945,7 +5636,7 @@ class Makera(RelativeLayout):
         self.controller.readEOF = False
         self.controller.readERR = False
         self.short_load_time = time.time()
-        new_name = os.path.join(self.file_popup.remote_rv.curr_dir, self.input_popup.txt_content.text)
+        new_name = os.path.join(self.file_popup.machine_dir, self.input_popup.txt_content.text)
         if filename == new_name:
             return False
         self.controller.mvCommand(os.path.normpath(filename), os.path.normpath(new_name))
@@ -5960,9 +5651,93 @@ class Makera(RelativeLayout):
         self.controller.readEOF = False
         self.controller.readERR = False
         self.short_load_time = time.time()
-        dirname = os.path.join(self.file_popup.remote_rv.curr_dir, self.input_popup.txt_content.text)
+        dirname = os.path.join(self.file_popup.machine_dir, self.input_popup.txt_content.text)
         self.controller.mkdirCommand(os.path.normpath(dirname))
         return True
+
+    # -----------------------------------------------------------------------
+    def removeLocalFiles(self, filenames):
+        errors = []
+        for path in list(filenames or []):
+            try:
+                remove_local_path(path)
+            except OSError as exc:
+                errors.append("%s: %s" % (path, exc))
+                continue
+            self._sync_local_job_path(path, "")
+        self.file_popup.cancel_multi_select()
+        self.file_popup.list_device_dir(self.file_popup.device_dir)
+        if errors:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Error deleting") + "\n" + "\n".join(errors[:5]), False),
+                0,
+            )
+
+    def renameLocalFile(self, filename):
+        dest = local_sibling_path(filename, self.input_popup.txt_content.text)
+        if not dest:
+            return False
+        if os.path.normpath(filename) == os.path.normpath(dest):
+            return False
+        if os.path.exists(dest):
+            self.confirm_popup.lb_title.text = tr._("File Already Exists")
+            self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (
+                os.path.basename(dest)
+            )
+            self.confirm_popup.cancel = None
+            self.confirm_popup.confirm = partial(self._apply_local_rename, filename, dest)
+            Clock.schedule_once(lambda *_: self.confirm_popup.open(self), 0)
+            return True
+        return self._apply_local_rename(filename, dest)
+
+    def _apply_local_rename(self, src, dest):
+        try:
+            rename_local_path(src, dest)
+        except OSError as exc:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Error renaming") + " '%s'!\n%s" % (src, exc), False),
+                0,
+            )
+            return True
+        self._sync_local_job_path(src, dest)
+        self.file_popup.list_device_dir(self.file_popup.device_dir)
+        return True
+
+    def createLocalDir(self):
+        name = self.input_popup.txt_content.text.strip()
+        dest = local_child_path(self.file_popup.device_dir, name)
+        if not dest:
+            return False
+        try:
+            mkdir_local(self.file_popup.device_dir, name)
+        except OSError:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Error making dir:") + " '%s'!" % name, False),
+                0,
+            )
+            return False
+        self.file_popup.list_device_dir(self.file_popup.device_dir)
+        return True
+
+    def _sync_local_job_path(self, old_path, new_path=""):
+        app = App.get_running_app()
+        if app is None:
+            return
+        local = (app.selected_local_filename or "").strip()
+        if not local:
+            return
+        old_norm = os.path.normpath(old_path)
+        local_norm = os.path.normpath(local)
+        replacement = os.path.normpath(new_path) if new_path else ""
+        if local_norm == old_norm:
+            app.selected_local_filename = replacement
+            return
+        prefix = old_norm + os.sep
+        if local_norm.startswith(prefix):
+            if not replacement:
+                app.selected_local_filename = ""
+            else:
+                app.selected_local_filename = replacement + local_norm[len(old_norm) :]
 
     # -----------------------------------------------------------------------
     def connectToWiFi(self):
@@ -6076,6 +5851,42 @@ class Makera(RelativeLayout):
             return None
 
     # -----------------------------------------------------------------------
+    def _decompress_downloaded_file_in_place(self, filepath):
+        """Decompress a QuickLZ download in place without a `.lz/` sidecar folder."""
+        try:
+            with open(filepath, "rb") as f:
+                magic = f.read(2)
+        except OSError:
+            return False
+        if magic != b"\x00\x00":
+            return True
+
+        lz_tmp = filepath + ".lz"
+        try:
+            if os.path.exists(lz_tmp):
+                os.remove(lz_tmp)
+            os.rename(filepath, lz_tmp)
+        except OSError:
+            logger.error("Could not stage compressed download for decompress: %s", filepath)
+            return False
+
+        if not self.decompress_file(lz_tmp, filepath):
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                os.rename(lz_tmp, filepath)
+            except OSError:
+                pass
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Download file error!"), False), 0)
+            return False
+
+        try:
+            os.remove(lz_tmp)
+        except OSError:
+            pass
+        return self._verify_deferred_download_md5(filepath)
+
+    # -----------------------------------------------------------------------
     def _verify_deferred_download_md5(self, filepath):
         """Verify a machine-advertised MD5 after .lz decompress. Returns False on mismatch."""
         modem = getattr(getattr(self.controller, "stream", None), "modem", None)
@@ -6174,9 +5985,7 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def doUpload(self, callback):
         self.uploading_size = os.path.getsize(self.uploading_file)
-        remotename = os.path.join(
-            self.file_popup.remote_rv.curr_dir, os.path.basename(os.path.normpath(self.uploading_file))
-        )
+        remotename = os.path.join(self.file_popup.machine_dir, os.path.basename(os.path.normpath(self.uploading_file)))
         if self.file_popup.firmware_mode:
             remotename = "/sd/firmware.bin"
         displayname = self.uploading_file
@@ -6220,7 +6029,7 @@ class Makera(RelativeLayout):
         else:
             # copy file to application directory if needed
             remote_path = os.path.join(
-                self.file_popup.remote_rv.curr_dir, os.path.basename(os.path.normpath(self.uploading_file))
+                self.file_popup.machine_dir, os.path.basename(os.path.normpath(self.uploading_file))
             )
             remote_post_path = remote_path.replace("/sd/", "").replace("\\sd\\", "")
             local_path = os.path.join(self.temp_dir, remote_post_path)
@@ -6252,6 +6061,8 @@ class Makera(RelativeLayout):
             # update recent folder
             if not self.file_popup.firmware_mode:
                 self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
+                remote_thumb = remotename[:-3] if str(remotename).endswith(".lz") else remotename
+                self.queue_machine_thumbnail(remote_thumb, self.original_upload_filepath)
 
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith(".lz"):
@@ -6273,7 +6084,7 @@ class Makera(RelativeLayout):
                 callback(remotename, local_path)
         # For iOS we display the file list remotely only so we need to refresh it but on main thread
         if upload_result and not self.file_popup.firmware_mode and not self.uploading_file.endswith(".lz"):
-            Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
+            Clock.schedule_once(self.file_popup.refresh_machine, 0)
 
     # -----------------------------------------------------------------------
     def confirm_reset(self, *args):
@@ -6292,7 +6103,8 @@ class Makera(RelativeLayout):
         self.controller.stream.cancel_process()
 
     # -----------------------------------------------------------------------
-    def process_loaded_dir(self, *args):
+    def process_loaded_dir(self, listed_path=None):
+        listed_path = listed_path or self._machine_ls_sent_path or self.file_popup.machine_dir
         is_dir = False
         file_list = []
         while self.controller.load_buffer.qsize() > 0:
@@ -6318,55 +6130,26 @@ class Makera(RelativeLayout):
                     file_list.append(
                         {
                             "name": file_infos[0],
-                            "path": f"{self.file_popup.remote_rv.curr_dir}/{file_infos[0]}",
+                            "path": machine_child_entry_path(listed_path, file_infos[0]),
                             "is_dir": is_dir,
                             "size": int(file_infos[1]),
                             "date": timestamp,
+                            "date_raw": file_infos[2],
                         }
                     )
 
-        Clock.schedule_once(partial(self.fill_remote_dir, file_list), 0)
+        Clock.schedule_once(partial(self.fill_remote_dir, file_list, listed_path), 0)
 
     # -----------------------------------------------------------------------
-    def fill_remote_dir(self, file_list, *args):
-        self.file_popup.remote_rv.curr_file_list_buff = file_list
-        self.file_popup.remote_rv.fill_dir(switch_reverse=False)
-
-        self.file_popup.remote_rv.curr_dir = os.path.normpath(self.file_popup.remote_rv.curr_dir)
-        self.file_popup.remote_rv.curr_dir_name = os.path.basename(os.path.normpath(self.file_popup.remote_rv.curr_dir))
-
-        self.file_popup.remote_rv.curr_full_path_list = [self.file_popup.remote_rv.curr_dir]
-        if (
-            self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir
-            or self.file_popup.remote_rv.curr_dir == self.file_popup.remote_rv.base_dir_win
-        ):
-            self.file_popup.remote_rv.curr_path_list = ["root"]
-
-            if self.fill_remote_dir_callback:
-                threading.Thread(
-                    target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)
-                ).start()
-                self.fill_remote_dir_callback = None
-            return
-        self.file_popup.remote_rv.curr_path_list = [self.file_popup.remote_rv.curr_dir_name]
-        last_parent_dir = self.file_popup.remote_rv.curr_dir
-
-        for loop in range(5):
-            parent_dir = os.path.dirname(last_parent_dir)
-            if last_parent_dir == parent_dir:
-                break
-            self.file_popup.remote_rv.curr_full_path_list.insert(0, parent_dir)
-            if parent_dir == self.file_popup.remote_rv.base_dir or parent_dir == self.file_popup.remote_rv.base_dir_win:
-                self.file_popup.remote_rv.curr_path_list.insert(0, "root")
-                break
-            self.file_popup.remote_rv.curr_path_list.insert(0, os.path.basename(parent_dir))
-            last_parent_dir = parent_dir
-
-        if self.fill_remote_dir_callback:
-            threading.Thread(
-                target=self.fill_remote_dir_callback, args=(self.file_popup.remote_rv.curr_file_list_buff,)
-            ).start()
+    def fill_remote_dir(self, file_list, listed_path=None, *args):
+        listed_path = listed_path or None
+        self.file_popup.apply_machine_listing(file_list, listed_path=listed_path)
+        callback = self.fill_remote_dir_callback
+        callback_path = self.fill_remote_dir_callback_path
+        if callback and machine_listing_callback_matches(listed_path, callback_path):
             self.fill_remote_dir_callback = None
+            self.fill_remote_dir_callback_path = None
+            threading.Thread(target=callback, args=(file_list,)).start()
 
     # -----------------------------------------------------------------------
     def loadError(self, error_msg, *args):
@@ -6525,7 +6308,7 @@ class Makera(RelativeLayout):
         if value == self.fileCompressionBlocks:
             Clock.schedule_once(self.progressFinish, 0)
             # Refresh the remote dir since upload finished
-            Clock.schedule_once(self.file_popup.remote_rv.current_dir, 0)
+            Clock.schedule_once(self.file_popup.refresh_machine, 0)
             self.decompstatus = False
             # Call pending callback after decompression completes (for .lz files)
             if hasattr(self, "pending_decompress_callback") and self.pending_decompress_callback:
@@ -9093,6 +8876,8 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "usb_serial", "")
     if not Config.has_option("carvera", "last_connection_method"):
         Config.set("carvera", "last_connection_method", "")
+    if not Config.has_option("carvera", "file_browser_location"):
+        Config.set("carvera", "file_browser_location", "")
     # Migrate legacy VID:PID:SERIAL stored in usb_device_id.
     legacy_id = Config.get("carvera", "usb_device_id", fallback="") or ""
     vid_pid, legacy_serial = Utils.parse_usb_device_id(legacy_id)

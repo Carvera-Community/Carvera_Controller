@@ -7,6 +7,9 @@ This product includes software developed by
 Makera
 (https://github.com/MakeraInc/)
 
+The Makera logo is included as carveracontroller/data/makera.png and used as the
+Machine tab icon in the file browser.
+
 ===============================================================================
 This product includes the following third-party libraries:
 
@@ -117,6 +120,102 @@ This product includes the following third-party icons:
    - License: Apache 2.0 License
    - URL: https://pictogrammers.com/library/mdi/icon/card/
    - Used in: carveracontroller/data/GcodeViewer/bed.png
+
+8. folder-arrow-up.png
+   - Author: Colton Wiscombe
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/folder-arrow-up/
+   - Used in: carveracontroller/data/folder-arrow-up.png
+
+9. laptop.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/laptop/
+   - Used in: carveracontroller/data/laptop.png
+
+10. eye.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/eye/
+   - Used in: carveracontroller/data/eye.png
+
+11. upload.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/upload/
+   - Used in: carveracontroller/data/upload.png
+
+12. play.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/play/
+   - Used in: carveracontroller/data/play.png
+
+13. pencil.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/pencil/
+   - Used in: carveracontroller/data/pencil.png
+
+14. delete.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/delete/
+   - Used in: carveracontroller/data/delete.png
+
+15. close.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/close/
+   - Used in: carveracontroller/data/close.png
+
+16. folder-plus.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/folder-plus/
+   - Used in: carveracontroller/data/folder-plus.png
+
+17. checkbox-multiple-outline.png
+   - Author: Michael Richins
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/checkbox-multiple-outline/
+   - Used in: carveracontroller/data/checkbox-multiple-outline.png
+
+18. check.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/check/
+   - Used in: carveracontroller/data/check.png
+
+19. folder.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/folder/
+   - Used in: carveracontroller/data/folder-32.png
+
+20. file-outline.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/file-outline/
+   - Used in: carveracontroller/data/file-outline.png
+
+21. file-code-outline.png
+   - Author: Terren
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/file-code-outline/
+   - Used in: carveracontroller/data/file-code-outline.png
+
+22. memory.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/memory/
+   - Used in: carveracontroller/data/memory.png
+
+23. download.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/download/
+   - Used in: carveracontroller/data/download.png
 
 ===============================================================================
 Please see the respective license files for detailed information.
