@@ -170,6 +170,9 @@ from carveracontroller.ui.file_browser.sources import (
     LOCATION_DEVICE,
     local_child_path,
     local_sibling_path,
+    machine_child_entry_path,
+    machine_listing_callback_matches,
+    machine_ls_is_superseded,
     mkdir_local,
     remove_local_path,
     rename_local_path,
@@ -2733,7 +2736,6 @@ class Makera(RelativeLayout):
     pausing = 0
     waiting = 0
     tooling = 0
-    loading_dir = ""
 
     stop = threading.Event()
     load_event = threading.Event()
@@ -3049,6 +3051,10 @@ class Makera(RelativeLayout):
         self.last_connection_method = Config.get("carvera", "last_connection_method", fallback="") or ""
 
         self.fill_remote_dir_callback = None
+        self.fill_remote_dir_callback_path = None
+        self._machine_ls_lock = threading.Lock()
+        self._machine_ls_wanted_path = None
+        self._machine_ls_sent_path = None
 
         self.instantFSoverride = Config.get("carvera", "instantFSoverride") == "1"
 
@@ -4269,18 +4275,7 @@ class Makera(RelativeLayout):
 
             if self.controller.loadNUM == LOAD_DIR:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                    if self.controller.loadERR:
-                        Clock.schedule_once(
-                            partial(self.loadError, tr._("Error loading dir") + " '%s'!" % (self.loading_dir)), 0
-                        )
-                    elif t - self.short_load_time > SHORT_LOAD_TIMEOUT:
-                        Clock.schedule_once(
-                            partial(self.loadError, tr._("Timeout loading dir") + " '%s'!" % (self.loading_dir)), 0
-                        )
-                    self.controller.loadNUM = 0
-                    self.controller.loadEOF = False
-                    self.controller.loadERR = False
-                    self.process_loaded_dir()
+                    self._finish_machine_ls(t)
             if self.controller.loadNUM == LOAD_RM:
                 if self.controller.loadEOF or self.controller.loadERR or t - self.short_load_time > SHORT_LOAD_TIMEOUT:
                     deleting_file = getattr(self, "deleting_remote_file", self.file_popup.selected_machine_file)
@@ -4806,6 +4801,7 @@ class Makera(RelativeLayout):
         Clock.schedule_once(partial(self.progressStart, tr._("Downloading config files..."), None), 0)
 
         self.fill_remote_dir_callback = self.download_config_files
+        self.fill_remote_dir_callback_path = "/sd"
         self.file_popup.list_machine_dir("/sd")
 
     # -----------------------------------------------------------------------
@@ -5532,14 +5528,57 @@ class Makera(RelativeLayout):
                 )
 
     # -----------------------------------------------------------------------
-    def loadRemoteDir(self, ls_dir):
-        self.loading_dir = ls_dir
+    def request_machine_ls(self, ls_dir):
+        """UI-thread: remember *ls_dir* as the folder to show, then list it if idle."""
+        with self._machine_ls_lock:
+            self._machine_ls_wanted_path = ls_dir
+            if self.controller.loadNUM == LOAD_DIR:
+                return
+        threading.Thread(target=self._run_machine_ls, daemon=True).start()
+
+    def _run_machine_ls(self):
+        """Start `ls` for the UI-requested folder if none is in flight."""
+        with self._machine_ls_lock:
+            target = self._machine_ls_wanted_path
+            if not target or self.controller.loadNUM == LOAD_DIR:
+                return
+            self._start_machine_ls(target)
+
+    def _start_machine_ls(self, ls_dir):
+        """Send `ls` for *ls_dir*. Caller must hold `_machine_ls_lock`."""
+        self._machine_ls_sent_path = ls_dir
+        while self.controller.load_buffer.qsize() > 0:
+            self.controller.load_buffer.get_nowait()
         self.controller.sendNUM = 0
         self.controller.loadNUM = LOAD_DIR
         self.controller.loadEOF = False
         self.controller.loadERR = False
         self.short_load_time = time.time()
         self.controller.lsCommand(os.path.normpath(ls_dir))
+
+    def _finish_machine_ls(self, now):
+        with self._machine_ls_lock:
+            timed_out = now - self.short_load_time > SHORT_LOAD_TIMEOUT
+            sent_path = self._machine_ls_sent_path
+            wanted_path = self._machine_ls_wanted_path
+            superseded = machine_ls_is_superseded(sent_path, wanted_path)
+            if not superseded:
+                if self.controller.loadERR:
+                    Clock.schedule_once(
+                        partial(self.loadError, tr._("Error loading dir") + " '%s'!" % (sent_path,)), 0
+                    )
+                elif timed_out:
+                    Clock.schedule_once(
+                        partial(self.loadError, tr._("Timeout loading dir") + " '%s'!" % (sent_path,)), 0
+                    )
+            self.controller.loadEOF = False
+            self.controller.loadERR = False
+            self.process_loaded_dir(sent_path)
+            if superseded and wanted_path:
+                self._start_machine_ls(wanted_path)
+            else:
+                self.controller.loadNUM = 0
+                self._machine_ls_sent_path = None
 
     # -----------------------------------------------------------------------
     def removeRemoteFile(self, filename):
@@ -6046,7 +6085,8 @@ class Makera(RelativeLayout):
         self.controller.stream.cancel_process()
 
     # -----------------------------------------------------------------------
-    def process_loaded_dir(self):
+    def process_loaded_dir(self, listed_path=None):
+        listed_path = listed_path or self._machine_ls_sent_path or self.file_popup.machine_dir
         is_dir = False
         file_list = []
         while self.controller.load_buffer.qsize() > 0:
@@ -6072,7 +6112,7 @@ class Makera(RelativeLayout):
                     file_list.append(
                         {
                             "name": file_infos[0],
-                            "path": f"{self.file_popup.machine_dir}/{file_infos[0]}",
+                            "path": machine_child_entry_path(listed_path, file_infos[0]),
                             "is_dir": is_dir,
                             "size": int(file_infos[1]),
                             "date": timestamp,
@@ -6080,14 +6120,17 @@ class Makera(RelativeLayout):
                         }
                     )
 
-        Clock.schedule_once(partial(self.fill_remote_dir, file_list), 0)
+        Clock.schedule_once(partial(self.fill_remote_dir, file_list, listed_path), 0)
 
     # -----------------------------------------------------------------------
-    def fill_remote_dir(self, file_list, *args):
-        self.file_popup.apply_machine_listing(file_list)
-        if self.fill_remote_dir_callback:
-            callback = self.fill_remote_dir_callback
+    def fill_remote_dir(self, file_list, listed_path=None, *args):
+        listed_path = listed_path or None
+        self.file_popup.apply_machine_listing(file_list, listed_path=listed_path)
+        callback = self.fill_remote_dir_callback
+        callback_path = self.fill_remote_dir_callback_path
+        if callback and machine_listing_callback_matches(listed_path, callback_path):
             self.fill_remote_dir_callback = None
+            self.fill_remote_dir_callback_path = None
             threading.Thread(target=callback, args=(file_list,)).start()
 
     # -----------------------------------------------------------------------

@@ -54,6 +54,7 @@ from .sources import (
     list_device_directory,
     local_dir_has_file,
     machine_listing_has,
+    machine_listing_is_current,
     machine_parent_dir,
     machine_tab_path_display,
     trim_breadcrumb_pairs,
@@ -380,7 +381,9 @@ class FileBrowserPopup(ModalView):
         self._sync_chrome()
         self._schedule_local_thumbnail_extract()
 
-    def apply_machine_listing(self, file_list, *args):
+    def apply_machine_listing(self, file_list, listed_path: str | None = None) -> bool:
+        if listed_path is not None and not machine_listing_is_current(listed_path, self.machine_dir):
+            return False
         self._machine_entries = list(file_list or [])
         self.machine_dir = os.path.normpath(self.machine_dir or MACHINE_BASE_DIR)
         makera = _makera()
@@ -389,6 +392,7 @@ class FileBrowserPopup(ModalView):
         if self.location == LOCATION_MACHINE:
             self._rebuild_list(reset_scroll=True)
         self._sync_chrome()
+        return True
 
     def go_up(self):
         if self.location == LOCATION_DEVICE:
@@ -544,7 +548,7 @@ class FileBrowserPopup(ModalView):
             self._rebuild_list(reset_scroll=True)
             self._sync_chrome()
             return
-        threading.Thread(target=makera.loadRemoteDir, args=(path,), daemon=True).start()
+        makera.request_machine_ls(path)
 
     def _restore_device_dir(self):
         makera = _makera()

@@ -97,6 +97,46 @@ def is_under_machine_root(path: str) -> bool:
     return len(parts) >= 2 and parts[0].lower() == "sd" and parts[1].lower() == "gcodes"
 
 
+def machine_path_key(path: str) -> str:
+    """POSIX /sd/... key for comparing machine folders (trailing slash / backslash ignored)."""
+    raw = (path or "").replace("\\", "/")
+    parts = [part for part in raw.split("/") if part and part != "."]
+    if not parts:
+        return ""
+    return "/" + "/".join(parts)
+
+
+def machine_listing_is_current(listed_path: str, machine_dir: str) -> bool:
+    """True when a parsed machine `ls` result is still for the folder the UI is showing."""
+    listed = machine_path_key(listed_path)
+    current = machine_path_key(machine_dir)
+    return bool(listed) and listed == current
+
+
+def machine_ls_is_superseded(sent_path: str | None, wanted_path: str | None) -> bool:
+    """True when a newer folder was requested before this `ls` finished."""
+    wanted = machine_path_key(wanted_path or "")
+    if not wanted:
+        return False
+    return machine_path_key(sent_path or "") != wanted
+
+
+def machine_listing_callback_matches(listed_path: str | None, callback_path: str | None) -> bool:
+    """True when a parsed `ls` result should run a path-scoped listing callback."""
+    if listed_path is None or callback_path is None:
+        return False
+    return machine_listing_is_current(listed_path, callback_path)
+
+
+def machine_child_entry_path(listed_dir: str, name: str) -> str:
+    """Absolute machine path for a name returned by `ls` of *listed_dir*."""
+    base = machine_path_key(listed_dir) or MACHINE_BASE_DIR
+    child = (name or "").strip()
+    if not child:
+        return base
+    return f"{base}/{child}"
+
+
 def trim_breadcrumb_pairs(
     paths: list[str],
     labels: list[str],

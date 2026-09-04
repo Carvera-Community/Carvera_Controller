@@ -1,7 +1,13 @@
 """Unit tests for file browser listing, grouping, and action state."""
 
 import os
+import threading
+from queue import Queue
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
+from carveracontroller.Controller import LOAD_DIR
+from carveracontroller.main import Makera
 from carveracontroller.ui.file_browser.sources import (
     ICON_FILE,
     ICON_FIRMWARE,
@@ -26,7 +32,11 @@ from carveracontroller.ui.file_browser.sources import (
     local_child_path,
     local_dir_has_file,
     local_sibling_path,
+    machine_child_entry_path,
+    machine_listing_callback_matches,
     machine_listing_has,
+    machine_listing_is_current,
+    machine_ls_is_superseded,
     machine_parent_dir,
     machine_path_display,
     machine_tab_path_display,
@@ -206,6 +216,152 @@ def test_machine_root_and_parent():
     assert is_under_machine_root("\\sd\\gcodes\\jobs")
     assert is_under_machine_root("/sd") is False
     assert is_under_machine_root("/tmp/gcodes") is False
+
+
+def test_machine_listing_is_current_ignores_slash_style():
+    assert machine_listing_is_current("/sd/gcodes/jobs", "/sd/gcodes/jobs") is True
+    assert machine_listing_is_current("/sd/gcodes/jobs/", "/sd/gcodes/jobs") is True
+    assert machine_listing_is_current("\\sd\\gcodes\\jobs", "/sd/gcodes/jobs") is True
+    assert machine_listing_is_current("/sd/gcodes", "/sd/gcodes/jobs") is False
+    assert machine_listing_is_current("/sd/gcodes/jobs", "/sd/gcodes") is False
+    assert machine_listing_is_current("", "/sd/gcodes") is False
+    assert machine_listing_is_current("/sd", "/sd") is True
+
+
+def test_machine_ls_is_superseded_uses_wanted_path():
+    assert machine_ls_is_superseded("/sd/gcodes", "/sd/gcodes") is False
+    assert machine_ls_is_superseded("/sd/gcodes/", "/sd/gcodes") is False
+    assert machine_ls_is_superseded("\\sd\\gcodes", "/sd/gcodes") is False
+    assert machine_ls_is_superseded("/sd/gcodes", "/sd/gcodes/jobs") is True
+    assert machine_ls_is_superseded("/sd/gcodes/jobs", "/sd/gcodes") is True
+    assert machine_ls_is_superseded("/sd/gcodes", None) is False
+    assert machine_ls_is_superseded("/sd/gcodes", "") is False
+    assert machine_ls_is_superseded(None, "/sd/gcodes") is True
+
+
+def test_machine_listing_callback_matches_requires_scoped_path():
+    assert machine_listing_callback_matches("/sd", "/sd") is True
+    assert machine_listing_callback_matches("/sd/", "/sd") is True
+    assert machine_listing_callback_matches("\\sd", "/sd") is True
+    assert machine_listing_callback_matches("/sd/gcodes", "/sd") is False
+    assert machine_listing_callback_matches("/sd", None) is False
+    assert machine_listing_callback_matches(None, "/sd") is False
+
+
+def _machine_ls_host():
+    root = Makera.__new__(Makera)
+    root._machine_ls_lock = threading.Lock()
+    root._machine_ls_wanted_path = None
+    root._machine_ls_sent_path = None
+    root.short_load_time = 0
+    root.fill_remote_dir_callback = None
+    root.fill_remote_dir_callback_path = None
+    root.controller = SimpleNamespace(
+        loadNUM=0,
+        loadEOF=False,
+        loadERR=False,
+        sendNUM=0,
+        load_buffer=Queue(),
+        lsCommand=MagicMock(),
+    )
+    root.file_popup = SimpleNamespace(
+        machine_dir="/sd/gcodes",
+        apply_machine_listing=MagicMock(),
+    )
+    return root
+
+
+class _ImmediateThread:
+    def __init__(self, target=None, args=(), **kwargs):
+        self._target = target
+        self._args = args
+
+    def start(self):
+        self._target(*self._args)
+
+
+def test_request_machine_ls_coalesces_while_listing(monkeypatch):
+    root = _machine_ls_host()
+    monkeypatch.setattr("carveracontroller.main.threading.Thread", _ImmediateThread)
+    Makera.request_machine_ls(root, "/sd/gcodes")
+    Makera.request_machine_ls(root, "/sd/gcodes/jobs")
+    assert root.controller.lsCommand.call_count == 1
+    assert root._machine_ls_sent_path == "/sd/gcodes"
+    assert root._machine_ls_wanted_path == "/sd/gcodes/jobs"
+    assert root.controller.loadNUM == LOAD_DIR
+
+
+def test_finish_machine_ls_chains_superseded_listing_without_error(monkeypatch):
+    root = _machine_ls_host()
+    scheduled = []
+    processed = []
+    monkeypatch.setattr("carveracontroller.main.SHORT_LOAD_TIMEOUT", 3, raising=False)
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t: scheduled.append(cb))
+    monkeypatch.setattr("carveracontroller.main.threading.Thread", _ImmediateThread)
+    root.process_loaded_dir = lambda path=None: processed.append(path)
+    Makera.request_machine_ls(root, "/sd/gcodes")
+    Makera.request_machine_ls(root, "/sd/gcodes/jobs")
+    root.controller.loadEOF = True
+    Makera._finish_machine_ls(root, root.short_load_time + 0.1)
+    assert processed == ["/sd/gcodes"]
+    assert scheduled == []
+    assert root.controller.lsCommand.call_count == 2
+    root.controller.lsCommand.assert_called_with("/sd/gcodes/jobs")
+    assert root.controller.loadNUM == LOAD_DIR
+    assert root._machine_ls_sent_path == "/sd/gcodes/jobs"
+
+
+def test_finish_machine_ls_clears_state_when_listing_is_current(monkeypatch):
+    root = _machine_ls_host()
+    processed = []
+    monkeypatch.setattr("carveracontroller.main.SHORT_LOAD_TIMEOUT", 3, raising=False)
+    monkeypatch.setattr("carveracontroller.main.threading.Thread", _ImmediateThread)
+    root.process_loaded_dir = lambda path=None: processed.append(path)
+    Makera.request_machine_ls(root, "/sd/gcodes")
+    root.controller.loadEOF = True
+    Makera._finish_machine_ls(root, root.short_load_time + 0.1)
+    assert processed == ["/sd/gcodes"]
+    assert root.controller.loadNUM == 0
+    assert root._machine_ls_sent_path is None
+    assert root.controller.lsCommand.call_count == 1
+
+
+def test_extra_worker_does_not_override_ui_wanted_path(monkeypatch):
+    root = _machine_ls_host()
+    monkeypatch.setattr("carveracontroller.main.SHORT_LOAD_TIMEOUT", 3, raising=False)
+    monkeypatch.setattr("carveracontroller.main.threading.Thread", _ImmediateThread)
+    root.process_loaded_dir = lambda path=None: None
+    Makera.request_machine_ls(root, "/sd/gcodes")
+    Makera.request_machine_ls(root, "/sd/gcodes/jobs")
+    Makera._run_machine_ls(root)
+    assert root._machine_ls_wanted_path == "/sd/gcodes/jobs"
+    assert root._machine_ls_sent_path == "/sd/gcodes"
+    root.controller.loadEOF = True
+    Makera._finish_machine_ls(root, root.short_load_time + 0.1)
+    root.controller.lsCommand.assert_called_with("/sd/gcodes/jobs")
+    assert root._machine_ls_sent_path == "/sd/gcodes/jobs"
+
+
+def test_fill_remote_dir_callback_only_runs_for_scoped_path(monkeypatch):
+    root = _machine_ls_host()
+    called = []
+    root.fill_remote_dir_callback = lambda files: called.append(list(files))
+    root.fill_remote_dir_callback_path = "/sd"
+    monkeypatch.setattr("carveracontroller.main.threading.Thread", _ImmediateThread)
+    Makera.fill_remote_dir(root, [{"name": "jobs"}], "/sd/gcodes")
+    assert called == []
+    assert root.fill_remote_dir_callback is not None
+    Makera.fill_remote_dir(root, [{"name": "config.txt"}], "/sd")
+    assert called == [[{"name": "config.txt"}]]
+    assert root.fill_remote_dir_callback is None
+    assert root.fill_remote_dir_callback_path is None
+
+
+def test_machine_child_entry_path_uses_listed_dir():
+    assert machine_child_entry_path("/sd/gcodes/jobs", "part.nc") == "/sd/gcodes/jobs/part.nc"
+    assert machine_child_entry_path("/sd/gcodes/jobs/", "tools") == "/sd/gcodes/jobs/tools"
+    assert machine_child_entry_path("\\sd\\gcodes\\jobs", "part.nc") == "/sd/gcodes/jobs/part.nc"
+    assert machine_child_entry_path("/sd", "config.txt") == "/sd/config.txt"
 
 
 def test_machine_path_display_keeps_sd_root():
