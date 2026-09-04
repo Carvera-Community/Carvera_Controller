@@ -242,7 +242,7 @@ class FileBrowserRow(RecycleDataViewBehavior, BoxLayout):
         rv = self.parent.recycleview
         modifiers = _touch_modifiers(touch)
 
-        if touch.is_double_tap and self.kind == KIND_FILE:
+        if touch.is_double_tap and self.kind == KIND_FILE and not self.show_checkbox:
             rv.dispatch("on_activate_file", self.path, int(self.intsize))
             return True
 

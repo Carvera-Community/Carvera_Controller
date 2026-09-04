@@ -763,6 +763,14 @@ class FileBrowserPopup(ModalView):
         else:
             self.list_machine_dir(path)
 
+    def _select_file(self, path: str, intsize: int):
+        self._highlight_path = path
+        self._apply_selected_paths([path])
+        if self.location == LOCATION_MACHINE:
+            self.selected_machine_filesize = intsize
+        self._rebuild_list()
+        self._sync_chrome()
+
     def _on_select_row(self, path: str, kind: str, intsize: int):
         if kind != KIND_FILE:
             return
@@ -771,24 +779,20 @@ class FileBrowserPopup(ModalView):
             self._rebuild_list()
             self._sync_chrome()
             return
-        self._highlight_path = path
-        self._apply_selected_paths([path])
-        if self.location == LOCATION_MACHINE:
-            self.selected_machine_filesize = intsize
-        self._rebuild_list()
-        self._sync_chrome()
+        self._select_file(path, intsize)
 
     def _on_activate_file(self, path: str, intsize: int):
-        self._on_select_row(path, KIND_FILE, intsize)
+        """Double-click: Upload & select on This device, Select file on Your machine."""
+        if self.multi_select_mode:
+            return
+        self._select_file(path, intsize)
         state = self._action_state()
-        if state.primary == "preview":
-            self.on_preview()
-        elif state.primary == "upload":
-            self.on_upload()
+        if state.primary == "upload_and_use":
+            self.on_upload_and_use()
         elif state.primary == "use_as_job":
             self.on_use_as_job()
-        elif state.primary == "delete":
-            self.on_delete()
+        elif state.primary == "upload":
+            self.on_upload()
 
     def _on_toggle_checked(self, path: str):
         paths = self._selected_paths()
