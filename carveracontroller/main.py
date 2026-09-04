@@ -4821,7 +4821,7 @@ class Makera(RelativeLayout):
             Clock.schedule_once(
                 partial(self.progressUpdate, progress, tr._("Downloading") + " \n%s" % remote_path, True), 0
             )
-            self.doDownload(remote_path, local_path, False)
+            self.doDownload(remote_path, local_path, show_progress=False, open_after=False)
             progress += 100.0 / len(matching_paths)
             Clock.schedule_once(
                 partial(self.progressUpdate, progress, tr._("Downloading") + " \n%s" % remote_path, True), 0
@@ -5055,6 +5055,9 @@ class Makera(RelativeLayout):
     def doDownload(self, remote_path, local_path, show_progress=True, open_after=True):
         app = App.get_running_app()
         was_config_download = self.downloading_config
+        # Config backup reuses downloading_config so /sd is not added to recents, but those
+        # files must not be applied as settings or opened in the viewer.
+        apply_config = was_config_download and open_after
         if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
             # os.mkdir(os.path.dirname(local_path))
             os.makedirs(os.path.dirname(local_path))
@@ -5113,7 +5116,7 @@ class Makera(RelativeLayout):
             md5_failed = bool(
                 getattr(getattr(getattr(self.controller, "stream", None), "modem", None), "download_md5_failed", False)
             )
-            if was_config_download:
+            if apply_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0.1)
                 error_msg = (
                     tr._(
@@ -5147,12 +5150,12 @@ class Makera(RelativeLayout):
                     os.rename(tmp_filename, local_path)
                 elif os.path.exists(tmp_filename):
                     os.remove(tmp_filename)
-                if was_config_download:
+                if apply_config:
                     logger.info("Config unchanged (MD5 match), using cached file")
                     self.controller.log.put(
                         (Controller.MSG_NORMAL, tr._("Config unchanged (MD5 match), using cached file"))
                     )
-            if was_config_download:
+            if apply_config:
                 if show_progress:
                     Clock.schedule_once(partial(self.progressUpdate, 100, "", True), 0)
                 Clock.schedule_once(partial(self.finishLoadConfig, True), 0.1)
@@ -5172,19 +5175,18 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(self.controller.viewDiagnoseReport, 0.5)
                 # Baud upgrade after config + sync commands have had time to finish.
                 Clock.schedule_once(self.attempt_usb_baud_upgrade_if_eligible, 2.0)
+            elif open_after:
+                if show_progress:
+                    Clock.schedule_once(
+                        partial(self.progressUpdate, 0, tr._("Open cached file") + " \n%s" % local_path, True), 0
+                    )
+                # Decompress QuickLZ in place first; ingesting the compressed
+                # payload would cache a false "no preview" hit.
+                self.load_gcode_file(local_path)
+                self._ingest_machine_gcode_thumbnail(remote_path, local_path)
             else:
-                if open_after:
-                    if show_progress:
-                        Clock.schedule_once(
-                            partial(self.progressUpdate, 0, tr._("Open cached file") + " \n%s" % local_path, True), 0
-                        )
-                    # Decompress QuickLZ in place first; ingesting the compressed
-                    # payload would cache a false "no preview" hit.
-                    self.load_gcode_file(local_path)
+                if self._decompress_downloaded_file_in_place(local_path):
                     self._ingest_machine_gcode_thumbnail(remote_path, local_path)
-                else:
-                    if self._decompress_downloaded_file_in_place(local_path):
-                        self._ingest_machine_gcode_thumbnail(remote_path, local_path)
 
             if not was_config_download:
                 self.update_recent_remote_dir_list(os.path.dirname(remote_path))
@@ -5193,7 +5195,7 @@ class Makera(RelativeLayout):
             if os.path.exists(tmp_filename):
                 os.remove(tmp_filename)
             self.controller.log.put((Controller.MSG_NORMAL, tr._("Downloading is canceled manually.")))
-            if was_config_download:
+            if apply_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0)
 
         if show_progress:

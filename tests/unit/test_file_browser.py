@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from carveracontroller.Controller import LOAD_DIR
-from carveracontroller.main import Makera
+from carveracontroller.main import CONFIG_FILES_TO_BACK_UP, Makera
 from carveracontroller.ui.file_browser.sources import (
     ICON_FILE,
     ICON_FIRMWARE,
@@ -355,6 +355,132 @@ def test_fill_remote_dir_callback_only_runs_for_scoped_path(monkeypatch):
     assert called == [[{"name": "config.txt"}]]
     assert root.fill_remote_dir_callback is None
     assert root.fill_remote_dir_callback_path is None
+
+
+def test_download_config_files_downloads_silently(monkeypatch, tmp_path):
+    root = Makera.__new__(Makera)
+    root.temp_dir = str(tmp_path)
+    calls = []
+
+    def capture_download(remote_path, local_path, show_progress=True, open_after=True):
+        calls.append(
+            {
+                "remote_path": remote_path,
+                "local_path": local_path,
+                "show_progress": show_progress,
+                "open_after": open_after,
+            }
+        )
+
+    root.doDownload = capture_download
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda *args, **kwargs: None)
+    monkeypatch.setattr("carveracontroller.main.time.sleep", lambda *_args, **_kwargs: None)
+
+    Makera.download_config_files(
+        root,
+        [
+            {"path": "/sd/config.txt"},
+            {"path": "/sd/gcodes/job.nc"},
+            {"path": "/sd/config.default"},
+            {"path": "/sd/cartesian_nm.grid"},
+        ],
+    )
+
+    assert [call["remote_path"] for call in calls] == [
+        "/sd/config.txt",
+        "/sd/config.default",
+        "/sd/cartesian_nm.grid",
+    ]
+    for call in calls:
+        assert call["show_progress"] is False
+        assert call["open_after"] is False
+        assert call["local_path"] == str(tmp_path / call["remote_path"].rsplit("/", 1)[-1])
+    assert set(CONFIG_FILES_TO_BACK_UP) >= set(call["remote_path"] for call in calls)
+
+
+def _download_host(tmp_path, *, downloading_config=False):
+    root = Makera.__new__(Makera)
+    root.temp_dir = str(tmp_path)
+    root.downloading_config = downloading_config
+    root.downloading = False
+    root.fw_version = "1.0"
+    root.heartbeat_time = 0
+    root.filetype = "nc"
+    root.controller = SimpleNamespace(
+        comms=SimpleNamespace(uses_framed_transfer=False),
+        downloadCommand=MagicMock(),
+        pauseStream=MagicMock(),
+        resumeStream=MagicMock(),
+        stream=SimpleNamespace(download=MagicMock(), modem=None),
+        log=SimpleNamespace(put=MagicMock()),
+        queryTime=MagicMock(),
+        queryModel=MagicMock(),
+        queryVersion=MagicMock(),
+        queryFtype=MagicMock(),
+        viewDiagnoseReport=MagicMock(),
+    )
+    root.load_gcode_file = MagicMock()
+    root.finishLoadConfig = MagicMock()
+    root._decompress_downloaded_file_in_place = MagicMock(return_value=True)
+    root._ingest_machine_gcode_thumbnail = MagicMock()
+    root.update_recent_remote_dir_list = MagicMock()
+    root.attempt_usb_baud_upgrade_if_eligible = MagicMock()
+    root.show_message_popup = MagicMock()
+    return root
+
+
+def _complete_download(tmp_filename, _md5, _progress_cb):
+    with open(tmp_filename, "w", encoding="utf-8") as handle:
+        handle.write("downloaded")
+    return 1
+
+
+def test_config_backup_download_does_not_open_gcode_or_apply_settings(monkeypatch, tmp_path):
+    root = _download_host(tmp_path, downloading_config=True)
+    root.controller.stream.download.side_effect = _complete_download
+    monkeypatch.setattr("carveracontroller.main.App.get_running_app", lambda: None)
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda *args, **kwargs: None)
+
+    local_path = str(tmp_path / "config.txt")
+    Makera.doDownload(root, "/sd/config.txt", local_path, show_progress=False, open_after=False)
+
+    root.load_gcode_file.assert_not_called()
+    root.finishLoadConfig.assert_not_called()
+    root.controller.queryTime.assert_not_called()
+    root.update_recent_remote_dir_list.assert_not_called()
+    root._decompress_downloaded_file_in_place.assert_called_once_with(local_path)
+    assert root.downloading_config is True
+    with open(local_path, encoding="utf-8") as handle:
+        assert handle.read() == "downloaded"
+
+
+def test_job_download_still_opens_gcode_viewer(monkeypatch, tmp_path):
+    root = _download_host(tmp_path, downloading_config=False)
+    root.controller.stream.download.side_effect = _complete_download
+    monkeypatch.setattr("carveracontroller.main.App.get_running_app", lambda: None)
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda *args, **kwargs: None)
+
+    local_path = str(tmp_path / "job.nc")
+    Makera.doDownload(root, "/sd/gcodes/job.nc", local_path)
+
+    root.load_gcode_file.assert_called_once_with(local_path)
+    root.finishLoadConfig.assert_not_called()
+    root.update_recent_remote_dir_list.assert_called_once_with("/sd/gcodes")
+
+
+def test_machine_config_download_still_applies_settings(monkeypatch, tmp_path):
+    root = _download_host(tmp_path, downloading_config=True)
+    root.controller.stream.download.side_effect = _complete_download
+    scheduled = []
+    monkeypatch.setattr("carveracontroller.main.App.get_running_app", lambda: None)
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t=0: scheduled.append(cb))
+
+    local_path = str(tmp_path / "config_usb.txt")
+    Makera.doDownload(root, "/sd/config.txt", local_path)
+
+    root.load_gcode_file.assert_not_called()
+    assert any(getattr(cb, "func", None) is root.finishLoadConfig for cb in scheduled)
+    assert root.controller.queryTime in scheduled
 
 
 def test_machine_child_entry_path_uses_listed_dir():
