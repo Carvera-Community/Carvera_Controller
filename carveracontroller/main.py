@@ -6891,17 +6891,20 @@ class Makera(RelativeLayout):
             coord_system_index = CNC.vars["active_coord_system"]
             coord_system_name = self.wcs_names[coord_system_index]
             rotation_angle = CNC.vars["rotation_angle"]
+            has_rotation = abs(rotation_angle) > 0.01
             desc_key = coord_system_name.lower().replace(".", "_") + "_description"
             try:
                 wcs_description = Config.get("carvera", desc_key).strip()
             except Exception:
                 wcs_description = ""
-            if wcs_description:
-                self.coord_system_data_view.main_text = wcs_description
+            description_is_name = not wcs_description or wcs_description == coord_system_name
+            self.coord_system_data_view.main_text = wcs_description if not description_is_name else coord_system_name
+            rotation_text = f"{rotation_angle:.3f}°"
+            if description_is_name or has_rotation and self.status_index % 2 == 1:
+                self.coord_system_data_view.minr_text = rotation_text
             else:
-                self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = coord_system_name
-            self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
+                self.coord_system_data_view.minr_text = coord_system_name
+            self.coord_system_data_view.scale = 80.0 if has_rotation else 100.0
 
             if self.gcode_viewer is not None and self.gcode_viewer.bed_visible:
                 self.gcode_viewer.update_bed_wcs()
