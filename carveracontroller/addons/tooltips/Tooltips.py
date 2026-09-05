@@ -24,6 +24,31 @@ TOOLTIP_MIN_WIDTH = 200
 TOOLTIP_MAX_WIDTH = 360
 
 
+def is_blocked_by_modal(widget=None):
+    """True when a Popup or ModalView is on the Window and widget is not inside it."""
+    try:
+        children = Window.children
+    except Exception:
+        return False
+    for child in children:
+        if not isinstance(child, (Popup, ModalView)):
+            continue
+        if widget is None:
+            return True
+        try:
+            current = widget
+            depth = 0
+            while current is not None and depth < 20:
+                if current is child:
+                    return False
+                current = getattr(current, "parent", None)
+                depth += 1
+            return True
+        except Exception:
+            return True
+    return False
+
+
 def _compute_tooltip_box_size(
     text_width, text_height, image_width, image_height, *, has_text, has_image, horizontal, spacing=15
 ):
@@ -99,20 +124,7 @@ class ToolTipSwitch(Switch):
         self._build_tooltip()
 
     def _is_blocked_by_modal(self):
-        for child in Window.children:
-            if isinstance(child, (Popup, ModalView)):
-                try:
-                    current = self.parent
-                    depth = 0
-                    while current and depth < 20:
-                        if current == child:
-                            return False
-                        current = current.parent
-                        depth += 1
-                    return True
-                except:
-                    return True
-        return False
+        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -267,20 +279,7 @@ class ToolTipTextInput(TextInput):
             App.get_running_app().root.toggle_keyboard_jog_control(True)
 
     def _is_blocked_by_modal(self):
-        for child in Window.children:
-            if isinstance(child, (Popup, ModalView)):
-                try:
-                    current = self.parent
-                    depth = 0
-                    while current and depth < 20:
-                        if current == child:
-                            return False
-                        current = current.parent
-                        depth += 1
-                    return True
-                except:
-                    return True
-        return False
+        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -446,20 +445,7 @@ class ToolTipButton(Button):
         self._build_tooltip()
 
     def _is_blocked_by_modal(self):
-        for child in Window.children:
-            if isinstance(child, (Popup, ModalView)):
-                try:
-                    current = self.parent
-                    depth = 0
-                    while current and depth < 20:
-                        if current == child:
-                            return False
-                        current = current.parent
-                        depth += 1
-                    return True
-                except:
-                    return True
-        return False
+        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -675,20 +661,7 @@ class ToolTipDropDown(DropDown):
         self._build_tooltip()
 
     def _is_blocked_by_modal(self):
-        for child in Window.children:
-            if isinstance(child, (Popup, ModalView)):
-                try:
-                    current = self.parent
-                    depth = 0
-                    while current and depth < 20:
-                        if current == child:
-                            return False
-                        current = current.parent
-                        depth += 1
-                    return True
-                except:
-                    return True
-        return False
+        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -839,20 +812,7 @@ class ToolTipLabel(Label):
         self._build_tooltip()
 
     def _is_blocked_by_modal(self):
-        for child in Window.children:
-            if isinstance(child, (Popup, ModalView)):
-                try:
-                    current = self.parent
-                    depth = 0
-                    while current and depth < 20:
-                        if current == child:
-                            return False
-                        current = current.parent
-                        depth += 1
-                    return True
-                except:
-                    return True
-        return False
+        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet

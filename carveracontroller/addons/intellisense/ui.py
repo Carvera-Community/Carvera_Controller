@@ -21,6 +21,7 @@ from carveracontroller.addons.intellisense.engine import (
     explain_signature,
     highlight_mdi_line,
 )
+from carveracontroller.addons.tooltips.Tooltips import is_blocked_by_modal
 
 _POPUP_MAX_WIDTH = 440
 _POPUP_MAX_HEIGHT = 320
@@ -61,6 +62,9 @@ class IntellisensePopupBase(BoxLayout):
         self.disabled = True
 
     def display(self):
+        if is_blocked_by_modal():
+            self.hide()
+            return
         if self.parent is None:
             Window.add_widget(self)
         self.opacity = 1
@@ -198,12 +202,30 @@ class _IntellisenseHost:
         self._window_bound = False
         self._hover_rows = weakref.WeakSet()
         self._hover_bound = False
+        self._overlay_bound = False
 
     def _ensure_window_bind(self):
         if self._window_bound:
             return
         Window.bind(on_touch_down=self._on_window_touch, on_key_down=self._on_window_key)
         self._window_bound = True
+        self._ensure_overlay_bind()
+
+    def _ensure_overlay_bind(self):
+        if self._overlay_bound:
+            return
+        Window.bind(children=self._on_window_children)
+        self._overlay_bound = True
+
+    def _on_window_children(self, _window, _children):
+        if is_blocked_by_modal():
+            self._dismiss_for_overlay()
+
+    def _dismiss_for_overlay(self):
+        for row in tuple(self._hover_rows):
+            cancel_gcode_hover(row, hide=False)
+        self.hide_gcode()
+        self.hide_mdi()
 
     def _release_window_bind_if_idle(self):
         if not self._window_bound or self.gcode_popup.showing or self.mdi_popup.showing:
@@ -216,8 +238,12 @@ class _IntellisenseHost:
         if not self._hover_bound:
             Window.bind(mouse_pos=self._on_window_mouse_pos)
             self._hover_bound = True
+        self._ensure_overlay_bind()
 
     def _on_window_mouse_pos(self, _window, pos):
+        if is_blocked_by_modal():
+            self._dismiss_for_overlay()
+            return
         for row in tuple(self._hover_rows):
             if row.get_root_window() and _row_explainable(row) and row.collide_point(*row.to_widget(*pos)):
                 schedule_gcode_hover(row)
@@ -225,6 +251,9 @@ class _IntellisenseHost:
                 cancel_gcode_hover(row)
 
     def show_gcode(self, row: Widget, reason: str = "select"):
+        if is_blocked_by_modal(row):
+            self._dismiss_for_overlay()
+            return
         if not _row_explainable(row):
             if reason == "select":
                 self.hide_gcode(row)
@@ -258,6 +287,9 @@ class _IntellisenseHost:
         self._release_window_bind_if_idle()
 
     def update_mdi(self, textinput):
+        if is_blocked_by_modal(textinput):
+            self.hide_mdi()
+            return
         if not getattr(textinput, "focus", False):
             self.hide_mdi()
             return
@@ -511,6 +543,9 @@ def schedule_gcode_hover(row: Widget):
         delay = float(getattr(app, "tooltip_delay", 0.5) or 0.5)
 
     def _show(_dt):
+        if is_blocked_by_modal(row):
+            hide_gcode_explain(row)
+            return
         if row.get_root_window() and _row_explainable(row):
             show_gcode_explain(row, reason="hover")
 
