@@ -7837,7 +7837,6 @@ class Makera(RelativeLayout):
         if key == M_KEY and "ctrl" in modifiers:
             self.content.transition.direction = "right"
             self.content.current = "File"
-            self.cmd_manager.transition.direction = "left"
             self.cmd_manager.current = "manual_cmd_page"
             self.manual_cmd.focus = True
 
@@ -8351,7 +8350,6 @@ class Makera(RelativeLayout):
     def load_start(self, *args):
         self.loading_file = True
         self._clear_play_bar_tool_markers()
-        self.cmd_manager.transition.direction = "right"
         self.cmd_manager.current = "gcode_cmd_page"
         self.gcode_rv.data = []
         self.init_path_visibility()
