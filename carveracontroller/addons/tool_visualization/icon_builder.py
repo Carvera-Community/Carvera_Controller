@@ -137,7 +137,7 @@ def _stamp_coverage(coverage, width, height, x0, y0, x1, y1, thickness):
 
 
 def _draw_outline(buf, width, height, outline, rgba, thickness):
-    """Stroke the outline into a coverage set, then composite only those pixels."""
+    """Stroke the outline as an outside rim around the already-painted fill."""
     if len(outline) < 2:
         return
     coverage = set()
@@ -146,6 +146,9 @@ def _draw_outline(buf, width, height, outline, rgba, thickness):
         x1, y1 = outline[i + 1]
         _stamp_coverage(coverage, width, height, x0, y0, x1, y1, thickness)
     for index in coverage:
+        i = index * 4
+        if buf[i + 3] != 0:
+            continue
         _put_pixel(buf, width, height, index % width, index // width, rgba)
 
 

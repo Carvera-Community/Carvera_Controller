@@ -1418,6 +1418,40 @@ class TestIconGeometry:
         opaque = sum(1 for i in range(3, len(buf), 4) if buf[i] > 0)
         assert opaque > 100
 
+    def test_thin_flute_keeps_gold_under_outline(self, monkeypatch):
+        """A hairline mill must stay gold; the outline must not overwrite the fill."""
+        from carveracontroller.addons.tool_visualization import icon_builder as ib
+
+        monkeypatch.setattr(ib, "_supersample_factor", lambda: 2)
+        monkeypatch.setattr(ib, "dp", lambda value: value)
+
+        tool_def = ToolDefinition(
+            number=2,
+            tool_type=ToolType.DRILL,
+            diameter=0.8,
+            shank_diameter=3.175,
+            flute_length=10.0,
+            taper_angle_deg=59.0,
+            length=38.0,
+        )
+        buf, width, height = ib._rasterize_icon(build_icon_geometry(tool_def), 34, 34)
+        assert (width, height) == (68, 68)
+
+        flute_rgba = ib._to_bytes_rgba(ib.ICON_FLUTE_COLOR)
+        outline_rgba = ib._to_bytes_rgba(ib.ICON_OUTLINE_COLOR)
+
+        def _count(rgba):
+            n = 0
+            for i in range(0, len(buf), 4):
+                if tuple(buf[i : i + 4]) == rgba:
+                    n += 1
+            return n
+
+        flute_pixels = _count(flute_rgba)
+        outline_pixels = _count(outline_rgba)
+        assert flute_pixels > 100
+        assert outline_pixels > 50
+
     def test_outline_stroke_scales_with_density_and_supersampling(self, monkeypatch):
         """The stroke must follow the render scale or it becomes a hairline on HiDPI."""
         from carveracontroller.addons.tool_visualization import icon_builder as ib
