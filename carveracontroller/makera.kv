@@ -7,6 +7,7 @@
 #:import _ carveracontroller.ui.DropDownSplitter
 #:import _ carveracontroller.ui.CollapsibleSplitter
 #:import _ carveracontroller.ui.CmdPaneTab
+#:import _ carveracontroller.ui.GCodePageBar
 #:import NoTransition kivy.uix.screenmanager.NoTransition
 #:import play_progress_bar carveracontroller.ui.PlayProgressBar
 #:import GcodeColorSchemePanel carveracontroller.ui.GcodeColorSchemePanel.GcodeColorSchemePanel
@@ -21,6 +22,7 @@
 #:include ui/DirectoryView.kv
 #:include ui/DropDownSplitter.kv
 #:include ui/CmdPaneTab.kv
+#:include ui/GCodePageBar.kv
 #:include addons/probing/ProbingPopup.kv
 #:include ui/popups/set_position/set_position.kv
 #:include ui/popups/adv_calibrate/adv_calibrate.kv
@@ -3740,6 +3742,7 @@
 
 <Makera>:
     gcode_rv: gcode_rv
+    gcode_page_bar: gcode_page_bar
     manual_rv: manual_rv
     manual_cmd: manual_cmd
     content: content
@@ -4320,7 +4323,7 @@
                                     GCodeCMDPage:
                                         name: 'gcode_cmd_page'
                                         BoxLayout:
-                                            spacing: '5dp'
+                                            spacing: dp(5) if gcode_page_bar.bar_visible else 0
                                             orientation: 'vertical'
                                             GCodeRV:
                                                 id: gcode_rv
@@ -4338,44 +4341,8 @@
                                                     spacing: dp(0.5)
                                                     multiselect: False
                                                     touch_multiselect: False
-                                            BoxLayout:
-                                                orientation: 'horizontal'
-                                                size_hint_y: None
-                                                height: '33dp'
-                                                Widget:
-                                                TransparentButton:
-                                                    height: '0dp'
-                                                    icon: 'data/to_start.png'
-                                                    tooltip_txt: tr._('Jump to first page in file')
-                                                    icon_size: 18
-                                                    disabled: app.loading_page or app.curr_page == 1 or (app.state != 'Idle' and app.state != 'N/A')
-                                                    on_release:
-                                                        root.first_page()
-                                                TransparentButton:
-                                                    height: '0dp'
-                                                    icon: 'data/previous.png'
-                                                    tooltip_txt: tr._('Go to previous page in file')
-                                                    icon_size: 13
-                                                    disabled: app.loading_page or app.curr_page == 1 or (app.state != 'Idle' and app.state != 'N/A')
-                                                    on_release:
-                                                        root.previous_page()
-                                                TransparentButton:
-                                                    height: '0dp'
-                                                    icon: 'data/start.png'
-                                                    tooltip_txt: tr._('Go to next page in file')
-                                                    icon_size: 13
-                                                    disabled: app.loading_page or app.curr_page == app.total_pages or (app.state != 'Idle' and app.state != 'N/A')
-                                                    on_release:
-                                                        root.next_page()
-                                                TransparentButton:
-                                                    height: '0dp'
-                                                    icon: 'data/to_end.png'
-                                                    tooltip_txt: tr._('Jump to last page in file')
-                                                    icon_size: 18
-                                                    disabled: app.loading_page or app.curr_page == app.total_pages or (app.state != 'Idle' and app.state != 'N/A')
-                                                    on_release:
-                                                        root.last_page()
-                                                Widget:
+                                            GCodePageBar:
+                                                id: gcode_page_bar
 
                                     ManualCMDPage:
                                         name: 'manual_cmd_page'
