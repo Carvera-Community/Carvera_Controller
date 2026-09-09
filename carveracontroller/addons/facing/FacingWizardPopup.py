@@ -912,7 +912,6 @@ class FacingWizardPopup(ModalView):
             root.content.current = "File"
         app.show_gcode_ctl_bar = False
         try:
-            root.cmd_manager.transition.direction = "right"
             root.cmd_manager.current = "gcode_cmd_page"
         except Exception:
             pass

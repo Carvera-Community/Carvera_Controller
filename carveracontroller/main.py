@@ -1157,23 +1157,6 @@ class AutoLevelPopup(ModalView):
                 and self.ids.txt_auto_yp_offset.text != "."
                 else 0.0,
             )
-            if self.ids.cbx_autolevelOffsets.active:
-                self.coord_popup.set_config(
-                    "zprobe",
-                    "x_offset",
-                    float(self.ids.txt_auto_xn_offset.text)
-                    if self.ids.txt_auto_xn_offset.text.strip() and self.ids.txt_auto_xn_offset.text != "."
-                    else 0.0,
-                )
-            if self.ids.cbx_autolevelOffsets.active:
-                self.coord_popup.set_config(
-                    "zprobe",
-                    "y_offset",
-                    float(self.ids.txt_auto_yn_offset.text)
-                    if self.ids.txt_auto_yn_offset.text.strip() and self.ids.txt_auto_yn_offset.text != "."
-                    else 0.0,
-                )
-
             self.coord_popup.load_leveling_label()
             if self.execute:
                 app = App.get_running_app()
@@ -1433,10 +1416,9 @@ class CoordPopup(ModalView):
         else:
             self.ionizermode = False
 
-        # init margin widgets
+        # Apply leveling before Z probe so turning both off does not warn.
         self.cbx_margin.active = self.config["margin"]["active"]
-
-        # init zprobe widgets
+        self.cbx_leveling.active = self.config["leveling"]["active"]
         self.cbx_zprobe.active = self.config["zprobe"]["active"]
         # init zprobe popup
         self.zprobe_popup.cbx_origin1.active = self.config["zprobe"]["origin"] == 1
@@ -1446,8 +1428,6 @@ class CoordPopup(ModalView):
 
         self.load_zprobe_label()
 
-        # init leveling widgets
-        self.cbx_leveling.active = self.config["leveling"]["active"]
         self.auto_level_popup.sp_x_points.text = str(self.config["leveling"]["x_points"])
         self.auto_level_popup.sp_y_points.text = str(self.config["leveling"]["y_points"])
         self.auto_level_popup.sp_height.text = str(self.config["leveling"]["height"])
@@ -1517,6 +1497,44 @@ class CoordPopup(ModalView):
                 + tr._(" +Y: ")
                 + "%g " % (round(self.config["leveling"]["yp_offset"], 4))
             )
+
+    def _zprobe_controls_allowed(self):
+        app = App.get_running_app()
+        lasering = bool(app and getattr(app, "lasering", False))
+        return self.mode in ("Run", "ZProbe", "Leveling") and not lasering
+
+    def on_zprobe_checkbox(self, active):
+        app = App.get_running_app()
+        has_4axis = bool(app and getattr(app, "has_4axis", False))
+        allowed = self._zprobe_controls_allowed()
+        self.lb_zprobe.disabled = not active or not allowed
+        self.btn_zprobe.disabled = not active or has_4axis or not allowed
+        self.set_config("zprobe", "active", active)
+        if not active and self.cbx_leveling.active:
+            self._warn_zprobe_disabled_during_leveling()
+        self.toggle_config()
+
+    def on_leveling_checkbox(self, active):
+        app = App.get_running_app()
+        has_4axis = bool(app and getattr(app, "has_4axis", False))
+        leveling_allowed = self.mode in ("Run", "Leveling") and not has_4axis
+        self.lb_leveling.disabled = not active or not leveling_allowed
+        self.btn_leveling.disabled = not active or not leveling_allowed
+        self.set_config("leveling", "active", active)
+        if active:
+            self.cbx_zprobe.active = True
+            self.set_config("zprobe", "active", True)
+        self.toggle_config()
+
+    def _warn_zprobe_disabled_during_leveling(self):
+        app = App.get_running_app()
+        if app is None or getattr(app, "root", None) is None:
+            return
+        message = tr._(
+            "Auto Leveling without Auto Z Probe will use the current Z zero. "
+            "Probe Z first or leave Auto Z Probe enabled, or job height may be wrong."
+        )
+        Clock.schedule_once(partial(app.root.show_message_popup, message, False), 0)
 
     def toggle_config(self):
         # upldate main status
@@ -6576,6 +6594,7 @@ class Makera(RelativeLayout):
                     if self.gcode_viewer is not None:
                         self.gcode_viewer.set_bed(None, visible=False)
                     self.controller.is_community_firmware = False
+                    self.controller._session_lights_applied = False
                     self.machine_metadata_query_time = 0
 
                     # Clean up light toggle binding when disconnected
@@ -6636,6 +6655,10 @@ class Makera(RelativeLayout):
                     self.status_drop_down.btn_unlock.text = "Reset"
                 else:
                     self.status_drop_down.btn_unlock.text = "Unlock"
+
+            # Turn session lights on once firmware is known
+            if app.state != NOT_CONNECTED and self.fw_version and not self.controller._session_lights_applied:
+                self.controller.apply_session_lights(True)
 
             # load config, only one time per connection
             if (
@@ -6868,17 +6891,20 @@ class Makera(RelativeLayout):
             coord_system_index = CNC.vars["active_coord_system"]
             coord_system_name = self.wcs_names[coord_system_index]
             rotation_angle = CNC.vars["rotation_angle"]
+            has_rotation = abs(rotation_angle) > 0.01
             desc_key = coord_system_name.lower().replace(".", "_") + "_description"
             try:
                 wcs_description = Config.get("carvera", desc_key).strip()
             except Exception:
                 wcs_description = ""
-            if wcs_description:
-                self.coord_system_data_view.main_text = wcs_description
+            description_is_name = not wcs_description or wcs_description == coord_system_name
+            self.coord_system_data_view.main_text = wcs_description if not description_is_name else coord_system_name
+            rotation_text = f"{rotation_angle:.3f}°"
+            if description_is_name or has_rotation and self.status_index % 2 == 1:
+                self.coord_system_data_view.minr_text = rotation_text
             else:
-                self.coord_system_data_view.main_text = coord_system_name
-            self.coord_system_data_view.minr_text = coord_system_name
-            self.coord_system_data_view.scale = 80.0 if abs(rotation_angle) > 0.01 else 100.0
+                self.coord_system_data_view.minr_text = coord_system_name
+            self.coord_system_data_view.scale = 80.0 if has_rotation else 100.0
 
             if self.gcode_viewer is not None and self.gcode_viewer.bed_visible:
                 self.gcode_viewer.update_bed_wcs()
@@ -7814,7 +7840,6 @@ class Makera(RelativeLayout):
         if key == M_KEY and "ctrl" in modifiers:
             self.content.transition.direction = "right"
             self.content.current = "File"
-            self.cmd_manager.transition.direction = "left"
             self.cmd_manager.current = "manual_cmd_page"
             self.manual_cmd.focus = True
 
@@ -8328,7 +8353,6 @@ class Makera(RelativeLayout):
     def load_start(self, *args):
         self.loading_file = True
         self._clear_play_bar_tool_markers()
-        self.cmd_manager.transition.direction = "right"
         self.cmd_manager.current = "gcode_cmd_page"
         self.gcode_rv.data = []
         self.init_path_visibility()
@@ -9091,6 +9115,8 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "instantFSoverride", "1")
     if not Config.has_option("carvera", "show_playbar_tool_change_markers"):
         Config.set("carvera", "show_playbar_tool_change_markers", "1")
+    if not Config.has_option("carvera", "auto_lights_on_connect"):
+        Config.set("carvera", "auto_lights_on_connect", "1")
 
     # G-code viewer defaults
     if not Config.has_option("carvera", "gcode_auto_show_stock"):

@@ -118,5 +118,17 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/card/
    - Used in: carveracontroller/data/GcodeViewer/bed.png
 
+8. file-code-outline.png
+   - Author: Terren
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/file-code-outline/
+   - Used in: carveracontroller/data/file-code-outline.png
+
+9. console.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/console/
+   - Used in: carveracontroller/data/console.png
+
 ===============================================================================
 Please see the respective license files for detailed information.

@@ -36,7 +36,7 @@ void main()
     if (vertex_id < 0.0) {
         gl_Position = proj_mat * view_mat * center_offset * world_pos;
     } else {
-        gl_Position = proj_mat * view_mat * rotation_mat * center_offset * world_pos;
+        gl_Position = proj_mat * view_mat * center_offset * rotation_mat * world_pos;
     }
 }
 
