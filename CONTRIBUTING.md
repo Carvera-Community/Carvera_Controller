@@ -26,6 +26,26 @@ Thank you for your interest in contributing to our project! We welcome contribut
 8. **Commit Your Changes:** Write a concise and descriptive commit message.
 9. **Push and Open a Pull Request:** Push your branch to your fork and open a pull request from your branch and use the `develop` branch as the destination. In the Pull Request please describe what issue you are resolving, and summarize the changes.
 
+### PR Requirements
+
+When you are working on a pull request, please adhere to the following requirements:
+
+- Pull requests should be limited to one feature, or one bugfix/issue,
+  or small set of highly related issues that have real world impact on the machines.
+- Pull requests should be standalone and based on the `develop` branch unless there is
+  a very good reason for them to depend on each other.
+- Issues and PR bodies are for human to human communication. If using AI assistance,
+  you are responsible for reviewing the content and not submitting something that
+  you wouldn't write yourself.
+- The expectation for all PRs is that the submitter has done everything reasonable
+  to review and test the PR on their side. This includes running the code against
+  your own machine hardware.
+- We allow AI assisted pull requests in this repository. Please fill out the relevant information in the
+  pull request template.
+- Do not scan the code base with the express purpose of bulk creating issues/PRs
+  without prior approval from maintainers.
+
+
 ## Quality Checks
 
 Run the configured hooks before opening a pull request:
