@@ -120,6 +120,10 @@ class JogCMMWorkbenchPopup(ModalView):
         Clock.schedule_once(self._snap_modal_height_to_inner, -1)
         Clock.schedule_once(self._snap_modal_height_to_inner, 0.05)
 
+    def allows_external_jog(self) -> bool:
+        """This overlay exists specifically to expose the jog controls."""
+        return self._is_open
+
     def _snap_modal_height_to_inner(self, _dt=None):
         try:
             inner = self.ids.jog_modal_inner

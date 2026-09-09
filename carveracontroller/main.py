@@ -137,6 +137,7 @@ from carveracontroller.addons.beds.store import (
 from carveracontroller.addons.beds.ui.BedSettingsPopup import BedSettingsPopup
 from carveracontroller.addons.cam import CamMetadata, extract_cam_metadata
 from carveracontroller.addons.facing.FacingWizardPopup import FacingWizardPopup
+from carveracontroller.addons.keyboard_shortcuts import SettingKeyboardShortcuts, ShortcutManager
 from carveracontroller.addons.pendant import (
     SUPPORTED_PENDANTS,
     OverrideController,
@@ -413,6 +414,10 @@ class MDITextInput(TextInput):
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         key = keycode[0] if isinstance(keycode, (tuple, list)) else keycode
+        app = App.get_running_app()
+        manager = getattr(getattr(app, "root", None), "shortcut_manager", None)
+        if manager is not None and manager.handle_mdi_keydown(self, key, modifiers, text):
+            return True
         if handle_mdi_intellisense_key(self, key, modifiers):
             return True
         if self._handle_navigation_key(key, modifiers):
@@ -420,12 +425,8 @@ class MDITextInput(TextInput):
         return super().keyboard_on_key_down(window, keycode, text, modifiers)
 
     def _handle_navigation_key(self, key, modifiers):
-        ENTER_KEY = 13
         UP_ARROW_KEY = 273
         DOWN_ARROW_KEY = 274
-        if self.focus and "ctrl" in modifiers and key == ENTER_KEY:
-            self.send_mdi_command()
-            return True
         if self.focus and key == UP_ARROW_KEY:
             cursor_is_at_top_left = self.cursor_index() == 0
             can_move_backward_in_history = len(self.past_mdi_commands) > 0 and self.active_past_mdi_index > 0
@@ -1946,6 +1947,14 @@ class MakeraConfigPanel(SettingsWithSidebar):
         self.register_type("gcodesnippet", custom_widgets.SettingGCodeSnippet)
         self.register_type("colorpicker", custom_widgets.SettingColorPicker)
         self.register_type("gamepad_bindings", SettingGamepadBindings)
+        self.register_type("keyboard_shortcuts", SettingKeyboardShortcuts)
+        self.interface.content.bind(current_uid=self._reset_panel_scroll)
+
+    @staticmethod
+    def _reset_panel_scroll(content, _uid):
+        # ContentPanel reuses one ScrollView for every settings page. Without
+        # resetting it, a tall page opens at the previous page's scroll offset.
+        Clock.schedule_once(lambda _dt: setattr(content, "scroll_y", 1), 0)
 
     def create_json_panel(self, title, config, filename=None, data=None):
         panel = super().create_json_panel(title, config, filename, data)
@@ -2785,7 +2794,6 @@ class Makera(RelativeLayout):
     show_advanced_jog_controls = BooleanProperty(False)
     keyboard_jog_control = BooleanProperty(False)
     pendant_jog_control = BooleanProperty(False)
-    _held_jog_keys = set()
 
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
@@ -2905,7 +2913,6 @@ class Makera(RelativeLayout):
         super().__init__()
 
         Window.bind(on_request_close=self.on_request_close)
-        Window.bind(on_key_down=self._global_keyboard_keydown)
 
         self.temp_dir = tempfile.mkdtemp()
         self.ctl_version = ctl_version
@@ -3055,8 +3062,11 @@ class Makera(RelativeLayout):
         self.machine_settings_model = None
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_keyboard_shortcuts_config()
         self.load_gcode_viewer_config()
         self.load_pendant_config()
+        self.shortcut_manager = ShortcutManager(self)
+        self.shortcut_manager.install()
 
         self.usb_event = lambda instance, device_path: self.openUSB(device_path)
         self.wifi_event = lambda instance, x: self.openWIFI(x)
@@ -3188,6 +3198,10 @@ class Makera(RelativeLayout):
 
     def on_request_close(self, *args):
         # Cleanup the temporary directory when the app is closed
+        shortcut_manager = getattr(self, "shortcut_manager", None)
+        if shortcut_manager is not None:
+            shortcut_manager.uninstall()
+
         try:
             shutil.rmtree(self.temp_dir)
         except Exception as e:
@@ -3228,6 +3242,22 @@ class Makera(RelativeLayout):
         self.config_popup.settings_panel.add_json_panel(tr._("Controller"), Config, data=json.dumps(controller_config))
 
         self._update_macro_button_text()
+
+    def load_keyboard_shortcuts_config(self):
+        config_def_file = os.path.join(
+            os.path.dirname(__file__), "addons", "keyboard_shortcuts", "keyboard_shortcuts_config.json"
+        )
+        with open(config_def_file) as file:
+            shortcut_config_definition = json.load(file)
+        shortcut_config = []
+        for setting in shortcut_config_definition:
+            if "default" in setting:
+                Config.setdefault(setting["section"], setting["key"], setting["default"])
+                setting.pop("default", None)
+            shortcut_config.append(setting)
+        self.config_popup.settings_panel.add_json_panel(
+            tr._("Keyboard Shortcuts"), Config, data=json.dumps(shortcut_config)
+        )
 
     def load_gcode_viewer_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), "gcode_viewer_config.json")
@@ -3312,6 +3342,46 @@ class Makera(RelativeLayout):
 
     def open_online_docs(self):
         webbrowser.open("https://carvera-community.gitbook.io/docs/controller/")
+
+    def open_file_browser(self):
+        app = App.get_running_app()
+        unavailable = app.state not in ("Idle", NOT_CONNECTED) and not app.playing
+        if unavailable or self._is_popup_open():
+            return False
+        self.file_popup.open_for_jobs()
+        return True
+
+    def open_mdi(self):
+        self.content.transition.direction = "right"
+        self.content.current = "File"
+        self.cmd_manager.transition.direction = "left"
+        self.cmd_manager.current = "manual_cmd_page"
+        self.manual_cmd.focus = True
+
+    def can_send_mdi_command(self):
+        app = App.get_running_app()
+        return app.state in ("Idle", "Pause") or str(self.allow_mdi_while_machine_running).lower() in ("1", "true")
+
+    def can_open_start_job_popup(self):
+        app = App.get_running_app()
+        return (
+            app.state == "Idle" and bool(app.selected_remote_filename) and not app.playing and not self._is_popup_open()
+        )
+
+    def open_start_job_popup(self):
+        if not self.can_open_start_job_popup():
+            return False
+        self.coord_popup.mode = "Run"
+        self.coord_popup.load_config()
+        self.coord_popup.open()
+        return True
+
+    def handle_start_file_action(self):
+        app = App.get_running_app()
+        if app.state == "Pause":
+            self.controller.resumeCommand()
+        else:
+            self.open_start_job_popup()
 
     def send_bug_report(self):
         webbrowser.open("https://github.com/Carvera-Community/Carvera_Controller/issues/new")
@@ -7560,10 +7630,11 @@ class Makera(RelativeLayout):
         self.update_pendant_jog_text()
 
     def _popup_prevents_jogging(self):
-        modals = [self.probing_popup]
-        if self.cmm_workbench_popup is not None:
-            modals.append(self.cmm_workbench_popup)
-        return self._is_popup_open() and not any(m.allows_external_jog() for m in modals)
+        for popup in self._open_popups():
+            if hasattr(popup, "allows_external_jog") and popup.allows_external_jog():
+                continue
+            return True
+        return False
 
     def _bind_jog_control_deps(self):
         app = App.get_running_app()
@@ -7579,7 +7650,12 @@ class Makera(RelativeLayout):
         app = App.get_running_app()
         if app is None:
             return
-        app.jog_controls_enabled = self._machine_allows_jogging()
+        jogging_allowed = self._machine_allows_jogging()
+        app.jog_controls_enabled = jogging_allowed
+        if not jogging_allowed:
+            shortcut_manager = getattr(self, "shortcut_manager", None)
+            if shortcut_manager is not None:
+                shortcut_manager.release_all_jogs()
 
     def _machine_allows_jogging(self):
         app = App.get_running_app()
@@ -7616,16 +7692,20 @@ class Makera(RelativeLayout):
 
     def toggle_keyboard_jog_control(self, disable=False):
         app = App.get_running_app()
+        if not disable and not app.jog_controls_enabled:
+            return False
         app.root.keyboard_jog_control = not app.root.keyboard_jog_control  # toggle the boolean
         if disable:
             app.root.keyboard_jog_control = False
 
         if app.root.keyboard_jog_control:
-            Window.bind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
             app.jog_keyboard_enable = "down"
         else:
-            Window.unbind(on_key_down=self._keyboard_jog_keydown, on_key_up=self._keyboard_jog_keyup)
+            shortcut_manager = getattr(self, "shortcut_manager", None)
+            if shortcut_manager is not None:
+                shortcut_manager.release_all_jogs()
             app.jog_keyboard_enable = "normal"
+        return True
 
     def toggle_pendant_jog_control(self):
         app = App.get_running_app()
@@ -7754,28 +7834,14 @@ class Makera(RelativeLayout):
         elif button_action == "step_size_changed":
             self.update_pendant_jog_text()
 
-    def _is_popup_open(self):
-        """Checks to see if any of the popups objects are open."""
-        popups_to_check = [
-            self.file_popup._is_open,
-            self.coord_popup._is_open,
-            self.xyz_probe_popup._is_open,
-            self.pairing_popup._is_open,
-            self.upgrade_popup._is_open,
-            self.language_popup._is_open,
-            self.diagnose_popup._is_open,
-            self.confirm_popup._is_open,
-            self.unlock_popup._is_open,
-            self.message_popup._is_open,
-            self.progress_popup._is_open,
-            self.input_popup._is_open,
-            self.config_popup._is_open,
-            self.probing_popup._is_open,
-            (self.cmm_workbench_popup._is_open if self.cmm_workbench_popup is not None else False),
-            self.facing_popup._is_open,
+    def _open_popups(self):
+        return [
+            child for child in Window.children if isinstance(child, ModalView) and getattr(child, "_is_open", False)
         ]
 
-        return any(popups_to_check)
+    def _is_popup_open(self):
+        """Return whether any application modal is currently open."""
+        return bool(self._open_popups())
 
     def bind_light_toggle_to_property(self):
         """Bind the light toggle button state to the LightProperty"""
@@ -7797,59 +7863,20 @@ class Makera(RelativeLayout):
             property_obj.update_from_state(self)
             logger.debug("Light state manually refreshed from CNC.vars")
 
-    def _global_keyboard_keydown(self, window, key, scancode, codepoint, modifiers):
-        COMMA_KEY = 44
-        M_KEY = 109
-        cmd_mod = "meta" if sys.platform == "darwin" else "ctrl"
-
-        # Cmd+Comma (macOS) or Ctrl+Comma (Windows/Linux) to open settings
-        if key == COMMA_KEY and cmd_mod in modifiers:
-            if not self._is_popup_open() and not self.manual_cmd.focus:
-                self.config_popup.open()
-                return True
-
-        # Ctrl+M to open manual command (MDI) page
-        if key == M_KEY and "ctrl" in modifiers:
-            self.content.transition.direction = "right"
-            self.content.current = "File"
-            self.cmd_manager.current = "manual_cmd_page"
-            self.manual_cmd.focus = True
-
-        return False
-
-    def _keyboard_jog_keydown(self, *args):
-        app = App.get_running_app()
-
-        # Only allow keyboard jogging when machine in a suitable state and has no popups open
-        if self.is_jogging_enabled() and not self.manual_cmd.focus:
-            key = args[1]  # keycode
-
-            if app.root.controller.jog_mode == Controller.JOG_MODE_STEP:
-                if key in self._held_jog_keys:
-                    # Ignore - only move once per keypress in step mode
-                    return
-                if key in (273, 274, 275, 276, 280, 281):
-                    self._held_jog_keys.add(key)
-
-            if key == 274:  # down button
-                app.root.controller.jog(f"Y{'-' if app.invert_y_axis_jogging else ''}{app.root.step_xy.text}")
-            elif key == 273:  # up button
-                app.root.controller.jog(f"Y{'' if app.invert_y_axis_jogging else '-'}{app.root.step_xy.text}")
-            elif key == 275:  # right button
-                app.root.controller.jog(f"X{app.root.step_xy.text}")
-            elif key == 276:  # left button
-                app.root.controller.jog(f"X-{app.root.step_xy.text}")
-            elif key == 280:  # page up
-                app.root.controller.jog(f"Z{app.root.step_z.text}")
-            elif key == 281:  # page down
-                app.root.controller.jog(f"Z-{app.root.step_z.text}")
-
-    def _keyboard_jog_keyup(self, *args):
-        app = App.get_running_app()
-        key = args[1]  # keycode
-        if key in (273, 274, 275, 276, 280, 281):  # only if a jog button is released
-            self._held_jog_keys.discard(key)
-            app.root.controller.stopContinuousJog()
+    def perform_keyboard_jog(self, action_id):
+        commands = {
+            "jog_x_positive": f"X{self.step_xy.text}",
+            "jog_x_negative": f"X-{self.step_xy.text}",
+            "jog_y_positive": f"Y{self.step_xy.text}",
+            "jog_y_negative": f"Y-{self.step_xy.text}",
+            "jog_z_positive": f"Z{self.step_z.text}",
+            "jog_z_negative": f"Z-{self.step_z.text}",
+            "jog_a_positive": f"A{self.step_a.text}",
+            "jog_a_negative": f"A-{self.step_a.text}",
+        }
+        command = commands.get(action_id)
+        if command is not None:
+            self.controller.jog(command)
 
     def apply_setting_changes(self):
         if self.setting_change_list:
@@ -7873,13 +7900,10 @@ class Makera(RelativeLayout):
             self.message_popup.lb_content.text = tr._("UI Density changed, restart application to apply.")
             self.message_popup.open()
 
-        if (
-            self.controller_setting_change_list.get("allow_mdi_while_machine_running")
-            != self.allow_mdi_while_machine_running
-        ):
-            self.allow_mdi_while_machine_running = self.controller_setting_change_list.get(
+        if "allow_mdi_while_machine_running" in self.controller_setting_change_list:
+            self.allow_mdi_while_machine_running = self.controller_setting_change_list[
                 "allow_mdi_while_machine_running"
-            )
+            ]
 
         if "allow_jogging_while_machine_running" in self.controller_setting_change_list:
             self.allow_jogging_while_machine_running = self.controller_setting_change_list[
@@ -7895,7 +7919,10 @@ class Makera(RelativeLayout):
         ):
             self.update_jog_controls_enabled()
 
-        if self.controller_setting_change_list.get("invert_y_axis_jogging"):
+        if "keyboard_shortcuts" in self.controller_setting_change_list:
+            self.shortcut_manager.reload_from_config()
+
+        if "invert_y_axis_jogging" in self.controller_setting_change_list:
             App.get_running_app().invert_y_axis_jogging = (
                 self.controller_setting_change_list.get("invert_y_axis_jogging") == "1"
             )
@@ -8904,6 +8931,8 @@ class MakeraApp(App):
         # Cancel any ongoing reconnection attempts to prevent hanging
         if hasattr(self.root, "controller") and self.root.controller:
             self.root.controller.cancel_reconnection()
+        if hasattr(self.root, "shortcut_manager"):
+            self.root.shortcut_manager.uninstall()
         # Stop all scheduled Clock events
         if hasattr(self.root, "blink_state"):
             Clock.unschedule(self.root.blink_state)
@@ -8959,6 +8988,8 @@ class MakeraApp(App):
             print(f"safe area query skipped: {e}")
 
     def on_pause(self):
+        if hasattr(self.root, "shortcut_manager"):
+            self.root.shortcut_manager.on_window_inactive()
         return True
 
 
