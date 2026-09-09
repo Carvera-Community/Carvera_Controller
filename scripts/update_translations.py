@@ -85,6 +85,7 @@ def generate_po():
 
 def compile_mo():
     import shutil
+
     if not shutil.which("msgfmt"):
         print("msgfmt not found; skipping translation compile.")
         return
