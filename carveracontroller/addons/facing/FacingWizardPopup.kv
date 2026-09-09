@@ -99,7 +99,7 @@
                                     halign: 'left'
                                     valign: 'top'
                                     multiline: True
-                                    text: tr._('Measure your stock and pick the corner where X0 Y0 sits—the point you touched off when setting work zero. Width runs along X and length along Y from that corner. Margins pad the outline outward so facing and probing keep a safe distance from the edges. Extra depth removes a bit more material downward on top of the facing depth. Clearance height is how high the spindle travels between moves. If you enable Z grid probing on the Z probe grid tab, the machine checks the surface first; after you swap to your facing tool, Z zero is aligned to the highest spot the probe found.')
+                                    text: tr._('Measure your stock and pick where X0 Y0 sits—the point you touched off when setting work zero. Width runs along X and length along Y from that origin. Margins pad the outline outward so facing and probing keep a safe distance from the edges. Extra depth removes a bit more material downward on top of the facing depth. Clearance height is how high the spindle travels between moves. If you enable Z grid probing on the Z probe grid tab, the machine checks the surface first; after you swap to your facing tool, Z zero is aligned to the highest spot the probe found.')
                                     height: max(dp(60), self.texture_size[1] + dp(10))
 
                                 GridLayout:
@@ -111,7 +111,7 @@
                                     spacing: dp(4)
 
                                     Label:
-                                        text: tr._('WCS origin corner')
+                                        text: tr._('WCS origin')
                                     Spinner:
                                         id: spn_stock_corner
                                         values: ['']
@@ -339,7 +339,7 @@
                                     halign: 'left'
                                     valign: 'top'
                                     multiline: True
-                                    text: tr._('Turn on Include Z grid probe with the checkbox below; layout matches the origin corner from the Stock tab. The machine taps the surface on a grid to map height. Probe Z travel must stay negative so the probe searches downward. Grid inset pulls probe points slightly inside the gray stock outline (not inside the dashed margin ring). After probing and loading your facing tool, Z zero is adjusted so the tallest measured spot is treated as the top surface for facing.')
+                                    text: tr._('Turn on Include Z grid probe with the checkbox below; layout matches the origin from the Stock tab. The machine taps the surface on a grid to map height. Probe Z travel must stay negative so the probe searches downward. Grid inset pulls probe points slightly inside the gray stock outline (not inside the dashed margin ring). After probing and loading your facing tool, Z zero is adjusted so the tallest measured spot is treated as the top surface for facing.')
                                     height: max(dp(60), self.texture_size[1] + dp(10))
 
                                 GridLayout:
