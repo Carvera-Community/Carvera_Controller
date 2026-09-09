@@ -7,6 +7,9 @@
 #:import _ carveracontroller.ui.DirectoryView
 #:import _ carveracontroller.ui.DropDownSplitter
 #:import _ carveracontroller.ui.CollapsibleSplitter
+#:import _ carveracontroller.ui.CmdPaneTab
+#:import _ carveracontroller.ui.GCodePageBar
+#:import NoTransition kivy.uix.screenmanager.NoTransition
 #:import play_progress_bar carveracontroller.ui.PlayProgressBar
 #:import GcodeColorSchemePanel carveracontroller.ui.GcodeColorSchemePanel.GcodeColorSchemePanel
 #:import CameraView carveracontroller.addons.camera.CameraView.CameraView
@@ -20,6 +23,8 @@
 #:include ui/DirectoryView.kv
 #:include ui/DropDownSplitter.kv
 #:include ui/file_browser/FileBrowserPopup.kv
+#:include ui/CmdPaneTab.kv
+#:include ui/GCodePageBar.kv
 #:include addons/probing/ProbingPopup.kv
 #:include ui/popups/set_position/set_position.kv
 #:include ui/popups/adv_calibrate/adv_calibrate.kv
@@ -2939,7 +2944,6 @@
                     else: app.root.apply()
                     app.root.content.transition.direction = 'right'
                     app.root.content.current = 'File'
-                    app.root.cmd_manager.transition.direction = 'right'
                     app.root.cmd_manager.current = 'gcode_cmd_page'
 
 <SwitchBox@BoxLayout>:
@@ -3212,6 +3216,7 @@
 
 <Makera>:
     gcode_rv: gcode_rv
+    gcode_page_bar: gcode_page_bar
     manual_rv: manual_rv
     manual_cmd: manual_cmd
     content: content
@@ -3766,12 +3771,33 @@
                                         pos: self.pos
                                         size: self.size
 
+                                BoxLayout:
+                                    size_hint_y: None
+                                    height: dp(40)
+                                    spacing: dp(4)
+                                    CmdPaneTab:
+                                        tab_text: tr._('File')
+                                        tooltip_txt: tr._('Show the loaded G-code file')
+                                        icon: 'data/file-code-outline.png'
+                                        selected: cmd_manager.current == 'gcode_cmd_page'
+                                        on_release:
+                                            cmd_manager.current = 'gcode_cmd_page'
+                                            manual_cmd.focus = False
+                                    CmdPaneTab:
+                                        tab_text: tr._('MDI')
+                                        tooltip_txt: tr._('Machine console (MDI). View replies and send individual commands.')
+                                        icon: 'data/console.png'
+                                        selected: cmd_manager.current == 'manual_cmd_page'
+                                        on_release:
+                                            cmd_manager.current = 'manual_cmd_page'
+                                            if not root.has_onscreen_keyboard: manual_cmd.focus = True
                                 CMDManager:
                                     id: cmd_manager
+                                    transition: NoTransition()
                                     GCodeCMDPage:
                                         name: 'gcode_cmd_page'
                                         BoxLayout:
-                                            spacing: '5dp'
+                                            spacing: dp(5) if gcode_page_bar.bar_visible else 0
                                             orientation: 'vertical'
                                             GCodeRV:
                                                 id: gcode_rv
@@ -3789,58 +3815,8 @@
                                                     spacing: dp(0.5)
                                                     multiselect: False
                                                     touch_multiselect: False
-                                            BoxLayout:
-                                                orientation: 'horizontal'
-                                                size_hint_y: None
-                                                height: '33dp'
-                                                ToolTipButton:
-                                                    id: toggle_mdi
-                                                    width: '40dp'
-                                                    size_hint_x: None
-                                                    tooltip_txt: tr._('Press to switch to MDI console to see console messages and send individual gcodes')
-                                                    text: 'MDI'
-                                                    on_release:
-                                                        cmd_manager.transition.direction = 'left'
-                                                        cmd_manager.current = 'manual_cmd_page'
-                                                        if not root.has_onscreen_keyboard: manual_cmd.focus = True
-                                                BoxLayout:
-                                                    halign: 'center'
-                                                    valign: 'middle'
-                                                    Widget:
-                                                    TransparentButton:
-                                                        height: '0dp'
-                                                        icon: 'data/to_start.png'
-                                                        tooltip_txt: tr._('Jump to first page in file')
-                                                        icon_size: 18
-                                                        disabled: app.loading_page or app.curr_page == 1 or (app.state != 'Idle' and app.state != 'N/A')
-                                                        on_release:
-                                                            root.first_page()
-                                                    TransparentButton:
-                                                        height: '0dp'
-                                                        icon: 'data/previous.png'
-                                                        tooltip_txt: tr._('Go to last page in file')
-                                                        icon_size: 13
-                                                        disabled: app.loading_page or app.curr_page == 1 or (app.state != 'Idle' and app.state != 'N/A')
-                                                        on_release:
-                                                            root.previous_page()
-                                                    TransparentButton:
-                                                        height: '0dp'
-                                                        icon: 'data/start.png'
-                                                        tooltip_txt: tr._('Go to next page in file')
-                                                        icon_size: 13
-                                                        disabled: app.loading_page or app.curr_page == app.total_pages or (app.state != 'Idle' and app.state != 'N/A')
-                                                        on_release:
-                                                            root.next_page()
-                                                    TransparentButton:
-                                                        height: '0dp'
-                                                        icon: 'data/to_end.png'
-                                                        tooltip_txt: tr._('Jump to last page in file')
-                                                        icon_size: 18
-                                                        disabled: app.loading_page or app.curr_page == app.total_pages or (app.state != 'Idle' and app.state != 'N/A')
-                                                        on_release:
-                                                            root.last_page()
-
-                                                    Widget:
+                                            GCodePageBar:
+                                                id: gcode_page_bar
 
                                     ManualCMDPage:
                                         name: 'manual_cmd_page'
@@ -3867,15 +3843,6 @@
                                                 orientation: 'horizontal'
                                                 size_hint_y: None
                                                 height: '66dp'
-                                                ToolTipButton:
-                                                    id: toggle_file
-                                                    width: '40dp'
-                                                    size_hint_x: None
-                                                    text: tr._('FILE')
-                                                    tooltip_txt: tr._('Return to file view')
-                                                    on_release:
-                                                        cmd_manager.transition.direction = 'right'
-                                                        cmd_manager.current = 'gcode_cmd_page'
                                                 MDITextInput:
                                                     id: manual_cmd
                                                     hint_text: tr._('Enter command... <control+enter to send>')

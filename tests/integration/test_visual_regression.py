@@ -104,6 +104,18 @@ class TestConnectedIdleState:
         else:
             compare_screenshots(name)
 
+    def test_console_tab(self, kivy_app, connected_idle_state, update_references):
+        name = "connected_idle_console_tab"
+        kivy_app.root.content.current = "File"
+        kivy_app.root.cmd_manager.current = "manual_cmd_page"
+        apply_machine_state(kivy_app)
+        pump_frames(10, sleep=0.05)
+        capture_screenshot(kivy_app, name)
+        if update_references:
+            save_reference(name)
+        else:
+            compare_screenshots(name)
+
     def test_settings_popup(self, kivy_app, connected_idle_state, update_references):
         name = "connected_idle_settings_popup"
         kivy_app.root.content.current = "Control"

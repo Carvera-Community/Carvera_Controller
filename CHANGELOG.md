@@ -16,10 +16,15 @@
 - Change: Hide Auto Vacuum on the Config and Run screen when the machine is not a C1
 - Change: Config and Run preview now uses now uses the configured worksize_x/y for the bed size
 - Change: Auto Leveling auto-enables Auto Z Probe, but keeps the previous Z-probe location and allows the location config to be changed. Auto Z Probe can be turned off while leveling, but a warning is shown.
+- Change: Replace the MDI/FILE buttons by a tabbed panel
+- Change: Replace the G-code first/previous/next/last buttons with a compact page bar that shows the current page and line range, and hides when the file fits on one page
+- Change: The WCS button now shows rotation in the subtext, alternating with the WCS name when a description is set.
 - Fixed: Harden the gcode parser against "zero length" movement, and prevent division by zero in play slider
 - Fixed: Time estimates ignoring speed for some 4th-axis moves
 - Fixed: Allow to select the bottom element of the MDI, Gcode and probing confirmation lists
 - Fixed: Machine config backup no longer applies settings or opens files in the G-code viewer
+- Fixed: Fixed rotary previews so toolpaths, pointers, and stock rotate around the WCS origin without unwanted orbiting.
+- Fixed: Keep thin tool icon fills visible by drawing the outline outside the silhouette.
 
 [2.2.0-RC3]
 - Enhancement: The step size is now synchronized between the main screen and the Probing screen
