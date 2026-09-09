@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-31 20:09+1000\n"
+"POT-Creation-Date: 2026-09-09 23:39+1000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -12,187 +12,187 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 3.3.2\n"
 
-#: main.py:172
+#: main.py:172 main.py:322
 msgid "Halt Manually"
 msgstr ""
 
-#: main.py:173
+#: main.py:173 main.py:323
 msgid "Home Fail"
 msgstr ""
 
-#: main.py:174
+#: main.py:174 main.py:324
 msgid "Probe Fail"
 msgstr ""
 
-#: main.py:175
+#: main.py:175 main.py:325
 msgid "Calibrate Fail"
 msgstr ""
 
-#: main.py:176
+#: main.py:176 main.py:326
 msgid "ATC Home Fail"
 msgstr ""
 
-#: main.py:177
+#: main.py:177 main.py:327
 msgid "ATC Invalid Tool Number"
 msgstr ""
 
-#: main.py:178
+#: main.py:178 main.py:328
 msgid "ATC Drop Tool Fail"
 msgstr ""
 
-#: main.py:179
+#: main.py:179 main.py:329
 msgid "ATC Position Occupied"
 msgstr ""
 
 #: main.py:180
-msgid "Spindle Temp Error"
+msgid "Spindle Overheated"
 msgstr ""
 
-#: main.py:181
+#: main.py:181 main.py:331
 msgid "Soft Limit Triggered"
 msgstr ""
 
-#: main.py:182
+#: main.py:182 main.py:332
 msgid "Cover opened when playing"
 msgstr ""
 
-#: main.py:183
+#: main.py:183 main.py:333
 msgid "Wireless probe dead or not set"
 msgstr ""
 
-#: main.py:184
+#: main.py:184 main.py:334
 msgid "Emergency stop button pressed"
 msgstr ""
 
-#: main.py:186
+#: main.py:186 main.py:338
 msgid "Hard Limit Triggered, reset needed"
 msgstr ""
 
-#: main.py:187
+#: main.py:187 main.py:339
 msgid "X Axis Motor Error, reset needed"
 msgstr ""
 
-#: main.py:188
+#: main.py:188 main.py:340
 msgid "Y Axis Motor Error, reset needed"
 msgstr ""
 
-#: main.py:189
+#: main.py:189 main.py:341
 msgid "Z Axis Motor Error, reset needed"
 msgstr ""
 
-#: main.py:190
+#: main.py:190 main.py:342
 msgid "Spindle Stall, reset needed"
 msgstr ""
 
-#: main.py:191
+#: main.py:191 main.py:343
 msgid "SD card read fail, reset needed"
 msgstr ""
 
-#: main.py:193
+#: main.py:193 main.py:345
 msgid "Spindle Alarm, power off/on needed"
 msgstr ""
 
-#: main.py:396
+#: main.py:396 main.py:897
 msgid "Please enter values for both block thickness and tool diameter."
 msgstr ""
 
-#: main.py:403
+#: main.py:403 main.py:904
 msgid "Please enter valid numbers for block thickness and tool diameter."
 msgstr ""
 
-#: main.py:410 main.py:464
+#: main.py:410 main.py:464 main.py:911 main.py:960
 msgid "Please enter values for both X and Y offsets."
 msgstr ""
 
-#: main.py:417 main.py:471
+#: main.py:417 main.py:471 main.py:918 main.py:967
 msgid "Please enter valid numbers for X and Y offsets."
 msgstr ""
 
-#: main.py:496
+#: main.py:496 main.py:993
 msgid "Please enter values for both probe height and tool diameter."
 msgstr ""
 
-#: main.py:503
+#: main.py:503 main.py:1000
 msgid "Please enter valid numbers for probe height and tool diameter."
 msgstr ""
 
-#: main.py:527
+#: main.py:527 main.py:1030
 msgid "Press the Wireless Probe until the green LED blinks quickly."
 msgstr ""
 
-#: main.py:528
+#: main.py:528 main.py:1031
 msgid "Pairing Success!"
 msgstr ""
 
-#: main.py:529
+#: main.py:529 main.py:1032
 msgid "Pairing Timeout!"
 msgstr ""
 
-#: main.py:583
+#: main.py:583 main.py:1107
 msgid "Please enter values for height, X points, and Y points."
 msgstr ""
 
-#: main.py:591
+#: main.py:591 main.py:1115
 msgid "Please enter valid numbers for height, X points, and Y points."
 msgstr ""
 
-#: main.py:810
+#: main.py:810 main.py:1443
 msgid "from Headstock"
 msgstr ""
 
-#: main.py:816
+#: main.py:816 main.py:1451
 msgid "from Anchor2"
 msgstr ""
 
-#: main.py:818
+#: main.py:818 main.py:1456
 msgid "from Anchor1"
 msgstr ""
 
-#: main.py:824
+#: main.py:824 main.py:1465
 msgid "Fixed Pos"
 msgstr ""
 
-#: main.py:826
+#: main.py:826 main.py:1469
 msgid "from"
 msgstr ""
 
-#: main.py:827 makera.kv:1630
+#: main.py:827 makera.kv:1630 main.py:1470 makera.kv:1977
 msgid "Work Origin"
 msgstr ""
 
-#: main.py:827 makera.kv:1636
+#: main.py:827 makera.kv:1636 main.py:1470 makera.kv:1983
 msgid "Path Origin"
 msgstr ""
 
-#: main.py:830
+#: main.py:830 main.py:1475
 msgid "X Points: "
 msgstr ""
 
-#: main.py:831
+#: main.py:831 main.py:1477
 msgid "Y Points: "
 msgstr ""
 
-#: main.py:832
+#: main.py:832 main.py:1479
 msgid "Height: "
 msgstr ""
 
-#: main.py:840
+#: main.py:840 main.py:1490
 msgid " Offsets: "
 msgstr ""
 
-#: main.py:841
+#: main.py:841 main.py:1491
 msgid " -X: "
 msgstr ""
 
-#: main.py:842
+#: main.py:842 main.py:1493
 msgid " +X: "
 msgstr ""
 
-#: main.py:843
+#: main.py:843 main.py:1495
 msgid " -Y: "
 msgstr ""
 
-#: main.py:844
+#: main.py:844 main.py:1497
 msgid " +Y: "
 msgstr ""
 
@@ -236,56 +236,66 @@ msgstr ""
 msgid "Please enter a valid number for A position."
 msgstr ""
 
-#: main.py:1272
+#: main.py:1272 main.py:1931
 msgid "Save Changes"
 msgstr ""
 
 #: main.py:1272 makera.kv:1258 makera.kv:1293 makera.kv:1382 makera.kv:1536
 #: makera.kv:1595 makera.kv:1679 makera.kv:1756 makera.kv:2000 makera.kv:4240
 #: makera.kv:4295 makera.kv:4350 makera.kv:4405 makera.kv:4460 makera.kv:4516
-#: makera.kv:4573 makera.kv:5391 makera.kv:5454
+#: makera.kv:4573 makera.kv:5391 makera.kv:5454 main.py:1931 main.py:6013
+#: makera.kv:1446 makera.kv:1484 makera.kv:1542 makera.kv:1698 makera.kv:1724
+#: makera.kv:1881 makera.kv:1941 makera.kv:2026 makera.kv:2104 makera.kv:2350
+#: makera.kv:5598 makera.kv:5667 ui/popups/set_position/set_position.kv:57
+#: ui/popups/set_position/set_position.kv:113
 msgid "Ok"
 msgstr ""
 
-#: main.py:1274
+#: main.py:1274 main.py:1933
 msgid "Close without saving"
 msgstr ""
 
 #: main.py:1274 makera.kv:1811 makera.kv:2159 makera.kv:2403 makera.kv:2479
 #: makera.kv:2963 makera.kv:3202 makera.kv:5383
-#: addons/probing/ProbingPopup.kv:493
+#: addons/probing/ProbingPopup.kv:493 main.py:1933 makera.kv:2160
+#: makera.kv:2516 makera.kv:2780 makera.kv:2860 makera.kv:3462 makera.kv:3700
+#: makera.kv:5590 addons/facing/FacingWizardPopup.kv:639
+#: addons/probing/ProbingPopup.kv:689
+#: addons/probing/preview/ProbingPreviewPopup.kv:56
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:999
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:1278
 msgid "Close"
 msgstr ""
 
-#: main.py:1287
+#: main.py:1287 main.py:1947
 msgid "Please enter a value for rotation angle."
 msgstr ""
 
-#: main.py:1293
+#: main.py:1293 main.py:1953
 msgid "Please enter a valid number for rotation angle."
 msgstr ""
 
-#: main.py:2292 makera.kv:2053
+#: main.py:2292 makera.kv:2053 main.py:3658 makera.kv:2403
 msgid "Controller"
 msgstr ""
 
-#: main.py:2307
+#: main.py:2307 main.py:3698
 msgid "Pendant"
 msgstr ""
 
-#: main.py:2373 main.py:2405
+#: main.py:2373 main.py:2405 main.py:4001 main.py:4034
 msgid " New version detected: v"
 msgstr ""
 
-#: main.py:2373 main.py:2405
+#: main.py:2373 main.py:2405 main.py:4001 main.py:4034
 msgid " Current: v"
 msgstr ""
 
-#: main.py:2376 main.py:2408
+#: main.py:2376 main.py:2408 main.py:4005 main.py:4038
 msgid " Current version: v"
 msgstr ""
 
-#: main.py:2392
+#: main.py:2392 main.py:4021
 msgid "Language setting applied, restart Controller app to take effect !"
 msgstr ""
 
@@ -305,115 +315,115 @@ msgstr ""
 msgid "Desktop"
 msgstr ""
 
-#: main.py:2593
+#: main.py:2593 Utils.py:742
 msgid "Storage"
 msgstr ""
 
-#: main.py:2647 main.py:2691
+#: main.py:2647 main.py:2691 Utils.py:834 main.py:4381
 msgid "Recent Places"
 msgstr ""
 
-#: main.py:2707
+#: main.py:2707 main.py:4489
 msgid "Cannot connect, machine is busy or not available."
 msgstr ""
 
-#: main.py:2709
+#: main.py:2709 main.py:4495
 msgid "No previous machine network address stored."
 msgstr ""
 
-#: main.py:2714
+#: main.py:2714 main.py:4525
 msgid "Searching for nearby machines..."
 msgstr ""
 
-#: main.py:2729
+#: main.py:2729 main.py:4544
 msgid "None found, enter address manually..."
 msgstr ""
 
-#: main.py:2743
+#: main.py:2743 main.py:4567
 msgid "Input machine network address:"
 msgstr ""
 
-#: main.py:2858
+#: main.py:2858 main.py:4734
 msgid "Error loading dir"
 msgstr ""
 
-#: main.py:2860
+#: main.py:2860 main.py:4738
 msgid "Timeout loading dir"
 msgstr ""
 
-#: main.py:2868
+#: main.py:2868 main.py:4750
 msgid "Error deleting"
 msgstr ""
 
-#: main.py:2870
+#: main.py:2870 main.py:4754
 msgid "Timeout deleting"
 msgstr ""
 
-#: main.py:2878
+#: main.py:2878 main.py:4771
 msgid "Error renaming"
 msgstr ""
 
-#: main.py:2880
+#: main.py:2880 main.py:4779
 msgid "Timeout renaming"
 msgstr ""
 
-#: main.py:2888
+#: main.py:2888 main.py:4793
 msgid "Error making dir:"
 msgstr ""
 
-#: main.py:2890
+#: main.py:2890 main.py:4801
 msgid "Timeout making dir:"
 msgstr ""
 
-#: main.py:2898
+#: main.py:2898 main.py:4812
 msgid "Error getting WiFi info!"
 msgstr ""
 
-#: main.py:2900
+#: main.py:2900 main.py:4814
 msgid "Timeout getting WiFi info!"
 msgstr ""
 
-#: main.py:2910
+#: main.py:2910 main.py:4824
 msgid "Timeout connecting WiFi!"
 msgstr ""
 
-#: main.py:2920
+#: main.py:2920 main.py:4837
 msgid "Delete File or Dir"
 msgstr ""
 
-#: main.py:2921
+#: main.py:2921 main.py:4839
 msgid "Confirm to delete file or dir"
 msgstr ""
 
-#: main.py:2936 main.py:2950
+#: main.py:2936 main.py:2950 main.py:4874 main.py:4896 main.py:4941
 msgid "Machine Is Halted: "
 msgstr ""
 
-#: main.py:2938 main.py:2952
+#: main.py:2938 main.py:2952 main.py:4877 main.py:4899 main.py:4941
 msgid "Machine Is Halted!"
 msgstr ""
 
-#: main.py:2956
+#: main.py:2956 main.py:4903
 msgid "Please manually switch off/on the machine!"
 msgstr ""
 
-#: main.py:2959 main.py:2971
+#: main.py:2959 main.py:2971 main.py:4906 main.py:4968
 msgid "Confirm to reset machine?"
 msgstr ""
 
-#: main.py:2962
+#: main.py:2962 main.py:4909
 msgid "Confirm to unlock machine?"
 msgstr ""
 
-#: main.py:2970
+#: main.py:2970 main.py:4967
 msgid "Machine Is Sleeping"
 msgstr ""
 
-#: main.py:2985
+#: main.py:2985 main.py:5044
 msgid "Changing Tool"
 msgstr ""
 
-#: main.py:2986
+#: main.py:2986 main.py:5046
 msgid "Please change to tool: "
 msgstr ""
 
@@ -421,163 +431,166 @@ msgstr ""
 msgid "Then press 'Confirm' or main button to proceed"
 msgstr ""
 
-#: main.py:3022
+#: main.py:3022 main.py:5085
 msgid "Change name"
 msgstr ""
 
-#: main.py:3030
+#: main.py:3030 main.py:5095
 msgid "Input new folder name:"
 msgstr ""
 
-#: main.py:3051
+#: main.py:3051 main.py:5117
 msgid "Input WiFi password of"
 msgstr ""
 
-#: main.py:3063 main.py:3094
+#: main.py:3063 main.py:3094 main.py:5129 main.py:5180
 msgid "File Already Exists"
 msgstr ""
 
-#: main.py:3064 main.py:3095
+#: main.py:3064 main.py:3095 main.py:5130 main.py:5181
 msgid "Confirm to overwrite file:"
 msgstr ""
 
-#: main.py:3071
+#: main.py:3071 main.py:5137
 msgid "Updating Firmware"
 msgstr ""
 
-#: main.py:3072
+#: main.py:3072 main.py:5139
 msgid ""
 "Are you sure you want to update the firmware? A machine reset will be "
 "required to apply the new firmware."
 msgstr ""
 
-#: main.py:3086
+#: main.py:3086 main.py:5161 addons/facing/FacingWizardPopup.py:935
 msgid "Loading file"
 msgstr ""
 
-#: main.py:3112
+#: main.py:3112 main.py:5199
 msgid "Opening local file"
 msgstr ""
 
-#: main.py:3168
+#: main.py:3168 main.py:5350
 msgid ""
 "Error loading machine config setting. Possibly malformed value.\n"
 "Skipping setting key: "
 msgstr ""
 
-#: main.py:3178
+#: main.py:3178 main.py:5381
 msgid "Download config file error"
 msgstr ""
 
-#: main.py:3194
+#: main.py:3194 main.py:5452
 msgid "Load config..."
 msgstr ""
 
-#: main.py:3194
+#: main.py:3194 main.py:5452
 msgid "Checking"
 msgstr ""
 
-#: main.py:3221
+#: main.py:3221 main.py:5500
 msgid "Download config file error!"
 msgstr ""
 
-#: main.py:3223
+#: main.py:3223 main.py:5510
 msgid "Download file error!"
 msgstr ""
 
-#: main.py:3237
+#: main.py:3237 main.py:5538
 msgid "Synchronize version and time..."
 msgstr ""
 
-#: main.py:3244
+#: main.py:3244 main.py:5554
 msgid "Open cached file"
 msgstr ""
 
-#: main.py:3254
+#: main.py:3254 main.py:5565
 msgid "Downloading is canceled manually."
 msgstr ""
 
-#: main.py:3298
+#: main.py:3298 main.py:5257 main.py:5262 main.py:5735 main.py:5749
 msgid "Downloading"
 msgstr ""
 
-#: main.py:3312 main.py:3314
+#: main.py:3312 main.py:3314 main.py:5768 main.py:5771
 msgid "WiFi: Searching for network..."
 msgstr ""
 
-#: main.py:3339
+#: main.py:3339 main.py:5804
 msgid "WiFi: Connected"
 msgstr ""
 
-#: main.py:3339
+#: main.py:3339 main.py:5804
 msgid "WiFi: Not Connected"
 msgstr ""
 
-#: main.py:3342
+#: main.py:3342 main.py:5809
 msgid "Close Connection"
 msgstr ""
 
-#: main.py:3383
+#: main.py:3383 main.py:5889
 msgid "Can not load coordinate value:"
 msgstr ""
 
-#: main.py:3390
+#: main.py:3390 main.py:5897
 msgid "Can not load laser offset value:"
 msgstr ""
 
-#: main.py:3451
+#: main.py:3451 main.py:5979
 msgid "Connecting to"
 msgstr ""
 
-#: main.py:3583
+#: main.py:3583 main.py:6187
 msgid "Uploading"
 msgstr ""
 
-#: main.py:3605
+#: main.py:3605 main.py:6210
 msgid "Uploading is canceled manually."
 msgstr ""
 
-#: main.py:3614
+#: main.py:3614 main.py:6219
 msgid "Upload file error!"
 msgstr ""
 
-#: main.py:3655
+#: main.py:3655 main.py:6263
 msgid "Decompressing"
 msgstr ""
 
-#: main.py:3670
+#: main.py:3670 main.py:6280
 msgid "Update Finished"
 msgstr ""
 
-#: main.py:3671
+#: main.py:3671 main.py:6281
 msgid "Confirm to reset the machine?"
 msgstr ""
 
-#: main.py:3795 makera.kv:3302
+#: main.py:3795 makera.kv:3302 main.py:6574 makera.kv:3801
 msgid "disconnect"
 msgstr ""
 
-#: main.py:3930 main.py:3949
+#: main.py:3930 main.py:3949 main.py:6454 main.py:6848 main.py:6867
+#: ui/GcodeColorSchemePanel.py:65
 msgid "Laser"
 msgstr ""
 
-#: main.py:3937
+#: main.py:3937 main.py:6855
 msgid "None"
 msgstr ""
 
-#: main.py:3947 makera.kv:3161
+#: main.py:3947 makera.kv:3161 main.py:6456 main.py:6865
+#: ui/GcodeColorSchemePanel.py:67 makera.kv:3659
+#: addons/facing/FacingWizardPopup.kv:361
 msgid "Probe"
 msgstr ""
 
-#: main.py:3951
+#: main.py:3951 main.py:6869
 msgid "3DProb"
 msgstr ""
 
-#: main.py:4040
+#: main.py:4040 main.py:6985
 msgid " No Remote File Selected"
 msgstr ""
 
-#: main.py:4317
+#: main.py:4317 main.py:7458
 msgid "Load config error, Key:"
 msgstr ""
 
@@ -585,39 +598,41 @@ msgstr ""
 msgid "Enable Pendant"
 msgstr ""
 
-#: main.py:4480 makera.kv:3588
+#: main.py:4480 makera.kv:3588 main.py:7726 main.py:8926
+#: addons/probing/ProbingPopup.kv:661
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:1268
 msgid "No Pendant"
 msgstr ""
 
-#: main.py:4547
+#: main.py:4547 main.py:7894
 msgid "Settings applied, need machine reset to take effect !"
 msgstr ""
 
-#: main.py:4553
+#: main.py:4553 main.py:7901
 msgid "UI Density changed, restart application to apply."
 msgstr ""
 
-#: main.py:4568
+#: main.py:4568 main.py:8021
 msgid "Restore Settings"
 msgstr ""
 
-#: main.py:4569
+#: main.py:4569 main.py:8022
 msgid "Confirm to restore settings from default ?"
 msgstr ""
 
-#: main.py:4583
+#: main.py:4583 main.py:8036
 msgid "Save As Default"
 msgstr ""
 
-#: main.py:4584
+#: main.py:4584 main.py:8037
 msgid "Confirm to save current settings as default ?"
 msgstr ""
 
-#: main.py:4592
+#: main.py:4592 main.py:8045
 msgid "Entering Laser Mode"
 msgstr ""
 
-#: main.py:4594
+#: main.py:4594 main.py:8048
 msgid ""
 "You are about to enable laser mode. \n"
 "\n"
@@ -639,35 +654,37 @@ msgstr ""
 msgid "Please make sure the GCode file is valid"
 msgstr ""
 
-#: main.py:4911
+#: main.py:4911 main.py:8948
 msgid "Carvera Controller Community"
 msgstr ""
 
-#: ui.py:42
+#: ui.py:42 custom_widgets.py:316
 msgid "Open editor…"
 msgstr ""
 
-#: ui.py:53
+#: ui.py:53 custom_widgets.py:327
 msgid "<unnamed>"
 msgstr ""
 
-#: ui.py:55
+#: ui.py:55 custom_widgets.py:329
 msgid "<invalid>"
 msgstr ""
 
-#: ui.py:80
+#: ui.py:80 custom_widgets.py:349
 msgid "Name:"
 msgstr ""
 
-#: ui.py:87
+#: ui.py:87 custom_widgets.py:353
 msgid "G-code:"
 msgstr ""
 
-#: ui.py:92
+#: ui.py:92 custom_widgets.py:358
 msgid "Edit command"
 msgstr ""
 
-#: ui.py:98
+#: ui.py:98 custom_widgets.py:247 custom_widgets.py:361
+#: addons/pendant/pendant.py:778 ui/LocalFilePicker.kv:149
+#: addons/facing/FacingWizardPopup.kv:46 addons/beds/ui/BedSettingsPopup.kv:239
 msgid "Save"
 msgstr ""
 
@@ -675,169 +692,186 @@ msgstr ""
 #: makera.kv:1409 makera.kv:1532 makera.kv:1591 makera.kv:1675 makera.kv:1752
 #: makera.kv:1996 makera.kv:4236 makera.kv:4291 makera.kv:4346 makera.kv:4401
 #: makera.kv:4456 makera.kv:4512 makera.kv:4569 makera.kv:5450
-#: addons/probing/preview/ProbingPreviewPopup.kv:26
+#: addons/probing/preview/ProbingPreviewPopup.kv:26 custom_widgets.py:250
+#: custom_widgets.py:364 addons/pendant/pendant.py:775
+#: addons/facing/FacingWizardPopup.py:283
+#: addons/facing/FacingWizardPopup.py:346
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1076 makera.kv:1443
+#: makera.kv:1481 makera.kv:1539 makera.kv:1586 makera.kv:1623 makera.kv:1664
+#: makera.kv:1724 makera.kv:1753 makera.kv:1877 makera.kv:1937 makera.kv:2022
+#: makera.kv:2100 makera.kv:2346 makera.kv:5663 ui/LocalFilePicker.kv:146
+#: addons/facing/FacingWizardPopup.kv:43 addons/beds/ui/BedSettingsPopup.kv:67
+#: addons/beds/ui/BedSettingsPopup.kv:236
+#: addons/stock/ui/StockSettingsPopup.kv:338
+#: ui/popups/set_position/set_position.kv:53
+#: ui/popups/set_position/set_position.kv:109
+#: ui/popups/adv_calibrate/adv_calibrate.kv:109
 msgid "Cancel"
 msgstr ""
 
-#: makera.kv:306
+#: makera.kv:306 makera.kv:395
 msgid "Jog Speed:"
 msgstr ""
 
-#: makera.kv:308
+#: makera.kv:308 makera.kv:397
 msgid "Match Feed"
 msgstr ""
 
-#: makera.kv:316
+#: makera.kv:316 makera.kv:413
 msgid "2000 mm/min"
 msgstr ""
 
-#: makera.kv:323
+#: makera.kv:323 makera.kv:420
 msgid "1200 mm/min"
 msgstr ""
 
-#: makera.kv:330
+#: makera.kv:330 makera.kv:427
 msgid "600 mm/min"
 msgstr ""
 
-#: makera.kv:337
+#: makera.kv:337 makera.kv:434
 msgid "300 mm/min"
 msgstr ""
 
-#: makera.kv:344
+#: makera.kv:344 makera.kv:441
 msgid "100 mm/min"
 msgstr ""
 
-#: makera.kv:359
+#: makera.kv:359 makera.kv:456
 msgid "Set X Origin"
 msgstr ""
 
-#: makera.kv:361
+#: makera.kv:361 makera.kv:458
 msgid "X = 0"
 msgstr ""
 
-#: makera.kv:370
+#: makera.kv:370 makera.kv:467
 msgid "Set X"
 msgstr ""
 
-#: makera.kv:387
+#: makera.kv:387 makera.kv:484
 msgid "Set Y Origin"
 msgstr ""
 
-#: makera.kv:389
+#: makera.kv:389 makera.kv:486
 msgid "Y = 0"
 msgstr ""
 
-#: makera.kv:398
+#: makera.kv:398 makera.kv:495
 msgid "Set Y"
 msgstr ""
 
-#: makera.kv:416
+#: makera.kv:416 makera.kv:513
 msgid "Set Z Origin"
 msgstr ""
 
-#: makera.kv:418
+#: makera.kv:418 makera.kv:515
 msgid "Z = 0"
 msgstr ""
 
-#: makera.kv:427
+#: makera.kv:427 makera.kv:524
 msgid "Set Z"
 msgstr ""
 
-#: makera.kv:436
+#: makera.kv:436 makera.kv:533
 msgid "Auto Leveling"
 msgstr ""
 
-#: makera.kv:450
+#: makera.kv:450 makera.kv:547
 msgid "max:"
 msgstr ""
 
-#: makera.kv:454
+#: makera.kv:454 makera.kv:551
 msgid "Clear"
 msgstr ""
 
-#: makera.kv:455
+#: makera.kv:455 makera.kv:552
 msgid ""
 "Clear any existing autolevel offsets. When autolevel offsets are enabled the "
 "Z axis dropdown will be blue"
 msgstr ""
 
-#: makera.kv:472
+#: makera.kv:472 makera.kv:575
 msgid "Set A Origin"
 msgstr ""
 
-#: makera.kv:474
+#: makera.kv:474 makera.kv:577
 msgid "A = 0"
 msgstr ""
 
-#: makera.kv:483
+#: makera.kv:483 makera.kv:586
 msgid "Set A"
 msgstr ""
 
-#: makera.kv:492
+#: makera.kv:492 makera.kv:595
 msgid "Shrink"
 msgstr ""
 
-#: makera.kv:493
+#: makera.kv:493 makera.kv:596
 msgid "Reset A Axis value to 0-360 while keeping the offset. Eg 374 becomes 14"
 msgstr ""
 
-#: makera.kv:502
+#: makera.kv:502 makera.kv:605
 msgid "Fast Move"
 msgstr ""
 
-#: makera.kv:523 makera.kv:5416
+#: makera.kv:523 makera.kv:5416 makera.kv:626 makera.kv:5628
 msgid "Set Rotation"
 msgstr ""
 
-#: makera.kv:535 makera.kv:538 makera.kv:539
+#: makera.kv:535 makera.kv:538 makera.kv:539 makera.kv:638 makera.kv:641
+#: makera.kv:642
 msgid "Activate WCS"
 msgstr ""
 
-#: makera.kv:543 makera.kv:4595
+#: makera.kv:543 makera.kv:4595 makera.kv:646 makera.kv:4733
 msgid "WCS Settings"
 msgstr ""
 
-#: makera.kv:562
+#: makera.kv:562 makera.kv:665
 msgid "Feed Status"
 msgstr ""
 
-#: makera.kv:576 makera.kv:658
+#: makera.kv:576 makera.kv:658 makera.kv:679 makera.kv:762
 msgid "Scale:"
 msgstr ""
 
-#: makera.kv:581 makera.kv:662
+#: makera.kv:581 makera.kv:662 makera.kv:684 makera.kv:766
 msgid "Target:"
 msgstr ""
 
-#: makera.kv:585
+#: makera.kv:585 makera.kv:688
 msgid "Speed Scaling"
 msgstr ""
 
-#: makera.kv:622 makera.kv:724 makera.kv:934 makera.kv:3508
+#: makera.kv:622 makera.kv:724 makera.kv:934 makera.kv:3508 makera.kv:725
+#: makera.kv:847 makera.kv:1083 makera.kv:4064
+#: addons/camera/CameraControls.kv:85
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:989
 msgid "Reset"
 msgstr ""
 
-#: makera.kv:644
+#: makera.kv:644 makera.kv:748
 msgid "Spindle Status"
 msgstr ""
 
-#: makera.kv:666
+#: makera.kv:666 makera.kv:770
 msgid "Temp:"
 msgstr ""
 
-#: makera.kv:669 makera.kv:2709
+#: makera.kv:669 makera.kv:2709 makera.kv:3093
 msgid "Auto Vacuum"
 msgstr ""
 
-#: makera.kv:688
+#: makera.kv:688 makera.kv:811
 msgid "RPM Scaling"
 msgstr ""
 
-#: makera.kv:745
+#: makera.kv:745 makera.kv:868
 msgid "Tool Status"
 msgstr ""
 
-#: makera.kv:759
+#: makera.kv:759 makera.kv:882
 msgid "TLO:  "
 msgstr ""
 
@@ -845,391 +879,400 @@ msgstr ""
 msgid "WP:  "
 msgstr ""
 
-#: makera.kv:771 makera.kv:776 makera.kv:777
+#: makera.kv:771 makera.kv:776 makera.kv:777 makera.kv:912 makera.kv:917
+#: makera.kv:918
 msgid "Change..."
 msgstr ""
 
-#: makera.kv:780
+#: makera.kv:780 makera.kv:921
 msgid "Calibrate"
 msgstr ""
 
-#: makera.kv:787
+#: makera.kv:787 makera.kv:936
 msgid "Drop"
 msgstr ""
 
-#: makera.kv:798 makera.kv:803 makera.kv:804
+#: makera.kv:798 makera.kv:803 makera.kv:804 makera.kv:947 makera.kv:952
+#: makera.kv:953
 msgid "Set..."
 msgstr ""
 
-#: makera.kv:807
+#: makera.kv:807 makera.kv:956
 msgid "Clamp"
 msgstr ""
 
-#: makera.kv:815
+#: makera.kv:815 makera.kv:964
 msgid "Unclamp"
 msgstr ""
 
-#: makera.kv:835
+#: makera.kv:835 makera.kv:984
 msgid "Laser Status"
 msgstr ""
 
-#: makera.kv:849
+#: makera.kv:849 makera.kv:998
 msgid "scale:"
 msgstr ""
 
-#: makera.kv:852
+#: makera.kv:852 makera.kv:1001
 msgid "Enable Laser"
 msgstr ""
 
-#: makera.kv:876
+#: makera.kv:876 makera.kv:1025
 msgid "Laser Test"
 msgstr ""
 
-#: makera.kv:895
+#: makera.kv:895 makera.kv:1044
 msgid "Power Scaling"
 msgstr ""
 
-#: makera.kv:956
+#: makera.kv:956 makera.kv:1105
 msgid "Run File View"
 msgstr ""
 
-#: makera.kv:966
+#: makera.kv:966 makera.kv:1115
 msgid "Manual Move View"
 msgstr ""
 
-#: makera.kv:979
+#: makera.kv:979 makera.kv:1128
 msgid "Diagnostics Menu"
 msgstr ""
 
-#: makera.kv:990
+#: makera.kv:990 makera.kv:1139
 msgid "Wifi Setup"
 msgstr ""
 
-#: makera.kv:1001
+#: makera.kv:1001 makera.kv:1150
 msgid "Pair Probe"
 msgstr ""
 
-#: makera.kv:1010
+#: makera.kv:1010 makera.kv:1159
 msgid "Update Firmware/Controller"
 msgstr ""
 
-#: makera.kv:1023
+#: makera.kv:1023 makera.kv:1172
 msgid "Language Selection"
 msgstr ""
 
-#: makera.kv:1033
+#: makera.kv:1033 makera.kv:1182
 msgid "Settings"
 msgstr ""
 
-#: makera.kv:1042
+#: makera.kv:1042 makera.kv:1191
 msgid "Send Bug Report"
 msgstr ""
 
-#: makera.kv:1073
+#: makera.kv:1073 makera.kv:1233
 msgid "Reconnect"
 msgstr ""
 
-#: makera.kv:1084
+#: makera.kv:1084 makera.kv:1245
 msgid "Scan Wi-Fi..."
 msgstr ""
 
-#: makera.kv:1091
+#: makera.kv:1091 makera.kv:1259
 msgid " USB..."
 msgstr ""
 
-#: makera.kv:1109
+#: makera.kv:1109 makera.kv:1277
 msgid "Disconnect"
 msgstr ""
 
-#: makera.kv:1121
+#: makera.kv:1121 makera.kv:1331
 msgid "Upload..."
 msgstr ""
 
-#: makera.kv:1127 makera.kv:2083 makera.kv:2131 makera.kv:2457
+#: makera.kv:1127 makera.kv:2083 makera.kv:2131 makera.kv:2457 makera.kv:1337
+#: makera.kv:2433 makera.kv:2488
 msgid "Download"
 msgstr ""
 
 #: makera.kv:1133 makera.kv:2227
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:857 makera.kv:1343
+#: makera.kv:2603 addons/beds/ui/BedSettingsPopup.kv:53
 msgid "Delete"
 msgstr ""
 
 #: makera.kv:1139 makera.kv:2219
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:849 makera.kv:1349
+#: makera.kv:2595
 msgid "Rename"
 msgstr ""
 
-#: makera.kv:1243
+#: makera.kv:1243 makera.kv:1428
 msgid "Select Language"
 msgstr ""
 
-#: makera.kv:1275
+#: makera.kv:1275 makera.kv:1463 makera.kv:1503 makera.kv:1521
 msgid "Input Box"
 msgstr ""
 
-#: makera.kv:1311
+#: makera.kv:1311 makera.kv:1562
 msgid "Confirm Box"
 msgstr ""
 
-#: makera.kv:1315 makera.kv:1376
+#: makera.kv:1315 makera.kv:1376 makera.kv:1578 makera.kv:1690
 msgid "Confirm to continue?"
 msgstr ""
 
-#: makera.kv:1325
+#: makera.kv:1325 makera.kv:1592
 msgid "Confirm"
 msgstr ""
 
-#: makera.kv:1342
+#: makera.kv:1342 makera.kv:1609
 msgid "Machine Is Halted"
 msgstr ""
 
-#: makera.kv:1346
+#: makera.kv:1346 main.py:4882 makera.kv:1616
 msgid "Choose unlock option:"
 msgstr ""
 
-#: makera.kv:1354
+#: makera.kv:1354 makera.kv:1627
 msgid "Unlock and Stay in Position"
 msgstr ""
 
-#: makera.kv:1360
+#: makera.kv:1360 makera.kv:1633
 msgid "Unlock and Move to Safe Z"
 msgstr ""
 
-#: makera.kv:1430
+#: makera.kv:1430 makera.kv:1775
 msgid "Auto-Set By Offset"
 msgstr ""
 
-#: makera.kv:1448
+#: makera.kv:1448 makera.kv:1793
 msgid "Anchor1"
 msgstr ""
 
-#: makera.kv:1460
+#: makera.kv:1460 makera.kv:1805
 msgid "Anchor2"
 msgstr ""
 
-#: makera.kv:1472
+#: makera.kv:1472 makera.kv:1817
 msgid "4Axis Origin"
 msgstr ""
 
-#: makera.kv:1484
+#: makera.kv:1484 makera.kv:1829
 msgid "Current Pos"
 msgstr ""
 
-#: makera.kv:1492 makera.kv:1642
+#: makera.kv:1492 makera.kv:1642 makera.kv:1837 makera.kv:1989
+#: ui/popups/adv_calibrate/adv_calibrate.kv:64
 msgid "X Offset:"
 msgstr ""
 
-#: makera.kv:1498 makera.kv:1648
+#: makera.kv:1498 makera.kv:1648 makera.kv:1843 makera.kv:1995
 msgid "Enter X Offset"
 msgstr ""
 
-#: makera.kv:1506 makera.kv:1656
+#: makera.kv:1506 makera.kv:1656 makera.kv:1851 makera.kv:2003
+#: ui/popups/adv_calibrate/adv_calibrate.kv:87
 msgid "Y Offset:"
 msgstr ""
 
-#: makera.kv:1512 makera.kv:1662
+#: makera.kv:1512 makera.kv:1662 makera.kv:1857 makera.kv:2009
 msgid "Enter Y Offset"
 msgstr ""
 
-#: makera.kv:1523
+#: makera.kv:1523 makera.kv:1868
 msgid "Note: Work origin will be set immediately when clicking OK."
 msgstr ""
 
-#: makera.kv:1540
+#: makera.kv:1540 makera.kv:1886
 msgid "Set By XYZ Probe"
 msgstr ""
 
-#: makera.kv:1551 makera.kv:1712
+#: makera.kv:1551 makera.kv:1712 makera.kv:1897 makera.kv:2060
 msgid "Block Thickness:"
 msgstr ""
 
-#: makera.kv:1557 makera.kv:1718
+#: makera.kv:1557 makera.kv:1718 makera.kv:1903 makera.kv:2066
 msgid "Thickness of probing block"
 msgstr ""
 
-#: makera.kv:1558 makera.kv:1719
+#: makera.kv:1558 makera.kv:1719 makera.kv:1904 makera.kv:2067
 msgid ""
 "The mm thickness between the conductive surface of the probe block and the "
 "workpiece. Used as part of the probing calculation to determine the Z height"
 msgstr ""
 
-#: makera.kv:1566 makera.kv:1727
+#: makera.kv:1566 makera.kv:1727 makera.kv:1912 makera.kv:2075
 msgid "Tool Diameter:"
 msgstr ""
 
-#: makera.kv:1572 makera.kv:1733
+#: makera.kv:1572 makera.kv:1733 makera.kv:1918 makera.kv:2081
 msgid "Tool Diameter"
 msgstr ""
 
-#: makera.kv:1580 makera.kv:1741
+#: makera.kv:1580 makera.kv:1741 makera.kv:1926 makera.kv:2089
 msgid ""
 "Note: Please make sure the probe is stably positioned and the magnet head is "
 "attached to the tool."
 msgstr ""
 
-#: makera.kv:1619
+#: makera.kv:1619 makera.kv:1965
 msgid "Z Probe Config"
 msgstr ""
 
-#: makera.kv:1702
+#: makera.kv:1702 makera.kv:2049
 msgid "XYZ Probe At Current Position"
 msgstr ""
 
-#: makera.kv:1777
+#: makera.kv:1777 makera.kv:2125
 msgid "Pairing Wireless Probe"
 msgstr ""
 
-#: makera.kv:1791
+#: makera.kv:1791 makera.kv:2140
 msgid "Start Pairing"
 msgstr ""
 
-#: makera.kv:1841
+#: makera.kv:1841 makera.kv:2190
 msgid "Auto Leveling Config"
 msgstr ""
 
-#: makera.kv:1859
+#: makera.kv:1859 makera.kv:2209
 msgid "Clearance Height:   "
 msgstr ""
 
-#: makera.kv:1871
+#: makera.kv:1871 makera.kv:2221
 msgid "Min"
 msgstr ""
 
-#: makera.kv:1873
+#: makera.kv:1873 makera.kv:405 makera.kv:2223
 msgid "Max"
 msgstr ""
 
-#: makera.kv:1875
+#: makera.kv:1875 makera.kv:2225
 msgid "Step"
 msgstr ""
 
-#: makera.kv:1877
+#: makera.kv:1877 makera.kv:2227
 msgid "Points"
 msgstr ""
 
-#: makera.kv:1935
+#: makera.kv:1935 makera.kv:2285
 msgid "Offsets:   "
 msgstr ""
 
-#: makera.kv:1943
+#: makera.kv:1943 makera.kv:2293
 msgid "Left X-"
 msgstr ""
 
-#: makera.kv:1945
+#: makera.kv:1945 makera.kv:2295
 msgid "Right X+"
 msgstr ""
 
-#: makera.kv:1947
+#: makera.kv:1947 makera.kv:2297
 msgid "Front Y-"
 msgstr ""
 
-#: makera.kv:1949
+#: makera.kv:1949 makera.kv:2299
 msgid "Back Y+"
 msgstr ""
 
-#: makera.kv:1956
+#: makera.kv:1956 makera.kv:2306
 msgid "Enter -X Offset"
 msgstr ""
 
-#: makera.kv:1964
+#: makera.kv:1964 makera.kv:2314
 msgid "Enter +X Offset"
 msgstr ""
 
-#: makera.kv:1972
+#: makera.kv:1972 makera.kv:2322
 msgid "Enter -Y Offset"
 msgstr ""
 
-#: makera.kv:1980
+#: makera.kv:1980 makera.kv:2330
 msgid "Enter +Y Offset"
 msgstr ""
 
-#: makera.kv:2025
+#: makera.kv:2025 makera.kv:2375
 msgid "Upgrade"
 msgstr ""
 
-#: makera.kv:2035
+#: makera.kv:2035 makera.kv:2385
 msgid " Check Updates on Startup"
 msgstr ""
 
-#: makera.kv:2063 makera.kv:2111
+#: makera.kv:2063 makera.kv:2111 makera.kv:2413 makera.kv:2461
 msgid " Update Log:"
 msgstr ""
 
-#: makera.kv:2101 makera.kv:2437
+#: makera.kv:2101 makera.kv:2437 makera.kv:2451 makera.kv:2814
 msgid "Firmware"
 msgstr ""
 
-#: makera.kv:2137
+#: makera.kv:2137 makera.kv:2494
 msgid "Update"
 msgstr ""
 
-#: makera.kv:2154
+#: makera.kv:2154 makera.kv:2511
 msgid "Check for Updates"
 msgstr ""
 
-#: makera.kv:2199
+#: makera.kv:2199 makera.kv:2575
 msgid "Remote"
 msgstr ""
 
-#: makera.kv:2235
+#: makera.kv:2235 makera.kv:2611
 msgid "New Folder"
 msgstr ""
 
-#: makera.kv:2242
+#: makera.kv:2242 makera.kv:2618
 msgid "Upload File"
 msgstr ""
 
-#: makera.kv:2323 makera.kv:2565
+#: makera.kv:2323 makera.kv:2565 makera.kv:2699 makera.kv:2946
 msgid "Search"
 msgstr ""
 
-#: makera.kv:2352 makera.kv:2594
+#: makera.kv:2352 makera.kv:2594 makera.kv:2728 makera.kv:2975
 msgid "Name "
 msgstr ""
 
-#: makera.kv:2359 makera.kv:2601
+#: makera.kv:2359 makera.kv:2601 makera.kv:2735 makera.kv:2982
 msgid "Date Modified "
 msgstr ""
 
-#: makera.kv:2369 makera.kv:2611
+#: makera.kv:2369 makera.kv:2611 makera.kv:2745 makera.kv:2992
 msgid " Size"
 msgstr ""
 
-#: makera.kv:2407
+#: makera.kv:2407 makera.kv:2784
 msgid "Clear Selection"
 msgstr ""
 
-#: makera.kv:2416
+#: makera.kv:2416 addons/beds/ui/BedEditorPopup.py:204 makera.kv:2793
 msgid "Select"
 msgstr ""
 
-#: makera.kv:2437
+#: makera.kv:2437 makera.kv:2814
 msgid "Local"
 msgstr ""
 
-#: makera.kv:2457
+#: makera.kv:2457 makera.kv:2836
 msgid "View"
 msgstr ""
 
-#: makera.kv:2464
+#: makera.kv:2464 makera.kv:2843
 msgid "Upload"
 msgstr ""
 
-#: makera.kv:2471
+#: makera.kv:2471 makera.kv:2851
 msgid "Upload and Select"
 msgstr ""
 
-#: makera.kv:2565
+#: makera.kv:2565 makera.kv:2946
 msgid "firmware"
 msgstr ""
 
-#: makera.kv:2665
+#: makera.kv:2665 makera.kv:3048
 msgid "Config and Run"
 msgstr ""
 
-#: makera.kv:2665
+#: makera.kv:2665 makera.kv:3048
 msgid " Config and Do "
 msgstr ""
 
-#: makera.kv:2696
+#: makera.kv:2696 makera.kv:3079
 msgid "Background:"
 msgstr ""
 
@@ -1237,187 +1280,190 @@ msgstr ""
 msgid " Set Work Origin"
 msgstr ""
 
-#: makera.kv:2765
+#: makera.kv:2765 makera.kv:3284
 msgid " (0, 0) from Anchor1"
 msgstr ""
 
-#: makera.kv:2778 makera.kv:2860 makera.kv:2919
+#: makera.kv:2778 makera.kv:2860 makera.kv:2919 makera.kv:3297 makera.kv:3375
+#: makera.kv:3423
 msgid "Config"
 msgstr ""
 
-#: makera.kv:2799
+#: makera.kv:2799 makera.kv:3318
 msgid " Scan Margin"
 msgstr ""
 
-#: makera.kv:2832
+#: makera.kv:2832 makera.kv:3347
 msgid " Auto Z Probe"
 msgstr ""
 
-#: makera.kv:2847
+#: makera.kv:2847 makera.kv:3362
 msgid " (10, 10) from Path Origin"
 msgstr ""
 
-#: makera.kv:2891
+#: makera.kv:2891 makera.kv:3395
 msgid " Auto Leveling"
 msgstr ""
 
-#: makera.kv:2905
+#: makera.kv:2905 makera.kv:3409
 msgid " X Points: 10, Y Points: 10, Height: 5"
 msgstr ""
 
-#: makera.kv:2967
+#: makera.kv:2967 makera.kv:3466
 msgid "Run"
 msgstr ""
 
-#: makera.kv:2967
+#: makera.kv:2967 makera.kv:3466
 msgid "Do "
 msgstr ""
 
-#: makera.kv:3085
+#: makera.kv:3085 makera.kv:3583
 msgid "   Diagnostic Panel"
 msgstr ""
 
-#: makera.kv:3097
+#: makera.kv:3097 makera.kv:3595
 msgid "Spindle Motor"
 msgstr ""
 
-#: makera.kv:3101 makera.kv:3130
+#: makera.kv:3101 makera.kv:3130 makera.kv:3599 makera.kv:3628
 msgid "Spindle Fan"
 msgstr ""
 
-#: makera.kv:3104
+#: makera.kv:3104 makera.kv:3602
 msgid "Vacuum"
 msgstr ""
 
-#: makera.kv:3104
+#: makera.kv:3104 makera.kv:3602
 msgid "PowerFan"
 msgstr ""
 
-#: makera.kv:3107
+#: makera.kv:3107 makera.kv:3605
 msgid "Engraving Laser"
 msgstr ""
 
-#: makera.kv:3111
+#: makera.kv:3111 makera.kv:3609
 msgid "Enclosure Light"
 msgstr ""
 
-#: makera.kv:3115
+#: makera.kv:3115 makera.kv:3613
 msgid "Air Assist"
 msgstr ""
 
-#: makera.kv:3141
+#: makera.kv:3141 makera.kv:3639
 msgid "ToolSensorPWR"
 msgstr ""
 
-#: makera.kv:3141
+#: makera.kv:3141 makera.kv:3639
 msgid "Probe Laser"
 msgstr ""
 
-#: makera.kv:3145
+#: makera.kv:3145 makera.kv:3643
 msgid "WPChargePWR"
 msgstr ""
 
-#: makera.kv:3145
+#: makera.kv:3145 makera.kv:3643
 msgid "Beep"
 msgstr ""
 
-#: makera.kv:3151
+#: makera.kv:3151 makera.kv:3649
 msgid "X- Limit"
 msgstr ""
 
-#: makera.kv:3154
+#: makera.kv:3154 makera.kv:3652
 msgid "Y- Limit"
 msgstr ""
 
-#: makera.kv:3157
+#: makera.kv:3157 makera.kv:3655
 msgid "ATC Limit"
 msgstr ""
 
-#: makera.kv:3164
+#: makera.kv:3164 makera.kv:3662
 msgid "Tool Sensor"
 msgstr ""
 
-#: makera.kv:3168 makera.kv:4168
+#: makera.kv:3168 makera.kv:4168 makera.kv:3666 makera.kv:4694
 msgid "E-Stop"
 msgstr ""
 
-#: makera.kv:3173
+#: makera.kv:3173 makera.kv:3671
 msgid "X+ Limit"
 msgstr ""
 
-#: makera.kv:3176
+#: makera.kv:3176 makera.kv:3674
 msgid "Y+ Limit"
 msgstr ""
 
-#: makera.kv:3179
+#: makera.kv:3179 makera.kv:3677
 msgid "Z+ Limit"
 msgstr ""
 
-#: makera.kv:3182
+#: makera.kv:3182 makera.kv:3680
 msgid "Tool Length Setter"
 msgstr ""
 
-#: makera.kv:3185
+#: makera.kv:3185 makera.kv:3683
 msgid "Cover Switch"
 msgstr ""
 
-#: makera.kv:3191
+#: makera.kv:3191 makera.kv:3689
 msgid "Changes in values are applied after 2 seconds."
 msgstr ""
 
-#: makera.kv:3220
+#: makera.kv:3220 makera.kv:3718
 msgid " Settings"
 msgstr ""
 
-#: makera.kv:3229
+#: makera.kv:3229 makera.kv:3727 addons/beds/ui/BedSettingsPopup.kv:70
+#: addons/stock/ui/StockSettingsPopup.kv:341
 msgid "Apply"
 msgstr ""
 
-#: makera.kv:3348
+#: makera.kv:3348 makera.kv:3847
 msgid "Coordinate System"
 msgstr ""
 
-#: makera.kv:3363
+#: makera.kv:3363 makera.kv:3862
 msgid "Feed Rate Override"
 msgstr ""
 
-#: makera.kv:3374
+#: makera.kv:3374 main.py:6766 makera.kv:3873
 msgid "Spindle and Vacuum Overrides"
 msgstr ""
 
-#: makera.kv:3385
+#: makera.kv:3385 makera.kv:3883
 msgid "Tool Settings"
 msgstr ""
 
-#: makera.kv:3396
+#: makera.kv:3396 main.py:6759
 msgid "Laser Settings"
 msgstr ""
 
-#: makera.kv:3504
+#: makera.kv:3504 makera.kv:4059
 msgid "Unlock"
 msgstr ""
 
-#: makera.kv:3512
+#: makera.kv:3512 makera.kv:4069
 msgid "Home"
 msgstr ""
 
-#: makera.kv:3517
+#: makera.kv:3517 makera.kv:4074
 msgid "Margin..."
 msgstr ""
 
-#: makera.kv:3528
+#: makera.kv:3528 makera.kv:4085
 msgid "ZProbe..."
 msgstr ""
 
-#: makera.kv:3539
+#: makera.kv:3539 makera.kv:4096
 msgid "AutoLevel..."
 msgstr ""
 
-#: makera.kv:3551 makera.kv:3554 makera.kv:3555
+#: makera.kv:3551 makera.kv:3554 makera.kv:3555 makera.kv:4109 makera.kv:4112
+#: makera.kv:4113
 msgid "Goto..."
 msgstr ""
 
-#: makera.kv:3558
+#: makera.kv:3558 makera.kv:4117
 msgid "Set Origin"
 msgstr ""
 
@@ -1425,15 +1471,15 @@ msgstr ""
 msgid "Jog Controls"
 msgstr ""
 
-#: makera.kv:3570
+#: makera.kv:3570 makera.kv:4122
 msgid "Probing..."
 msgstr ""
 
-#: makera.kv:3575
+#: makera.kv:3575 makera.kv:4129
 msgid "Light"
 msgstr ""
 
-#: makera.kv:3581
+#: makera.kv:3581 makera.kv:4135
 msgid "Ext. Control"
 msgstr ""
 
@@ -1451,7 +1497,7 @@ msgid ""
 "gcodes"
 msgstr ""
 
-#: makera.kv:3751
+#: makera.kv:3751 ui/GCodePageBar.kv:48
 msgid "Jump to first page in file"
 msgstr ""
 
@@ -1459,11 +1505,11 @@ msgstr ""
 msgid "Go to last page in file"
 msgstr ""
 
-#: makera.kv:3767
+#: makera.kv:3767 ui/GCodePageBar.kv:88
 msgid "Go to next page in file"
 msgstr ""
 
-#: makera.kv:3775
+#: makera.kv:3775 ui/GCodePageBar.kv:93
 msgid "Jump to last page in file"
 msgstr ""
 
@@ -1479,125 +1525,127 @@ msgstr ""
 msgid "Enter command..."
 msgstr ""
 
-#: makera.kv:3827
+#: makera.kv:3827 makera.kv:4382
 msgid "send"
 msgstr ""
 
-#: makera.kv:3828
+#: makera.kv:3828 makera.kv:4383
 msgid ""
 "The MDI is a console that allows you to send individual gcodes, and commands "
 "such as to change config values on the machine"
 msgstr ""
 
-#: makera.kv:4061
+#: makera.kv:4061 makera.kv:4587
 msgid "SettingPage"
 msgstr ""
 
-#: makera.kv:4084
+#: makera.kv:4084 makera.kv:4610
 msgid "Select File"
 msgstr ""
 
-#: makera.kv:4100
+#: makera.kv:4100 makera.kv:4626
 msgid "Start File"
 msgstr ""
 
-#: makera.kv:4112
+#: makera.kv:4112 makera.kv:4638
 msgid "Pause File at Next Safe Opportunity and Enable MDI Control"
 msgstr ""
 
-#: makera.kv:4118
+#: makera.kv:4118 makera.kv:4644
 msgid "Abort File Now"
 msgstr ""
 
-#: makera.kv:4128
+#: makera.kv:4128 makera.kv:4654
 msgid "Pause File Without MDI"
 msgstr ""
 
-#: makera.kv:4206
+#: makera.kv:4206 ui/popups/set_position/set_position.kv:117
 msgid "Set X Current Pos"
 msgstr ""
 
-#: makera.kv:4222
+#: makera.kv:4222 ui/popups/set_position/set_position.kv:118
 msgid "Enter X Pos"
 msgstr ""
 
-#: makera.kv:4261
+#: makera.kv:4261 ui/popups/set_position/set_position.kv:123
 msgid "Set Y Current Pos"
 msgstr ""
 
-#: makera.kv:4277
+#: makera.kv:4277 ui/popups/set_position/set_position.kv:124
 msgid "Enter Y Pos"
 msgstr ""
 
-#: makera.kv:4316
+#: makera.kv:4316 ui/popups/set_position/set_position.kv:129
 msgid "Set Z Current Pos"
 msgstr ""
 
-#: makera.kv:4332
+#: makera.kv:4332 ui/popups/set_position/set_position.kv:130
 msgid "Enter Z Pos"
 msgstr ""
 
-#: makera.kv:4371
+#: makera.kv:4371 ui/popups/set_position/set_position.kv:135
 msgid "Set A Current Pos"
 msgstr ""
 
-#: makera.kv:4387 makera.kv:4555
+#: makera.kv:4387 makera.kv:4555 ui/popups/set_position/set_position.kv:136
+#: ui/popups/set_position/set_position.kv:142
 msgid "Enter A Pos"
 msgstr ""
 
-#: makera.kv:4426
+#: makera.kv:4426 ui/popups/set_position/set_position.kv:147
 msgid "Set Current Tool Number"
 msgstr ""
 
-#: makera.kv:4442
+#: makera.kv:4442 ui/popups/set_position/set_position.kv:148
 msgid "Enter New Tool Number"
 msgstr ""
 
-#: makera.kv:4482
+#: makera.kv:4482 ui/popups/set_position/set_position.kv:152
 msgid "Change Current Tool"
 msgstr ""
 
-#: makera.kv:4498
+#: makera.kv:4498 ui/popups/set_position/set_position.kv:153
 msgid "New Tool Number"
 msgstr ""
 
-#: makera.kv:4539
+#: makera.kv:4539 ui/popups/set_position/set_position.kv:141
 msgid "Rapidly move the A to"
 msgstr ""
 
-#: makera.kv:5387
+#: makera.kv:5387 makera.kv:5594
 msgid "Clear All"
 msgstr ""
 
-#: makera.kv:5434
+#: makera.kv:5434 makera.kv:5647
 msgid "Enter rotation angle in degrees"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:36
+#: addons/probing/ProbingPopup.kv:36 addons/probing/ProbingPopup.kv:44
 msgid "Outside Corners"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:83
+#: addons/probing/ProbingPopup.kv:83 addons/probing/ProbingPopup.kv:91
 msgid "Inside Corners"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:128
+#: addons/probing/ProbingPopup.kv:128 addons/probing/ProbingPopup.kv:136
 msgid "Single Axis"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:200
+#: addons/probing/ProbingPopup.kv:200 addons/probing/ProbingPopup.kv:208
 msgid "Bore/Pocket"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:246
+#: addons/probing/ProbingPopup.kv:246 addons/probing/ProbingPopup.kv:254
 msgid "Boss/Block"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:292
+#: addons/probing/ProbingPopup.kv:292 addons/probing/ProbingPopup.kv:300
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:768
 msgid "Angle"
 msgstr ""
 
-#: addons/probing/ProbingPopup.kv:485
+#: addons/probing/ProbingPopup.kv:485 addons/probing/ProbingPopup.kv:678
 msgid ""
 "Note: Most of these operations require a true 3 axis probe, not the manual "
 "probe supplied with the Carvera. See the documentation for more info"
@@ -1606,12 +1654,18 @@ msgstr ""
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:20
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:19
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:20
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:29
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:28
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:29
 msgid "X distance to probe"
 msgstr ""
 
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:33
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:32
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:33
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:47
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:46
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:44
 msgid "Y distance to probe"
 msgstr ""
 
@@ -1621,6 +1675,13 @@ msgstr ""
 #: addons/probing/operations/Angle/AngleSettings.kv:57
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:45
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:60
+#: addons/probing/operations/Bore/BoreSettings.kv:63
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:84
+#: addons/probing/operations/Angle/AngleSettings.kv:79
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:63
+#: addons/probing/operations/Boss/BossSettings.kv:82
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:64
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:63
 msgid "Effective Diameter of Probe Tip. Measure with M460"
 msgstr ""
 
@@ -1629,6 +1690,12 @@ msgstr ""
 #: addons/probing/operations/Boss/BossSettings.kv:73
 #: addons/probing/operations/Angle/AngleSettings.kv:72
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:60
+#: addons/probing/operations/Bore/BoreSettings.kv:82
+#: addons/probing/operations/Angle/AngleSettings.kv:97
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:103
+#: addons/probing/operations/Boss/BossSettings.kv:101
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:83
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:81
 msgid ""
 "Distance to probe straight down before performing remainder of probing "
 "operations"
@@ -1640,6 +1707,13 @@ msgstr ""
 #: addons/probing/operations/Angle/AngleSettings.kv:85
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:73
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:74
+#: addons/probing/operations/Bore/BoreSettings.kv:100
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:103
+#: addons/probing/operations/Angle/AngleSettings.kv:114
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:122
+#: addons/probing/operations/Boss/BossSettings.kv:119
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:101
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:98
 msgid "Optional probing feed rate override"
 msgstr ""
 
@@ -1648,6 +1722,12 @@ msgstr ""
 #: addons/probing/operations/Boss/BossSettings.kv:99
 #: addons/probing/operations/Angle/AngleSettings.kv:98
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:86
+#: addons/probing/operations/Bore/BoreSettings.kv:118
+#: addons/probing/operations/Angle/AngleSettings.kv:131
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:141
+#: addons/probing/operations/Boss/BossSettings.kv:137
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:119
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:115
 msgid "Optional rapid feed rate override"
 msgstr ""
 
@@ -1657,6 +1737,13 @@ msgstr ""
 #: addons/probing/operations/Angle/AngleSettings.kv:111
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:99
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:87
+#: addons/probing/operations/Bore/BoreSettings.kv:136
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:121
+#: addons/probing/operations/Angle/AngleSettings.kv:148
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:160
+#: addons/probing/operations/Boss/BossSettings.kv:155
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:137
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:132
 msgid "Number of times to repeat the probing operation"
 msgstr ""
 
@@ -1666,6 +1753,13 @@ msgstr ""
 #: addons/probing/operations/Angle/AngleSettings.kv:124
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:112
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:100
+#: addons/probing/operations/Bore/BoreSettings.kv:154
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:139
+#: addons/probing/operations/Angle/AngleSettings.kv:165
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:179
+#: addons/probing/operations/Boss/BossSettings.kv:173
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:155
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:149
 msgid "Distance away from surface to retract before double tapping the probe"
 msgstr ""
 
@@ -1674,6 +1768,12 @@ msgstr ""
 #: addons/probing/operations/Boss/BossSettings.kv:138
 #: addons/probing/operations/Angle/AngleSettings.kv:137
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:125
+#: addons/probing/operations/Bore/BoreSettings.kv:172
+#: addons/probing/operations/Angle/AngleSettings.kv:182
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:198
+#: addons/probing/operations/Boss/BossSettings.kv:191
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:173
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:166
 msgid ""
 "If Pocket Depth is enabled, how far above the surface to raise before "
 "continuing the operation"
@@ -1685,16 +1785,26 @@ msgstr ""
 #: addons/probing/operations/Angle/AngleSettings.kv:149
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:137
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:112
+#: addons/probing/operations/Bore/BoreSettings.kv:185
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:156
+#: addons/probing/operations/Angle/AngleSettings.kv:198
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:211
+#: addons/probing/operations/Boss/BossSettings.kv:204
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:190
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:183
 msgid "Degrees to rotate the XY coordinate plane when probing."
 msgstr ""
 
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:152
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:200
 msgid ""
 "How far below the start height to move down for probing the sides of the part"
 msgstr ""
 
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:169
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:155
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:211
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:219
 msgid "This switch will set your current WCS to the corner you are probing"
 msgstr ""
 
@@ -1702,18 +1812,29 @@ msgstr ""
 #: addons/probing/operations/Boss/BossSettings.kv:197
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:171
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:146
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:187
+#: addons/probing/operations/Boss/BossSettings.kv:257
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:221
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:229
 msgid "Disabled"
 msgstr ""
 
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:194
 #: addons/probing/operations/Boss/BossSettings.kv:206
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:180
+#: addons/probing/operations/Boss/BossSettings.kv:266
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:230
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:238
 msgid "X/Y"
 msgstr ""
 
 #: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:203
 #: addons/probing/operations/Boss/BossSettings.kv:215
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:189
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:196
+#: addons/probing/operations/Boss/BossSettings.kv:275
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:239
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:247
 msgid "X/Y/Z"
 msgstr ""
 
@@ -1723,56 +1844,74 @@ msgstr ""
 #: addons/probing/operations/Angle/AngleSettings.kv:192
 #: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:201
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:176
+#: addons/probing/operations/Bore/BoreSettings.kv:225
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:211
+#: addons/probing/operations/Angle/AngleSettings.kv:248
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:174
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:235
+#: addons/probing/operations/Boss/BossSettings.kv:290
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:254
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:260
 msgid ""
 "Enable this switch if you have a normally closed probe instead of a normally "
 "open one"
 msgstr ""
 
 #: addons/probing/operations/Bore/BoreSettings.kv:18
+#: addons/probing/operations/Bore/BoreSettings.kv:27
 msgid "Radial X distance to probe"
 msgstr ""
 
 #: addons/probing/operations/Bore/BoreSettings.kv:31
+#: addons/probing/operations/Bore/BoreSettings.kv:45
 msgid "Radial Y distance to probe"
 msgstr ""
 
 #: addons/probing/operations/Bore/BoreSettings.kv:150
+#: addons/probing/operations/Bore/BoreSettings.kv:207
 msgid ""
 "This switch will set your current WCS to the center of the block/boss you "
 "are probing"
 msgstr ""
 
 #: addons/probing/operations/Boss/BossSettings.kv:19
+#: addons/probing/operations/Boss/BossSettings.kv:28
 msgid "Boss Diameter in X"
 msgstr ""
 
 #: addons/probing/operations/Boss/BossSettings.kv:32
+#: addons/probing/operations/Boss/BossSettings.kv:46
 msgid "Boss Diameter in Y"
 msgstr ""
 
 #: addons/probing/operations/Boss/BossSettings.kv:45
+#: addons/probing/operations/Boss/BossSettings.kv:64
 msgid ""
 "When Probing a boss, this is added to the X and Y values when moving outside "
 "the boss. Defaults to 4mm"
 msgstr ""
 
 #: addons/probing/operations/Boss/BossSettings.kv:164
+#: addons/probing/operations/Boss/BossSettings.kv:227
 msgid ""
 "How far below the start height to move down for probing the sides of the "
 "boss/block"
 msgstr ""
 
 #: addons/probing/operations/Boss/BossSettings.kv:181
+#: addons/probing/operations/Boss/BossSettings.kv:247
 msgid ""
 "This switch will set your current WCS to the center of the bore/pocket you "
 "are probing"
 msgstr ""
 
 #: addons/probing/operations/Angle/AngleSettings.kv:18
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:28
 msgid "Distance from center along X to move before probing back toward part"
 msgstr ""
 
 #: addons/probing/operations/Angle/AngleSettings.kv:31
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:47
 msgid "Distance from center along Y to move before probing back toward part"
 msgstr ""
 
@@ -1783,20 +1922,24 @@ msgid ""
 msgstr ""
 
 #: addons/probing/operations/Angle/AngleSettings.kv:163
+#: addons/probing/operations/Angle/AngleSettings.kv:216
 msgid ""
 "If set, the probe will trace the probed angle after the operation finishes"
 msgstr ""
 
 #: addons/probing/operations/Angle/AngleSettings.kv:177
+#: addons/probing/operations/Angle/AngleSettings.kv:231
 msgid ""
 "This switch will set your current WCS rotation to the probed rotation angle"
 msgstr ""
 
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:46
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:65
 msgid "Z distance to probe"
 msgstr ""
 
 #: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:130
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:177
 msgid ""
 "This switch will set your current WCS to the surface you are probing. It "
 "will only set the currently selected axis/axes"
@@ -1811,5 +1954,2697 @@ msgid "Z"
 msgstr ""
 
 #: addons/probing/preview/ProbingPreviewPopup.kv:29
+#: addons/probing/preview/ProbingPreviewPopup.kv:59
 msgid "Start"
+msgstr ""
+
+#: custom_widgets.py:198
+msgid "Pick Color..."
+msgstr ""
+
+#: custom_widgets.py:244
+msgid "Select Color"
+msgstr ""
+
+#: custom_widgets.py:254
+msgid "Reset to Default"
+msgstr ""
+
+#: GcodeViewer.py:2036
+#, python-format
+msgid "Heightmap: %dx%d - %smm/cell"
+msgstr ""
+
+#: GcodeViewer.py:2042
+#, python-format
+msgid "Cylindrical: %dx%d - %s mm along X and at Ø%s"
+msgstr ""
+
+#: GcodeViewer.py:2049
+#, python-format
+msgid "Grid: %dx%dx%d - %smm/voxel"
+msgstr ""
+
+#: GcodeViewer.py:2059
+#, python-format
+msgid "Checkpoints: %.0f%% - %d/%d slots"
+msgstr ""
+
+#: main.py:330
+msgid "Spindle Temp Error"
+msgstr ""
+
+#: main.py:335
+msgid "Electronics Temp Error"
+msgstr ""
+
+#: main.py:336
+msgid "3D probe crash detected"
+msgstr ""
+
+#: main.py:713
+msgid "Connection to machine lost."
+msgstr ""
+
+#: main.py:1534
+msgid ""
+"Auto Leveling without Auto Z Probe will use the current Z zero. Probe Z "
+"first or leave Auto Z Probe enabled, or job height may be wrong."
+msgstr ""
+
+#: main.py:1633
+msgid "Unapplied Changes"
+msgstr ""
+
+#: main.py:1634
+msgid "You have unapplied changes. Do you wish to apply them?"
+msgstr ""
+
+#: main.py:3679
+msgid "G-Code Viewer"
+msgstr ""
+
+#: main.py:3723
+msgid "No Macro defined. Configure one in Settings-> Controller"
+msgstr ""
+
+#: main.py:3795
+msgid "CMM Workbench requires the Community firmware."
+msgstr ""
+
+#: main.py:3810
+msgid "Facing wizard requires the Community firmware."
+msgstr ""
+
+#: main.py:3852
+msgid "Bed mesh is missing."
+msgstr ""
+
+#: main.py:3864
+msgid "Could not load the bed mesh."
+msgstr ""
+
+#: main.py:3964
+msgid "Adv Calibrate requires the Community firmware."
+msgstr ""
+
+#: main.py:4263
+msgid "No USB devices found"
+msgstr ""
+
+#: main.py:4277
+msgid "Manually Enter"
+msgstr ""
+
+#: main.py:4289
+msgid "Input USB device path:"
+msgstr ""
+
+#: main.py:4473
+msgid ""
+"No matching USB device found. Connect once via USB... to record the serial "
+"number."
+msgstr ""
+
+#: main.py:4514
+msgid "Auto-reconnection failed. Please connect manually."
+msgstr ""
+
+#: main.py:4594
+msgid "Input Wi-Fi network name (SSID):"
+msgstr ""
+
+#: main.py:4595
+msgid "Input Wi-Fi password (leave blank if open network):"
+msgstr ""
+
+#: main.py:4845
+#, python-format
+msgid "Confirm to delete %d selected files or dirs?"
+msgstr ""
+
+#: main.py:4946
+msgid ""
+"The emergency stop is engaged and may be the cause of this alarm. Disengage "
+"it before clearing the alarm or resetting the machine."
+msgstr ""
+
+#: main.py:5004 main.py:5011 main.py:5020
+msgid "Manual toolchange"
+msgstr ""
+
+#: main.py:5006 main.py:5015
+msgid "Insert tool: "
+msgstr ""
+
+#: main.py:5008 main.py:5017
+msgid "Then press ' Confirm' or main button to clamp.\n"
+msgstr ""
+
+#: main.py:5013 main.py:5039
+msgid "Change to collet: "
+msgstr ""
+
+#: main.py:5022
+msgid ""
+"When the tool is clamped press ' Confirm' or main button to proceed.\n"
+"Keep your hands off the spindle unless you are willing to lose a finger!"
+msgstr ""
+
+#: main.py:5026
+msgid "Hold tool"
+msgstr ""
+
+#: main.py:5028
+msgid ""
+"Please hold the current tool and press ' Confirm' or main button to proceed"
+msgstr ""
+
+#: main.py:5032 main.py:5037
+msgid "Confirm empty"
+msgstr ""
+
+#: main.py:5034
+msgid "When the collet is empty press ' Confirm' or main button to proceed"
+msgstr ""
+
+#: main.py:5041
+msgid ""
+"When the collet is changed and empty press ' Confirm' or main button to "
+"proceed"
+msgstr ""
+
+#: main.py:5048
+msgid "Then press ' Confirm' or main button to proceed"
+msgstr ""
+
+#: main.py:5237
+msgid "Downloading config files..."
+msgstr ""
+
+#: main.py:5309
+msgid "Configuration files backed up successfully"
+msgstr ""
+
+#: main.py:5375
+#, python-brace-format
+msgid "Failed to load config file: {}"
+msgstr ""
+
+#: main.py:5496
+msgid ""
+"Download config file error! The file MD5 hash doesn't match what is "
+"expected. Possibly corruption occured during transfer or on SD card."
+msgstr ""
+
+#: main.py:5506 main.py:6107
+msgid ""
+"Download file error! MD5 hash doesn't match what is expected. Possible "
+"corruption during transfer or on SD card."
+msgstr ""
+
+#: main.py:5529
+msgid "Config unchanged (MD5 match), using cached file"
+msgstr ""
+
+#: main.py:5580
+msgid ""
+"This machine is not running the Community Firmware.\n"
+"Complete functionality is available when using both Community Firmware and "
+"Community Controller."
+msgstr ""
+
+#: main.py:5589
+msgid "Stock Firmware Detected"
+msgstr ""
+
+#: main.py:5591
+msgid "More Information"
+msgstr ""
+
+#: main.py:5598 main.py:5648
+msgid "Don't Show Again"
+msgstr ""
+
+#: main.py:5606 main.py:5656
+msgid "Continue"
+msgstr ""
+
+#: main.py:5629
+#, python-format
+msgid ""
+"This is an unsupported configuration.\n"
+"The machine firmware is newer than this Controller.\n"
+"\n"
+"Firmware: v%s\n"
+"Controller: v%s\n"
+"\n"
+"Please update the Controller to a matching version."
+msgstr ""
+
+#: main.py:5643
+msgid "Unsupported Configuration"
+msgstr ""
+
+#: main.py:5821
+msgid "Other..."
+msgstr ""
+
+#: main.py:5995
+msgid ""
+"As you are connected over USB, please disconnect the USB cable, then use the "
+"power switch on the machine to perform a reset.\n"
+"\n"
+"The Makera control board design allows the machine to receive power over "
+"USB, which results in it being left in a zombie-like state if a reset "
+"command is sent using the Controller."
+msgstr ""
+
+#: main.py:6008
+msgid "Cannot Reset Over USB"
+msgstr ""
+
+#: main.py:6413 main.py:8418
+msgid "Calculating run time estimate..."
+msgstr ""
+
+#: main.py:6458 ui/GcodeColorSchemePanel.py:69
+msgid "3D Probe"
+msgstr ""
+
+#: main.py:6473
+#, python-brace-format
+msgid "Tool change to {}"
+msgstr ""
+
+#: main.py:6475
+#, python-brace-format
+msgid "Tool change to {} passed"
+msgstr ""
+
+#: main.py:6476
+#, python-brace-format
+msgid "Tool change to {} in {}"
+msgstr ""
+
+#: main.py:6487
+msgid "estimated"
+msgstr ""
+
+#: main.py:6495
+#, python-brace-format
+msgid "{} until {}"
+msgstr ""
+
+#: main.py:6498
+msgid "elapsed"
+msgstr ""
+
+#: main.py:7274
+#, python-format
+msgid ""
+"Connecting via USB...\n"
+"%s"
+msgstr ""
+
+#: main.py:7568 main.py:7569 main.py:8922 makera.kv:4184
+msgid "Jog Mode:Step"
+msgstr ""
+
+#: main.py:7580 main.py:7581
+msgid "Jog Mode:Continuous"
+msgstr ""
+
+#: main.py:7719 main.py:7762 main.py:7764 main.py:7766
+msgid "Pendant Jogging"
+msgstr ""
+
+#: main.py:8069
+msgid ""
+"The gcode for this job is not loaded in the controller, or a different file "
+"is loaded.\n"
+"Open the file again from the file browser (download or upload as needed), "
+"then retry resume-at-line."
+msgstr ""
+
+#: main.py:8078
+msgid "- No tool change (M6)"
+msgstr ""
+
+#: main.py:8079
+msgid "- No feed rate (F)"
+msgstr ""
+
+#: main.py:8080
+msgid "- No spindle speed (M3 S...)"
+msgstr ""
+
+#: main.py:8086
+msgid ""
+"WARNING: The resume recovery sequence was unable to find important state "
+"prior to the resume line:\n"
+msgstr ""
+
+#: main.py:8111
+msgid "Resume Playback"
+msgstr ""
+
+#: main.py:8117
+msgid ""
+"The Controller will run the below commands to restart this file. Please be "
+"prepared to e-stop your machine if it doesn't move as expected.\n"
+"\n"
+msgstr ""
+
+#: main.py:8803 main.py:8824 ui/GcodeColorSchemePanel.kv:34
+#: ui/GcodeColorSchemePanel.kv:35
+msgid "Tool"
+msgstr ""
+
+#: main.py:8805 main.py:8826 ui/GcodeColorSchemePanel.kv:35
+msgid "Speed"
+msgstr ""
+
+#: main.py:8807 main.py:8828 addons/stock/ui/StockSettingsPopup.py:349
+#: addons/stock/ui/StockSettingsPopup.py:352
+#: addons/stock/ui/StockSettingsPopup.py:754 ui/GcodeColorSchemePanel.kv:35
+msgid "Height"
+msgstr ""
+
+#: main.py:8809 ui/GcodeColorSchemePanel.kv:35
+msgid "Move type"
+msgstr ""
+
+#: main.py:8923
+msgid "Jog Speed:Max"
+msgstr ""
+
+#: ui/LocalFilePicker.py:83
+msgid "Overwrite file?"
+msgstr ""
+
+#: ui/LocalFilePicker.py:84
+#, python-format
+msgid ""
+"Replace existing file?\n"
+"%s"
+msgstr ""
+
+#: ui/LocalFilePicker.py:107
+msgid "Dialog unavailable (UI not loaded)."
+msgstr ""
+
+#: ui/LocalFilePicker.py:140
+msgid "Enter a file name."
+msgstr ""
+
+#: ui/LocalFilePicker.py:145
+msgid "Choose an existing folder."
+msgstr ""
+
+#: ui/GcodeColorSchemePanel.py:47
+msgid "n/a"
+msgstr ""
+
+#: ui/GcodeColorSchemePanel.py:119 ui/GcodeColorSchemePanel.py:172
+msgid "Rapid (G0)"
+msgstr ""
+
+#: ui/GcodeColorSchemePanel.py:127
+msgid "Feed (G1)"
+msgstr ""
+
+#: ui/GcodeColorSchemePanel.py:193
+#, python-brace-format
+msgid "≥ Z {} mm"
+msgstr ""
+
+#: ui/GcodeColorSchemePanel.py:195
+#, python-brace-format
+msgid "≤ Z {} mm"
+msgstr ""
+
+#: addons/camera/Z1Camera.py:191
+#, python-brace-format
+msgid "Camera stream error: {}"
+msgstr ""
+
+#: addons/pendant/pendant.py:769 addons/pendant/pendant.py:972
+msgid "Load preset..."
+msgstr ""
+
+#: addons/pendant/pendant.py:805 addons/pendant/pendant.py:858
+msgid "Bind..."
+msgstr ""
+
+#: addons/pendant/pendant.py:808
+msgid "Unbind"
+msgstr ""
+
+#: addons/pendant/pendant.py:831
+msgid "Unbound"
+msgstr ""
+
+#: addons/pendant/pendant.py:844
+msgid "Waiting..."
+msgstr ""
+
+#: addons/pendant/pendant.py:1010
+msgid "Configure..."
+msgstr ""
+
+#: addons/pendant/pendant.py:1021 addons/pendant/pendant.py:1026
+msgid "Default (Xbox 360)"
+msgstr ""
+
+#: addons/pendant/pendant.py:1024
+msgid "Custom"
+msgstr ""
+
+#: addons/pendant/gamepad.py:177
+#, python-brace-format
+msgid "Axis {0}"
+msgstr ""
+
+#: addons/pendant/gamepad.py:181
+#, python-brace-format
+msgid "Trigger Axis {0}{1}"
+msgstr ""
+
+#: addons/pendant/gamepad.py:182
+#, python-brace-format
+msgid "Trigger Axis {0}"
+msgstr ""
+
+#: addons/pendant/gamepad.py:184
+#, python-brace-format
+msgid "Button {0}"
+msgstr ""
+
+#: addons/pendant/gamepad.py:186
+#, python-brace-format
+msgid "D-Pad {0}"
+msgstr ""
+
+#: addons/facing/stock_geometry.py:16
+msgid "Bottom-left (+X width, +Y length)"
+msgstr ""
+
+#: addons/facing/stock_geometry.py:17
+msgid "Bottom-right (-X width, +Y length)"
+msgstr ""
+
+#: addons/facing/stock_geometry.py:18
+msgid "Top-left (+X width, -Y length)"
+msgstr ""
+
+#: addons/facing/stock_geometry.py:19
+msgid "Top-right (-X width, -Y length)"
+msgstr ""
+
+#: addons/facing/stock_geometry.py:20
+msgid "Center (X width / 2, Y length / 2)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:74 addons/facing/FacingWizardPopup.py:81
+#: addons/beds/ui/BedEditorPopup.py:35
+#: addons/stock/ui/StockSettingsPopup.py:198
+#: addons/stock/ui/StockSettingsPopup.py:208
+#, python-format
+msgid "%s is required"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:85
+#, python-format
+msgid "%s must be a number."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:87
+#, python-format
+msgid "%s must be zero or positive."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:101
+msgid "3 mm"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:102
+msgid "1/8\" (3.175 mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:103
+msgid "4 mm"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:104
+msgid "6 mm"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:105
+msgid "1/4\" (6.35 mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:106
+msgid "8 mm"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:112
+msgid "3D probe"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:113
+msgid "Z probe"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:119
+msgid "Climb"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:120
+msgid "Conventional"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:121
+msgid "Both (zigzag)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:198
+msgid "Load preset…"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:199
+msgid "Save as…"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:200
+msgid "Delete preset…"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:220
+msgid "Load in viewer"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:221
+msgid "Upload & select"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:237
+#: addons/facing/FacingWizardPopup.py:300
+msgid "No saved presets yet."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:242
+msgid "Tap a preset to load."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:262
+msgid "Load preset"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:305
+msgid "Tap a preset to delete."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:325
+msgid "Delete preset"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:364
+#: addons/facing/FacingWizardPopup.py:379
+msgid "Preset not found."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:382
+msgid "Delete preset?"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:383
+#, python-format
+msgid ""
+"Remove this preset?\n"
+"%s"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:398
+msgid "Save preset"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:420
+msgid "Enter a preset name."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:425
+msgid "Overwrite preset?"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:426
+#, python-format
+msgid ""
+"Replace existing preset?\n"
+"%s"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:454
+msgid "Preset saved."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:602
+msgid "Facing tool T is required."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:606
+msgid "Facing tool T must be a number (e.g. 1, 2, ...)."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:625
+msgid "TLO repeats must be a whole number."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:627
+msgid "TLO repeats must be at least 1."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:746
+#: addons/facing/FacingWizardPopup.py:789
+#: addons/facing/FacingWizardPopup.py:834
+msgid "Stock width (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:747
+#: addons/facing/FacingWizardPopup.py:790
+#: addons/facing/FacingWizardPopup.py:835
+msgid "Stock length (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:749
+#: addons/facing/FacingWizardPopup.py:792
+#: addons/facing/FacingWizardPopup.py:836
+msgid "Margin X (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:750
+#: addons/facing/FacingWizardPopup.py:793
+#: addons/facing/FacingWizardPopup.py:837
+msgid "Margin Y (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:751
+#: addons/facing/FacingWizardPopup.py:796
+#: addons/facing/FacingWizardPopup.kv:163
+msgid "Clearance Z (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:752
+#: addons/facing/FacingWizardPopup.kv:386
+msgid "Probe approach Z (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:753
+#: addons/facing/FacingWizardPopup.kv:394
+msgid "Probe Z travel (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:754
+#: addons/facing/FacingWizardPopup.kv:402
+msgid "Probe feed (mm/min)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:755
+#: addons/facing/FacingWizardPopup.kv:370
+msgid "Grid NX"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:756
+#: addons/facing/FacingWizardPopup.kv:378
+msgid "Grid NY"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:761
+#: addons/facing/FacingWizardPopup.py:816
+msgid "Clearance Z must be positive."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:763
+msgid "Probe approach Z must be positive."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:765
+msgid "Probe Z travel must be negative (e.g. -30)."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:767
+msgid "Grid NX and NY must be at least 1."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:776
+msgid "Ext. port is enabled but PWM % is empty."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:780
+msgid "Ext. port PWM % must be a number."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:782
+msgid "Ext. port PWM % is out of range (0–100)."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:794
+#: addons/facing/FacingWizardPopup.kv:155
+msgid "Extra depth (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:795
+#: addons/facing/FacingWizardPopup.kv:462
+msgid "Facing tool diameter (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:797
+#: addons/facing/FacingWizardPopup.kv:206
+msgid "Spindle RPM"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:799
+#: addons/facing/FacingWizardPopup.kv:214
+msgid "Spindle dwell (s)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:803
+#: addons/facing/FacingWizardPopup.kv:248
+msgid "Rough feed (mm/min)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:804
+msgid "Rough plunge feed (mm/min)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:805
+#: addons/facing/FacingWizardPopup.kv:264
+msgid "Rough stepover (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:806
+msgid "Rough depth / pass (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:807
+#: addons/facing/FacingWizardPopup.kv:280
+msgid "Rough total depth (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:898
+msgid "G-code may be out of date"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:900
+msgid ""
+"Parameters changed since last Generate. The preview may not match what you "
+"run. Continue anyway?"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.py:922
+#: addons/facing/FacingWizardPopup.py:947
+msgid "Generate or paste G-code first."
+msgstr ""
+
+#: addons/facing/facing_gcode.py:89
+msgid "Unknown facing pattern."
+msgstr ""
+
+#: addons/facing/facing_gcode.py:91
+msgid "Spiral facing requires Climb or Conventional milling, not Both."
+msgstr ""
+
+#: addons/facing/facing_gcode.py:102
+msgid "Facing area too small for tool diameter (after margins and radius)."
+msgstr ""
+
+#: addons/facing/facing_gcode.py:106
+msgid "Total facing depth must be positive."
+msgstr ""
+
+#: addons/facing/probe_grid_gcode.py:56
+msgid "Grid dimensions must be at least 1."
+msgstr ""
+
+#: addons/facing/probe_grid_gcode.py:58
+msgid "Probe Z travel must be negative (e.g. -25)."
+msgstr ""
+
+#: addons/facing/probe_grid_gcode.py:71
+msgid "Probe grid area invalid after stock inset."
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:54
+#, python-brace-format
+msgid "{value:g} {unit}"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:108
+msgid "Shank"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:113
+msgid "Corner radius"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:123
+msgid "Tip diameter"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:130
+#, python-brace-format
+msgid "{value:g}°"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:131
+msgid "Taper"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:134
+#: addons/stock/ui/StockSettingsPopup.py:345
+#: addons/stock/ui/StockSettingsPopup.py:355
+#: addons/stock/ui/StockSettingsPopup.py:764
+msgid "Length"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:137
+msgid "Flute"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:142
+msgid "Shoulder"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:149
+msgid "Pitch"
+msgstr ""
+
+#: addons/tool_visualization/tooltip_builder.py:154
+msgid "Thread depth"
+msgstr ""
+
+#: addons/probing/ProbingPopup.py:96
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1147
+#: addons/probing/operations/Bore/BoreSettings.kv:61
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:81
+#: addons/probing/operations/Angle/AngleSettings.kv:77
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:25
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:43
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:61
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:99
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:117
+#: addons/probing/operations/Boss/BossSettings.kv:80
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:62
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:61
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:255
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:376
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:517
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:633
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:749
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:860
+msgid "config"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.py:39 addons/beds/ui/BedSettingsPopup.py:144
+msgid "Bed"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.py:63
+msgid ""
+"Choose the current bed for this machine. Position is in machine coordinates, "
+"the viewer places it using the live WCS origin."
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.py:185 addons/beds/ui/BedEditorPopup.py:273
+msgid "Choose a custom .obj file."
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.py:189
+msgid "Unknown plate model."
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.py:220
+msgid "Delete bed"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.py:221
+#, python-format
+msgid "Delete '%s'?"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:38
+#: addons/stock/ui/StockSettingsPopup.py:211
+#, python-format
+msgid "%s must be a finite number"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:97
+msgid "Add bed"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:107
+msgid "Modify bed"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:115
+msgid "MDF"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:116
+#: addons/stock/ui/StockSettingsPopup.py:190
+msgid "Aluminum"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:142
+msgid "No file selected"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:188
+msgid "Please choose a .obj file."
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:193
+#, python-format
+msgid ""
+"File not found:\n"
+"%s"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:201
+msgid "Select bed model"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:240
+msgid "Origin is the front-left top corner (the surface you probe)."
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:246
+#, python-format
+msgid "Plate thickness is %s mm, so the bottom sits at Z − %s."
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:260
+msgid "Name is required"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:263
+msgid "Plate model is required"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:268
+msgid "Machine X"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:269
+msgid "Machine Y"
+msgstr ""
+
+#: addons/beds/ui/BedEditorPopup.py:270
+msgid "Machine Z"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:73
+msgid "Front-left"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:74
+msgid "Front-center"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:75
+msgid "Front-right"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:76
+msgid "Center-left"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:77
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:602
+msgid "Center"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:78
+msgid "Center-right"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:79
+msgid "Back-left"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:80
+msgid "Back-center"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:81
+msgid "Back-right"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:87
+msgid "X min (left end)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:88
+msgid "X max (right end)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:89
+msgid "X center"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:95
+msgid "Top of stock (Z0 = top)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:96
+msgid "Center of stock (Z0 = mid-height)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:97
+msgid "Bottom of stock (Z0 = bottom)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:103
+msgid "Axis center (Z0 = A axis)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:110
+#: addons/stock/ui/StockSettingsPopup.py:114
+msgid "Rectangular"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:111
+#: addons/stock/ui/StockSettingsPopup.py:115
+msgid "Cylinder"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:123
+msgid "Low (faster)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:124
+#: addons/stock/ui/StockSettingsPopup.py:156
+msgid "Medium"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:125
+msgid "High (finer)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:130
+#, python-format
+msgid "%s mm/voxel"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:132
+#, python-format
+msgid "%s mm along X, %s mm at OD"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:134
+#, python-format
+msgid "%s mm/cell"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:136
+#, python-format
+msgid "Low (~%s, faster)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:138
+#, python-format
+msgid "High (~%s, finer)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:139
+#, python-format
+msgid "Medium (~%s)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:155
+msgid "Low (less memory, coarser scrubbing)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:157
+msgid "High (more memory, smoother scrubbing)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:164
+msgid "heightmap"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:165
+msgid "cylindrical"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:166
+msgid "voxels"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:170
+#, python-format
+msgid "Auto (%s)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:171
+#: addons/stock/ui/StockSettingsPopup.py:724
+msgid "Auto"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:177
+msgid "Heightmap (fast / no undercuts)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:178
+msgid "Cylindrical (fast / no undercuts)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:179
+msgid "Voxels (slower / undercuts)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:185
+msgid "Default"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:186
+msgid "PCB"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:187
+msgid "Wood"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:188
+msgid "Acrylic"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:189
+msgid "Bi-color acrylic"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:191
+msgid "Copper"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:201
+#, python-format
+msgid "%s must be a finite positive number"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:268
+msgid ""
+"Cut simulation needs tool geometry from CAM comments in the loaded G-code "
+"file."
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:344
+#: addons/stock/ui/StockSettingsPopup.py:348
+#: addons/stock/ui/StockSettingsPopup.py:757
+#: addons/stock/ui/StockSettingsPopup.py:760
+msgid "Diameter"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:351
+#: addons/stock/ui/StockSettingsPopup.py:763
+msgid "Width"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:510
+msgid "Origin X"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:510
+#: addons/facing/FacingWizardPopup.kv:114
+#: addons/stock/ui/StockSettingsPopup.kv:170
+msgid "WCS origin"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:543
+msgid "Diameter (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:545
+msgid "Length X (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:547
+#: addons/facing/FacingWizardPopup.kv:123
+#: addons/stock/ui/StockSettingsPopup.kv:113
+msgid "Width (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:550
+#: addons/stock/ui/StockSettingsPopup.py:577
+#: addons/facing/FacingWizardPopup.kv:131
+#: addons/stock/ui/StockSettingsPopup.kv:132
+msgid "Length (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:552
+msgid "Height Z (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:554
+#: addons/stock/ui/StockSettingsPopup.kv:151
+msgid "Height (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:577
+msgid "Width Y (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:770
+msgid "Offset X"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:771
+msgid "Offset Y"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:772
+msgid "Offset Z"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.py:806
+msgid "Failed to apply stock settings."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:404
+msgid "Probing in progress"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:405
+msgid ""
+"A probe operation is still running. Close anyway and discard any result?"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:450
+msgid "Probe timed out."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:455
+#, python-format
+msgid "Probing failed: Unexpected machine state \"%s\"."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:472
+msgid "Current position"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:495
+msgid "Enter X, Y, and Z."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:500
+msgid "Invalid coordinate."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:511
+msgid "Wait for probing to finish."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:516
+msgid "Select a probing option before running."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:524
+msgid "Probe already in progress."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:527
+msgid "Machine must be Idle to probe."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:531
+msgid "No G-code to run."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:568
+#, python-brace-format
+msgid "Probe ended with incomplete data ({got}/{exp})."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:571
+msgid "Probe failed or was cancelled."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:588
+msgid "Invalid circle tolerance."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:591
+msgid "Circle tolerance must be zero or positive."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:613
+msgid "Bore X (M461)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:613
+msgid "Boss X (M462)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:615
+msgid "Bore Y (M461)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:615
+msgid "Boss Y (M462)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:617
+msgid "Bore center (M461)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:617
+msgid "Boss center (M462)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:620
+msgid "Pocket X (M461)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:621
+msgid "Pocket Y (M461)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:623
+msgid "Block X (M462)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:624
+msgid "Block Y (M462)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:653
+msgid "Touch probe (M466)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:703
+msgid "Inside corner (M463)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:703
+msgid "Outside corner (M464)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:716
+msgid "Angle (M465)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:923
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:923
+msgid "Segment"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:936
+#, python-format
+msgid "Select at least %(n)d vertices in checkbox order."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:940
+msgid "Closed polyline"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:940
+msgid "Open polyline"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:963
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:935
+msgid "Circumcircle"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:978
+msgid "Intersection"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:993
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:943
+msgid "Midpoint"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1008
+#, python-format
+msgid "Tangent point %(n)d"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1009
+#, python-format
+msgid "Tangent %(n)d"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1010
+#, python-format
+msgid "Tangent %(n)d·A"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1011
+#, python-format
+msgid "Tangent %(n)d·B"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1027
+msgid "Cannot delete: referenced by constructed features."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1053
+msgid "Rename feature"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1065
+msgid "Enter a name."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1074
+msgid "OK"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1093
+msgid "Stored position"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1109
+msgid "Enter radius."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1114
+msgid "Invalid radius."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1117
+msgid "Radius must be greater than zero."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1120
+msgid "Manual circle"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1175
+msgid "Enter X travel for this probe direction."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1180
+msgid "Enter Y travel for this probe direction."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1204
+msgid "Enter X travel for M461 (Center X)."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1209
+msgid "Enter Y travel for M461 (Center Y)."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1213
+msgid "Enter both X and Y travel for this bore pattern."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1240
+msgid "Enter X travel for M462 (Center X)."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1245
+msgid "Enter Y travel for M462 (Center Y)."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1249
+msgid "Enter both X and Y travel for this boss pattern."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1310
+msgid "Enter X distance for M465."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1316
+msgid "Enter Y distance for M465."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1336
+msgid "JSON copied to clipboard."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1345
+msgid "CSV copied to clipboard."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1354
+msgid "DXF copied to clipboard."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1379
+msgid "JSON (full session)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1380
+msgid "CSV (feature table)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1381
+msgid "DXF (geometry + angle labels)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1403
+msgid "Reset CMM Workbench?"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1404
+msgid ""
+"Clear all features from the current session?\n"
+"You will lose unsaved work."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1412
+msgid "CMM Workbench cleared."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1434
+#, python-format
+msgid ""
+"Loaded %(n)d features:\n"
+"%(path)s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1441
+#, python-format
+msgid ""
+"\n"
+"…and %(more)d more warnings"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1447
+#, python-format
+msgid ""
+"Could not read:\n"
+"%s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1449
+#, python-format
+msgid ""
+"Invalid session file:\n"
+"%s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1452
+msgid "Load session"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1456
+msgid "Load"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1485
+#, python-format
+msgid ""
+"Saved:\n"
+"%s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1487
+#, python-format
+msgid ""
+"Could not save:\n"
+"%s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.py:1492
+#, python-format
+msgid "Save export (%s)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/probe_runner.py:127
+msgid "Probing in progress ..."
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:55
+#, python-format
+msgid "X=%(x).3f  Y=%(y).3f  Z=%(z).3f"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:60
+#, python-format
+msgid "X=%(x).3f  Y=%(y).3f"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:73
+#, python-format
+msgid "Measured %(deg).3f °"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:93
+#, python-format
+msgid "Ø %(d).3f"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:101
+#, python-format
+msgid "Ø %(dx).3f × %(dy).3f"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:108
+#, python-format
+msgid "R %(r).3f"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:132
+#, python-format
+msgid "A %(sa)s  →  B %(sb)s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:154
+#, python-format
+msgid "%(vi)d: %(det)s"
+msgstr ""
+
+#: addons/cmm_workbench/ui/display.py:166
+#, python-format
+msgid "%(num)d verts: %(s0)s  …  %(sk)s"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.py:84
+msgid "Please enter valid numbers for all fields."
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.py:88
+msgid "Number of measurement repeats must be at least 1."
+msgstr ""
+
+#: makera.kv:773
+msgid " Auto Vacuum"
+msgstr ""
+
+#: makera.kv:792
+msgid " Auto Ext. Out"
+msgstr ""
+
+#: makera.kv:886
+msgid "Probe:  "
+msgstr ""
+
+#: makera.kv:890
+msgid "Laser Mode"
+msgstr ""
+
+#: makera.kv:928
+msgid "Adv Calibrate"
+msgstr ""
+
+#: makera.kv:1214
+msgid "Online Documentation"
+msgstr ""
+
+#: makera.kv:1252
+msgid "Network..."
+msgstr ""
+
+#: makera.kv:1298
+msgid "Grid"
+msgstr ""
+
+#: makera.kv:1306
+msgid "Ortho"
+msgstr ""
+
+#: makera.kv:1314
+msgid "Stock..."
+msgstr ""
+
+#: makera.kv:1322
+msgid "Bed..."
+msgstr ""
+
+#: makera.kv:1656
+msgid "A probing tool needs to be selected to locate your workpiece"
+msgstr ""
+
+#: makera.kv:1668
+msgid "Change to 3D probe"
+msgstr ""
+
+#: makera.kv:1674
+msgid "Change to stock Makera probe"
+msgstr ""
+
+#: makera.kv:1711
+msgid "Connection lost. Attempting to reconnect..."
+msgstr ""
+
+#: makera.kv:1720
+msgid "Reconnect now"
+msgstr ""
+
+#: makera.kv:2481
+msgid "Back up machine config"
+msgstr ""
+
+#: makera.kv:3123
+msgid "Auto Ext. Out"
+msgstr ""
+
+#: makera.kv:3137
+msgid ""
+"Automatically toggles on/off the External Output pin. This can be used to "
+"control a vacuum or compressor"
+msgstr ""
+
+#: makera.kv:3157
+msgid "Auto Blow"
+msgstr ""
+
+#: makera.kv:3171
+msgid ""
+"The spindle fan will always run with this minimum power while the spindle is "
+"on."
+msgstr ""
+
+#: makera.kv:3191
+msgid "Auto Bed Clean"
+msgstr ""
+
+#: makera.kv:3205
+msgid "Runs a cleaning cycle when gcode playback finishes."
+msgstr ""
+
+#: makera.kv:3225
+msgid "Ionizer"
+msgstr ""
+
+#: makera.kv:3239
+msgid "Turn on the static electricity removal unit on Z1."
+msgstr ""
+
+#: makera.kv:3266
+msgid " Work Origin"
+msgstr ""
+
+#: makera.kv:3443
+msgid "  Resume at line:"
+msgstr ""
+
+#: makera.kv:3446
+msgid "Number"
+msgstr ""
+
+#: makera.kv:4013
+msgid "Macro 1"
+msgstr ""
+
+#: makera.kv:4022
+msgid "Macro 2"
+msgstr ""
+
+#: makera.kv:4029
+msgid "Macro 3"
+msgstr ""
+
+#: makera.kv:4144 makera.kv:4149
+msgid "Tools..."
+msgstr ""
+
+#: makera.kv:4145 makera.kv:4147
+msgid "CMM Workbench..."
+msgstr ""
+
+#: makera.kv:4145 makera.kv:4148
+msgid "Facing..."
+msgstr ""
+
+#: makera.kv:4190 addons/probing/ProbingPopup.kv:651
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:1256
+msgid "Keyboard Jogging"
+msgstr ""
+
+#: makera.kv:4305
+msgid "File"
+msgstr ""
+
+#: makera.kv:4306
+msgid "Show the loaded G-code file"
+msgstr ""
+
+#: makera.kv:4313
+msgid "MDI"
+msgstr ""
+
+#: makera.kv:4314
+msgid "Machine console (MDI). View replies and send individual commands."
+msgstr ""
+
+#: makera.kv:4374
+msgid "Enter command... <control+enter to send>"
+msgstr ""
+
+#: makera.kv:4502
+msgid "Display settings"
+msgstr ""
+
+#: makera.kv:4574
+msgid "Hide camera"
+msgstr ""
+
+#: makera.kv:4574
+msgid "Show camera"
+msgstr ""
+
+#: ui/GCodePageBar.kv:54
+msgid "Go to previous page in file"
+msgstr ""
+
+#: ui/LocalFilePicker.kv:44
+msgid "Choose folder and file name"
+msgstr ""
+
+#: ui/LocalFilePicker.kv:129
+msgid "File name"
+msgstr ""
+
+#: addons/camera/CameraControls.kv:64
+msgid "Resolution"
+msgstr ""
+
+#: addons/camera/CameraControls.kv:73
+msgid "Brightness"
+msgstr ""
+
+#: addons/camera/CameraControls.kv:77
+msgid "Contrast"
+msgstr ""
+
+#: addons/camera/CameraControls.kv:81
+msgid "Gamma"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:24
+msgid "Preset name"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:49
+msgid "Facing wizard"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:79
+msgid "Stock"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:102
+msgid ""
+"Measure your stock and pick where X0 Y0 sits—the point you touched off when "
+"setting work zero. Width runs along X and length along Y from that origin. "
+"Margins pad the outline outward so facing and probing keep a safe distance "
+"from the edges. Extra depth removes a bit more material downward on top of "
+"the facing depth. Clearance height is how high the spindle travels between "
+"moves. If you enable Z grid probing on the Z probe grid tab, the machine "
+"checks the surface first; after you swap to your facing tool, Z zero is "
+"aligned to the highest spot the probe found."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:139
+msgid "Margin ±X (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:147
+msgid "Margin ±Y (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:171
+msgid "Cutting"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:194
+msgid ""
+"Roughing clears material in layers using stepover, depth per pass, and total "
+"rough depth (combine with Extra depth on Stock if you need more Z). Turn on "
+"Finish for a light cleanup pass at the end. Pattern picks raster (Along X or "
+"Along Y) or an outside-in spiral."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:222
+msgid "Pattern"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:226
+msgid "Along X"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:231
+msgid "Along Y"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:235
+msgid "Spiral"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:239
+msgid "Milling"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:256
+msgid "Rough plunge (mm/min)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:272
+msgid "Rough depth/pass (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:288
+msgid "Finish pass"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:295
+msgid "Finish feed (mm/min)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:303
+msgid "Finish stepover (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:311
+msgid "Finish extra depth (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:319
+msgid "Z probe grid"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:342
+msgid ""
+"Turn on Include Z grid probe with the checkbox below; layout matches the "
+"origin from the Stock tab. The machine taps the surface on a grid to map "
+"height. Probe Z travel must stay negative so the probe searches downward. "
+"Grid inset pulls probe points slightly inside the gray stock outline (not "
+"inside the dashed margin ring). After probing and loading your facing tool, "
+"Z zero is adjusted so the tallest measured spot is treated as the top "
+"surface for facing."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:354
+msgid "Include Z grid probe"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:410
+msgid "Grid inset (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:415
+msgid "Inset from the stock outline"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:419
+msgid "Tool / Misc."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:442
+msgid ""
+"This section loads your facing bit before cutting starts. Without probing it "
+"runs at the top of the program; with Z grid probing it runs after the probe "
+"cycle. Enter the facing tool number and ATC collet size when your machine "
+"needs them. The optional fields are for advanced setups such as repeating a "
+"tool-length touch-off or applying setter offsets."
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:454
+msgid "Facing tool T"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:470
+msgid "Collet size (ATC)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:479
+msgid "TLO repeats (optional)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:487
+msgid "Setter offset X (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:495
+msgid "Setter offset Y (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:503
+msgid "Setter offset Z (mm)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:511
+msgid "Ext. port (vacuum, coolant, …)"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:518
+msgid "Ext. port PWM %"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:523
+msgid "0–100"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:559
+msgid ""
+"Gray solid: stock outline · Dashed ring: margin · Red: facing path · Blue: "
+"probe grid (inset from stock edge) · Bright marker: X Y zero"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:574
+msgid "G-code preview"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:622
+msgid "Presets"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:628
+msgid "Generate"
+msgstr ""
+
+#: addons/facing/FacingWizardPopup.kv:634
+msgid "G-code"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:347
+msgid "ProbeTip"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:364
+msgid "Calibrate probe tip using a known bore diameter"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:370
+msgid "Calibrate probe tip using a known boss in the X direction"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:375
+msgid ""
+"Calibrate probe tip using anchor 2. This uses the config value Anchor Width "
+"and will move to position on its own"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:383
+msgid "Calibrate probe tip using a known boss in the Y direction"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:393
+msgid "Calibration"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:442
+msgid "4th Axis"
+msgstr ""
+
+#: addons/probing/ProbingPopup.kv:458
+msgid "Probe 4th Axis (A-Axis) stock to determine angular position (M465.1)"
+msgstr ""
+
+#: addons/probing/preview/ProbingPreviewPopup.kv:56
+msgid "Halt"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:25
+#: addons/probing/operations/Bore/BoreSettings.kv:43
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:25
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:43
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:27
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:45
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:63
+#: addons/probing/operations/Angle/AngleSettings.kv:25
+#: addons/probing/operations/Angle/AngleSettings.kv:43
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:135
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:26
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:45
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:82
+#: addons/probing/operations/Boss/BossSettings.kv:26
+#: addons/probing/operations/Boss/BossSettings.kv:44
+#: addons/probing/operations/Boss/BossSettings.kv:225
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:26
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:44
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:27
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:47
+msgid "required"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:80
+#: addons/probing/operations/Bore/BoreSettings.kv:188
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:119
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:154
+#: addons/probing/operations/Angle/AngleSettings.kv:95
+#: addons/probing/operations/Angle/AngleSettings.kv:146
+#: addons/probing/operations/Angle/AngleSettings.kv:196
+#: addons/probing/operations/Angle/AngleSettings.kv:214
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:80
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:101
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:215
+#: addons/probing/operations/Boss/BossSettings.kv:99
+#: addons/probing/operations/Boss/BossSettings.kv:153
+#: addons/probing/operations/Boss/BossSettings.kv:207
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:81
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:135
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:188
+#: ui/popups/adv_calibrate/adv_calibrate.kv:70
+#: ui/popups/adv_calibrate/adv_calibrate.kv:93
+msgid "0"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:98
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:61
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:101
+#: addons/probing/operations/Angle/AngleSettings.kv:112
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:120
+#: addons/probing/operations/Boss/BossSettings.kv:117
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:99
+msgid "300"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:116
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:79
+#: addons/probing/operations/Angle/AngleSettings.kv:129
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:139
+#: addons/probing/operations/Boss/BossSettings.kv:135
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:117
+msgid "800"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:134
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:97
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:158
+#: ui/popups/adv_calibrate/adv_calibrate.kv:47
+msgid "1"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:152
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:115
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:137
+#: addons/probing/operations/Angle/AngleSettings.kv:163
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:177
+#: addons/probing/operations/Boss/BossSettings.kv:171
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:153
+msgid "1.5"
+msgstr ""
+
+#: addons/probing/operations/Bore/BoreSettings.kv:170
+#: addons/probing/operations/Angle/AngleSettings.kv:60
+#: addons/probing/operations/Angle/AngleSettings.kv:180
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:196
+#: addons/probing/operations/Boss/BossSettings.kv:189
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:171
+msgid "2"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:27
+msgid ""
+"Total probing distance; machine moves to +Y/2 and -Y/2 from current position"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:45
+msgid "Distance to probe down from current position"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:63
+msgid "Feed rate for probing (mm/min)"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:81
+msgid "Rapid feed rate for positioning (mm/min)"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:99
+msgid "Number of probe cycles to repeat"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:117
+msgid "Retract distance from touched surface (mm)"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:133
+msgid "Rotate A axis after probe to make it level"
+msgstr ""
+
+#: addons/probing/operations/FourthAxis/FourthAxisSettings.kv:150
+msgid "Save the A axis offset after probing"
+msgstr ""
+
+#: addons/probing/operations/Angle/AngleSettings.kv:27
+msgid "Distance between probe points on X axis"
+msgstr ""
+
+#: addons/probing/operations/Angle/AngleSettings.kv:45
+msgid "Distance between probe points on Y axis"
+msgstr ""
+
+#: addons/probing/operations/Angle/AngleSettings.kv:62
+msgid "Distance along secondary axis to probe"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:27
+msgid ""
+"How far to move along the X axis before probing toward pin when calibrating "
+"4th axis Z offset"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:45
+msgid ""
+"Not needed by default. \n"
+"Use to change how far to each side the machine probes when calibrating X "
+"offset"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:82
+msgid ""
+"When Probing A Axis Height, how far along Y to move after probing headstock "
+"before moving along X toward the pin. Use to avoid large chucks"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:101
+msgid ""
+"Not needed by default. \n"
+"Used in calibrating 4th axis X offset, see tooltip image"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:119
+msgid ""
+"Not needed by default. \n"
+"Used in calibrating 4th axis Y offset, see tooltip image"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:137
+msgid "Diameter of pin used for 4th axis Z calibration"
+msgstr ""
+
+#: addons/probing/operations/Calibration/CalibrationSettings.kv:156
+msgid "Wip"
+msgstr ""
+
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:63
+#: addons/probing/operations/Boss/BossSettings.kv:62
+msgid "4"
+msgstr ""
+
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:65
+msgid ""
+"When Probing a boss, this is added to the X and Y values when moving outside "
+"the bore or boss. Defaults to 4mm"
+msgstr ""
+
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:84
+msgid ""
+"How far below the start height to move down for probing the sides of the "
+"ProbeTip/block. Required for bosses"
+msgstr ""
+
+#: addons/probing/operations/ProbeTip/ProbeTipSettings.kv:258
+msgid "You must manually save the value to the config file for now"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:16
+msgid "Bed visualization"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:42
+msgid "Add"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:47
+msgid "Modify"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:110
+msgid "Name"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:118
+#: addons/beds/ui/BedSettingsPopup.kv:186
+#: addons/beds/ui/BedSettingsPopup.kv:203
+#: addons/beds/ui/BedSettingsPopup.kv:220
+msgid "Required"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:126
+msgid "Plate model"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:140
+msgid "Browse"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:161
+#: addons/stock/ui/StockSettingsPopup.kv:80
+msgid "Material"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:177
+msgid "Machine X (mm)"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:194
+msgid "Machine Y (mm)"
+msgstr ""
+
+#: addons/beds/ui/BedSettingsPopup.kv:211
+msgid "Machine Z (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:19
+msgid "Stock settings"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:27
+msgid ""
+"Define the workpiece block shown in the 3D viewer and optionally simulate "
+"material removal during playback. Origin placement matches how you set WCS "
+"on the machine."
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:62
+msgid "Show stock"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:96
+msgid "Shape"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:188
+msgid "Origin Z"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:204
+msgid "Stock offset X/Y/Z (mm)"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:233
+msgid "Simulate cut"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:253
+msgid "Update during playback"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:273
+msgid "Carver"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:291
+msgid "Simulation resolution"
+msgstr ""
+
+#: addons/stock/ui/StockSettingsPopup.kv:309
+msgid "Checkpoint retention"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:58
+msgid "CMM Workbench"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:89
+msgid "Manual"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:108
+msgid ""
+"[b]Manual (no motion)[/b]\n"
+"[color=78797f]Live position is shown below. Load it into the fields or type "
+"your own, then add a point or circle.[/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:136
+msgid "Load coordinates"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:149
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:348
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:469
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:595
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:711
+msgid "X mm"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:153
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:353
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:474
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:600
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:716
+msgid "Y mm"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:157
+msgid "Z mm"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:161
+msgid "Radius mm"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:166
+msgid "Add point"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:172
+msgid "Add circle"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:178
+msgid "Touch"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:197
+msgid ""
+"[b]Single-axis probe[/b]\n"
+"[color=78797f][b]M466[/b][/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:237
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:827
+msgid "X / Y (mm)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:242
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:363
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:504
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:620
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:736
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:847
+msgid "Probe F"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:247
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:368
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:509
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:625
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:741
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:852
+msgid "Rapid K"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:252
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:373
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:514
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:630
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:746
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:857
+msgid "Tip Dia D"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:257
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:378
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:484
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:605
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:721
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:832
+msgid "Depth E"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:262
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:383
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:494
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:610
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:726
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:837
+msgid "Height H"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:267
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:388
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:499
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:615
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:731
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:842
+msgid "Clearance C"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:272
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:393
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:519
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:635
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:751
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:862
+msgid "Repeat L"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:277
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:398
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:524
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:640
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:756
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:867
+msgid "Retract R"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:283
+msgid "Run probe and capture"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:289
+msgid "Bore"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:308
+msgid ""
+"[b]Circular pocket / bore center[/b]\n"
+"[color=78797f][b]M461[/b][/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:358
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:479
+msgid "Circle tolerance (mm)"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:404
+msgid "Run bore probe and capture"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:410
+msgid "Boss"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:429
+msgid ""
+"[b]Outside boss / block center[/b]\n"
+"[color=78797f][b]M462[/b][/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:489
+msgid "Clearance J"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:530
+msgid "Run boss probe and capture"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:536
+msgid "Corner in"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:555
+msgid ""
+"[b]Inside corner[/b]\n"
+"[color=78797f][b]M463[/b][/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:646
+msgid "Run inside corner probe"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:652
+msgid "Corner out"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:671
+msgid ""
+"[b]Outside corner[/b]\n"
+"[color=78797f][b]M464[/b][/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:762
+msgid "Run outside corner probe"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:787
+msgid ""
+"[b]Axis angle[/b]\n"
+"[color=78797f][b]M465[/b][/color]"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:873
+msgid "Measure angle and capture"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:885
+msgid "XY preview"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:902
+msgid ""
+"No features captured yet.\n"
+"Use the left-hand tabs to probe or add coordinates from Manual."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:912
+msgid "Features"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:927
+msgid "Poly open"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:931
+msgid "Poly closed"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:939
+msgid "Intersect"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:947
+msgid "Tangent"
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:951
+msgid "Clear sel."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:974
+msgid "Load..."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:979
+msgid "Save as..."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:984
+msgid "Copy as..."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:994
+msgid "Jog..."
+msgstr ""
+
+#: addons/cmm_workbench/ui/CMMWorkbenchPopup.kv:1065
+msgid "Jog"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.kv:19
+msgid "Advanced TLO Calibrate"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.kv:41
+msgid "Repeats (R):"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.kv:49
+msgid ""
+"Number of TLO measurement repeats. For facemills: probe once per cycle, "
+"rotate the face mill between cycles; the TLO uses the lowest cutting edge"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.kv:72
+msgid ""
+"Offset the tool setter location by this amount (positive or negative) in X"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.kv:95
+msgid ""
+"Offset the tool setter location by this amount (positive or negative) in Y"
+msgstr ""
+
+#: ui/popups/adv_calibrate/adv_calibrate.kv:112
+msgid "Run Calibration"
 msgstr ""
