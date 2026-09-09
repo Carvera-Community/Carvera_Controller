@@ -223,5 +223,11 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/console/
    - Used in: carveracontroller/data/console.png
 
+25. history.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/history/
+   - Used in: carveracontroller/data/history.png
+
 ===============================================================================
 Please see the respective license files for detailed information.
