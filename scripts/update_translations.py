@@ -84,6 +84,10 @@ def generate_po():
 
 
 def compile_mo():
+    import shutil
+    if not shutil.which("msgfmt"):
+        print("msgfmt not found; skipping translation compile.")
+        return
     # Compile .po files to .mo files
     po_files = [f"{PACKAGE_PATH}/locales/{lang}/LC_MESSAGES/{lang}.po" for lang in LANGUAGES]
     for po_file in po_files:
