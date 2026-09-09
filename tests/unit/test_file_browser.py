@@ -134,7 +134,7 @@ def test_current_job_badge_and_selection():
     )
     file_row = next(row for row in rows if row["kind"] == KIND_FILE)
     assert file_row["is_current_job"] is True
-    assert file_row["current_badge"] == "Current"
+    assert file_row["current_badge"] == "Selected"
     assert file_row["selected"] is True
     assert "G-code" in file_row["subtitle"]
     assert file_row["thumbnail"] == ""
@@ -150,11 +150,11 @@ def test_current_preview_badge():
     )
     file_row = next(row for row in rows if row["kind"] == KIND_FILE)
     assert file_row["is_current_job"] is True
-    assert file_row["current_badge"] == "Current (Preview)"
+    assert file_row["current_badge"] == "Selected (Preview)"
     other = group_and_sort_entries(entries, translate=IDENTITY)
     assert next(row for row in other if row["kind"] == KIND_FILE)["current_badge"] == ""
-    assert current_row_badge(is_current=True, is_preview=False, translate=IDENTITY) == "Current"
-    assert current_row_badge(is_current=True, is_preview=True, translate=IDENTITY) == "Current (Preview)"
+    assert current_row_badge(is_current=True, is_preview=False, translate=IDENTITY) == "Selected"
+    assert current_row_badge(is_current=True, is_preview=True, translate=IDENTITY) == "Selected (Preview)"
     assert current_row_badge(is_current=False, is_preview=True, translate=IDENTITY) == ""
 
 

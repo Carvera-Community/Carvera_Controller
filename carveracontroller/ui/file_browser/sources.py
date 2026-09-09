@@ -577,5 +577,5 @@ def current_row_badge(*, is_current: bool, is_preview: bool, translate: Translat
     if not is_current:
         return ""
     if is_preview:
-        return _translate(translate, "Current (Preview)")
-    return _translate(translate, "Current")
+        return _translate(translate, "Selected (Preview)")
+    return _translate(translate, "Selected")
