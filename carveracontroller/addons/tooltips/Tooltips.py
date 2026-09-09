@@ -808,7 +808,8 @@ class ToolTipLabel(Label):
         fbind("tooltip_image", self._update_image)
         fbind("tooltip_image_size", self._update_image_size)
         Window.bind(mouse_pos=self.on_mouse_pos)
-        self.bind(on_release=self.close_tooltip)
+        if "on_release" in self.events():
+            self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
 
     def _is_blocked_by_modal(self):
@@ -831,17 +832,24 @@ class ToolTipLabel(Label):
         self._update_tooltip()
 
     def _update_tooltip(self, *largs):
+        if not self._tooltip:
+            return
+        label = self._tooltip.ids.tooltip_label
         txt = self.tooltip_txt
         if txt:
-            self._tooltip.ids.tooltip_label.text = txt
-            self._tooltip.ids.tooltip_label.size = self._tooltip.ids.tooltip_label.texture_size
+            label.text = txt
+            if hasattr(label, "refresh_text_size"):
+                label.refresh_text_size()
+            label.size = label.texture_size
         else:
-            self._tooltip.ids.tooltip_label.text = ""
-            self._tooltip.ids.tooltip_label.size = (0, 0)
+            label.text = ""
+            label.size = (0, 0)
 
         self._update_tooltip_size()
 
     def _update_image(self, *largs):
+        if not self._tooltip:
+            return
         imgpath = self.tooltip_image
         if imgpath:
             self._tooltip.ids.tooltip_image.source = imgpath
@@ -862,23 +870,30 @@ class ToolTipLabel(Label):
             tooltip_image.size = tooltip_image.texture_size
         else:
             tooltip_image.size = (0, 0)
+        self._update_tooltip_size()
 
     def _update_tooltip_size(self):
+        if not self._tooltip:
+            return
         tooltip_label = self._tooltip.ids.tooltip_label
         tooltip_image = self._tooltip.ids.tooltip_image
 
-        # Calculate new size based on text and image dimensions
         text_width, text_height = tooltip_label.texture_size
         image_width, image_height = tooltip_image.size
+        new_width, new_height = _compute_tooltip_box_size(
+            text_width,
+            text_height,
+            image_width,
+            image_height,
+            has_text=bool(tooltip_label.text),
+            has_image=bool(self.tooltip_image),
+            horizontal=False,
+            spacing=self._tooltip.spacing,
+        )
 
-        # Keep a stable minimum width for short labels; long text can grow up to max wrap.
-        new_width = max(text_width + 20, image_width + 20, TOOLTIP_MIN_WIDTH + 20 if tooltip_label.text else 0)
-        new_height = text_height + image_height + 20
-
-        # Update tooltip size
         self._tooltip.size = (new_width, new_height)
-        self._tooltip.canvas.ask_update()  # Force UI refresh
-        self._tooltip.ids.tooltip_label.texture_update()
+        self._tooltip.canvas.ask_update()
+        tooltip_label.texture_update()
 
     def on_mouse_pos(self, *args):
         if not self.show_tooltips:
@@ -902,20 +917,29 @@ class ToolTipLabel(Label):
             return
 
         pos = args[1]
-        tooltip_width, tooltip_height = self._tooltip.size
+        self._layout_tooltip_at(pos)
+
+        Clock.unschedule(self.display_tooltip)
+        self.close_tooltip()
+        if self.collide_point(*self.to_widget(*pos)):
+            Clock.schedule_once(self.display_tooltip, self.tooltip_delay)
+
+    def _layout_tooltip_at(self, pos):
+        """Size the tooltip box for its current content and place it near ``pos``."""
         window_width, window_height = Window.size
         tooltip_label = self._tooltip.ids.tooltip_label
         tooltip_image = self._tooltip.ids.tooltip_image
 
-        text_width = tooltip_label.texture_size[0]
-        image_width = tooltip_image.width
-
-        tooltip_padding = 10
-        if self.tooltip_image:
-            tooltip_padding = 40
-
-        tooltip_width = max(text_width, image_width, TOOLTIP_MIN_WIDTH if self.tooltip_txt else 0)
-        tooltip_height = tooltip_label.texture_size[1] + tooltip_image.height + tooltip_padding
+        tooltip_width, tooltip_height = _compute_tooltip_box_size(
+            tooltip_label.texture_size[0],
+            tooltip_label.texture_size[1],
+            tooltip_image.size[0],
+            tooltip_image.size[1],
+            has_text=bool(self.tooltip_txt),
+            has_image=bool(self.tooltip_image),
+            horizontal=False,
+            spacing=self._tooltip.spacing,
+        )
         self._tooltip.size = (tooltip_width, tooltip_height)
         x = pos[0]
         y = pos[1]
@@ -926,11 +950,6 @@ class ToolTipLabel(Label):
         if y + tooltip_height > window_height - 30:
             y = window_height - tooltip_height - 40
         self._tooltip.pos = (x, y)
-
-        Clock.unschedule(self.display_tooltip)
-        self.close_tooltip()
-        if self.collide_point(*self.to_widget(*pos)):
-            Clock.schedule_once(self.display_tooltip, self.tooltip_delay)
 
     def close_tooltip(self, *args):
         if self._tooltip:  # for memory leaks

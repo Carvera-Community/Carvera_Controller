@@ -1,0 +1,47 @@
+<CmdPaneTab>:
+    selected: False
+    tab_text: ''
+    tooltip_txt: ''
+    icon: ''
+    orientation: 'vertical'
+    padding: 0, dp(7)
+    background_color: 0, 0, 0, 0
+    color: 0, 0, 0, 0
+    disabled_color: 0, 0, 0, 0
+    canvas.before:
+        Color:
+            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: (50/255, 164/255, 206/255, 1) if self.selected else (0, 0, 0, 0)
+        Rectangle:
+            pos: self.x, self.y
+            size: self.width, dp(3)
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: dp(8)
+        size_hint_y: None
+        height: dp(26)
+        Widget:
+            size_hint_x: 1
+        Image:
+            source: root.icon
+            size_hint: None, None
+            size: (dp(26), dp(26)) if root.icon else (0, 0)
+            pos_hint: {'center_y': 0.5}
+            allow_stretch: True
+            keep_ratio: True
+            opacity: 1 if root.icon else 0
+            color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+        Label:
+            text: root.tab_text
+            size_hint_x: None
+            width: self.texture_size[0]
+            color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+            bold: root.selected
+            font_size: dp(16)
+            valign: 'middle'
+        Widget:
+            size_hint_x: 1
