@@ -182,10 +182,16 @@ class ShortcutManager:
             if not self.root._is_popup_open():
                 self.root.open_mdi()
                 return True
+        elif action_id == "open_gcode":
+            if not self.root._is_popup_open():
+                self.root.open_gcode()
+                return True
         elif action_id == "open_file_browser":
             return bool(self.root.open_file_browser())
         elif action_id == "toggle_keyboard_jogging":
             return bool(self.root.toggle_keyboard_jog_control())
+        elif action_id == "switch_jog_mode":
+            return bool(self.root.toggle_jog_mode())
         elif action_id == "open_start_job":
             return bool(self.root.open_start_job_popup())
         return False

@@ -7,7 +7,9 @@ from kivy.uix.modalview import ModalView
 from carveracontroller.addons.cmm_workbench.ui.CMMWorkbenchPopup import JogCMMWorkbenchPopup
 from carveracontroller.addons.keyboard_shortcuts.bindings import KeyChord, ShortcutBindings
 from carveracontroller.addons.keyboard_shortcuts.manager import ShortcutManager
+from carveracontroller.Controller import Controller
 from carveracontroller.main import Makera
+from carveracontroller.Utils import digitize_v
 
 
 def _root():
@@ -20,7 +22,9 @@ def _root():
     root.open_start_job_popup = Mock()
     root.open_file_browser = Mock(return_value=True)
     root.open_mdi = Mock()
+    root.open_gcode = Mock()
     root.toggle_keyboard_jog_control = Mock(return_value=True)
+    root.toggle_jog_mode = Mock(return_value=True)
     root._is_popup_open = Mock(return_value=False)
     root.manual_cmd = SimpleNamespace(focus=False, hint_text="")
     root.config_popup = SimpleNamespace(open=Mock())
@@ -72,6 +76,10 @@ def test_global_settings_and_mdi_shortcuts_dispatch_when_available():
 
     assert manager.on_key_down(None, ord("m"), 16, "m", ["ctrl"]) is True
     manager.root.open_mdi.assert_called_once_with()
+    assert manager.on_key_up(None, ord("m")) is True
+
+    assert manager.on_key_down(None, ord("g"), 10, "g", ["ctrl"]) is True
+    manager.root.open_gcode.assert_called_once_with()
 
 
 def test_file_browser_and_keyboard_jog_toggle_shortcuts_dispatch():
@@ -83,6 +91,11 @@ def test_file_browser_and_keyboard_jog_toggle_shortcuts_dispatch():
 
     assert manager.on_key_down(None, ord("j"), 13, "j", ["ctrl"]) is True
     manager.root.toggle_keyboard_jog_control.assert_called_once_with()
+    assert manager.on_key_up(None, ord("j")) is True
+
+    manager.root.keyboard_jog_control = False
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+    manager.root.toggle_jog_mode.assert_called_once_with()
 
 
 def test_file_browser_shortcut_propagates_when_browser_is_unavailable():
@@ -97,6 +110,53 @@ def test_keyboard_jog_toggle_shortcut_propagates_when_control_is_unavailable():
     manager.root.toggle_keyboard_jog_control.return_value = False
 
     assert manager.on_key_down(None, ord("j"), 13, "j", ["ctrl"]) is False
+
+
+def test_switch_jog_mode_shortcut_dispatches_without_starting_a_jog():
+    manager = _manager()
+
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+    manager.root.toggle_jog_mode.assert_called_once_with()
+    manager.root.perform_keyboard_jog.assert_not_called()
+    manager.root.controller.stopContinuousJog.assert_not_called()
+
+
+def test_held_switch_jog_mode_shortcut_only_dispatches_once_until_key_up():
+    manager = _manager()
+
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+    manager.root.toggle_jog_mode.assert_called_once_with()
+
+    assert manager.on_key_up(None, ord("k")) is True
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+    assert manager.root.toggle_jog_mode.call_count == 2
+
+
+def test_switch_jog_mode_shortcut_stops_an_active_keyboard_jog():
+    manager = _manager()
+    manager.on_key_down(None, 275, 0, "", [])
+
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+
+    manager.root.controller.stopContinuousJog.assert_called_once_with()
+    manager.root.toggle_jog_mode.assert_called_once_with()
+    manager.root.perform_keyboard_jog.assert_called_once_with("jog_x_positive")
+
+
+def test_switch_jog_mode_shortcut_propagates_when_mode_is_unavailable():
+    manager = _manager()
+    manager.root.toggle_jog_mode.return_value = False
+
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is False
+
+
+def test_switch_jog_mode_shortcut_dispatches_when_keyboard_jogging_is_off():
+    manager = _manager()
+    manager.root.keyboard_jog_control = False
+
+    assert manager.on_key_down(None, ord("k"), 0, "k", ["ctrl"]) is True
+    manager.root.toggle_jog_mode.assert_called_once_with()
 
 
 def test_unmodified_printable_global_shortcut_is_suppressed_while_typing():
@@ -293,6 +353,10 @@ def test_blocked_global_shortcut_is_not_consumed():
 
     assert manager.on_key_down(None, 44, 0, ",", ["ctrl"]) is False
     manager.root.config_popup.open.assert_not_called()
+    assert manager.on_key_down(None, ord("g"), 0, "g", ["ctrl"]) is False
+    manager.root.open_gcode.assert_not_called()
+    assert manager.on_key_down(None, ord("m"), 0, "m", ["ctrl"]) is False
+    manager.root.open_mdi.assert_not_called()
 
 
 def test_open_file_browser_matches_the_existing_file_button_behavior():
@@ -456,3 +520,64 @@ def test_keyboard_jog_toggle_matches_button_availability_but_forced_disable_stil
     assert root.keyboard_jog_control is False
     assert app.jog_keyboard_enable == "normal"
     shortcut_manager.release_all_jogs.assert_called_once_with()
+
+
+def test_open_gcode_switches_to_the_file_tab_and_unfocuses_mdi():
+    content = SimpleNamespace(transition=SimpleNamespace(direction=""), current="Control")
+    cmd_manager = SimpleNamespace(transition=SimpleNamespace(direction=""), current="manual_cmd_page")
+    root = SimpleNamespace(
+        content=content,
+        cmd_manager=cmd_manager,
+        manual_cmd=SimpleNamespace(focus=True),
+    )
+
+    Makera.open_gcode(root)
+
+    assert content.current == "File"
+    assert cmd_manager.current == "gcode_cmd_page"
+    assert root.manual_cmd.focus is False
+
+
+def test_toggle_jog_mode_matches_the_jog_mode_button_availability():
+    root = SimpleNamespace()
+    app = SimpleNamespace(is_community_firmware=False, fw_version_digitized=0)
+
+    with patch("carveracontroller.main.App.get_running_app", return_value=app):
+        assert Makera.can_toggle_jog_mode(root) is False
+        app.is_community_firmware = True
+        app.fw_version_digitized = digitize_v("1.9.0")
+        assert Makera.can_toggle_jog_mode(root) is False
+        app.fw_version_digitized = digitize_v("2.0.0")
+        assert Makera.can_toggle_jog_mode(root) is True
+
+
+def test_toggle_jog_mode_switches_step_and_continuous_when_available():
+    controller = SimpleNamespace(jog_mode=Controller.JOG_MODE_STEP)
+    root = SimpleNamespace(
+        controller=controller,
+        can_toggle_jog_mode=lambda: True,
+        update_ui_for_jog_mode_cont=Mock(),
+        update_ui_for_jog_mode_step=Mock(),
+    )
+
+    assert Makera.toggle_jog_mode(root) is True
+    root.update_ui_for_jog_mode_cont.assert_called_once_with()
+    root.update_ui_for_jog_mode_step.assert_not_called()
+
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    assert Makera.toggle_jog_mode(root) is True
+    root.update_ui_for_jog_mode_step.assert_called_once_with()
+
+
+def test_toggle_jog_mode_is_a_no_op_when_unavailable():
+    controller = SimpleNamespace(jog_mode=Controller.JOG_MODE_STEP)
+    root = SimpleNamespace(
+        controller=controller,
+        can_toggle_jog_mode=lambda: False,
+        update_ui_for_jog_mode_cont=Mock(),
+        update_ui_for_jog_mode_step=Mock(),
+    )
+
+    assert Makera.toggle_jog_mode(root) is False
+    root.update_ui_for_jog_mode_cont.assert_not_called()
+    root.update_ui_for_jog_mode_step.assert_not_called()

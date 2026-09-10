@@ -141,6 +141,7 @@ ACTIONS = (
     ActionDefinition("open_online_docs", "Open Online Documentation", "Global", "global", KeyChord("f1")),
     ActionDefinition("open_settings", "Open Settings", "Global", "global", KeyChord(",", ("primary",))),
     ActionDefinition("open_mdi", "Open / Focus MDI", "Global", "global", KeyChord("m", ("ctrl",))),
+    ActionDefinition("open_gcode", "Open / Focus G-Code", "Global", "global", KeyChord("g", ("ctrl",))),
     ActionDefinition("open_file_browser", "Open File Browser", "Global", "global", KeyChord("o", ("ctrl",))),
     ActionDefinition(
         "toggle_keyboard_jogging",
@@ -149,6 +150,7 @@ ACTIONS = (
         "global",
         KeyChord("j", ("ctrl",)),
     ),
+    ActionDefinition("switch_jog_mode", "Switch Jog Mode", "Global", "global", KeyChord("k", ("ctrl",))),
     ActionDefinition("jog_x_positive", "Jog X+", "Jogging", "jogging", KeyChord("right")),
     ActionDefinition("jog_x_negative", "Jog X−", "Jogging", "jogging", KeyChord("left")),
     ActionDefinition("jog_y_positive", "Jog Y+", "Jogging", "jogging", KeyChord("down")),

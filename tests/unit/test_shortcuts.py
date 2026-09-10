@@ -17,8 +17,11 @@ def test_requested_defaults():
 
     assert bindings.binding_for("open_start_job") is None
     assert bindings.binding_for("open_online_docs") == KeyChord("f1")
+    assert bindings.binding_for("open_mdi") == KeyChord("m", ("ctrl",))
+    assert bindings.binding_for("open_gcode") == KeyChord("g", ("ctrl",))
     assert bindings.binding_for("open_file_browser") == KeyChord("o", ("ctrl",))
     assert bindings.binding_for("toggle_keyboard_jogging") == KeyChord("j", ("ctrl",))
+    assert bindings.binding_for("switch_jog_mode") == KeyChord("k", ("ctrl",))
     assert bindings.binding_for("mdi_send") == KeyChord("enter", ("ctrl",))
     assert bindings.binding_for("mdi_newline") == KeyChord("enter")
     assert bindings.binding_for("jog_x_positive") == KeyChord("right")
@@ -27,6 +30,9 @@ def test_requested_defaults():
     assert bindings.binding_for("jog_y_negative") == KeyChord("up")
     assert ACTION_BY_ID["jog_y_positive"].label == "Jog Y+"
     assert ACTION_BY_ID["jog_y_negative"].label == "Jog Y−"
+    assert ACTION_BY_ID["open_gcode"].label == "Open / Focus G-Code"
+    assert ACTION_BY_ID["switch_jog_mode"].label == "Switch Jog Mode"
+    assert ACTION_BY_ID["switch_jog_mode"].category == "Global"
 
     inverted = ShortcutBindings(invert_y_axis_jogging=True)
     assert inverted.binding_for("jog_y_positive") == KeyChord("down")

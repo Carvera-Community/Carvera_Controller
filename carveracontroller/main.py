@@ -3358,6 +3358,13 @@ class Makera(RelativeLayout):
         self.cmd_manager.current = "manual_cmd_page"
         self.manual_cmd.focus = True
 
+    def open_gcode(self):
+        self.content.transition.direction = "right"
+        self.content.current = "File"
+        self.cmd_manager.transition.direction = "left"
+        self.cmd_manager.current = "gcode_cmd_page"
+        self.manual_cmd.focus = False
+
     def can_send_mdi_command(self):
         app = App.get_running_app()
         return app.state in ("Idle", "Pause") or str(self.allow_mdi_while_machine_running).lower() in ("1", "true")
@@ -7598,12 +7605,18 @@ class Makera(RelativeLayout):
         return True
 
     # -----------------------------------------------------------------------
+    def can_toggle_jog_mode(self):
+        app = App.get_running_app()
+        return bool(app.is_community_firmware and app.fw_version_digitized >= Utils.digitize_v("2.0.0"))
+
     def toggle_jog_mode(self):
+        if not self.can_toggle_jog_mode():
+            return False
         if self.controller.jog_mode == Controller.JOG_MODE_STEP:
             self.update_ui_for_jog_mode_cont()
-
         elif self.controller.jog_mode == Controller.JOG_MODE_CONTINUOUS:
             self.update_ui_for_jog_mode_step()
+        return True
 
     def update_ui_for_jog_mode_step(self):
         self.controller.setJogMode(Controller.JOG_MODE_STEP)
