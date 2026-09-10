@@ -1,0 +1,301 @@
+#:import tr carveracontroller.__main__.tr
+
+<UpdateNotesRow>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    padding: dp(12), dp(10) if self.kind == 'heading' else dp(6)
+    spacing: dp(10)
+    canvas.before:
+        Color:
+            rgba: (36/255, 48/255, 56/255, 1) if self.kind == 'heading' else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.x + dp(6), self.y + dp(3) if self.kind == 'heading' else self.y + dp(2)
+            size: self.width - dp(12), (self.height - dp(6)) if self.kind == 'heading' else (self.height - dp(4))
+            radius: [dp(4)]
+    Widget:
+        size_hint_x: None
+        width: dp(14) if root.show_bullet else 0
+        canvas:
+            Color:
+                rgba: (50/255, 164/255, 206/255, 1) if root.show_bullet else (0, 0, 0, 0)
+            Ellipse:
+                pos: self.center_x - dp(3), self.center_y - dp(3)
+                size: (dp(6), dp(6)) if root.show_bullet else (0, 0)
+    Label:
+        size_hint_x: None
+        size_hint_y: None
+        width: dp(100) if root.badge else 0
+        height: dp(22) if root.badge else 0
+        pos_hint: {'center_y': 0.5}
+        opacity: 1 if root.badge else 0
+        text: root.badge
+        bold: True
+        font_size: dp(11)
+        color: 1, 1, 1, 1
+        halign: 'center'
+        valign: 'middle'
+        text_size: self.size
+        canvas.before:
+            Color:
+                rgba: root.badge_color
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(4)]
+    Label:
+        text: root.text
+        font_size: root.body_font_size
+        bold: root.body_bold
+        color: root.body_color
+        halign: 'left'
+        valign: 'middle' if root.kind == 'heading' else 'top'
+        text_size: self.width, self.height
+
+<UpdateGithubLink@ButtonBehavior+BoxLayout>:
+    orientation: 'horizontal'
+    size_hint_x: None
+    spacing: dp(4)
+
+<UpgradePopup>:
+    size_hint: 0.82, 0.85
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    auto_dismiss: False
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(16), dp(14), dp(16), dp(16)
+        spacing: dp(10)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(36)
+            spacing: dp(8)
+            Label:
+                text: tr._('Updates')
+                size_hint_x: None
+                width: dp(96)
+                bold: True
+                font_size: dp(18)
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+            Widget:
+            BoxLayout:
+                size_hint_x: None
+                width: self.minimum_width
+                spacing: dp(12)
+                BoxLayout:
+                    size_hint_x: None
+                    width: self.minimum_width
+                    spacing: dp(4)
+                    CheckBox:
+                        id: cbx_check_at_startup
+                        size_hint: None, None
+                        size: dp(28), dp(28)
+                        pos_hint: {'center_y': 0.5}
+                        active: root.check_at_startup
+                        on_active: root.check_at_startup = self.active
+                    Label:
+                        text: tr._('Check for updates on startup')
+                        size_hint_x: None
+                        size_hint_y: None
+                        width: self.texture_size[0]
+                        height: dp(28)
+                        pos_hint: {'center_y': 0.5}
+                        font_size: dp(13)
+                        valign: 'middle'
+                BoxLayout:
+                    size_hint_x: None
+                    width: self.minimum_width
+                    spacing: dp(4)
+                    CheckBox:
+                        id: cbx_include_prereleases
+                        size_hint: None, None
+                        size: dp(28), dp(28)
+                        pos_hint: {'center_y': 0.5}
+                        active: root.include_prereleases
+                        on_active: root.include_prereleases = self.active
+                    Label:
+                        text: tr._('Include release candidates')
+                        size_hint_x: None
+                        size_hint_y: None
+                        width: self.texture_size[0]
+                        height: dp(28)
+                        pos_hint: {'center_y': 0.5}
+                        font_size: dp(13)
+                        valign: 'middle'
+                Label:
+                    text: root.last_check_text
+                    size_hint_x: None
+                    size_hint_y: None
+                    width: 0 if (root.compact or not root.last_check_text) else self.texture_size[0]
+                    height: dp(28)
+                    pos_hint: {'center_y': 0.5}
+                    opacity: 0 if (root.compact or not root.last_check_text) else 1
+                    font_size: dp(13)
+                    color: 150/255, 150/255, 150/255, 1
+                    valign: 'middle'
+                Button:
+                    id: btn_refresh
+                    size_hint: None, None
+                    size: dp(32), dp(32)
+                    pos_hint: {'center_y': 0.5}
+                    text: '↻'
+                    font_size: dp(18)
+                    disabled: root.checking
+                    background_normal: ''
+                    background_down: ''
+                    background_color: (64/255, 64/255, 64/255, 1) if self.state != 'down' else (50/255, 50/255, 50/255, 1)
+                    on_release: root.on_refresh()
+        BoxLayout:
+            size_hint_y: None
+            height: dp(70)
+            spacing: dp(4)
+            FileBrowserLocationTab:
+                tab_text: tr._('Controller')
+                icon: 'data/laptop.png'
+                path_text: root.controller_tab_path
+                selected: root.active_tab == 'controller'
+                notify: root.controller_notify
+                badge_text: tr._('Update available') if root.controller_notify else ''
+                reserve_badge: True
+                on_release: root.set_tab('controller')
+            FileBrowserLocationTab:
+                tab_text: tr._('Firmware')
+                icon: 'data/memory.png'
+                path_text: root.firmware_tab_path
+                selected: root.active_tab == 'firmware'
+                notify: root.firmware_notify
+                badge_text: tr._('Update available') if root.firmware_notify else ''
+                reserve_badge: True
+                on_release: root.set_tab('firmware')
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            spacing: dp(8)
+            BoxLayout:
+                orientation: 'vertical'
+                spacing: dp(2)
+                Label:
+                    text: root.status_title
+                    bold: True
+                    font_size: dp(16)
+                    color: 50/255, 164/255, 206/255, 1
+                    halign: 'left'
+                    valign: 'middle'
+                    text_size: self.size
+                Label:
+                    text: root.status_detail
+                    font_size: dp(13)
+                    color: 180/255, 180/255, 180/255, 1
+                    halign: 'left'
+                    valign: 'middle'
+                    text_size: self.size
+                    shorten: True
+            FileBrowserBadge:
+                text: root.channel_badge
+                pos_hint: {'center_y': 0.5}
+        BoxLayout:
+            size_hint_y: None
+            height: dp(22)
+            spacing: dp(8)
+            Label:
+                text: tr._('Release notes')
+                bold: True
+                font_size: dp(13)
+                color: 180/255, 180/255, 180/255, 1
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+            UpdateGithubLink:
+                width: self.minimum_width if root.notes_link_text else 0
+                opacity: 1 if root.notes_link_text else 0
+                disabled: not root.notes_link_text
+                on_release: root.on_view_release()
+                Image:
+                    source: 'data/link-variant.png'
+                    size_hint_x: None
+                    width: dp(16) if root.notes_link_text else 0
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: 50/255, 164/255, 206/255, 1
+                Label:
+                    text: root.notes_link_text
+                    size_hint_x: None
+                    width: self.texture_size[0]
+                    font_size: dp(13)
+                    color: 50/255, 164/255, 206/255, 1
+                    halign: 'left'
+                    valign: 'middle'
+                    text_size: None, self.height
+        FloatLayout:
+            canvas.before:
+                Color:
+                    rgba: 28/255, 28/255, 28/255, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(6)]
+            RecycleView:
+                id: notes_list
+                size_hint: 1, 1
+                pos_hint: {'x': 0, 'y': 0}
+                opacity: 1 if root.show_notes else 0
+                viewclass: 'UpdateNotesRow'
+                do_scroll_x: False
+                do_scroll_y: True
+                scroll_type: ['bars', 'content']
+                bar_width: dp(10)
+                RecycleBoxLayout:
+                    default_size: None, dp(32)
+                    default_size_hint: 1, None
+                    size_hint_y: None
+                    height: self.minimum_height
+                    orientation: 'vertical'
+                    spacing: dp(4)
+                    padding: dp(4), dp(8)
+            FileBrowserEmptyOverlay:
+                active: not root.show_notes
+                orientation: 'vertical'
+                size_hint: 1, 1
+                pos_hint: {'x': 0, 'y': 0}
+                opacity: 1 if not root.show_notes else 0
+                padding: dp(24)
+                Label:
+                    text: root.notes_empty_text
+                    color: 180/255, 180/255, 180/255, 1
+                    font_size: dp(15)
+                    halign: 'center'
+                    valign: 'middle'
+                    text_size: self.size
+        Label:
+            size_hint_y: None
+            height: dp(32) if root.helper_text else 0
+            opacity: 1 if root.helper_text else 0
+            text: root.helper_text
+            font_size: dp(13)
+            color: 50/255, 164/255, 206/255, 1
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.size
+        BoxLayout:
+            id: footer_bar
+            size_hint_y: None
+            height: dp(40)
+            spacing: dp(8)
+            ScrollView:
+                do_scroll_y: False
+                do_scroll_x: True
+                bar_width: dp(6)
+                BoxLayout:
+                    id: footer_actions
+                    size_hint_x: None
+                    width: self.minimum_width
+                    spacing: dp(8)
+            FileBrowserActionButton:
+                id: btn_close
+                size_hint_x: None
+                size_hint_y: None
+                height: dp(40)
+                icon: 'data/close.png'
+                btn_text: tr._('Close')
+                flat: True
+                on_release: root.on_close()

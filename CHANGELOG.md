@@ -1,4 +1,5 @@
 [unreleased]
+- Enhancement: Improve update popup UI and retrieve version data from the GitHub API
 - Enhancement: Replace the nested Remote/Local file popup with a single file browser
 - Enhancement: Auto enclosure/LED lights on connect and off on disconnect or app close. Controller setting is available to enable/disable this feature, default is enabled.
 - Enhancement: Tool-change flags have tooltip showing time until the change

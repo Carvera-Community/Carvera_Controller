@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from carveracontroller.Controller import LOAD_DIR
-from carveracontroller.main import CONFIG_FILES_TO_BACK_UP, Makera
+from carveracontroller.main import Makera
 from carveracontroller.ui.file_browser.sources import (
     ICON_FILE,
     ICON_FIRMWARE,
@@ -47,6 +47,7 @@ from carveracontroller.ui.file_browser.sources import (
     trim_breadcrumb_pairs,
     upload_dest_tooltip,
 )
+from carveracontroller.updater.backup import DEFAULT_BACKUP_PATHS
 
 IDENTITY = lambda text: text  # noqa: E731
 
@@ -360,6 +361,7 @@ def test_fill_remote_dir_callback_only_runs_for_scoped_path(monkeypatch):
 def test_download_config_files_downloads_silently(monkeypatch, tmp_path):
     root = Makera.__new__(Makera)
     root.temp_dir = str(tmp_path)
+    root.backing_up_config = True
     calls = []
 
     def capture_download(remote_path, local_path, show_progress=True, open_after=True):
@@ -371,6 +373,7 @@ def test_download_config_files_downloads_silently(monkeypatch, tmp_path):
                 "open_after": open_after,
             }
         )
+        return 1
 
     root.doDownload = capture_download
     monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda *args, **kwargs: None)
@@ -395,7 +398,7 @@ def test_download_config_files_downloads_silently(monkeypatch, tmp_path):
         assert call["show_progress"] is False
         assert call["open_after"] is False
         assert call["local_path"] == str(tmp_path / call["remote_path"].rsplit("/", 1)[-1])
-    assert set(CONFIG_FILES_TO_BACK_UP) >= {call["remote_path"] for call in calls}
+    assert set(DEFAULT_BACKUP_PATHS) >= {call["remote_path"] for call in calls}
 
 
 def _download_host(tmp_path, *, downloading_config=False):
