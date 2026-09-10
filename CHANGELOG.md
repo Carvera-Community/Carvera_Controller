@@ -1,4 +1,5 @@
 [unreleased]
+- Enhancement: Replace the nested Remote/Local file popup with a single file browser
 - Enhancement: Auto enclosure/LED lights on connect and off on disconnect or app close. Controller setting is available to enable/disable this feature, default is enabled.
 - Enhancement: Tool-change flags have tooltip showing time until the change
 - Enhancement: Remaining time text alternates with time until the next tool change and playback completion
@@ -22,6 +23,7 @@
 - Fixed: Harden the gcode parser against "zero length" movement, and prevent division by zero in play slider
 - Fixed: Time estimates ignoring speed for some 4th-axis moves
 - Fixed: Allow to select the bottom element of the MDI, Gcode and probing confirmation lists
+- Fixed: Machine config backup no longer applies settings or opens files in the G-code viewer
 - Fixed: Fixed rotary previews so toolpaths, pointers, and stock rotate around the WCS origin without unwanted orbiting.
 - Fixed: Keep thin tool icon fills visible by drawing the outline outside the silhouette.
 

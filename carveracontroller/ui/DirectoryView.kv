@@ -4,6 +4,8 @@
     data_text: ''
     data_icon: 'data/folder-32.png'
     full_path: ''
+    spacing: dp(6)
+    padding: dp(4), 0
     canvas.before:
         Color:
             rgba: 80/255, 80/255, 80/255, 1
@@ -16,10 +18,11 @@
                 rgba: 225/255, 225/255, 225/255, 1
             Rectangle:
                 source: 'data/connected.png'
-                pos: self.center_x - dp(10), self.center_y - dp(10)
-                size: dp(20) if root.selected else dp(0), dp(20) if root.selected else dp(0)
+                pos: self.center_x - dp(8), self.center_y - dp(8)
+                size: dp(16) if root.selected else dp(0), dp(16) if root.selected else dp(0)
         text: ''
-        size_hint_x: 0.15
+        size_hint_x: None
+        width: dp(18) if root.selected else dp(2)
     Label:
         canvas.before:
             Color:
@@ -29,10 +32,14 @@
                 pos: self.center_x - dp(10), self.center_y - dp(10)
                 size: dp(20), dp(20)
         text: ''
-        size_hint_x: 0.2
+        size_hint_x: None
+        width: dp(22)
     Label:
         text: root.data_text
         color: 225/255, 225/255, 225/255, 1
         text_size: self.size
         valign: 'middle'
+        halign: 'left'
+        shorten: True
+        shorten_from: 'right'
         multiline: False
