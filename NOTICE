@@ -229,5 +229,11 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/history/
    - Used in: carveracontroller/data/history.png
 
+26. link-variant.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/link-variant/
+   - Used in: carveracontroller/data/link-variant.png
+
 ===============================================================================
 Please see the respective license files for detailed information.

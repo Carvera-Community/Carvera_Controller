@@ -6,14 +6,6 @@ import quicklz
 # import os
 # os.environ["KIVY_METRICS_DENSITY"] = '1'
 
-CONFIG_FILES_TO_BACK_UP = [
-    "/sd/cartesian_nm.grid",
-    "/sd/config.default",
-    "/sd/config.txt",
-    "/sd/custom_tool_slots.txt",
-    "/sd/flex_compensation.dat",
-]
-
 MACHINE_CONFIG_FILES = {
     "C1": "config_c1.json",
     "CA1": "config_ca1.json",
@@ -182,6 +174,17 @@ from carveracontroller.ui.file_browser.thumbnail import (
     machine_cache_key,
     thumbnail_cache_for_app,
 )
+from carveracontroller.ui.updates import UpgradePopup
+from carveracontroller.updater import (
+    check_updates,
+    fetch_firmware_bin,
+    firmware_one_click_supported,
+    snapshot_with_prereleases,
+)
+from carveracontroller.updater.backup import matching_backup_paths
+from carveracontroller.updater.config import CACHE_SUBDIR, CONFIG_INCLUDE_PRERELEASES
+from carveracontroller.updater.download import DownloadCancelled, DownloadError
+from carveracontroller.updater.platform import detect_platform
 
 
 # Custom Property to monitor CNC.vars["sw_light"] changes
@@ -213,7 +216,6 @@ from functools import partial
 
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
-from kivy.network.urlrequest import UrlRequest
 from kivy.resources import resource_add_path
 
 from .WIFIStream import MachineDetector
@@ -1085,11 +1087,6 @@ class PickFilePopup(FloatLayout):
     def on_cancel_pressed(self):
         if self.on_cancel:
             self.on_cancel()
-
-
-class UpgradePopup(ModalView):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
 
 class AutoLevelPopup(ModalView):
@@ -2848,11 +2845,9 @@ class Makera(RelativeLayout):
 
     show_update = True
     instantFSoverride = True
-    fw_upd_text = ""
-    fw_version_new = ""
     fw_version = ""
     fw_version_checking = False
-    fw_version_checked = False
+    backing_up_config = False
 
     filetype_support = "nc"
     filetype = ""
@@ -2863,8 +2858,6 @@ class Makera(RelativeLayout):
     decompstatus = False
     decomptime = 0
 
-    ctl_upd_text = ""
-    ctl_version_new = ""
     ctl_version = ""
 
     common_local_dir_list = []
@@ -2918,6 +2911,11 @@ class Makera(RelativeLayout):
         self.ctl_version = ctl_version
         self.file_popup = FileBrowserPopup()
         self._pending_machine_thumb = None
+        self._update_snapshot = None
+        self._update_check_running = False
+        self._uploading_firmware = False
+        self._firmware_delete_after = None
+        self._firmware_download_cancel = None
 
         self.cnc = CNC()
         self.wcs_names = self.cnc.getWCSNames()
@@ -3077,7 +3075,6 @@ class Makera(RelativeLayout):
         self.instantFSoverride = Config.get("carvera", "instantFSoverride") == "1"
 
         self.show_update = Config.get("carvera", "show_update") == "1"
-        self.upgrade_popup.cbx_check_at_startup.active = self.show_update
         if self.show_update:
             self.check_for_updates()
 
@@ -3306,11 +3303,9 @@ class Makera(RelativeLayout):
         except Exception as e:
             logger.error(f"Failed to run macro {macro_id}: {e}")
 
-    def open_download(self):
-        webbrowser.open(DOWNLOAD_ADDRESS, new=2)
-
-    def open_fw_download(self):
-        webbrowser.open(FW_DOWNLOAD_ADDRESS, new=2)
+    def open_url(self, url):
+        if url:
+            webbrowser.open(url, new=2)
 
     def open_fw_upload(self):
         self.file_popup.open_for_firmware()
@@ -3530,48 +3525,96 @@ class Makera(RelativeLayout):
         self.adv_calibrate_popup.open()
 
     def open_update_popup(self):
-        self.upgrade_popup.check_button.disabled = False
-        self.upgrade_popup.open(self)
+        self.upgrade_popup.open()
+        if self._update_snapshot is None and not getattr(self, "_update_check_running", False):
+            self.check_for_updates()
 
     def close_update_popup(self):
-        if self.upgrade_popup.cbx_check_at_startup.active != self.show_update:
-            self.show_update = self.upgrade_popup.cbx_check_at_startup.active
-            Config.set("carvera", "show_update", "1" if self.show_update else "0")
-            Config.write()
-        self.upgrade_popup.dismiss(self)
+        self.upgrade_popup.dismiss()
 
-    def check_for_updates(self):
-        self.fw_upd_text = ""
-        self.fw_version_checked = False
-        self.ctl_upd_text = ""
-        UrlRequest(FW_UPD_ADDRESS, on_success=self.fw_upd_loaded)
-        UrlRequest(CTL_UPD_ADDRESS, on_success=self.ctl_upd_loaded)
+    def _update_cache_dir(self):
+        app = App.get_running_app()
+        if app is None:
+            return None
+        return os.path.join(app.user_data_dir, CACHE_SUBDIR)
 
-    def fw_upd_loaded(self, req, result):
-        # parse result
-        self.fw_upd_text = result
+    def _include_prereleases(self):
+        if Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES):
+            return Config.get("carvera", CONFIG_INCLUDE_PRERELEASES) in ("1", "true", "True")
+        return False
 
-    def check_fw_version(self):
-        self.upgrade_popup.fw_upd_text.text = self.fw_upd_text
-        self.upgrade_popup.fw_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search(r"\[[0-9]+\.[0-9]+\.[0-9]+\]", self.fw_upd_text)
-        if versions != None:
-            self.fw_version_new = versions[0][1 : len(versions[0]) - 1]
-            if self.fw_version != "":
-                app = App.get_running_app()
-                if Utils.digitize_v(self.fw_version_new) > Utils.digitize_v(self.fw_version):
-                    app.fw_has_update = True
-                    self.upgrade_popup.fw_version_txt.text = (
-                        tr._(" New version detected: v") + self.fw_version_new + tr._(" Current: v") + self.fw_version
-                    )
-                else:
-                    app.fw_has_update = False
-                    self.upgrade_popup.fw_version_txt.text = tr._(" Current version: v") + self.fw_version
-        self.fw_version_checked = True
+    def check_for_updates(self, force=False):
+        if getattr(self, "_update_check_running", False):
+            return
+        self._update_check_running = True
+        self.upgrade_popup.set_checking(True)
+        include_prereleases = self._include_prereleases()
+        current_controller = self.ctl_version
+        current_firmware = self.fw_version
+        cache_dir = self._update_cache_dir()
+        platform_key = detect_platform(kivy_platform=kivy_platform)
+        threading.Thread(
+            target=self._check_for_updates_worker,
+            args=(current_controller, current_firmware, include_prereleases, cache_dir, platform_key, force),
+            daemon=True,
+        ).start()
 
-    def ctl_upd_loaded(self, req, result):
-        self.ctl_upd_text = result
-        Clock.schedule_once(self.check_ctl_version, 0)
+    def apply_include_prereleases(self):
+        if self._update_snapshot is None:
+            if not getattr(self, "_update_check_running", False):
+                self.check_for_updates()
+            return
+        self._apply_update_snapshot(self._update_snapshot)
+
+    def _check_for_updates_worker(
+        self, current_controller, current_firmware, include_prereleases, cache_dir, platform_key, force=False
+    ):
+        try:
+            snapshot = check_updates(
+                current_controller=current_controller,
+                current_firmware=current_firmware,
+                include_prereleases=include_prereleases,
+                cache_dir=cache_dir,
+                platform_key=platform_key,
+                force=force,
+            )
+        except Exception:
+            logger.exception("Update check failed")
+            Clock.schedule_once(lambda *_: self._apply_update_snapshot(None, error=True), 0)
+            return
+        Clock.schedule_once(lambda *_: self._apply_update_snapshot(snapshot), 0)
+
+    def _apply_update_snapshot(self, snapshot, error=False):
+        self._update_check_running = False
+        if snapshot is not None:
+            snapshot = snapshot_with_prereleases(
+                snapshot,
+                self._include_prereleases(),
+                current_controller=self.ctl_version,
+                current_firmware=self.fw_version,
+            )
+            self._update_snapshot = snapshot
+        app = App.get_running_app()
+        if app is not None:
+            if self._update_snapshot is None:
+                app.ctl_has_update = False
+                app.fw_has_update = False
+            else:
+                app.ctl_has_update = self._update_snapshot.controller.update_available
+                app.fw_has_update = self._update_snapshot.firmware.update_available
+        self.upgrade_popup.apply_snapshot(self._update_snapshot, checking=False, error=error)
+
+    def _refresh_firmware_update_state(self):
+        if self._update_snapshot is None:
+            return
+        current_fw = self.fw_version or ""
+        current_ctl = self.ctl_version or ""
+        if (
+            self._update_snapshot.firmware.current == current_fw
+            and self._update_snapshot.controller.current == current_ctl
+        ):
+            return
+        self._apply_update_snapshot(self._update_snapshot)
 
     def change_language(self, lang_desc):
         for lang_key in translation.LANGS:
@@ -3584,23 +3627,6 @@ class Makera(RelativeLayout):
         self.config_popup.btn_apply.disabled = True
         self.message_popup.lb_content.text = tr._("Language setting applied, restart Controller app to take effect !")
         self.message_popup.open()
-
-    def check_ctl_version(self, *args):
-        self.upgrade_popup.ctl_upd_text.text = self.ctl_upd_text
-        self.upgrade_popup.ctl_upd_text.cursor = (0, 0)  # Position the cursor at the top of the text
-        versions = re.search(r"\[[0-9]+\.[0-9]+\.[0-9]+\]", self.ctl_upd_text)
-        if versions != None:
-            self.ctl_version_new = versions[0][1 : len(versions[0]) - 1]
-            app = App.get_running_app()
-            if Utils.digitize_v(self.ctl_version_new) > Utils.digitize_v(self.ctl_version):
-                app.ctl_has_update = True
-                self.upgrade_popup.ctl_version_txt.text = (
-                    tr._(" New version detected: v") + self.ctl_version_new + tr._(" Current: v") + self.ctl_version
-                )
-            else:
-                app.ctl_has_update = False
-                self.upgrade_popup.ctl_version_txt.text = tr._(" Current version: v") + self.ctl_version
-        self.ctl_version_checked = True
 
     # -----------------------------------------------------------------------
     def play(self, file_name, start_line):
@@ -4210,8 +4236,7 @@ class Makera(RelativeLayout):
                         app.fw_version_digitized = Utils.digitize_v(self.fw_version)
                         logger.debug(f"Firmware Version detected as {self.fw_version}")
                         Clock.schedule_once(partial(self.onFirmwareDetected, self.fw_version), 0)
-                        if self.fw_version_new != "":
-                            self.check_fw_version()
+                        Clock.schedule_once(lambda *_: self._refresh_firmware_update_state(), 0)
                         # Baud upgrade is deferred until after config download / sync
                         # (see attempt_usb_baud_upgrade_if_eligible). Running it on the
                         # version line races framed config transfer and breaks the link.
@@ -4673,6 +4698,17 @@ class Makera(RelativeLayout):
         if not filepath or os.path.isdir(filepath):
             return
         filename = os.path.basename(os.path.normpath(filepath))
+        firmware = bool(self.file_popup.firmware_mode)
+        if firmware:
+            self.confirm_popup.lb_title.text = tr._("Install firmware")
+            self.confirm_popup.lb_content.text = tr._(
+                "This will upload the selected firmware file to the machine as /sd/firmware.bin. "
+                "A machine reset is required to apply it. Back up the machine configuration first if you have not already."
+            )
+            self.confirm_popup.cancel = None
+            self.confirm_popup.confirm = partial(self._confirmed_firmware_upload, filepath)
+            self.confirm_popup.open(self)
+            return
         if self.file_popup.machine_listing_has(filename):
             # show message popup
             self.confirm_popup.lb_title.text = tr._("File Already Exists")
@@ -4681,17 +4717,11 @@ class Makera(RelativeLayout):
             self.confirm_popup.confirm = partial(self.uploadLocalFile, filepath)
             self.confirm_popup.open(self)
         else:
-            if self.file_popup.firmware_mode:
-                # show message popup
-                self.confirm_popup.lb_title.text = tr._("Updating Firmware")
-                self.confirm_popup.lb_content.text = tr._(
-                    "Are you sure you want to update the firmware? A machine reset will be required to apply the new firmware."
-                )
-                self.confirm_popup.cancel = None
-                self.confirm_popup.confirm = partial(self.uploadLocalFile, filepath)
-                self.confirm_popup.open(self)
-            else:
-                self.uploadLocalFile(filepath)
+            self.uploadLocalFile(filepath)
+
+    def _confirmed_firmware_upload(self, filepath):
+        self.file_popup.dismiss()
+        self.start_firmware_install(filepath)
 
     def select_file(self, remote_path, local_cached_file_path):
         """Select a file that is already present both locally and remotely"""
@@ -4815,7 +4845,8 @@ class Makera(RelativeLayout):
                 ):
                     item.value = ""
 
-        self.downloading_config = True
+        self.backing_up_config = True
+        self.downloading_config = False
         Clock.schedule_once(partial(self.progressStart, tr._("Downloading config files..."), None), 0)
 
         self.fill_remote_dir_callback = self.download_config_files
@@ -4824,14 +4855,20 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def download_config_files(self, remote_paths):
-        matching_paths = []
-        for file_info in remote_paths:
-            if file_info["path"] in CONFIG_FILES_TO_BACK_UP:
-                logger.debug(f"Found matching config file: {file_info['path']}")
-                matching_paths.append(file_info["path"])
+        if not self.backing_up_config:
+            return
+        matching_paths = matching_backup_paths(remote_paths)
+        if not matching_paths:
+            Clock.schedule_once(self._abort_config_backup, 0)
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("No configuration files were found on the machine."), False),
+                0.1,
+            )
+            return
 
         local_paths = []
         progress = 0.0
+        step = 100.0 / len(matching_paths)
         for remote_path in matching_paths:
             local_path = os.path.join(self.temp_dir, os.path.basename(remote_path))
             local_paths.append(local_path)
@@ -4839,8 +4876,11 @@ class Makera(RelativeLayout):
             Clock.schedule_once(
                 partial(self.progressUpdate, progress, tr._("Downloading") + " \n%s" % remote_path, True), 0
             )
-            self.doDownload(remote_path, local_path, show_progress=False, open_after=False)
-            progress += 100.0 / len(matching_paths)
+            download_result = self.doDownload(remote_path, local_path, show_progress=False, open_after=False)
+            if download_result is None or download_result < 0:
+                Clock.schedule_once(self._abort_config_backup, 0)
+                return
+            progress += step
             Clock.schedule_once(
                 partial(self.progressUpdate, progress, tr._("Downloading") + " \n%s" % remote_path, True), 0
             )
@@ -4855,42 +4895,60 @@ class Makera(RelativeLayout):
         self.progressFinish()
         content = PickFilePopup(partial(self.finish_backing_up_config, local_paths))
         self.pick_file_popup = Popup(
-            title="Choose where to back up your machine configuration",
+            title=tr._("Choose where to back up your machine configuration"),
             content=content,
             size_hint=(0.75, 0.75),
             auto_dismiss=True,
         )
-        content.on_cancel = self.pick_file_popup.dismiss
+        content.on_cancel = self._cancel_config_backup_picker
         self.pick_file_popup.open()
+
+    def _cancel_config_backup_picker(self):
+        if self.pick_file_popup is not None:
+            self.pick_file_popup.dismiss()
+            self.pick_file_popup = None
+        self._abort_config_backup()
+
+    def _abort_config_backup(self, *args):
+        self.progressFinish()
+        self.backing_up_config = False
+        self.downloading_config = False
+        self.fill_remote_dir_callback = None
+        self.file_popup.restore_machine_root()
 
     # -----------------------------------------------------------------------
     def finish_backing_up_config(self, downloaded_file_paths, selected_dir, _selected_file):
+        if self.pick_file_popup is not None:
+            self.pick_file_popup.dismiss()
+            self.pick_file_popup = None
+        if not selected_dir or not downloaded_file_paths:
+            self._abort_config_backup()
+            return
+
+        failed = False
         for source_file_path in downloaded_file_paths:
             dest_file_path = os.path.join(selected_dir, os.path.basename(source_file_path))
             try:
                 shutil.copyfile(source_file_path, dest_file_path)
             except Exception as e:
+                failed = True
                 Clock.schedule_once(
                     partial(
                         self.show_message_popup,
-                        tr._(f"Couldn't back up '{source_file_path}'. The error was:\n\n{e}"),
+                        tr._("Couldn't back up '%s'. The error was:\n\n%s") % (source_file_path, e),
                         False,
                     ),
                     0,
                 )
-                print("Error backing up config file:", e)
+                logger.error("Error backing up config file: %s", e)
 
-        self.pick_file_popup.dismiss()
-        self.pick_file_popup = None
+        self.backing_up_config = False
         self.downloading_config = False
-
-        # Workaround so that we don't expose the SD card root directory to the user
-        # next time they open the gcode file browser
         self.file_popup.restore_machine_root()
-
-        Clock.schedule_once(
-            partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0
-        )
+        if not failed:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0
+            )
 
     # -----------------------------------------------------------------------
     def download_config_file(self):
@@ -5029,7 +5087,7 @@ class Makera(RelativeLayout):
         return None, None
 
     def _ingest_machine_gcode_thumbnail(self, remote_path, local_path):
-        if self.file_popup.firmware_mode or self.downloading_config:
+        if self.file_popup.firmware_mode or self.downloading_config or self.backing_up_config:
             return
         if not is_gcode_path(remote_path) and not is_gcode_path(local_path):
             return
@@ -5058,7 +5116,7 @@ class Makera(RelativeLayout):
         if size is None:
             return
         self._pending_machine_thumb = None
-        if self.file_popup.firmware_mode:
+        if self.file_popup.firmware_mode or self.backing_up_config:
             return
         source = source_file[:-3] if str(source_file).endswith(".lz") else source_file
         if not is_gcode_path(source) and not is_gcode_path(remote_path):
@@ -5076,6 +5134,7 @@ class Makera(RelativeLayout):
         # Config backup reuses downloading_config so /sd is not added to recents, but those
         # files must not be applied as settings or opened in the viewer.
         apply_config = was_config_download and open_after
+        was_backup = self.backing_up_config
         if not self.downloading_config and not os.path.exists(os.path.dirname(local_path)):
             # os.mkdir(os.path.dirname(local_path))
             os.makedirs(os.path.dirname(local_path))
@@ -5206,7 +5265,7 @@ class Makera(RelativeLayout):
                 if self._decompress_downloaded_file_in_place(local_path):
                     self._ingest_machine_gcode_thumbnail(remote_path, local_path)
 
-            if not was_config_download:
+            if not was_config_download and not was_backup:
                 self.update_recent_remote_dir_list(os.path.dirname(remote_path))
 
         elif download_result < 0:
@@ -5218,6 +5277,7 @@ class Makera(RelativeLayout):
 
         if show_progress:
             Clock.schedule_once(self.progressFinish, 0.1)
+        return download_result
 
     def onFirmwareDetected(self, version, *args):
         app = App.get_running_app()
@@ -5972,11 +6032,124 @@ class Makera(RelativeLayout):
             return False
 
     # -----------------------------------------------------------------------
-    def uploadLocalFile(self, filepath, callback=None):
+    def install_firmware_release(self, release):
+        app = App.get_running_app()
+        if app is None or app.state != "Idle" or self.uploading or self.downloading:
+            self.show_message_popup(tr._("The machine must be idle to install firmware."), False)
+            return
+        if not firmware_one_click_supported(getattr(app, "model", "")):
+            self.show_message_popup(
+                tr._("One-click firmware install is only supported on C1 and CA1."),
+                False,
+            )
+            return
+        version = release.display_name if release is not None else ""
+        self.confirm_popup.lb_title.text = tr._("Install firmware")
+        self.confirm_popup.lb_content.text = (
+            tr._(
+                "This will download firmware %s, verify its checksum, upload it to the machine as /sd/firmware.bin, "
+                "and then ask you to reset the machine. Back up the machine configuration first if you have not already."
+            )
+            % version
+        )
+        self.confirm_popup.cancel = None
+        self.confirm_popup.confirm = partial(self._download_and_install_firmware, release)
+        self.confirm_popup.open(self)
+
+    def _download_and_install_firmware(self, release):
+        cancel_event = threading.Event()
+        self._firmware_download_cancel = cancel_event
+        Clock.schedule_once(
+            partial(
+                self.progressStart,
+                tr._("Downloading firmware") + "\n%s" % release.display_name,
+                self._cancel_firmware_download,
+            ),
+            0,
+        )
+        dest_dir = os.path.join(self.temp_dir, "firmware")
+        threading.Thread(
+            target=self._download_firmware_worker,
+            args=(release, dest_dir, cancel_event),
+            daemon=True,
+        ).start()
+
+    def _cancel_firmware_download(self):
+        if self._firmware_download_cancel is not None:
+            self._firmware_download_cancel.set()
+
+    def _download_firmware_worker(self, release, dest_dir, cancel_event):
+        def progress(received, total):
+            percent = (received * 100.0 / total) if total else 0
+            Clock.schedule_once(partial(self.progressUpdate, percent, "", False), 0)
+
+        try:
+            path = fetch_firmware_bin(release, dest_dir, cancel_event=cancel_event, progress=progress)
+        except DownloadCancelled:
+            Clock.schedule_once(self.progressFinish, 0)
+            return
+        except DownloadError as exc:
+            Clock.schedule_once(self.progressFinish, 0)
+            Clock.schedule_once(partial(self.show_message_popup, str(exc), False), 0.1)
+            return
+        except Exception:
+            logger.exception("Firmware download failed")
+            Clock.schedule_once(self.progressFinish, 0)
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Couldn't download the firmware file."), False), 0.1
+            )
+            return
+        Clock.schedule_once(self.progressFinish, 0)
+        Clock.schedule_once(partial(self._start_firmware_install_from_download, str(path)), 0.1)
+
+    def _start_firmware_install_from_download(self, filepath, *_args):
+        app = App.get_running_app()
+        if app is None or app.state != "Idle" or self.uploading or self.downloading:
+            self.show_message_popup(tr._("The machine must be idle to install firmware."), False)
+            try:
+                if filepath and os.path.isfile(filepath):
+                    os.remove(filepath)
+            except OSError:
+                pass
+            return
+        self.start_firmware_install(filepath, delete_after=True)
+
+    def start_firmware_install(self, filepath, *, delete_after=False):
+        app = App.get_running_app()
+        if app is None or app.state != "Idle" or self.uploading or self.downloading:
+            self.show_message_popup(tr._("The machine must be idle to install firmware."), False)
+            if delete_after:
+                self._remove_path_quietly(filepath)
+            return
+        if not filepath or not os.path.isfile(filepath):
+            self.show_message_popup(tr._("Couldn't find the firmware file."), False)
+            return
+        self._firmware_delete_after = filepath if delete_after else None
+        self.uploadLocalFile(filepath, firmware=True)
+
+    def _remove_path_quietly(self, filepath):
+        try:
+            if filepath and os.path.isfile(filepath):
+                os.remove(filepath)
+        except OSError:
+            logger.warning("Could not remove temporary firmware file %s", filepath, exc_info=True)
+
+    def _cleanup_firmware_temp(self, *, success=False):
+        path = self._firmware_delete_after
+        self._firmware_delete_after = None
+        self._firmware_download_cancel = None
+        if path:
+            self._remove_path_quietly(path)
+
+    # -----------------------------------------------------------------------
+    def uploadLocalFile(self, filepath, callback=None, firmware=None):
+        if firmware is None:
+            firmware = bool(self.file_popup.firmware_mode)
+        self._uploading_firmware = bool(firmware)
         self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
         self.original_upload_filepath = filepath  # Store original path for recent directory tracking
-        if "lz" in self.filetype:  # 如果固件支持的上传文件类型为.lz，则进行压缩
+        if "lz" in self.filetype and not self._uploading_firmware:  # Compress file if supported
             qlzfilename = self.compress_file(filepath)
             if qlzfilename:
                 self.uploading_file = qlzfilename
@@ -5984,9 +6157,20 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def doUpload(self, callback):
-        self.uploading_size = os.path.getsize(self.uploading_file)
+        firmware = bool(self._uploading_firmware)
+        upload_result = None
+        local_path = self.uploading_file
+        try:
+            self.uploading_size = os.path.getsize(self.uploading_file)
+        except OSError as exc:
+            logger.exception("Upload failed")
+            self.controller.log.put((Controller.MSG_ERROR, str(exc)))
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Upload file error!"), False), 0)
+            self._cleanup_firmware_temp(success=False)
+            self._uploading_firmware = False
+            return
         remotename = os.path.join(self.file_popup.machine_dir, os.path.basename(os.path.normpath(self.uploading_file)))
-        if self.file_popup.firmware_mode:
+        if firmware:
             remotename = "/sd/firmware.bin"
         displayname = self.uploading_file
         if displayname.endswith(".lz"):
@@ -6003,8 +6187,9 @@ class Makera(RelativeLayout):
             md5 = Utils.md5(displayname)
             self.controller.uploadCommand(os.path.normpath(remotename))
             upload_result = self.controller.stream.upload(self.uploading_file, md5, self.uploadCallback)
-        except:
-            self.controller.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
+        except Exception as exc:
+            logger.exception("Upload failed")
+            self.controller.log.put((Controller.MSG_ERROR, str(exc)))
             self.controller.resumeStream()
             self.uploading = False
 
@@ -6033,7 +6218,7 @@ class Makera(RelativeLayout):
             )
             remote_post_path = remote_path.replace("/sd/", "").replace("\\sd\\", "")
             local_path = os.path.join(self.temp_dir, remote_post_path)
-            if self.uploading_file != local_path and not self.file_popup.firmware_mode:
+            if self.uploading_file != local_path and not firmware:
                 if self.uploading_file.endswith(".lz"):
                     # copy lz file to .lz dir
                     lzpath, filename = os.path.split(local_path)
@@ -6053,13 +6238,13 @@ class Makera(RelativeLayout):
                     shutil.copyfile(origin_file, origin_path)
                 else:
                     if not os.path.exists(os.path.dirname(local_path)):
-                        # os.mkdir(os.path.dirname(local_path))
+                        # os.mkdir(os.path.dirname(origin_path))
                         os.makedirs(os.path.dirname(local_path))
                     shutil.copyfile(self.uploading_file, local_path)
-            if self.file_popup.firmware_mode:
+            if firmware:
                 Clock.schedule_once(self.confirm_reset, 0)
             # update recent folder
-            if not self.file_popup.firmware_mode:
+            if not firmware:
                 self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
                 remote_thumb = remotename[:-3] if str(remotename).endswith(".lz") else remotename
                 self.queue_machine_thumbnail(remote_thumb, self.original_upload_filepath)
@@ -6083,8 +6268,10 @@ class Makera(RelativeLayout):
             else:
                 callback(remotename, local_path)
         # For iOS we display the file list remotely only so we need to refresh it but on main thread
-        if upload_result and not self.file_popup.firmware_mode and not self.uploading_file.endswith(".lz"):
+        if upload_result and not firmware and not self.uploading_file.endswith(".lz"):
             Clock.schedule_once(self.file_popup.refresh_machine, 0)
+        self._cleanup_firmware_temp(success=bool(upload_result))
+        self._uploading_firmware = False
 
     # -----------------------------------------------------------------------
     def confirm_reset(self, *args):
@@ -6153,6 +6340,8 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def loadError(self, error_msg, *args):
+        if self.backing_up_config:
+            self._abort_config_backup()
         # close progress popups
         self.progress_popup.dismiss()
         # show message popup
@@ -6363,8 +6552,8 @@ class Makera(RelativeLayout):
                     self.config_loading = False
                     self._config_apply_failed = False
                     self._config_download_failures = 0
-                    self.fw_version_checked = False
                     self.fw_version = ""
+                    Clock.schedule_once(lambda *_: self._refresh_firmware_update_state(), 0)
                     app.model = ""
                     app.has_anchor2 = True
                     app.fw_version_digitized = 0
@@ -6464,9 +6653,9 @@ class Makera(RelativeLayout):
                         self.bind_light_toggle_to_property()
                         self._light_toggle_bound = True
 
-            # show update
-            if not app.playing and self.fw_upd_text != "" and not self.fw_version_checked and app.state == "Idle":
-                self.check_fw_version()
+            # Recompute firmware update availability once the machine version is known.
+            if self._update_snapshot is not None:
+                self._refresh_firmware_update_state()
 
             # check alarm and sleep status
             if app.state == "Alarm" or app.state == "Sleep":
@@ -8819,6 +9008,8 @@ def set_config_defaults(default_lang):
     # Configurable config options. Don't change if they are already set
     if not Config.has_option("carvera", "show_update"):
         Config.set("carvera", "show_update", "1")
+    if not Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES):
+        Config.set("carvera", CONFIG_INCLUDE_PRERELEASES, "0")
     if not Config.has_option("carvera", "show_firmware_check"):
         Config.set("carvera", "show_firmware_check", "1")
     if not Config.has_option("carvera", "show_tooltips"):
@@ -8955,16 +9146,6 @@ def load_constants():
     global MAX_LOAD_LINES
     global BLOCK_SIZE
     global BLOCK_HEADER_SIZE
-
-    global FW_UPD_ADDRESS
-    global CTL_UPD_ADDRESS
-    global DOWNLOAD_ADDRESS
-    global FW_DOWNLOAD_ADDRESS
-
-    FW_UPD_ADDRESS = "https://raw.githubusercontent.com/carvera-community/carvera_community_firmware/master/version.txt"
-    CTL_UPD_ADDRESS = "https://raw.githubusercontent.com/carvera-community/carvera_controller/main/CHANGELOG.md"
-    DOWNLOAD_ADDRESS = "https://github.com/carvera-community/carvera_controller/releases/latest"
-    FW_DOWNLOAD_ADDRESS = "https://github.com/Carvera-Community/Carvera_Community_Firmware/releases/latest"
 
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30  # s

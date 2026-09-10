@@ -73,6 +73,9 @@ class FileBrowserLocationTab(ButtonBehavior, BoxLayout):
     tab_text = StringProperty("")
     icon = StringProperty("")
     path_text = StringProperty("")
+    notify = BooleanProperty(False)
+    badge_text = StringProperty("")
+    reserve_badge = BooleanProperty(False)
 
 
 class FileBrowserIconButton(ButtonBehavior, BoxLayout):
@@ -1075,7 +1078,7 @@ class FileBrowserPopup(ModalView):
         if state.show_upload:
             bar.add_widget(
                 self._footer_btn(
-                    tr._("Upload"),
+                    tr._("Install firmware") if self.firmware_mode else tr._("Upload"),
                     self.on_upload,
                     icon="data/upload.png",
                     primary=state.primary == "upload",

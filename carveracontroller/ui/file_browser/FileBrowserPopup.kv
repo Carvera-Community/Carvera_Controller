@@ -5,6 +5,9 @@
     tab_text: ''
     icon: ''
     path_text: ''
+    notify: False
+    badge_text: ''
+    reserve_badge: False
     orientation: 'vertical'
     spacing: dp(2)
     padding: dp(8), dp(10)
@@ -19,6 +22,12 @@
         Rectangle:
             pos: self.x, self.y
             size: self.width, dp(3)
+    canvas.after:
+        Color:
+            rgba: 50/255, 164/255, 206/255, 1
+        Ellipse:
+            pos: self.x + self.width - dp(16), self.y + self.height - dp(16)
+            size: dp(10) if (self.notify and not self.badge_text) else 0, dp(10) if (self.notify and not self.badge_text) else 0
     BoxLayout:
         orientation: 'horizontal'
         size_hint_y: None
@@ -44,17 +53,26 @@
             valign: 'middle'
         Widget:
             size_hint_x: 1
-    Label:
-        text: root.path_text
+    BoxLayout:
         size_hint_y: None
-        height: dp(16)
-        color: 150/255, 150/255, 150/255, 1
-        font_size: dp(12)
-        halign: 'center'
-        valign: 'middle'
-        text_size: self.size
-        shorten: True
-        shorten_from: 'left'
+        height: dp(22) if (root.badge_text or root.reserve_badge) else dp(16)
+        spacing: dp(6)
+        Widget:
+            size_hint_x: None
+            width: tab_badge.width
+        Label:
+            text: root.path_text
+            color: 150/255, 150/255, 150/255, 1
+            font_size: dp(12)
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            shorten: True
+            shorten_from: 'left'
+        FileBrowserBadge:
+            id: tab_badge
+            text: root.badge_text
+            pos_hint: {'center_y': 0.5}
 
 <FileBrowserIconButton>:
     padding: dp(6)
