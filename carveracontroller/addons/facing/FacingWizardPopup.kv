@@ -220,7 +220,16 @@
 
                                     Label:
                                         text: tr._('Pattern')
-                                    BoxLayout:
+                                        size_hint_y: None
+                                        height: dp(40) * 2 + dp(4)
+                                    GridLayout:
+                                        id: pattern_btns
+                                        cols: 2
+                                        size_hint_y: None
+                                        height: dp(40) * 2 + dp(4)
+                                        row_default_height: dp(40)
+                                        row_force_default: True
+                                        spacing: dp(4)
                                         ToggleButton:
                                             id: raster_x_btn
                                             text: tr._('Along X')
@@ -232,7 +241,11 @@
                                             group: 'facing_pattern'
                                         ToggleButton:
                                             id: raster_spiral_btn
-                                            text: tr._('Spiral')
+                                            text: tr._('Rect. Spiral')
+                                            group: 'facing_pattern'
+                                        ToggleButton:
+                                            id: raster_round_btn
+                                            text: tr._('Round Spiral')
                                             group: 'facing_pattern'
 
                                     Label:
@@ -265,6 +278,14 @@
                                     TextInput:
                                         id: txt_rough_step
                                         text: default_values.DEFAULT_TXT['txt_rough_step']
+                                        multiline: False
+                                        input_filter: 'float'
+
+                                    Label:
+                                        text: tr._('Path radius (mm)')
+                                    TextInput:
+                                        id: txt_path_radius
+                                        text: default_values.DEFAULT_TXT['txt_path_radius']
                                         multiline: False
                                         input_filter: 'float'
 
