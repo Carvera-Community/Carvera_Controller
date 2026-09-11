@@ -14,6 +14,7 @@
 - Enhancement: Alarm popup now notes an engaged e-stop when the halt reason is not the e-stop code
 - Enhancement: Use machine limits when available to calculate time estimates
 - Enhancement: Add bed settings and visualization to the G-Code viewer
+- Enhancement: Add keyboard shortcuts settings
 - Change: Facing wizard now supports center WCS origin
 - Change: Hide Auto Vacuum on the Config and Run screen when the machine is not a C1
 - Change: Config and Run preview now uses now uses the configured worksize_x/y for the bed size

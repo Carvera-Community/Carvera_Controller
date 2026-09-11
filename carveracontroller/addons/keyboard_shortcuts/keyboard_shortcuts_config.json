@@ -1,0 +1,10 @@
+[
+    {
+        "type": "keyboard_shortcuts",
+        "title": "Keyboard Shortcuts",
+        "desc": "Configure shortcuts by context. Jogging shortcuts only work while Keyboard Jogging is enabled.",
+        "section": "carvera",
+        "key": "keyboard_shortcuts",
+        "default": ""
+    }
+]
