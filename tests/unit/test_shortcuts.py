@@ -11,6 +11,8 @@ from carveracontroller.addons.keyboard_shortcuts.bindings import (
     format_chord_parts,
 )
 
+INITIALIZED_EMPTY_JSON = '{"bindings":{},"version":1}'
+
 
 def test_requested_defaults():
     bindings = ShortcutBindings()
@@ -35,16 +37,38 @@ def test_requested_defaults():
     assert ACTION_BY_ID["switch_jog_mode"].category == "Global"
 
     inverted = ShortcutBindings(invert_y_axis_jogging=True)
-    assert inverted.binding_for("jog_y_positive") == KeyChord("down")
-    assert inverted.binding_for("jog_y_negative") == KeyChord("up")
+    assert inverted.binding_for("jog_y_positive") == KeyChord("up")
+    assert inverted.binding_for("jog_y_negative") == KeyChord("down")
     assert inverted.default_for("jog_y_positive") == KeyChord("up")
     assert inverted.default_for("jog_y_negative") == KeyChord("down")
-    assert inverted.to_json() == ""
+    assert set(json.loads(inverted.to_json())["bindings"]) == {"jog_y_positive", "jog_y_negative"}
 
     inverted.reset_all()
     assert inverted.binding_for("jog_y_positive") == KeyChord("up")
     assert inverted.binding_for("jog_y_negative") == KeyChord("down")
     assert set(json.loads(inverted.to_json())["bindings"]) == {"jog_y_positive", "jog_y_negative"}
+
+
+def test_saved_shortcut_map_does_not_reseed_y_bindings_from_invert():
+    initialized = ShortcutBindings.from_json(INITIALIZED_EMPTY_JSON, invert_y_axis_jogging=True)
+    assert initialized.binding_for("jog_y_positive") == KeyChord("down")
+    assert initialized.binding_for("jog_y_negative") == KeyChord("up")
+    assert initialized.default_for("jog_y_positive") == KeyChord("up")
+    assert initialized.default_for("jog_y_negative") == KeyChord("down")
+    assert initialized.to_json() == INITIALIZED_EMPTY_JSON
+
+    customized = ShortcutBindings.from_json(
+        '{"version":1,"bindings":{"open_online_docs":{"key":"f2","modifiers":[]}}}',
+        invert_y_axis_jogging=True,
+    )
+    assert customized.binding_for("jog_y_positive") == KeyChord("down")
+    assert customized.binding_for("open_online_docs") == KeyChord("f2")
+
+
+def test_empty_config_is_uninitialized_and_versioned_empty_is_not():
+    assert ShortcutBindings.from_json("").to_json() == INITIALIZED_EMPTY_JSON
+    assert ShortcutBindings.from_json(None, invert_y_axis_jogging=True).binding_for("jog_y_positive") == KeyChord("up")
+    assert ShortcutBindings.from_json("", invert_y_axis_jogging=True).binding_for("jog_y_positive") == KeyChord("up")
 
 
 def test_sparse_round_trip_merges_with_defaults():
@@ -69,7 +93,7 @@ def test_invalid_config_falls_back_to_defaults(raw):
 
 def test_unknown_actions_are_ignored_for_forward_compatibility():
     raw = '{"version":1,"bindings":{"future_action":{"key":"f2","modifiers":[]}}}'
-    assert ShortcutBindings.from_json(raw).to_json() == ""
+    assert ShortcutBindings.from_json(raw).to_json() == INITIALIZED_EMPTY_JSON
 
 
 def test_conflicting_persisted_config_falls_back_to_defaults():
@@ -158,4 +182,4 @@ def test_unbind_and_reset():
     assert bindings.binding_for("open_online_docs") is None
     bindings.reset("open_online_docs")
     assert bindings.binding_for("open_online_docs") == KeyChord("f1")
-    assert bindings.to_json() == ""
+    assert bindings.to_json() == INITIALIZED_EMPTY_JSON

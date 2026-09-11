@@ -245,10 +245,15 @@ class ShortcutBindings:
         *,
         invert_y_axis_jogging: bool = False,
     ):
-        defaults = {action.action_id: action.default for action in ACTIONS}
+        live = {action.action_id: action.default for action in ACTIONS}
+        # No saved map yet: honor invert for live Y keys so first launch matches
+        # the previous keyboard behavior. A saved map must not be rewritten here.
+        if invert_y_axis_jogging and bindings is None:
+            live["jog_y_positive"] = KeyChord("up")
+            live["jog_y_negative"] = KeyChord("down")
         if bindings:
-            defaults.update({key: value for key, value in bindings.items() if key in ACTION_BY_ID})
-        self._bindings = dict(defaults)
+            live.update({key: value for key, value in bindings.items() if key in ACTION_BY_ID})
+        self._bindings = live
         self.set_invert_y_axis_jogging(invert_y_axis_jogging)
 
     @classmethod
@@ -287,8 +292,7 @@ class ShortcutBindings:
             if binding == action.default:
                 continue
             overrides[action.action_id] = None if binding is None else binding.to_dict()
-        if not overrides:
-            return ""
+        # Always emit a versioned object so "" remains "never initialized".
         return json.dumps({"version": CONFIG_VERSION, "bindings": overrides}, separators=(",", ":"), sort_keys=True)
 
     def copy(self) -> ShortcutBindings:

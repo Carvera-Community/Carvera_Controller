@@ -324,19 +324,20 @@ def test_shortcut_capture_reports_conflicts_and_escape_clears_the_prompt():
 
 
 def test_shortcut_reset_to_saved_value_dispatches_change_notification():
-    panel, item, config = _make_panel("keyboard_shortcuts", SettingKeyboardShortcuts, "", {})
+    initialized = '{"bindings":{},"version":1}'
+    panel, item, config = _make_panel("keyboard_shortcuts", SettingKeyboardShortcuts, initialized, {})
     changes = []
     panel.settings.bind(on_config_change=lambda *_args: changes.append(_args[-1]))
 
     item._assign("open_online_docs", None)
-    assert config.get("test", "key") == ""
+    assert config.get("test", "key") == initialized
     changes.clear()
 
     item._reset_all()
 
-    assert item.value == ""
-    assert changes == [""]
-    assert config.get("test", "key") == ""
+    assert item.value == initialized
+    assert changes == [initialized]
+    assert config.get("test", "key") == initialized
 
 
 def test_shortcut_editor_bypasses_setting_item_blue_selection_animation():

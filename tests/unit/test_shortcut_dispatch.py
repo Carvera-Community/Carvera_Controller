@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -229,7 +230,12 @@ def test_reloading_bindings_updates_the_mdi_hint():
     manager = _manager()
     raw = '{"version":1,"bindings":{"mdi_send":{"key":"f2","modifiers":[]}}}'
 
-    with patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", return_value=raw):
+    def _config_get(_section, key, fallback=""):
+        if key == "keyboard_shortcuts":
+            return raw
+        return fallback
+
+    with patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get):
         manager.reload_from_config()
 
     assert manager.root.manual_cmd.hint_text == "Enter command... <F2 to send>"
@@ -455,6 +461,74 @@ def test_applying_y_inversion_does_not_reload_current_shortcuts():
 
     assert app.invert_y_axis_jogging is False
     shortcut_manager.reload_from_config.assert_not_called()
+
+
+def test_uninitialized_config_seeds_live_y_bindings_from_invert():
+    values = {"keyboard_shortcuts": "", "invert_y_axis_jogging": "1"}
+
+    def _config_get(_section, key, fallback=""):
+        return values.get(key, fallback)
+
+    with patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get):
+        manager = ShortcutManager(_root())
+
+    assert manager.bindings.binding_for("jog_y_positive") == KeyChord("up")
+    assert manager.bindings.binding_for("jog_y_negative") == KeyChord("down")
+
+
+def test_initialized_config_keeps_factory_y_bindings_when_invert_is_on():
+    values = {"keyboard_shortcuts": '{"bindings":{},"version":1}', "invert_y_axis_jogging": "1"}
+
+    def _config_get(_section, key, fallback=""):
+        return values.get(key, fallback)
+
+    with patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get):
+        manager = ShortcutManager(_root())
+
+    assert manager.bindings.binding_for("jog_y_positive") == KeyChord("down")
+    assert manager.bindings.binding_for("jog_y_negative") == KeyChord("up")
+
+
+def test_first_launch_persists_invert_aware_defaults_once():
+    values = {"keyboard_shortcuts": "", "invert_y_axis_jogging": "1"}
+
+    def _config_get(_section, key, fallback=""):
+        return values.get(key, fallback)
+
+    with (
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get),
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.set") as config_set,
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.write") as config_write,
+    ):
+        ShortcutManager.seed_config_if_uninitialized()
+        persisted = config_set.call_args.args[2]
+        values["keyboard_shortcuts"] = persisted
+        config_set.reset_mock()
+        config_write.reset_mock()
+        ShortcutManager.seed_config_if_uninitialized()
+
+    payload = json.loads(persisted)
+    assert set(payload["bindings"]) == {"jog_y_positive", "jog_y_negative"}
+    assert payload["bindings"]["jog_y_positive"] == {"key": "up", "modifiers": []}
+    assert payload["bindings"]["jog_y_negative"] == {"key": "down", "modifiers": []}
+    config_set.assert_not_called()
+    config_write.assert_not_called()
+
+
+def test_first_launch_without_invert_persists_an_initialized_empty_map():
+    values = {"keyboard_shortcuts": "", "invert_y_axis_jogging": "0"}
+
+    def _config_get(_section, key, fallback=""):
+        return values.get(key, fallback)
+
+    with (
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get),
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.set") as config_set,
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.write"),
+    ):
+        ShortcutManager.seed_config_if_uninitialized()
+
+    assert config_set.call_args.args == ("carvera", "keyboard_shortcuts", '{"bindings":{},"version":1}')
 
 
 def test_keyboard_jog_commands_follow_action_sign_and_add_a_axis():

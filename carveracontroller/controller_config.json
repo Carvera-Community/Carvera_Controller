@@ -129,8 +129,8 @@
     },
     {
         "type": "bool",
-        "title": "Invert Y-Axis Jogging Buttons and Default Keyboard Controls",
-        "desc": "When enabled, the upper jogging button and default up-arrow shortcut move the spindle away from the user; the lower button and default down-arrow shortcut move it towards the user",
+        "title": "Invert Y-Axis Jogging Buttons",
+        "desc": "When enabled, the upper jogging button shortcut move the spindle away from the user and the lower button move it towards the user. To invert the keyboard controls, use the Keyboard Shortcuts settings.",
         "section": "carvera",
         "key": "invert_y_axis_jogging",
         "default": "false"

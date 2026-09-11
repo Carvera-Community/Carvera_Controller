@@ -16,12 +16,20 @@ from .bindings import KeyChord, ShortcutBindings, chord_from_event, format_chord
 logger = logging.getLogger(__name__)
 
 
+def _invert_y_axis_from_config() -> bool:
+    return Config.get("carvera", "invert_y_axis_jogging", fallback="0") == "1"
+
+
+def _shortcut_config_raw() -> str:
+    return Config.get("carvera", "keyboard_shortcuts", fallback="") or ""
+
+
 class ShortcutManager:
     """Own the application-level key handlers and dispatch by context."""
 
     def __init__(self, root):
         self.root = root
-        self.bindings = ShortcutBindings.from_json(Config.get("carvera", "keyboard_shortcuts", fallback=""))
+        self.bindings = self._bindings_from_config()
         self.paused = False
         self._installed = False
         self._held_global_keys: set[int] = set()
@@ -60,6 +68,21 @@ class ShortcutManager:
         self._suppressed_jog_keys.clear()
         self._installed = False
 
+    @staticmethod
+    def _bindings_from_config() -> ShortcutBindings:
+        return ShortcutBindings.from_json(
+            _shortcut_config_raw(),
+            invert_y_axis_jogging=_invert_y_axis_from_config(),
+        )
+
+    @classmethod
+    def seed_config_if_uninitialized(cls) -> None:
+        if _shortcut_config_raw():
+            return
+        bindings = ShortcutBindings.from_json("", invert_y_axis_jogging=_invert_y_axis_from_config())
+        Config.set("carvera", "keyboard_shortcuts", bindings.to_json())
+        Config.write()
+
     def on_window_children(self, _window, children) -> None:
         for child in children:
             if not isinstance(child, ModalView) or not getattr(child, "_is_open", False):
@@ -71,7 +94,7 @@ class ShortcutManager:
 
     def reload_from_config(self) -> None:
         self.release_all_jogs()
-        self.bindings = ShortcutBindings.from_json(Config.get("carvera", "keyboard_shortcuts", fallback=""))
+        self.bindings = self._bindings_from_config()
         self.update_mdi_hint()
 
     def update_mdi_hint(self) -> None:

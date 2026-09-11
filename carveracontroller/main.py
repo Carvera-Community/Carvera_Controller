@@ -3255,6 +3255,7 @@ class Makera(RelativeLayout):
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
                 setting.pop("default", None)
             shortcut_config.append(setting)
+        ShortcutManager.seed_config_if_uninitialized()
         self.config_popup.settings_panel.add_json_panel(
             tr._("Keyboard Shortcuts"), Config, data=json.dumps(shortcut_config)
         )
