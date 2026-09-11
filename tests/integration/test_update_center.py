@@ -1,9 +1,11 @@
 """Smoke the Update Center tabs at normal and compact window sizes."""
 
 from kivy.core.window import Window
+from kivy.metrics import dp
 
-from carveracontroller.ui.updates.UpgradePopup import UpdateNotesRow
+from carveracontroller.ui.updates.UpgradePopup import UpdateNotesRow, _measure_note_height
 from carveracontroller.updater.github import FetchResult, parse_release
+from carveracontroller.updater.notes import format_release_notes
 from carveracontroller.updater.service import snapshot_from_fetches
 from tests.integration.conftest import pump_frames
 
@@ -93,7 +95,10 @@ def test_update_center_tabs_normal_and_compact(kivy_app, connected_idle_state):
         assert popup.notes_link_text == "View release on GitHub"
         notes = popup.ids.notes_list.data
         linked = next(item for item in notes if item.get("links"))
-        assert linked["height"] > 32
+        # Wide session window keeps this URL on one line (~dp(28) on density-1 CI).
+        assert linked["height"] >= dp(28)
+        row = next(item for item in format_release_notes(snapshot.controller.latest.body) if item.links)
+        assert _measure_note_height(row, dp(120)) > _measure_note_height(row, dp(2000))
         assert linked["links"][0].startswith("https://")
         assert "[ref=0]" in linked["markup_text"]
         opened = []
