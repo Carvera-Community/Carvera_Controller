@@ -34,6 +34,13 @@ class _Popup:
         self.lb_content = _Label(content)
 
 
+@pytest.fixture(autouse=True)
+def identity_translations():
+    # Full-suite runs can leave tr on the host locale after integration setup.
+    with patch("carveracontroller.main.tr._", side_effect=lambda s: s):
+        yield
+
+
 @pytest.fixture
 def halt_host():
     return SimpleNamespace(
