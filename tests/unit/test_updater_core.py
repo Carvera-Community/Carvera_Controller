@@ -79,7 +79,10 @@ Paragraph one.
     assert any(row.text == "Added" for row in rows if row.kind == "heading")
     assert "Bold item with a link" in texts
     assert all("<script>" not in row.text for row in rows)
-    assert all("http" not in row.text for row in rows)
+    link_row = next(row for row in rows if row.text == "Bold item with a link")
+    assert link_row.links == ("https://example.test",)
+    assert "[ref=0]" in link_row.markup
+    assert "https://example.test" not in link_row.text
 
 
 def test_format_release_notes_categorizes_changelog_prefixes():
@@ -114,6 +117,49 @@ def test_format_release_notes_does_not_truncate_long_changelogs():
     assert len(rows) == 91
     assert rows[0].kind == "heading"
     assert rows[-1].text == "item 89"
+
+
+def test_format_release_notes_linkifies_http_urls():
+    rows = format_release_notes(
+        "See https://github.com/Carvera-Community/Carvera_Controller/pull/42 for details.\n"
+        "- Enhancement: Docs at <https://example.test/guide>\n"
+        '- Also <a href="https://example.test/a">the appendix</a>.\n'
+        "- Ignore [file](file:///tmp/x) and [js](javascript:alert(1))"
+    )
+    paragraph = next(row for row in rows if row.kind == "paragraph")
+    assert paragraph.links == ("https://github.com/Carvera-Community/Carvera_Controller/pull/42",)
+    assert "https://github.com/Carvera-Community/Carvera_Controller/pull/42" in paragraph.text
+    assert "[u]" in paragraph.markup
+
+    autolink = next(row for row in rows if row.kind == "enhancement")
+    assert autolink.links == ("https://example.test/guide",)
+    assert autolink.text == "Docs at https://example.test/guide"
+
+    appendix = next(row for row in rows if "appendix" in row.text)
+    assert appendix.links == ("https://example.test/a",)
+    assert appendix.text == "Also the appendix."
+
+    ignored = next(row for row in rows if "Ignore" in row.text)
+    assert ignored.links == ()
+    assert "file" in ignored.text
+    assert "js" in ignored.text
+
+
+def test_format_release_notes_strips_trailing_url_punctuation():
+    rows = format_release_notes("Read https://example.test/foo.")
+    assert rows[0].links == ("https://example.test/foo",)
+    assert rows[0].text.endswith("foo.")
+
+
+def test_format_release_notes_keeps_underscores_in_urls_and_names():
+    url = "https://github.com/Carvera-Community/Carvera_Community_Firmware/compare/v2.2.0c-RC2...v2.2.0c-RC3"
+    rows = format_release_notes(f"**Full Changelog**: {url}\n- Carvera_Community_Firmware")
+    changelog = next(row for row in rows if row.kind == "paragraph")
+    assert changelog.links == (url,)
+    assert url in changelog.text
+    assert "CarveraCommunityFirmware" not in changelog.text
+    name = next(row for row in rows if row.kind == "bullet")
+    assert name.text == "Carvera_Community_Firmware"
 
 
 def test_detect_platform_keys():

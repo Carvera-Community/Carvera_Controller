@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import webbrowser
 from datetime import datetime, timezone
 
 from kivy.app import App
@@ -52,16 +53,23 @@ _BADGE_COLORS = {
 class UpdateNotesRow(RecycleDataViewBehavior, BoxLayout):
     kind = StringProperty("paragraph")
     text = StringProperty("")
+    markup_text = StringProperty("")
     badge = StringProperty("")
     badge_color = ListProperty([0.0, 0.0, 0.0, 0.0])
     show_bullet = BooleanProperty(False)
     body_font_size = NumericProperty(13)
     body_bold = BooleanProperty(False)
     body_color = ListProperty([220 / 255, 220 / 255, 220 / 255, 1])
+    links = ListProperty([])
 
     def __init__(self, **kwargs):
         kwargs.setdefault("size_hint_y", None)
         super().__init__(**kwargs)
+
+    def open_note_link(self, ref):
+        url = _url_from_ref(ref, self.links)
+        if url:
+            _open_http_url(url)
 
 
 class UpgradePopup(ModalView):
@@ -334,6 +342,7 @@ class UpgradePopup(ModalView):
             self.notes_empty_text = tr._("Release notes will appear here after a successful check.")
             return
         wrap_width = rv.width if rv.width > 80 else Window.width * 0.7
+        wrap_width = max(wrap_width - dp(8), dp(80))
         rows = format_release_notes(body)
         rv.data = [_note_view_data(row, _measure_note_height(row, wrap_width)) for row in rows]
         self.show_notes = bool(rv.data)
@@ -538,25 +547,34 @@ def _note_view_data(row, height: float) -> dict:
     return {
         "kind": row.kind,
         "text": row.text,
+        "markup_text": row.markup or row.text,
         "badge": row.badge,
         "badge_color": _BADGE_COLORS.get(row.kind, [0.0, 0.0, 0.0, 0.0]),
         "show_bullet": row.kind == "bullet",
-        "body_font_size": dp(16) if heading else (dp(14) if row.kind == "paragraph" else dp(13)),
+        "body_font_size": _note_font_size(row.kind),
         "body_bold": heading,
         "body_color": [50 / 255, 164 / 255, 206 / 255, 1] if heading else [220 / 255, 220 / 255, 220 / 255, 1],
+        "links": list(row.links),
         "height": height,
     }
 
 
+def _note_font_size(kind: str) -> float:
+    if kind == "heading":
+        return dp(16)
+    if kind == "paragraph":
+        return dp(14)
+    return dp(13)
+
+
 def _measure_note_height(row, wrap_width: float) -> float:
-    font_size = 16 if row.kind == "heading" else (14 if row.kind == "paragraph" else 13)
     reserved = dp(24)
     if row.badge:
-        reserved += dp(108)
+        reserved += dp(110)
     if row.kind == "bullet":
-        reserved += dp(18)
+        reserved += dp(24)
     inner = max(wrap_width - reserved, dp(80))
-    text_h = _text_height(row.text or " ", font_size, inner)
+    text_h = _text_height(row.text or " ", _note_font_size(row.kind), inner)
     pad = dp(28) if row.kind == "heading" else (dp(16) if row.kind == "paragraph" else dp(12))
     return max(text_h + pad, dp(36) if row.kind == "heading" else dp(28))
 
@@ -579,6 +597,27 @@ def _text_width(text: str) -> float:
 def _text_height(text: str, font_size: float, wrap_width: float) -> float:
     label = _core_label(text, font_size, text_size=(wrap_width, None), valign="top", halign="left")
     return float(label.content_size[1])
+
+
+def _url_from_ref(ref, links) -> str:
+    raw = "" if ref is None else str(ref).strip()
+    if not raw.isdigit():
+        return ""
+    index = int(raw)
+    if 0 <= index < len(links):
+        return str(links[index]).strip()
+    return ""
+
+
+def _open_http_url(url: str) -> None:
+    target = (url or "").strip()
+    if not (target.startswith("http://") or target.startswith("https://")):
+        return
+    makera = _makera()
+    if makera is not None:
+        makera.open_url(target)
+        return
+    webbrowser.open(target, new=2)
 
 
 if "UpdateNotesRow" not in Factory.classes:

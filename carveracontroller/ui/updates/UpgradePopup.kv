@@ -43,13 +43,17 @@
                 size: self.size
                 radius: [dp(4)]
     Label:
-        text: root.text
+        id: body
+        text: root.markup_text or root.text
+        markup: True
+        shorten: False
         font_size: root.body_font_size
         bold: root.body_bold
         color: root.body_color
         halign: 'left'
         valign: 'middle' if root.kind == 'heading' else 'top'
-        text_size: self.width, self.height
+        text_size: self.width, None
+        on_ref_press: root.open_note_link(args[1])
 
 <UpdateGithubLink@ButtonBehavior+BoxLayout>:
     orientation: 'horizontal'
@@ -169,27 +173,36 @@
                 on_release: root.set_tab('firmware')
         BoxLayout:
             size_hint_y: None
-            height: dp(52)
+            height: max(dp(52), status_copy.height)
             spacing: dp(8)
             BoxLayout:
+                id: status_copy
                 orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
                 spacing: dp(2)
                 Label:
                     text: root.status_title
+                    size_hint_y: None
+                    height: self.texture_size[1]
                     bold: True
                     font_size: dp(16)
                     color: 50/255, 164/255, 206/255, 1
                     halign: 'left'
                     valign: 'middle'
-                    text_size: self.size
+                    text_size: self.width, None
+                    shorten: False
                 Label:
                     text: root.status_detail
+                    size_hint_y: None
+                    height: self.texture_size[1] if self.text else 0
+                    opacity: 1 if root.status_detail else 0
                     font_size: dp(13)
                     color: 180/255, 180/255, 180/255, 1
                     halign: 'left'
                     valign: 'middle'
-                    text_size: self.size
-                    shorten: True
+                    text_size: self.width, None
+                    shorten: False
             FileBrowserBadge:
                 text: root.channel_badge
                 pos_hint: {'center_y': 0.5}
@@ -268,14 +281,15 @@
                     text_size: self.size
         Label:
             size_hint_y: None
-            height: dp(32) if root.helper_text else 0
+            height: (self.texture_size[1] + dp(8)) if root.helper_text else 0
             opacity: 1 if root.helper_text else 0
             text: root.helper_text
             font_size: dp(13)
             color: 50/255, 164/255, 206/255, 1
             halign: 'left'
             valign: 'middle'
-            text_size: self.size
+            text_size: self.width, None
+            shorten: False
         BoxLayout:
             id: footer_bar
             size_hint_y: None

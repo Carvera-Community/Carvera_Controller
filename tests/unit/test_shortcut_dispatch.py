@@ -40,6 +40,10 @@ def _manager(root=None):
     return manager
 
 
+def _primary_modifiers():
+    return list(KeyChord(",", ("primary",)).resolved_modifiers())
+
+
 def test_global_documentation_shortcut_is_dispatched_and_consumed():
     manager = _manager()
     assert manager.on_key_down(None, 282, 0, "", []) is True
@@ -71,7 +75,7 @@ def test_global_action_stops_active_keyboard_jog():
 def test_global_settings_and_mdi_shortcuts_dispatch_when_available():
     manager = _manager()
 
-    assert manager.on_key_down(None, 44, 54, ",", ["ctrl"]) is True
+    assert manager.on_key_down(None, 44, 54, ",", _primary_modifiers()) is True
     manager.root.config_popup.open.assert_called_once_with()
     assert manager.on_key_up(None, 44) is True
 
@@ -357,7 +361,7 @@ def test_blocked_global_shortcut_is_not_consumed():
     manager = _manager()
     manager.root._is_popup_open.return_value = True
 
-    assert manager.on_key_down(None, 44, 0, ",", ["ctrl"]) is False
+    assert manager.on_key_down(None, 44, 0, ",", _primary_modifiers()) is False
     manager.root.config_popup.open.assert_not_called()
     assert manager.on_key_down(None, ord("g"), 0, "g", ["ctrl"]) is False
     manager.root.open_gcode.assert_not_called()

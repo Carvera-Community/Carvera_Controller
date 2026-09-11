@@ -183,7 +183,7 @@ def kivy_app():
     from carveracontroller.translation import tr
 
     # Replicate main() startup sequence (main.py:6470-6494)
-    translation.init(None)
+    translation.init("en")
     load_constants()
     set_config_defaults(tr.lang)
     load_app_configs()
