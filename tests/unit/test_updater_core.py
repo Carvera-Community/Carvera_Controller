@@ -152,10 +152,7 @@ def test_format_release_notes_strips_trailing_url_punctuation():
 
 
 def test_format_release_notes_keeps_underscores_in_urls_and_names():
-    url = (
-        "https://github.com/Carvera-Community/Carvera_Community_Firmware/"
-        "compare/v2.2.0c-RC2...v2.2.0c-RC3"
-    )
+    url = "https://github.com/Carvera-Community/Carvera_Community_Firmware/compare/v2.2.0c-RC2...v2.2.0c-RC3"
     rows = format_release_notes(f"**Full Changelog**: {url}\n- Carvera_Community_Firmware")
     changelog = next(row for row in rows if row.kind == "paragraph")
     assert changelog.links == (url,)

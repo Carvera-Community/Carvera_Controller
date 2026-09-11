@@ -49,8 +49,6 @@ _CATEGORY_BADGE = {
 }
 _LINK_COLOR = "32a4ce"
 
-_Stored = list[tuple[str, str | None]]
-
 
 @dataclass(frozen=True)
 class NoteRow:
@@ -68,7 +66,7 @@ def format_release_notes(body: str | None, *, limit: int | None = None) -> list[
 
     rows: list[NoteRow] = []
     paragraph: list[str] = []
-    stored: _Stored = []
+    stored: list[tuple[str, str | None]] = []
 
     def flush_paragraph() -> None:
         nonlocal paragraph
@@ -122,14 +120,14 @@ def format_release_notes(body: str | None, *, limit: int | None = None) -> list[
     return rows if limit is None else rows[:limit]
 
 
-def _categorize(text: str, stored: _Stored) -> NoteRow | None:
+def _categorize(text: str, stored: list[tuple[str, str | None]]) -> NoteRow | None:
     categorized = _try_category(text, stored)
     if categorized is not None:
         return categorized
     return _note_row("bullet", text, stored)
 
 
-def _try_category(text: str, stored: _Stored) -> NoteRow | None:
+def _try_category(text: str, stored: list[tuple[str, str | None]]) -> NoteRow | None:
     if not text:
         return None
     match = _CATEGORY_RE.match(text)
@@ -141,7 +139,7 @@ def _try_category(text: str, stored: _Stored) -> NoteRow | None:
     return _note_row(kind, rest or text, stored, badge=badge)
 
 
-def _note_row(kind: str, tokenized: str, stored: _Stored, badge: str = "") -> NoteRow | None:
+def _note_row(kind: str, tokenized: str, stored: list[tuple[str, str | None]], badge: str = "") -> NoteRow | None:
     tokenized = tokenized.strip()
     if not tokenized:
         return None
@@ -151,7 +149,7 @@ def _note_row(kind: str, tokenized: str, stored: _Stored, badge: str = "") -> No
     return NoteRow(kind, text, badge=badge, markup=markup, links=links)
 
 
-def _parse_inline(text: str, stored: _Stored) -> str:
+def _parse_inline(text: str, stored: list[tuple[str, str | None]]) -> str:
     text = html.unescape(text or "")
 
     def stash(display: str, url: str | None, *, strip: bool = True) -> str:
@@ -199,7 +197,7 @@ def _parse_inline(text: str, stored: _Stored) -> str:
     return text.replace("\u0000", "").strip()
 
 
-def _expand_tokens(tokenized: str, stored: _Stored) -> tuple[str, str, tuple[str, ...]]:
+def _expand_tokens(tokenized: str, stored: list[tuple[str, str | None]]) -> tuple[str, str, tuple[str, ...]]:
     plain: list[str] = []
     markup: list[str] = []
     links: list[str] = []
