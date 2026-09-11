@@ -2,6 +2,7 @@
 
 from kivy.core.window import Window
 
+from carveracontroller.ui.updates.UpgradePopup import UpdateNotesRow
 from carveracontroller.updater.github import FetchResult, parse_release
 from carveracontroller.updater.service import snapshot_from_fetches
 from tests.integration.conftest import pump_frames
@@ -13,7 +14,11 @@ def _snapshot():
             "tag_name": "v2.2.0",
             "name": "v2.2.0",
             "html_url": "https://github.com/Carvera-Community/Carvera_Controller/releases/tag/v2.2.0",
-            "body": "## Added\n- Update Center",
+            "body": (
+                "## Added\n"
+                "- Update Center\n"
+                "- See https://github.com/Carvera-Community/Carvera_Controller/wiki/long-path-name-that-should-wrap"
+            ),
             "published_at": "2024-05-01T00:00:00Z",
             "prerelease": False,
             "draft": False,
@@ -86,6 +91,17 @@ def test_update_center_tabs_normal_and_compact(kivy_app, connected_idle_state):
         assert not popup.compact
         assert "Current version" in popup.controller_tab_path
         assert popup.notes_link_text == "View release on GitHub"
+        notes = popup.ids.notes_list.data
+        linked = next(item for item in notes if item.get("links"))
+        assert linked["height"] > 32
+        assert linked["links"][0].startswith("https://")
+        assert "[ref=0]" in linked["markup_text"]
+        opened = []
+        root.open_url = opened.append
+        note_row = UpdateNotesRow()
+        note_row.links = list(linked["links"])
+        note_row.open_note_link("0")
+        assert opened == [linked["links"][0]]
         assert all(
             "Check for updates" not in getattr(child, "btn_text", "") for child in popup.ids.footer_actions.children
         )
