@@ -12,7 +12,7 @@ from kivy.lang import Observable
 LANGS = {
     "en": "English",
     "zh-CN": "中文简体(Simplified Chinese)",
-"cs": "Čeština",
+    "cs": "Čeština",
 }
 
 
