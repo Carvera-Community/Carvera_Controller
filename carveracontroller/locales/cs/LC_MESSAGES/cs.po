@@ -1,0 +1,1830 @@
+# Czech translation for Carvera Controller Community.
+# This file is distributed under the same license as the PACKAGE package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-07-31 20:11+1000\n"
+"PO-Revision-Date: 2026-09-10 00:00+0100\n"
+"Last-Translator: Community\n"
+"Language-Team: Czech\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+#: main.py:172
+msgid "Halt Manually"
+msgstr "Ruční zastavení"
+
+#: main.py:173
+msgid "Home Fail"
+msgstr "Chyba najetí do výchozí pozice (Home)"
+
+#: main.py:174
+msgid "Probe Fail"
+msgstr "Chyba sondy"
+
+#: main.py:175
+msgid "Calibrate Fail"
+msgstr "Chyba kalibrace"
+
+#: main.py:176
+msgid "ATC Home Fail"
+msgstr "ATC: chyba najetí do výchozí pozice"
+
+#: main.py:177
+msgid "ATC Invalid Tool Number"
+msgstr "ATC: neplatné číslo Tool"
+
+#: main.py:178
+msgid "ATC Drop Tool Fail"
+msgstr "ATC: selhání odložení Tool"
+
+#: main.py:179
+msgid "ATC Position Occupied"
+msgstr "ATC: pozice obsazena"
+
+#: main.py:180
+msgid "Spindle Overheated"
+msgstr "Přehřátí vřetene"
+
+#: main.py:181
+msgid "Soft Limit Triggered"
+msgstr "Aktivován softwarový limit"
+
+#: main.py:182
+msgid "Cover opened when playing"
+msgstr "Kryt otevřen během obrábění"
+
+#: main.py:183
+msgid "Wireless probe dead or not set"
+msgstr "Bezdrátová sonda je vybitá nebo nenastavená"
+
+#: main.py:184
+msgid "Emergency stop button pressed"
+msgstr "Stisknuto tlačítko nouzového zastavení"
+
+#: main.py:186
+msgid "Hard Limit Triggered, reset needed"
+msgstr "Aktivován hardwarový limit, nutný reset"
+
+#: main.py:187
+msgid "X Axis Motor Error, reset needed"
+msgstr "Chyba motoru osy X, nutný reset"
+
+#: main.py:188
+msgid "Y Axis Motor Error, reset needed"
+msgstr "Chyba motoru osy Y, nutný reset"
+
+#: main.py:189
+msgid "Z Axis Motor Error, reset needed"
+msgstr "Chyba motoru osy Z, nutný reset"
+
+#: main.py:190
+msgid "Spindle Stall, reset needed"
+msgstr "Zablokování vřetene, nutný reset"
+
+#: main.py:191
+msgid "SD card read fail, reset needed"
+msgstr "Chyba čtení SD karty, nutný reset"
+
+#: main.py:193
+msgid "Spindle Alarm, power off/on needed"
+msgstr "Alarm vřetene, nutné vypnout a zapnout napájení"
+
+#: main.py:396
+msgid "Please enter values for both block thickness and tool diameter."
+msgstr "Zadejte hodnoty pro tloušťku bloku i průměr Tool."
+
+#: main.py:403
+msgid "Please enter valid numbers for block thickness and tool diameter."
+msgstr "Zadejte platná čísla pro tloušťku bloku a průměr Tool."
+
+#: main.py:410 main.py:464
+msgid "Please enter values for both X and Y offsets."
+msgstr "Zadejte hodnoty ofsetu pro osu X i Y."
+
+#: main.py:417 main.py:471
+msgid "Please enter valid numbers for X and Y offsets."
+msgstr "Zadejte platná čísla pro ofset X a Y."
+
+#: main.py:496
+msgid "Please enter values for both probe height and tool diameter."
+msgstr "Zadejte hodnoty pro výšku sondy i průměr Tool."
+
+#: main.py:503
+msgid "Please enter valid numbers for probe height and tool diameter."
+msgstr "Zadejte platná čísla pro výšku sondy a průměr Tool."
+
+#: main.py:527
+msgid "Press the Wireless Probe until the green LED blinks quickly."
+msgstr "Podržte tlačítko bezdrátové sondy, dokud zelená LED rychle nebliká."
+
+#: main.py:528
+msgid "Pairing Success!"
+msgstr "Párování úspěšné!"
+
+#: main.py:529
+msgid "Pairing Timeout!"
+msgstr "Časový limit párování vypršel!"
+
+#: main.py:583
+msgid "Please enter values for height, X points, and Y points."
+msgstr "Zadejte hodnoty pro výšku, počet bodů X a počet bodů Y."
+
+#: main.py:591
+msgid "Please enter valid numbers for height, X points, and Y points."
+msgstr "Zadejte platná čísla pro výšku, počet bodů X a Y."
+
+#: main.py:810
+msgid "from Headstock"
+msgstr "od vřeteníku"
+
+#: main.py:816
+msgid "from Anchor2"
+msgstr "od kotvy 2"
+
+#: main.py:818
+msgid "from Anchor1"
+msgstr "od kotvy 1"
+
+#: main.py:824
+msgid "Fixed Pos"
+msgstr "Pevná pozice"
+
+#: main.py:826
+msgid "from"
+msgstr "od"
+
+#: main.py:827 makera.kv:1630
+msgid "Work Origin"
+msgstr "Počátek obrobku"
+
+#: main.py:827 makera.kv:1636
+msgid "Path Origin"
+msgstr "Počátek dráhy"
+
+#: main.py:830
+msgid "X Points: "
+msgstr "Body X: "
+
+#: main.py:831
+msgid "Y Points: "
+msgstr "Body Y: "
+
+#: main.py:832
+msgid "Height: "
+msgstr "Výška: "
+
+#: main.py:840
+msgid " Offsets: "
+msgstr " Ofsety: "
+
+#: main.py:841
+msgid " -X: "
+msgstr " -X: "
+
+#: main.py:842
+msgid " +X: "
+msgstr " +X: "
+
+#: main.py:843
+msgid " -Y: "
+msgstr " -Y: "
+
+#: main.py:844
+msgid " +Y: "
+msgstr " +Y: "
+
+#: main.py:883
+msgid "Please enter a value for X offset."
+msgstr "Zadejte hodnotu ofsetu X."
+
+#: main.py:889
+msgid "Please enter a valid number for X offset."
+msgstr "Zadejte platné číslo pro ofset X."
+
+#: main.py:912
+msgid "Please enter a value for Y offset."
+msgstr "Zadejte hodnotu ofsetu Y."
+
+#: main.py:918
+msgid "Please enter a valid number for Y offset."
+msgstr "Zadejte platné číslo pro ofset Y."
+
+#: main.py:941
+msgid "Please enter a value for Z offset."
+msgstr "Zadejte hodnotu ofsetu Z."
+
+#: main.py:947
+msgid "Please enter a valid number for Z offset."
+msgstr "Zadejte platné číslo pro ofset Z."
+
+#: main.py:970
+msgid "Please enter a value for A offset."
+msgstr "Zadejte hodnotu ofsetu A."
+
+#: main.py:976
+msgid "Please enter a valid number for A offset."
+msgstr "Zadejte platné číslo pro ofset A."
+
+#: main.py:1018
+msgid "Please enter a value for A position."
+msgstr "Zadejte hodnotu pozice A."
+
+#: main.py:1024
+msgid "Please enter a valid number for A position."
+msgstr "Zadejte platné číslo pro pozici A."
+
+#: main.py:1272
+msgid "Save Changes"
+msgstr "Uložit změny"
+
+#: main.py:1272 makera.kv:1258 makera.kv:1293 makera.kv:1382 makera.kv:1536
+#: makera.kv:1595 makera.kv:1679 makera.kv:1756 makera.kv:2000 makera.kv:4240
+#: makera.kv:4295 makera.kv:4350 makera.kv:4405 makera.kv:4460 makera.kv:4516
+#: makera.kv:4573 makera.kv:5391 makera.kv:5454
+msgid "Ok"
+msgstr "Ok"
+
+#: main.py:1274
+msgid "Close without saving"
+msgstr "Zavřít bez uložení"
+
+#: main.py:1274 makera.kv:1811 makera.kv:2159 makera.kv:2403 makera.kv:2479
+#: makera.kv:2963 makera.kv:3202 makera.kv:5383
+#: addons/probing/ProbingPopup.kv:493
+msgid "Close"
+msgstr "Zavřít"
+
+#: main.py:1287
+msgid "Please enter a value for rotation angle."
+msgstr "Zadejte hodnotu úhlu natočení."
+
+#: main.py:1293
+msgid "Please enter a valid number for rotation angle."
+msgstr "Zadejte platné číslo pro úhel natočení."
+
+#: main.py:2292 makera.kv:2053
+msgid "Controller"
+msgstr "Ovladač"
+
+#: main.py:2307
+msgid "Pendant"
+msgstr "Kolečko"
+
+#: main.py:2373 main.py:2405
+msgid " New version detected: v"
+msgstr " Nalezena nová verze: v"
+
+#: main.py:2373 main.py:2405
+msgid " Current: v"
+msgstr " Aktuální: v"
+
+#: main.py:2376 main.py:2408
+msgid " Current version: v"
+msgstr " Aktuální verze: v"
+
+#: main.py:2392
+msgid "Language setting applied, restart Controller app to take effect !"
+msgstr "Nastavení jazyka bylo použito, pro projevení změny restartujte aplikaci Controller!"
+
+#: main.py:2536
+msgid "Timeout, Connection lost!"
+msgstr "Časový limit vypršel, spojení ztraceno!"
+
+#: main.py:2576
+msgid "Documents"
+msgstr "Dokumenty"
+
+#: main.py:2578
+msgid "Downloads"
+msgstr "Stažené soubory"
+
+#: main.py:2580
+msgid "Desktop"
+msgstr "Plocha"
+
+#: main.py:2593
+msgid "Storage"
+msgstr "Úložiště"
+
+#: main.py:2647 main.py:2691
+msgid "Recent Places"
+msgstr "Nedávná umístění"
+
+#: main.py:2707
+msgid "Cannot connect, machine is busy or not available."
+msgstr "Nelze se připojit, stroj je zaneprázdněn nebo není dostupný."
+
+#: main.py:2709
+msgid "No previous machine network address stored."
+msgstr "Není uložena žádná předchozí síťová adresa stroje."
+
+#: main.py:2714
+msgid "Searching for nearby machines..."
+msgstr "Vyhledávání strojů v okolí..."
+
+#: main.py:2729
+msgid "None found, enter address manually..."
+msgstr "Nic nenalezeno, zadejte adresu ručně..."
+
+#: main.py:2743
+msgid "Input machine network address:"
+msgstr "Zadejte síťovou adresu stroje:"
+
+#: main.py:2858
+msgid "Error loading dir"
+msgstr "Chyba při načítání adresáře"
+
+#: main.py:2860
+msgid "Timeout loading dir"
+msgstr "Časový limit při načítání adresáře"
+
+#: main.py:2868
+msgid "Error deleting"
+msgstr "Chyba při mazání"
+
+#: main.py:2870
+msgid "Timeout deleting"
+msgstr "Časový limit při mazání"
+
+#: main.py:2878
+msgid "Error renaming"
+msgstr "Chyba při přejmenování"
+
+#: main.py:2880
+msgid "Timeout renaming"
+msgstr "Časový limit při přejmenování"
+
+#: main.py:2888
+msgid "Error making dir:"
+msgstr "Chyba při vytváření adresáře:"
+
+#: main.py:2890
+msgid "Timeout making dir:"
+msgstr "Časový limit při vytváření adresáře:"
+
+#: main.py:2898
+msgid "Error getting WiFi info!"
+msgstr "Chyba při získávání informací o WiFi!"
+
+#: main.py:2900
+msgid "Timeout getting WiFi info!"
+msgstr "Časový limit při získávání informací o WiFi!"
+
+#: main.py:2910
+msgid "Timeout connecting WiFi!"
+msgstr "Časový limit při připojování k WiFi!"
+
+#: main.py:2920
+msgid "Delete File or Dir"
+msgstr "Smazat soubor nebo adresář"
+
+#: main.py:2921
+msgid "Confirm to delete file or dir"
+msgstr "Opravdu smazat soubor nebo adresář?"
+
+#: main.py:2936 main.py:2950
+msgid "Machine Is Halted: "
+msgstr "Stroj je zastaven: "
+
+#: main.py:2938 main.py:2952
+msgid "Machine Is Halted!"
+msgstr "Stroj je zastaven!"
+
+#: main.py:2956
+msgid "Please manually switch off/on the machine!"
+msgstr "Ručně vypněte a zapněte stroj!"
+
+#: main.py:2959 main.py:2971
+msgid "Confirm to reset machine?"
+msgstr "Opravdu resetovat stroj?"
+
+#: main.py:2962
+msgid "Confirm to unlock machine?"
+msgstr "Opravdu odemknout stroj?"
+
+#: main.py:2970
+msgid "Machine Is Sleeping"
+msgstr "Stroj je v režimu spánku"
+
+#: main.py:2985
+msgid "Changing Tool"
+msgstr "Výměna Tool"
+
+#: main.py:2986
+msgid "Please change to tool: "
+msgstr "Vyměňte za Tool: "
+
+#: main.py:2986
+msgid "Then press 'Confirm' or main button to proceed"
+msgstr "Poté pokračujte stisknutím tlačítka „Potvrdit“ nebo hlavního tlačítka"
+
+#: main.py:3022
+msgid "Change name"
+msgstr "Změnit název"
+
+#: main.py:3030
+msgid "Input new folder name:"
+msgstr "Zadejte nový název složky:"
+
+#: main.py:3051
+msgid "Input WiFi password of"
+msgstr "Zadejte heslo WiFi sítě"
+
+#: main.py:3063 main.py:3094
+msgid "File Already Exists"
+msgstr "Soubor již existuje"
+
+#: main.py:3064 main.py:3095
+msgid "Confirm to overwrite file:"
+msgstr "Opravdu přepsat soubor:"
+
+#: main.py:3071
+msgid "Updating Firmware"
+msgstr "Aktualizace firmwaru"
+
+#: main.py:3072
+msgid ""
+"Are you sure you want to update the firmware? A machine reset will be "
+"required to apply the new firmware."
+msgstr "Opravdu chcete aktualizovat firmware? Pro použití nového firmwaru bude nutný reset stroje."
+
+#: main.py:3086
+msgid "Loading file"
+msgstr "Načítání souboru"
+
+#: main.py:3112
+msgid "Opening local file"
+msgstr "Otevírání lokálního souboru"
+
+#: main.py:3168
+msgid ""
+"Error loading machine config setting. Possibly malformed value.\n"
+"Skipping setting key: "
+msgstr "Chyba při načítání konfigurace stroje. Hodnota má pravděpodobně špatný formát.\nPřeskakuji klíč nastavení: "
+
+#: main.py:3178
+msgid "Download config file error"
+msgstr "Chyba stahování konfiguračního souboru"
+
+#: main.py:3194
+msgid "Load config..."
+msgstr "Načítání konfigurace..."
+
+#: main.py:3194
+msgid "Checking"
+msgstr "Kontrola"
+
+#: main.py:3221
+msgid "Download config file error!"
+msgstr "Chyba stahování konfiguračního souboru!"
+
+#: main.py:3223
+msgid "Download file error!"
+msgstr "Chyba stahování souboru!"
+
+#: main.py:3237
+msgid "Synchronize version and time..."
+msgstr "Synchronizace verze a času..."
+
+#: main.py:3244
+msgid "Open cached file"
+msgstr "Otevřít soubor z mezipaměti"
+
+#: main.py:3254
+msgid "Downloading is canceled manually."
+msgstr "Stahování bylo ručně zrušeno."
+
+#: main.py:3298
+msgid "Downloading"
+msgstr "Stahování"
+
+#: main.py:3312 main.py:3314
+msgid "WiFi: Searching for network..."
+msgstr "WiFi: vyhledávání sítě..."
+
+#: main.py:3339
+msgid "WiFi: Connected"
+msgstr "WiFi: připojeno"
+
+#: main.py:3339
+msgid "WiFi: Not Connected"
+msgstr "WiFi: nepřipojeno"
+
+#: main.py:3342
+msgid "Close Connection"
+msgstr "Ukončit spojení"
+
+#: main.py:3383
+msgid "Can not load coordinate value:"
+msgstr "Nelze načíst hodnotu souřadnice:"
+
+#: main.py:3390
+msgid "Can not load laser offset value:"
+msgstr "Nelze načíst hodnotu ofsetu laseru:"
+
+#: main.py:3451
+msgid "Connecting to"
+msgstr "Připojování k"
+
+#: main.py:3583
+msgid "Uploading"
+msgstr "Nahrávání"
+
+#: main.py:3605
+msgid "Uploading is canceled manually."
+msgstr "Nahrávání bylo ručně zrušeno."
+
+#: main.py:3614
+msgid "Upload file error!"
+msgstr "Chyba nahrávání souboru!"
+
+#: main.py:3655
+msgid "Decompressing"
+msgstr "Rozbalování"
+
+#: main.py:3670
+msgid "Update Finished"
+msgstr "Aktualizace dokončena"
+
+#: main.py:3671
+msgid "Confirm to reset the machine?"
+msgstr "Opravdu resetovat stroj?"
+
+#: main.py:3795 makera.kv:3302
+msgid "disconnect"
+msgstr "odpojit"
+
+#: main.py:3930 main.py:3949
+msgid "Laser"
+msgstr "Laser"
+
+#: main.py:3937
+msgid "None"
+msgstr "Žádný"
+
+#: main.py:3947 makera.kv:3161
+msgid "Probe"
+msgstr "Sonda"
+
+#: main.py:3951
+msgid "3DProb"
+msgstr "3D sonda"
+
+#: main.py:4040
+msgid " No Remote File Selected"
+msgstr " Není vybrán žádný vzdálený soubor"
+
+#: main.py:4317
+msgid "Load config error, Key:"
+msgstr "Chyba načtení konfigurace, klíč:"
+
+#: main.py:4475
+msgid "Enable Pendant"
+msgstr "Povolit kolečko"
+
+#: main.py:4480 makera.kv:3588
+msgid "No Pendant"
+msgstr "Kolečko: žádné"
+
+#: main.py:4547
+msgid "Settings applied, need machine reset to take effect !"
+msgstr "Nastavení bylo použito, pro projevení je nutný reset stroje!"
+
+#: main.py:4553
+msgid "UI Density changed, restart application to apply."
+msgstr "Hustota rozhraní byla změněna, pro použití restartujte aplikaci."
+
+#: main.py:4568
+msgid "Restore Settings"
+msgstr "Obnovit výchozí nastavení"
+
+#: main.py:4569
+msgid "Confirm to restore settings from default ?"
+msgstr "Opravdu obnovit výchozí nastavení?"
+
+#: main.py:4583
+msgid "Save As Default"
+msgstr "Uložit jako výchozí"
+
+#: main.py:4584
+msgid "Confirm to save current settings as default ?"
+msgstr "Opravdu uložit aktuální nastavení jako výchozí?"
+
+#: main.py:4592
+msgid "Entering Laser Mode"
+msgstr "Přechod do režimu laseru"
+
+#: main.py:4594
+msgid ""
+"You are about to enable laser mode. \n"
+"\n"
+"When enabled the current tool will be dropped, the spindle fan locked to "
+"90%, \n"
+"and the empty spindle nose will be set as the tool and length probed.\n"
+"\n"
+" It's recommended to remove the laser dust cap, and put on safety glasses "
+"now.\n"
+"\n"
+"Are you ready to proceed ?"
+msgstr "Chystáte se zapnout režim laseru. \n\nPo zapnutí bude aktuální Tool odložen, ventilátor vřetene uzamčen na 90 %, \na jako Tool bude nastaveno prázdné hrdlo vřetene, u kterého se změří délka.\n\n Doporučujeme nyní sundat protiprachový kryt laseru a nasadit ochranné brýle.\n\nJste připraveni pokračovat?"
+
+#: main.py:4827
+msgid "Opening file error:"
+msgstr "Chyba při otevírání souboru:"
+
+#: main.py:4827
+msgid "Please make sure the GCode file is valid"
+msgstr "Ujistěte se, že je soubor G-kódu platný"
+
+#: main.py:4911
+msgid "Carvera Controller Community"
+msgstr "Carvera Controller Community"
+
+#: ui.py:42
+msgid "Open editor…"
+msgstr "Otevřít editor…"
+
+#: ui.py:53
+msgid "<unnamed>"
+msgstr "<bez názvu>"
+
+#: ui.py:55
+msgid "<invalid>"
+msgstr "<neplatné>"
+
+#: ui.py:80
+msgid "Name:"
+msgstr "Název:"
+
+#: ui.py:87
+msgid "G-code:"
+msgstr "G-kód:"
+
+#: ui.py:92
+msgid "Edit command"
+msgstr "Upravit příkaz"
+
+#: ui.py:98
+msgid "Save"
+msgstr "Uložit"
+
+#: ui.py:101 makera.kv:1255 makera.kv:1290 makera.kv:1319 makera.kv:1350
+#: makera.kv:1409 makera.kv:1532 makera.kv:1591 makera.kv:1675 makera.kv:1752
+#: makera.kv:1996 makera.kv:4236 makera.kv:4291 makera.kv:4346 makera.kv:4401
+#: makera.kv:4456 makera.kv:4512 makera.kv:4569 makera.kv:5450
+#: addons/probing/preview/ProbingPreviewPopup.kv:26
+msgid "Cancel"
+msgstr "Zrušit"
+
+#: makera.kv:306
+msgid "Jog Speed:"
+msgstr "Rychlost ručního pohybu:"
+
+#: makera.kv:308
+msgid "Match Feed"
+msgstr "Podle posuvu"
+
+#: makera.kv:316
+msgid "2000 mm/min"
+msgstr "2000 mm/min"
+
+#: makera.kv:323
+msgid "1200 mm/min"
+msgstr "1200 mm/min"
+
+#: makera.kv:330
+msgid "600 mm/min"
+msgstr "600 mm/min"
+
+#: makera.kv:337
+msgid "300 mm/min"
+msgstr "300 mm/min"
+
+#: makera.kv:344
+msgid "100 mm/min"
+msgstr "100 mm/min"
+
+#: makera.kv:359
+msgid "Set X Origin"
+msgstr "Nastavit počátek X"
+
+#: makera.kv:361
+msgid "X = 0"
+msgstr "X = 0"
+
+#: makera.kv:370
+msgid "Set X"
+msgstr "Nastavit X"
+
+#: makera.kv:387
+msgid "Set Y Origin"
+msgstr "Nastavit počátek Y"
+
+#: makera.kv:389
+msgid "Y = 0"
+msgstr "Y = 0"
+
+#: makera.kv:398
+msgid "Set Y"
+msgstr "Nastavit Y"
+
+#: makera.kv:416
+msgid "Set Z Origin"
+msgstr "Nastavit počátek Z"
+
+#: makera.kv:418
+msgid "Z = 0"
+msgstr "Z = 0"
+
+#: makera.kv:427
+msgid "Set Z"
+msgstr "Nastavit Z"
+
+#: makera.kv:436
+msgid "Auto Leveling"
+msgstr "Automatické vyrovnání"
+
+#: makera.kv:450
+msgid "max:"
+msgstr "max:"
+
+#: makera.kv:454
+msgid "Clear"
+msgstr "Vymazat"
+
+#: makera.kv:455
+msgid ""
+"Clear any existing autolevel offsets. When autolevel offsets are enabled the "
+"Z axis dropdown will be blue"
+msgstr "Vymaže veškeré existující ofsety automatického vyrovnání. Když jsou ofsety aktivní, rozbalovací nabídka osy Z je zobrazena modře"
+
+#: makera.kv:472
+msgid "Set A Origin"
+msgstr "Nastavit počátek A"
+
+#: makera.kv:474
+msgid "A = 0"
+msgstr "A = 0"
+
+#: makera.kv:483
+msgid "Set A"
+msgstr "Nastavit A"
+
+#: makera.kv:492
+msgid "Shrink"
+msgstr "Zmenšit"
+
+#: makera.kv:493
+msgid "Reset A Axis value to 0-360 while keeping the offset. Eg 374 becomes 14"
+msgstr "Přepočítá hodnotu osy A do rozsahu 0-360 při zachování ofsetu. Např. 374 se změní na 14"
+
+#: makera.kv:502
+msgid "Fast Move"
+msgstr "Rychlý posuv"
+
+#: makera.kv:523 makera.kv:5416
+msgid "Set Rotation"
+msgstr "Nastavit natočení"
+
+#: makera.kv:535 makera.kv:538 makera.kv:539
+msgid "Activate WCS"
+msgstr "Aktivovat WCS"
+
+#: makera.kv:543 makera.kv:4595
+msgid "WCS Settings"
+msgstr "Nastavení WCS"
+
+#: makera.kv:562
+msgid "Feed Status"
+msgstr "Stav posuvu"
+
+#: makera.kv:576 makera.kv:658
+msgid "Scale:"
+msgstr "Měřítko:"
+
+#: makera.kv:581 makera.kv:662
+msgid "Target:"
+msgstr "Cíl:"
+
+#: makera.kv:585
+msgid "Speed Scaling"
+msgstr "Škálování rychlosti"
+
+#: makera.kv:622 makera.kv:724 makera.kv:934 makera.kv:3508
+msgid "Reset"
+msgstr "Reset"
+
+#: makera.kv:644
+msgid "Spindle Status"
+msgstr "Stav vřetene"
+
+#: makera.kv:666
+msgid "Temp:"
+msgstr "Teplota:"
+
+#: makera.kv:669 makera.kv:2709
+msgid "Auto Vacuum"
+msgstr "Automatické vysávání"
+
+#: makera.kv:688
+msgid "RPM Scaling"
+msgstr "Škálování otáček"
+
+#: makera.kv:745
+msgid "Tool Status"
+msgstr "Stav Tool"
+
+#: makera.kv:759
+msgid "TLO:  "
+msgstr "TLO:  "
+
+#: makera.kv:763
+msgid "WP:  "
+msgstr "WP:  "
+
+#: makera.kv:771 makera.kv:776 makera.kv:777
+msgid "Change..."
+msgstr "Vyměnit..."
+
+#: makera.kv:780
+msgid "Calibrate"
+msgstr "Kalibrovat"
+
+#: makera.kv:787
+msgid "Drop"
+msgstr "Odložit"
+
+#: makera.kv:798 makera.kv:803 makera.kv:804
+msgid "Set..."
+msgstr "Nastavit..."
+
+#: makera.kv:807
+msgid "Clamp"
+msgstr "Upnout"
+
+#: makera.kv:815
+msgid "Unclamp"
+msgstr "Uvolnit"
+
+#: makera.kv:835
+msgid "Laser Status"
+msgstr "Stav laseru"
+
+#: makera.kv:849
+msgid "scale:"
+msgstr "měřítko:"
+
+#: makera.kv:852
+msgid "Enable Laser"
+msgstr "Povolit laser"
+
+#: makera.kv:876
+msgid "Laser Test"
+msgstr "Test laseru"
+
+#: makera.kv:895
+msgid "Power Scaling"
+msgstr "Škálování výkonu"
+
+#: makera.kv:956
+msgid "Run File View"
+msgstr "Spuštění souboru"
+
+#: makera.kv:966
+msgid "Manual Move View"
+msgstr "Ruční pohyb"
+
+#: makera.kv:979
+msgid "Diagnostics Menu"
+msgstr "Diagnostika"
+
+#: makera.kv:990
+msgid "Wifi Setup"
+msgstr "Nastavení WiFi"
+
+#: makera.kv:1001
+msgid "Pair Probe"
+msgstr "Spárovat sondu"
+
+#: makera.kv:1010
+msgid "Update Firmware/Controller"
+msgstr "Aktualizovat firmware/Controller"
+
+#: makera.kv:1023
+msgid "Language Selection"
+msgstr "Výběr jazyka"
+
+#: makera.kv:1033
+msgid "Settings"
+msgstr "Nastavení"
+
+#: makera.kv:1042
+msgid "Send Bug Report"
+msgstr "Odeslat hlášení o chybě"
+
+#: makera.kv:1073
+msgid "Reconnect"
+msgstr "Znovu připojit"
+
+#: makera.kv:1084
+msgid "Scan Wi-Fi..."
+msgstr "Vyhledat WiFi..."
+
+#: makera.kv:1091
+msgid " USB..."
+msgstr " USB..."
+
+#: makera.kv:1109
+msgid "Disconnect"
+msgstr "Odpojit"
+
+#: makera.kv:1121
+msgid "Upload..."
+msgstr "Nahrát..."
+
+#: makera.kv:1127 makera.kv:2083 makera.kv:2131 makera.kv:2457
+msgid "Download"
+msgstr "Stáhnout"
+
+#: makera.kv:1133 makera.kv:2227
+msgid "Delete"
+msgstr "Smazat"
+
+#: makera.kv:1139 makera.kv:2219
+msgid "Rename"
+msgstr "Přejmenovat"
+
+#: makera.kv:1243
+msgid "Select Language"
+msgstr "Vyberte jazyk"
+
+#: makera.kv:1275
+msgid "Input Box"
+msgstr "Vstupní pole"
+
+#: makera.kv:1311
+msgid "Confirm Box"
+msgstr "Potvrzovací dialog"
+
+#: makera.kv:1315 makera.kv:1376
+msgid "Confirm to continue?"
+msgstr "Opravdu pokračovat?"
+
+#: makera.kv:1325
+msgid "Confirm"
+msgstr "Potvrdit"
+
+#: makera.kv:1342
+msgid "Machine Is Halted"
+msgstr "Stroj je zastaven"
+
+#: makera.kv:1346
+msgid "Choose unlock option:"
+msgstr "Vyberte způsob odemknutí:"
+
+#: makera.kv:1354
+msgid "Unlock and Stay in Position"
+msgstr "Odemknout a zůstat na místě"
+
+#: makera.kv:1360
+msgid "Unlock and Move to Safe Z"
+msgstr "Odemknout a přejet do bezpečné výšky Z"
+
+#: makera.kv:1430
+msgid "Auto-Set By Offset"
+msgstr "Automaticky nastavit dle ofsetu"
+
+#: makera.kv:1448
+msgid "Anchor1"
+msgstr "Kotva 1"
+
+#: makera.kv:1460
+msgid "Anchor2"
+msgstr "Kotva 2"
+
+#: makera.kv:1472
+msgid "4Axis Origin"
+msgstr "Počátek 4. osy"
+
+#: makera.kv:1484
+msgid "Current Pos"
+msgstr "Aktuální pozice"
+
+#: makera.kv:1492 makera.kv:1642
+msgid "X Offset:"
+msgstr "Ofset X:"
+
+#: makera.kv:1498 makera.kv:1648
+msgid "Enter X Offset"
+msgstr "Zadejte ofset X"
+
+#: makera.kv:1506 makera.kv:1656
+msgid "Y Offset:"
+msgstr "Ofset Y:"
+
+#: makera.kv:1512 makera.kv:1662
+msgid "Enter Y Offset"
+msgstr "Zadejte ofset Y"
+
+#: makera.kv:1523
+msgid "Note: Work origin will be set immediately when clicking OK."
+msgstr "Poznámka: Počátek obrobku bude nastaven okamžitě po kliknutí na OK."
+
+#: makera.kv:1540
+msgid "Set By XYZ Probe"
+msgstr "Nastavit pomocí XYZ sondy"
+
+#: makera.kv:1551 makera.kv:1712
+msgid "Block Thickness:"
+msgstr "Tloušťka bloku:"
+
+#: makera.kv:1557 makera.kv:1718
+msgid "Thickness of probing block"
+msgstr "Tloušťka měřicího bloku"
+
+#: makera.kv:1558 makera.kv:1719
+msgid ""
+"The mm thickness between the conductive surface of the probe block and the "
+"workpiece. Used as part of the probing calculation to determine the Z height"
+msgstr "Tloušťka ve mm mezi vodivým povrchem měřicího bloku a obrobkem. Používá se při výpočtu sondování k určení výšky Z"
+
+#: makera.kv:1566 makera.kv:1727
+msgid "Tool Diameter:"
+msgstr "Průměr Tool:"
+
+#: makera.kv:1572 makera.kv:1733
+msgid "Tool Diameter"
+msgstr "Průměr Tool"
+
+#: makera.kv:1580 makera.kv:1741
+msgid ""
+"Note: Please make sure the probe is stably positioned and the magnet head is "
+"attached to the tool."
+msgstr "Poznámka: Ujistěte se, že je sonda stabilně umístěna a magnetická hlavice je připojena k Tool."
+
+#: makera.kv:1619
+msgid "Z Probe Config"
+msgstr "Konfigurace sondy Z"
+
+#: makera.kv:1702
+msgid "XYZ Probe At Current Position"
+msgstr "XYZ sondování v aktuální pozici"
+
+#: makera.kv:1777
+msgid "Pairing Wireless Probe"
+msgstr "Párování bezdrátové sondy"
+
+#: makera.kv:1791
+msgid "Start Pairing"
+msgstr "Zahájit párování"
+
+#: makera.kv:1841
+msgid "Auto Leveling Config"
+msgstr "Konfigurace automatického vyrovnání"
+
+#: makera.kv:1859
+msgid "Clearance Height:   "
+msgstr "Bezpečná výška:   "
+
+#: makera.kv:1871
+msgid "Min"
+msgstr "Min"
+
+#: makera.kv:1873
+msgid "Max"
+msgstr "Max"
+
+#: makera.kv:1875
+msgid "Step"
+msgstr "Krok"
+
+#: makera.kv:1877
+msgid "Points"
+msgstr "Body"
+
+#: makera.kv:1935
+msgid "Offsets:   "
+msgstr "Ofsety:   "
+
+#: makera.kv:1943
+msgid "Left X-"
+msgstr "Vlevo X-"
+
+#: makera.kv:1945
+msgid "Right X+"
+msgstr "Vpravo X+"
+
+#: makera.kv:1947
+msgid "Front Y-"
+msgstr "Vpředu Y-"
+
+#: makera.kv:1949
+msgid "Back Y+"
+msgstr "Vzadu Y+"
+
+#: makera.kv:1956
+msgid "Enter -X Offset"
+msgstr "Zadejte ofset -X"
+
+#: makera.kv:1964
+msgid "Enter +X Offset"
+msgstr "Zadejte ofset +X"
+
+#: makera.kv:1972
+msgid "Enter -Y Offset"
+msgstr "Zadejte ofset -Y"
+
+#: makera.kv:1980
+msgid "Enter +Y Offset"
+msgstr "Zadejte ofset +Y"
+
+#: makera.kv:2025
+msgid "Upgrade"
+msgstr "Aktualizace"
+
+#: makera.kv:2035
+msgid " Check Updates on Startup"
+msgstr " Kontrolovat aktualizace při spuštění"
+
+#: makera.kv:2063 makera.kv:2111
+msgid " Update Log:"
+msgstr " Přehled změn:"
+
+#: makera.kv:2101 makera.kv:2437
+msgid "Firmware"
+msgstr "Firmware"
+
+#: makera.kv:2137
+msgid "Update"
+msgstr "Aktualizovat"
+
+#: makera.kv:2154
+msgid "Check for Updates"
+msgstr "Zkontrolovat aktualizace"
+
+#: makera.kv:2199
+msgid "Remote"
+msgstr "Vzdálený"
+
+#: makera.kv:2235
+msgid "New Folder"
+msgstr "Nová složka"
+
+#: makera.kv:2242
+msgid "Upload File"
+msgstr "Nahrát soubor"
+
+#: makera.kv:2323 makera.kv:2565
+msgid "Search"
+msgstr "Hledat"
+
+#: makera.kv:2352 makera.kv:2594
+msgid "Name "
+msgstr "Název "
+
+#: makera.kv:2359 makera.kv:2601
+msgid "Date Modified "
+msgstr "Datum úpravy "
+
+#: makera.kv:2369 makera.kv:2611
+msgid " Size"
+msgstr " Velikost"
+
+#: makera.kv:2407
+msgid "Clear Selection"
+msgstr "Zrušit výběr"
+
+#: makera.kv:2416
+msgid "Select"
+msgstr "Vybrat"
+
+#: makera.kv:2437
+msgid "Local"
+msgstr "Lokální"
+
+#: makera.kv:2457
+msgid "View"
+msgstr "Zobrazit"
+
+#: makera.kv:2464
+msgid "Upload"
+msgstr "Nahrát"
+
+#: makera.kv:2471
+msgid "Upload and Select"
+msgstr "Nahrát a vybrat"
+
+#: makera.kv:2565
+msgid "firmware"
+msgstr "firmware"
+
+#: makera.kv:2665
+msgid "Config and Run"
+msgstr "Konfigurace a spuštění"
+
+#: makera.kv:2665
+msgid " Config and Do "
+msgstr " Konfigurace a provedení "
+
+#: makera.kv:2696
+msgid "Background:"
+msgstr "Pozadí:"
+
+#: makera.kv:2747
+msgid " Set Work Origin"
+msgstr " Nastavit počátek obrobku"
+
+#: makera.kv:2765
+msgid " (0, 0) from Anchor1"
+msgstr " (0, 0) od kotvy 1"
+
+#: makera.kv:2778 makera.kv:2860 makera.kv:2919
+msgid "Config"
+msgstr "Konfigurace"
+
+#: makera.kv:2799
+msgid " Scan Margin"
+msgstr " Okraj skenování"
+
+#: makera.kv:2832
+msgid " Auto Z Probe"
+msgstr " Automatické sondování Z"
+
+#: makera.kv:2847
+msgid " (10, 10) from Path Origin"
+msgstr " (10, 10) od počátku dráhy"
+
+#: makera.kv:2891
+msgid " Auto Leveling"
+msgstr " Automatické vyrovnání"
+
+#: makera.kv:2905
+msgid " X Points: 10, Y Points: 10, Height: 5"
+msgstr " Body X: 10, Body Y: 10, Výška: 5"
+
+#: makera.kv:2967
+msgid "Run"
+msgstr "Spustit"
+
+#: makera.kv:2967
+msgid "Do "
+msgstr "Provést "
+
+#: makera.kv:3085
+msgid "   Diagnostic Panel"
+msgstr "   Diagnostický panel"
+
+#: makera.kv:3097
+msgid "Spindle Motor"
+msgstr "Motor vřetene"
+
+#: makera.kv:3101 makera.kv:3130
+msgid "Spindle Fan"
+msgstr "Ventilátor vřetene"
+
+#: makera.kv:3104
+msgid "Vacuum"
+msgstr "Vysávání"
+
+#: makera.kv:3104
+msgid "PowerFan"
+msgstr "Ventilátor napájení"
+
+#: makera.kv:3107
+msgid "Engraving Laser"
+msgstr "Gravírovací laser"
+
+#: makera.kv:3111
+msgid "Enclosure Light"
+msgstr "Osvětlení krytu"
+
+#: makera.kv:3115
+msgid "Air Assist"
+msgstr "Air Assist"
+
+#: makera.kv:3141
+msgid "ToolSensorPWR"
+msgstr "ToolSensorPWR"
+
+#: makera.kv:3141
+msgid "Probe Laser"
+msgstr "Laser sondy"
+
+#: makera.kv:3145
+msgid "WPChargePWR"
+msgstr "WPChargePWR"
+
+#: makera.kv:3145
+msgid "Beep"
+msgstr "Pípnutí"
+
+#: makera.kv:3151
+msgid "X- Limit"
+msgstr "Limit X-"
+
+#: makera.kv:3154
+msgid "Y- Limit"
+msgstr "Limit Y-"
+
+#: makera.kv:3157
+msgid "ATC Limit"
+msgstr "Limit ATC"
+
+#: makera.kv:3164
+msgid "Tool Sensor"
+msgstr "Tool senzor"
+
+#: makera.kv:3168 makera.kv:4168
+msgid "E-Stop"
+msgstr "Nouzové zastavení (E-Stop)"
+
+#: makera.kv:3173
+msgid "X+ Limit"
+msgstr "Limit X+"
+
+#: makera.kv:3176
+msgid "Y+ Limit"
+msgstr "Limit Y+"
+
+#: makera.kv:3179
+msgid "Z+ Limit"
+msgstr "Limit Z+"
+
+#: makera.kv:3182
+msgid "Tool Length Setter"
+msgstr "Tool Length Setter"
+
+#: makera.kv:3185
+msgid "Cover Switch"
+msgstr "Spínač krytu"
+
+#: makera.kv:3191
+msgid "Changes in values are applied after 2 seconds."
+msgstr "Změny hodnot se použijí po 2 sekundách."
+
+#: makera.kv:3220
+msgid " Settings"
+msgstr " Nastavení"
+
+#: makera.kv:3229
+msgid "Apply"
+msgstr "Použít"
+
+#: makera.kv:3348
+msgid "Coordinate System"
+msgstr "Souřadnicový systém"
+
+#: makera.kv:3363
+msgid "Feed Rate Override"
+msgstr "Korekce posuvu"
+
+#: makera.kv:3374
+msgid "Spindle and Vacuum Overrides"
+msgstr "Korekce vřetene a vysávání"
+
+#: makera.kv:3385
+msgid "Tool Settings"
+msgstr "Nastavení Tool"
+
+#: makera.kv:3396
+msgid "Laser Settings"
+msgstr "Nastavení laseru"
+
+#: makera.kv:3504
+msgid "Unlock"
+msgstr "Odemknout"
+
+#: makera.kv:3512
+msgid "Home"
+msgstr "Home"
+
+#: makera.kv:3517
+msgid "Margin..."
+msgstr "Okraj..."
+
+#: makera.kv:3528
+msgid "ZProbe..."
+msgstr "Sondování Z..."
+
+#: makera.kv:3539
+msgid "AutoLevel..."
+msgstr "Vyrovnání..."
+
+#: makera.kv:3551 makera.kv:3554 makera.kv:3555
+msgid "Goto..."
+msgstr "Přejet na..."
+
+#: makera.kv:3558
+msgid "Set Origin"
+msgstr "Nastavit počátek"
+
+#: makera.kv:3562
+msgid "Jog Controls"
+msgstr "Ovládání ručního pohybu"
+
+#: makera.kv:3570
+msgid "Probing..."
+msgstr "Sondování..."
+
+#: makera.kv:3575
+msgid "Light"
+msgstr "Světlo"
+
+#: makera.kv:3581
+msgid "Ext. Control"
+msgstr "Externí ovládání"
+
+#: makera.kv:3611
+msgid "Jog Speed: Match Feed"
+msgstr "Rychlost ručního pohybu: podle posuvu"
+
+#: makera.kv:3620
+msgid "Keyboard Jog Mode"
+msgstr "Režim ručního pohybu klávesnicí"
+
+#: makera.kv:3738
+msgid ""
+"Press to switch to MDI console to see console messages and send individual "
+"gcodes"
+msgstr "Přepnout na konzoli MDI pro zobrazení zpráv konzole a odesílání jednotlivých G-kódů"
+
+#: makera.kv:3751
+msgid "Jump to first page in file"
+msgstr "Přejít na první stránku souboru"
+
+#: makera.kv:3759
+msgid "Go to last page in file"
+msgstr "Přejít na poslední stránku souboru"
+
+#: makera.kv:3767
+msgid "Go to next page in file"
+msgstr "Přejít na další stránku souboru"
+
+#: makera.kv:3775
+msgid "Jump to last page in file"
+msgstr "Skočit na poslední stránku souboru"
+
+#: makera.kv:3811
+msgid "FILE"
+msgstr "SOUBOR"
+
+#: makera.kv:3812
+msgid "Return to file view"
+msgstr "Návrat do zobrazení souboru"
+
+#: makera.kv:3818
+msgid "Enter command..."
+msgstr "Zadejte příkaz..."
+
+#: makera.kv:3827
+msgid "send"
+msgstr "odeslat"
+
+#: makera.kv:3828
+msgid ""
+"The MDI is a console that allows you to send individual gcodes, and commands "
+"such as to change config values on the machine"
+msgstr "MDI je konzole, která umožňuje odesílat jednotlivé G-kódy a příkazy, například pro změnu konfiguračních hodnot stroje"
+
+#: makera.kv:4061
+msgid "SettingPage"
+msgstr "Stránka nastavení"
+
+#: makera.kv:4084
+msgid "Select File"
+msgstr "Vybrat soubor"
+
+#: makera.kv:4100
+msgid "Start File"
+msgstr "Spustit soubor"
+
+#: makera.kv:4112
+msgid "Pause File at Next Safe Opportunity and Enable MDI Control"
+msgstr "Pozastavit soubor při nejbližší bezpečné příležitosti a povolit ovládání MDI"
+
+#: makera.kv:4118
+msgid "Abort File Now"
+msgstr "Okamžitě přerušit soubor"
+
+#: makera.kv:4128
+msgid "Pause File Without MDI"
+msgstr "Pozastavit soubor bez MDI"
+
+#: makera.kv:4206
+msgid "Set X Current Pos"
+msgstr "Nastavit aktuální pozici X"
+
+#: makera.kv:4222
+msgid "Enter X Pos"
+msgstr "Zadejte pozici X"
+
+#: makera.kv:4261
+msgid "Set Y Current Pos"
+msgstr "Nastavit aktuální pozici Y"
+
+#: makera.kv:4277
+msgid "Enter Y Pos"
+msgstr "Zadejte pozici Y"
+
+#: makera.kv:4316
+msgid "Set Z Current Pos"
+msgstr "Nastavit aktuální pozici Z"
+
+#: makera.kv:4332
+msgid "Enter Z Pos"
+msgstr "Zadejte pozici Z"
+
+#: makera.kv:4371
+msgid "Set A Current Pos"
+msgstr "Nastavit aktuální pozici A"
+
+#: makera.kv:4387 makera.kv:4555
+msgid "Enter A Pos"
+msgstr "Zadejte pozici A"
+
+#: makera.kv:4426
+msgid "Set Current Tool Number"
+msgstr "Nastavit číslo aktuálního Tool"
+
+#: makera.kv:4442
+msgid "Enter New Tool Number"
+msgstr "Zadejte nové číslo Tool"
+
+#: makera.kv:4482
+msgid "Change Current Tool"
+msgstr "Vyměnit aktuální Tool"
+
+#: makera.kv:4498
+msgid "New Tool Number"
+msgstr "Nové číslo Tool"
+
+#: makera.kv:4539
+msgid "Rapidly move the A to"
+msgstr "Rychle přejet osu A na"
+
+#: makera.kv:5387
+msgid "Clear All"
+msgstr "Vymazat vše"
+
+#: makera.kv:5434
+msgid "Enter rotation angle in degrees"
+msgstr "Zadejte úhel natočení ve stupních"
+
+#: addons/probing/ProbingPopup.kv:36
+msgid "Outside Corners"
+msgstr "Vnější rohy"
+
+#: addons/probing/ProbingPopup.kv:83
+msgid "Inside Corners"
+msgstr "Vnitřní rohy"
+
+#: addons/probing/ProbingPopup.kv:128
+msgid "Single Axis"
+msgstr "Jedna osa"
+
+#: addons/probing/ProbingPopup.kv:200
+msgid "Bore/Pocket"
+msgstr "Otvor/Kapsa"
+
+#: addons/probing/ProbingPopup.kv:246
+msgid "Boss/Block"
+msgstr "Výstupek/Blok"
+
+#: addons/probing/ProbingPopup.kv:292
+msgid "Angle"
+msgstr "Úhel"
+
+#: addons/probing/ProbingPopup.kv:485
+msgid ""
+"Note: Most of these operations require a true 3 axis probe, not the manual "
+"probe supplied with the Carvera. See the documentation for more info"
+msgstr "Poznámka: Většina těchto operací vyžaduje skutečnou 3osou sondu, nikoli ruční sondu dodávanou s Carverou. Více informací najdete v dokumentaci"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:20
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:19
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:20
+msgid "X distance to probe"
+msgstr "Vzdálenost sondování v X"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:33
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:32
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:33
+msgid "Y distance to probe"
+msgstr "Vzdálenost sondování v Y"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:46
+#: addons/probing/operations/Bore/BoreSettings.kv:44
+#: addons/probing/operations/Boss/BossSettings.kv:58
+#: addons/probing/operations/Angle/AngleSettings.kv:57
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:45
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:60
+msgid "Effective Diameter of Probe Tip. Measure with M460"
+msgstr "Efektivní průměr hrotu sondy. Změřte pomocí M460"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:60
+#: addons/probing/operations/Bore/BoreSettings.kv:58
+#: addons/probing/operations/Boss/BossSettings.kv:73
+#: addons/probing/operations/Angle/AngleSettings.kv:72
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:60
+msgid ""
+"Distance to probe straight down before performing remainder of probing "
+"operations"
+msgstr "Vzdálenost přímého sondování dolů před provedením zbytku operace sondování"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:73
+#: addons/probing/operations/Bore/BoreSettings.kv:71
+#: addons/probing/operations/Boss/BossSettings.kv:86
+#: addons/probing/operations/Angle/AngleSettings.kv:85
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:73
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:74
+msgid "Optional probing feed rate override"
+msgstr "Volitelná korekce posuvu při sondování"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:86
+#: addons/probing/operations/Bore/BoreSettings.kv:84
+#: addons/probing/operations/Boss/BossSettings.kv:99
+#: addons/probing/operations/Angle/AngleSettings.kv:98
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:86
+msgid "Optional rapid feed rate override"
+msgstr "Volitelná korekce rychloposuvu"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:99
+#: addons/probing/operations/Bore/BoreSettings.kv:97
+#: addons/probing/operations/Boss/BossSettings.kv:112
+#: addons/probing/operations/Angle/AngleSettings.kv:111
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:99
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:87
+msgid "Number of times to repeat the probing operation"
+msgstr "Počet opakování operace sondování"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:112
+#: addons/probing/operations/Bore/BoreSettings.kv:110
+#: addons/probing/operations/Boss/BossSettings.kv:125
+#: addons/probing/operations/Angle/AngleSettings.kv:124
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:112
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:100
+msgid "Distance away from surface to retract before double tapping the probe"
+msgstr "Vzdálenost odjetí od povrchu před opětovným dotykem sondy"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:125
+#: addons/probing/operations/Bore/BoreSettings.kv:123
+#: addons/probing/operations/Boss/BossSettings.kv:138
+#: addons/probing/operations/Angle/AngleSettings.kv:137
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:125
+msgid ""
+"If Pocket Depth is enabled, how far above the surface to raise before "
+"continuing the operation"
+msgstr "Pokud je povolena hloubka kapsy, o kolik se zvednout nad povrch před pokračováním operace"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:138
+#: addons/probing/operations/Bore/BoreSettings.kv:135
+#: addons/probing/operations/Boss/BossSettings.kv:150
+#: addons/probing/operations/Angle/AngleSettings.kv:149
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:137
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:112
+msgid "Degrees to rotate the XY coordinate plane when probing."
+msgstr "Úhel natočení roviny XY při sondování (ve stupních)."
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:152
+msgid ""
+"How far below the start height to move down for probing the sides of the part"
+msgstr "O kolik pod počáteční výšku sjet při sondování boků dílu"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:169
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:155
+msgid "This switch will set your current WCS to the corner you are probing"
+msgstr "Tento přepínač nastaví aktuální WCS na roh, který sondujete"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:185
+#: addons/probing/operations/Boss/BossSettings.kv:197
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:171
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:146
+msgid "Disabled"
+msgstr "Vypnuto"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:194
+#: addons/probing/operations/Boss/BossSettings.kv:206
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:180
+msgid "X/Y"
+msgstr "X/Y"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:203
+#: addons/probing/operations/Boss/BossSettings.kv:215
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:189
+msgid "X/Y/Z"
+msgstr "X/Y/Z"
+
+#: addons/probing/operations/OutsideCorner/OutsideCornerSettings.kv:215
+#: addons/probing/operations/Bore/BoreSettings.kv:165
+#: addons/probing/operations/Boss/BossSettings.kv:227
+#: addons/probing/operations/Angle/AngleSettings.kv:192
+#: addons/probing/operations/InsideCorner/InsideCornerSettings.kv:201
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:176
+msgid ""
+"Enable this switch if you have a normally closed probe instead of a normally "
+"open one"
+msgstr "Zapněte tento přepínač, pokud máte sondu typu normálně sepnuto (NC) místo normálně rozepnuto (NO)"
+
+#: addons/probing/operations/Bore/BoreSettings.kv:18
+msgid "Radial X distance to probe"
+msgstr "Radiální vzdálenost sondování v X"
+
+#: addons/probing/operations/Bore/BoreSettings.kv:31
+msgid "Radial Y distance to probe"
+msgstr "Radiální vzdálenost sondování v Y"
+
+#: addons/probing/operations/Bore/BoreSettings.kv:150
+msgid ""
+"This switch will set your current WCS to the center of the block/boss you "
+"are probing"
+msgstr "Tento přepínač nastaví aktuální WCS na střed bloku/výstupku, který sondujete"
+
+#: addons/probing/operations/Boss/BossSettings.kv:19
+msgid "Boss Diameter in X"
+msgstr "Průměr výstupku v X"
+
+#: addons/probing/operations/Boss/BossSettings.kv:32
+msgid "Boss Diameter in Y"
+msgstr "Průměr výstupku v Y"
+
+#: addons/probing/operations/Boss/BossSettings.kv:45
+msgid ""
+"When Probing a boss, this is added to the X and Y values when moving outside "
+"the boss. Defaults to 4mm"
+msgstr "Při sondování výstupku se toto přičte k hodnotám X a Y při pohybu mimo výstupek. Výchozí hodnota je 4 mm"
+
+#: addons/probing/operations/Boss/BossSettings.kv:164
+msgid ""
+"How far below the start height to move down for probing the sides of the "
+"boss/block"
+msgstr "O kolik pod počáteční výšku sjet při sondování boků výstupku/bloku"
+
+#: addons/probing/operations/Boss/BossSettings.kv:181
+msgid ""
+"This switch will set your current WCS to the center of the bore/pocket you "
+"are probing"
+msgstr "Tento přepínač nastaví aktuální WCS na střed otvoru/kapsy, který sondujete"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:18
+msgid "Distance from center along X to move before probing back toward part"
+msgstr "Vzdálenost od středu ve směru X, o kterou se přejede před sondováním zpět k dílu"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:31
+msgid "Distance from center along Y to move before probing back toward part"
+msgstr "Vzdálenost od středu ve směru Y, o kterou se přejede před sondováním zpět k dílu"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:44
+msgid ""
+"How far below the start height to move down for probing the sides of the "
+"Angle/block"
+msgstr "O kolik pod počáteční výšku sjet při sondování boků úhlu/bloku"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:163
+msgid ""
+"If set, the probe will trace the probed angle after the operation finishes"
+msgstr "Pokud je zapnuto, sonda po dokončení operace projede naměřený úhel"
+
+#: addons/probing/operations/Angle/AngleSettings.kv:177
+msgid ""
+"This switch will set your current WCS rotation to the probed rotation angle"
+msgstr "Tento přepínač nastaví natočení aktuálního WCS na naměřený úhel"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:46
+msgid "Z distance to probe"
+msgstr "Vzdálenost sondování v Z"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:130
+msgid ""
+"This switch will set your current WCS to the surface you are probing. It "
+"will only set the currently selected axis/axes"
+msgstr "Tento přepínač nastaví aktuální WCS na povrch, který sondujete. Nastaví pouze aktuálně vybranou osu/osy"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:155
+msgid "X or Y"
+msgstr "X nebo Y"
+
+#: addons/probing/operations/SingleAxis/SingleAxisProbeSettings.kv:164
+msgid "Z"
+msgstr "Z"
+
+#: addons/probing/preview/ProbingPreviewPopup.kv:29
+msgid "Start"
+msgstr "Start"
+
+msgid "Jog Mode:Step"
+msgstr "Režim pohybu: Krok"
+
+msgid "Jog Mode:Continuous"
+msgstr "Režim pohybu: Plynule"
+
+msgid "Jog Speed:Max"
+msgstr "Rychlost pohybu: Max"
+
+msgid "Keyboard Jogging"
+msgstr "Ovládání klávesnicí"
