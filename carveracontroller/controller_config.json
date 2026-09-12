@@ -1,56 +1,56 @@
 [
     {
         "type": "bool",
-        "title": "Override UI Window Density",
-        "desc": "Should the OS DPI settings be overridden?",
+        "title": "Přepsat hustotu okna UI",
+        "desc": "Mají být přepsána nastavení DPI operačního systému?",
         "section": "carvera",
         "key": "ui_density_override",
         "default": "false"
     },
     {
         "type": "numeric",
-        "title": "Overridden Window Density Multiplier",
-        "desc": "How many times bigger should the UI be scaled. Fractions are allowed.",
+        "title": "Násobitel přepsané hustoty okna",
+        "desc": "Kolikrát větší má být měřítko UI. Desetinná čísla jsou povolena.",
         "section": "carvera",
         "key": "ui_density",
         "default": "2.0"
     },
     {
         "type": "bool",
-        "title": "Show Tooltips",
-        "desc": "Should the controller display tooltips?",
+        "title": "Zobrazovat nápovědy (tooltipy)",
+        "desc": "Má ovladač zobrazovat nápovědy při najetí myší?",
         "section": "carvera",
         "key": "show_tooltips",
         "default": "1"
     },
     {
         "type": "numeric",
-        "title": "Tooltip Hover Delay",
-        "desc": "How long to hover before showing the tooltip.",
+        "title": "Zpoždění zobrazení nápovědy",
+        "desc": "Jak dlouho podržet kurzor, než se nápověda zobrazí.",
         "section": "carvera",
         "key": "tooltip_delay",
         "default": "1.5"
     },
     {
         "type": "colorpicker",
-        "title": "Active Element Highlight Color",
-        "desc": "The color used to highlight active UI elements like buttons and indicators.",
+        "title": "Barva zvýraznění aktivního prvku",
+        "desc": "Barva použitá pro zvýraznění aktivních prvků UI, jako jsou tlačítka a indikátory.",
         "section": "carvera",
         "key": "active_color",
         "default": "0,255,255,255"
     },
     {
         "type": "bool",
-        "title": "Allow Screensaver",
-        "desc": "Should the screensaver be allowed to run?",
+        "title": "Povolit spořič obrazovky",
+        "desc": "Má být povolen běh spořiče obrazovky?",
         "section": "graphics",
         "key": "allow_screensaver",
         "default": "false"
     },
     {
         "type": "bool",
-        "title": "Always on top",
-        "desc": "Should the application window be always on top?",
+        "title": "Vždy navrchu",
+        "desc": "Má být okno aplikace vždy zobrazeno navrchu?",
         "section": "graphics",
         "key": "always_on_top",
         "default": "false"
@@ -58,87 +58,87 @@
     {
         "type": "numeric",
         "title": "Max FPS",
-        "desc": "What maximum FPS to use for rendering? Reduce this if you are experiencing performance issues.",
+        "desc": "Jaké maximální FPS použít pro vykreslování? Pokud máte problémy s výkonem, snižte tuto hodnotu.",
         "section": "graphics",
         "key": "maxfps",
         "default": "60"
     },
     {
         "type": "bool",
-        "title": "Show Update Notification",
-        "desc": "Check for new updates on startup?",
+        "title": "Zobrazovat upozornění na aktualizaci",
+        "desc": "Kontrolovat nové aktualizace při spuštění?",
         "section": "carvera",
         "key": "show_update",
         "default": "true"
     },
     {
         "type": "bool",
-        "title": "Show Firmware Compatibility Check",
-        "desc": "Warn if the connected machine's firmware doesn't allow full functionality",
+        "title": "Zobrazovat kontrolu kompatibility firmwaru",
+        "desc": "Upozornit, pokud firmware připojeného stroje neumožňuje plnou funkčnost",
         "section": "carvera",
         "key": "show_firmware_check",
         "default": "true"
     },
     {
         "type": "bool",
-        "title": "Use Instant Feed And Spindle Overrides",
-        "desc": "Off uses stock commands that wait for the current block to execute",
+        "title": "Použít okamžité korekce posuvu a vřetene",
+        "desc": "Vypnuto používá standardní příkazy, které čekají na dokončení aktuálního bloku",
         "section": "carvera",
         "key": "instantFSoverride",
         "default": "true"
     },
     {
         "type": "path",
-        "title": "Play Background Images Custom Folder",
-        "desc": "The user directory to pull custom background images for the play file screen from",
+        "title": "Vlastní složka obrázků na pozadí přehrávání",
+        "desc": "Uživatelský adresář, odkud se berou vlastní obrázky na pozadí obrazovky přehrávání souboru",
         "section": "carvera",
         "key": "custom_bkg_img_dir",
         "default": ""
     },
     {
         "type": "string",
-        "title": "Previous Machine Network Address",
-        "desc": "Network address of last machine connected over network. Used for reconnect functionality",
+        "title": "Předchozí síťová adresa stroje",
+        "desc": "Síťová adresa posledního stroje připojeného přes síť. Používá se pro funkci opětovného připojení",
         "section": "carvera",
         "key": "address",
         "default": ""
     },
     {
         "type": "bool",
-        "title": "Allow MDI Commands When Machine Running",
-        "desc": "This could allow for dangerous movements, or firmware corruption if MDI commands are used while file uploads are occuring. Use this functionality with caution.",
+        "title": "Povolit příkazy MDI při běžícím stroji",
+        "desc": "Toto může umožnit nebezpečné pohyby nebo poškození firmwaru, pokud jsou příkazy MDI použity během nahrávání souboru. Používejte tuto funkci opatrně.",
         "section": "carvera",
         "key": "allow_mdi_while_machine_running",
         "default": "false"
     },
     {
         "type": "bool",
-        "title": "Allow Jogging When Machine Running",
-        "desc": "Allow jogging while the machine is in the Run state. Use this functionality with caution.",
+        "title": "Povolit ruční posun při běžícím stroji",
+        "desc": "Povolí ruční posun (jog), zatímco je stroj ve stavu Run. Používejte tuto funkci opatrně.",
         "section": "carvera",
         "key": "allow_jogging_while_machine_running",
         "default": "true"
     },
     {
         "type": "bool",
-        "title": "Allow Jogging When Spindle or Laser Is On",
-        "desc": "Allow jogging while the spindle is spinning or the laser is firing. Use this functionality with caution.",
+        "title": "Povolit ruční posun při zapnutém vřetenu nebo laseru",
+        "desc": "Povolí ruční posun (jog), zatímco se vřeteno točí nebo laser pálí. Používejte tuto funkci opatrně.",
         "section": "carvera",
         "key": "allow_jogging_while_spindle_on",
         "default": "false"
     },
     {
         "type": "bool",
-        "title": "Invert Y-Axis Jogging Buttons and Keyboard Controls",
-        "desc": "When enabled, the up arrow key will move the spindle up (away from user) relative to the work bed and the down arrow key will move the spindle down (towards the user)",
+        "title": "Invertovat tlačítka a klávesové ovládání ručního posunu osy Y",
+        "desc": "Když je zapnuto, šipka nahoru posune vřeteno nahoru (od uživatele) vzhledem k pracovnímu stolu a šipka dolů posune vřeteno dolů (k uživateli)",
         "section": "carvera",
         "key": "invert_y_axis_jogging",
         "default": "false"
     },
     {
         "type": "options",
-        "title": "Keyboard Mode",
-        "desc": "Specifies the keyboard mode to use. \nblank - choose the best option based on platform\nsystem - keyboard from OS\ndock - one virtual keyboard docked to a screen side\nmulti - one virtual keyboard for every widget request\nsystemanddock - virtual docked keyboard plus input from OS keyboard\nsystemandmulti - virtual docked keyboard per widget plus input from OS keyboard ",
+        "title": "Režim klávesnice",
+        "desc": "Určuje, jaký režim klávesnice se použije. \nprázdné - vybrat nejlepší možnost podle platformy\nsystem - klávesnice z OS\ndock - jedna virtuální klávesnice ukotvená na okraji obrazovky\nmulti - jedna virtuální klávesnice pro každý požadavek prvku\nsystemanddock - virtuální ukotvená klávesnice plus vstup ze systémové klávesnice\nsystemandmulti - virtuální ukotvená klávesnice pro každý prvek plus vstup ze systémové klávesnice ",
         "section": "kivy",
         "key": "keyboard_mode",
         "default": "",
@@ -146,88 +146,88 @@
     },
     {
         "type": "gcodesnippet",
-        "title": "Macro 1",
-        "desc": "GCode to trigger when pressing the Macro 1 button on the control screen.",
+        "title": "Makro 1",
+        "desc": "G-kód spuštěný při stisknutí tlačítka Makro 1 na ovládací obrazovce.",
         "section": "carvera",
         "key": "touch_macro_1",
         "default": {}
     },
     {
         "type": "gcodesnippet",
-        "title": "Macro 2",
-        "desc": "GCode to trigger when pressing the Macro 2 button on the control screen.",
+        "title": "Makro 2",
+        "desc": "G-kód spuštěný při stisknutí tlačítka Makro 2 na ovládací obrazovce.",
         "section": "carvera",
         "key": "touch_macro_2",
         "default": {}
     },
     {
         "type": "gcodesnippet",
-        "title": "Macro 3",
-        "desc": "GCode to trigger when pressing the Macro 3 button on the control screen.",
+        "title": "Makro 3",
+        "desc": "G-kód spuštěný při stisknutí tlačítka Makro 3 na ovládací obrazovce.",
         "section": "carvera",
         "key": "touch_macro_3",
         "default": {}
     },
     {
         "type": "string",
-        "title": "G54 description",
-        "desc": "Description for G54 coordinate system.",
+        "title": "Popis G54",
+        "desc": "Popis souřadnicového systému G54.",
         "section": "carvera",
         "key": "g54_description",
         "default": "G54"
     },
     {
         "type": "string",
-        "title": "G55 description",
-        "desc": "Description for G55 coordinate system.",
+        "title": "Popis G55",
+        "desc": "Popis souřadnicového systému G55.",
         "section": "carvera",
         "key": "g55_description",
         "default": "G55"
     },
     {
         "type": "string",
-        "title": "G56 description",
-        "desc": "Description for G56 coordinate system.",
+        "title": "Popis G56",
+        "desc": "Popis souřadnicového systému G56.",
         "section": "carvera",
         "key": "g56_description",
         "default": "G56"
     },
     {
         "type": "string",
-        "title": "G57 description",
-        "desc": "Description for G57 coordinate system.",
+        "title": "Popis G57",
+        "desc": "Popis souřadnicového systému G57.",
         "section": "carvera",
         "key": "g57_description",
         "default": "G57"
     },
     {
         "type": "string",
-        "title": "G58 description",
-        "desc": "Description for G58 coordinate system.",
+        "title": "Popis G58",
+        "desc": "Popis souřadnicového systému G58.",
         "section": "carvera",
         "key": "g58_description",
         "default": "G58"
     },
     {
         "type": "string",
-        "title": "G59 description",
-        "desc": "Description for G59 coordinate system.",
+        "title": "Popis G59",
+        "desc": "Popis souřadnicového systému G59.",
         "section": "carvera",
         "key": "g59_description",
         "default": "G59"
     },
     {
         "type": "bool",
-        "title": "Auto-Reconnection",
-        "desc": "Automatically attempt to reconnect when connection is lost, and auto-connect on app launch",
+        "title": "Automatické opětovné připojení",
+        "desc": "Automaticky se pokusit znovu připojit při ztrátě spojení a automaticky se připojit při spuštění aplikace",
         "section": "carvera",
         "key": "auto_reconnect_enabled",
         "default": "true"
     },
     {
         "type": "options",
-        "title": "Preferred reconnection method",
-        "desc": "Connection method used for auto-connect on app launch. After you connect manually, Reconnect uses the last successful method instead",
+        "title": "Preferovaná metoda opětovného připojení",
+        "desc": "Metoda připojení použitá pro automatické připojení při spuštění aplikace. Po ručním připojení Reconnect použije místo toho poslední úspěšnou metodu",
         "section": "carvera",
         "key": "reconnect_method",
         "default": "wifi",
@@ -235,32 +235,32 @@
     },
     {
         "type": "string",
-        "title": "USB serial number",
-        "desc": "Preferred USB serial number for reconnect. Updated automatically when you connect over USB",
+        "title": "Sériové číslo USB",
+        "desc": "Preferované sériové číslo USB pro opětovné připojení. Aktualizuje se automaticky při připojení přes USB",
         "section": "carvera",
         "key": "usb_serial",
         "default": ""
     },
     {
         "type": "numeric",
-        "title": "Reconnection Wait Time",
-        "desc": "How many seconds to wait between reconnection attempts",
+        "title": "Čekací doba opětovného připojení",
+        "desc": "Kolik sekund čekat mezi pokusy o opětovné připojení",
         "section": "carvera",
         "key": "reconnect_wait_time",
         "default": "10"
     },
     {
         "type": "numeric",
-        "title": "Reconnection Attempts",
-        "desc": "Maximum number of reconnection attempts",
+        "title": "Počet pokusů o opětovné připojení",
+        "desc": "Maximální počet pokusů o opětovné připojení",
         "section": "carvera",
         "key": "reconnect_attempts",
         "default": "3"
     },
     {
         "type": "options",
-        "title": "Log Level",
-        "desc": "Sets the logging level for the application. Higher levels include all lower levels.",
+        "title": "Úroveň logování",
+        "desc": "Nastavuje úroveň logování aplikace. Vyšší úrovně zahrnují všechny nižší úrovně.",
         "section": "kivy",
         "key": "log_level",
         "default": "info",
@@ -268,40 +268,40 @@
     },
     {
         "type": "bool",
-        "title": "Log to file",
-        "desc": "Store logs to file",
+        "title": "Ukládat log do souboru",
+        "desc": "Ukládat logy do souboru",
         "section": "kivy",
         "key": "log_enable",
         "default": "true"
     },
     {
         "type": "bool",
-        "title": "Log Full Sent/Recieve Communications",
-        "desc": "Be warned that the logs will be very large. Debug level logging is also required.",
+        "title": "Logovat kompletní odeslanou/přijatou komunikaci",
+        "desc": "Upozornění: logy budou velmi objemné. Je také vyžadována úroveň logování Debug.",
         "section": "carvera",
         "key": "log_sent_receive",
         "default": "false"
     },
     {
         "type": "bool",
-        "title": "Allow manual input of USB devices to use for connection",
-        "desc": "When enabled, the USB connection menu includes a Manually Enter option to connect using a device path such as /dev/ttys020",
+        "title": "Povolit ruční zadání USB zařízení pro připojení",
+        "desc": "Když je zapnuto, nabídka USB připojení obsahuje možnost Zadat ručně pro připojení pomocí cesty zařízení, například /dev/ttys020",
         "section": "carvera",
         "key": "allow_manual_usb_device",
         "default": "false"
     },
     {
         "type": "bool",
-        "title": "Increase USB connection speed",
-        "desc": "Requires Community firmware >= v2.1.0. If enabled the controller will negotiate to a higher usb connection speed",
+        "title": "Zvýšit rychlost USB připojení",
+        "desc": "Vyžaduje komunitní firmware >= v2.1.0. Pokud je zapnuto, ovladač vyjedná vyšší rychlost USB připojení",
         "section": "carvera",
         "key": "use_higher_baud",
         "default": "false"
     },
     {
         "type": "options",
-        "title": "Increased USB Connection baud rate",
-        "desc": "Baud rate to use if machine supports increased USB connection speed",
+        "title": "Zvýšená přenosová rychlost USB připojení (baud)",
+        "desc": "Přenosová rychlost použitá, pokud stroj podporuje zvýšenou rychlost USB připojení",
         "section": "carvera",
         "key": "usb_baud_rate",
         "default": "1500000",
@@ -309,16 +309,16 @@
     },
     {
         "type": "bool",
-        "title": "Estimate playback time remaining based on toolpaths",
-        "desc": "This feature adds additional parsing time after selecting a file.",
+        "title": "Odhadovat zbývající čas přehrávání podle drah nástroje",
+        "desc": "Tato funkce prodlužuje dobu zpracování po výběru souboru.",
         "section": "carvera",
         "key": "high_precision_reamining_time_estimate",
         "default": "true"
     },
     {
         "type": "bool",
-        "title": "Show tool changes on progress bar",
-        "desc": "Display tool change markers on the job playback progress bar.",
+        "title": "Zobrazovat výměny nástroje na ukazateli průběhu",
+        "desc": "Zobrazit značky výměny nástroje na ukazateli průběhu přehrávání úlohy.",
         "section": "carvera",
         "key": "show_playbar_tool_change_markers",
         "default": "true"

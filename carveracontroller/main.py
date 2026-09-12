@@ -3348,7 +3348,7 @@ class Makera(RelativeLayout):
 
     def load_controller_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), "controller_config.json")
-        with open(config_def_file) as file:
+        with open(config_def_file, encoding="utf-8") as file:
             controller_config_definition = json.load(file)
         controller_config = []
 
@@ -3366,7 +3366,7 @@ class Makera(RelativeLayout):
     def load_gcode_viewer_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), "gcode_viewer_config.json")
         try:
-            with open(config_def_file) as file:
+            with open(config_def_file, encoding="utf-8") as file:
                 gcode_viewer_config_definition = json.load(file)
         except Exception as e:
             logger.error(f"Failed to load gcode_viewer_config.json: {e}")
@@ -3385,7 +3385,7 @@ class Makera(RelativeLayout):
 
     def load_pendant_config(self):
         config_def_file = os.path.join(os.path.dirname(__file__), "pendant_config.json")
-        with open(config_def_file) as file:
+        with open(config_def_file, encoding="utf-8") as file:
             pendant_config_definition = json.load(file)
         pendant_config = []
         pendant_types_map = {}
