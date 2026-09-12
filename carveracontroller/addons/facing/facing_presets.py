@@ -18,6 +18,7 @@ from .facing_gcode import (
     PATTERN_RASTER_X,
     PATTERN_RASTER_Y,
     PATTERN_SPIRAL,
+    PATTERN_SPIRAL_ROUND,
 )
 from .stock_geometry import (
     STOCK_ORIGIN_CORNER_BL,
@@ -121,7 +122,7 @@ def normalize_preset_data(data: dict[str, Any]) -> dict[str, Any]:
     merged["stock_origin_corner"] = corner
 
     pat = str(merged.get("pattern", default_values.DEFAULT_PATTERN)).strip().lower()
-    if pat not in {PATTERN_RASTER_X, PATTERN_RASTER_Y, PATTERN_SPIRAL}:
+    if pat not in {PATTERN_RASTER_X, PATTERN_RASTER_Y, PATTERN_SPIRAL, PATTERN_SPIRAL_ROUND}:
         pat = default_values.DEFAULT_PATTERN
     merged["pattern"] = pat
 
@@ -164,7 +165,7 @@ def normalize_preset_data(data: dict[str, Any]) -> dict[str, Any]:
         d_s = int(default_values.DEFAULT_TXT["txt_spindle_dwell"])
     merged["txt_spindle_dwell"] = str(max(0, d_s))
 
-    if pat == PATTERN_SPIRAL and mill == MILLING_BOTH:
+    if pat in (PATTERN_SPIRAL, PATTERN_SPIRAL_ROUND) and mill == MILLING_BOTH:
         merged["milling_direction"] = MILLING_CLIMB
 
     merged["schema_version"] = PRESET_SCHEMA_VERSION
@@ -196,7 +197,7 @@ def preset_data_from_popup(popup: Any) -> dict[str, Any]:
     }
     for tk in TXT_KEYS:
         data[tk] = getattr(ids, tk).text
-    if data["pattern"] == PATTERN_SPIRAL and data["milling_direction"] == MILLING_BOTH:
+    if data["pattern"] in (PATTERN_SPIRAL, PATTERN_SPIRAL_ROUND) and data["milling_direction"] == MILLING_BOTH:
         data["milling_direction"] = MILLING_CLIMB
     return normalize_preset_data(data)
 
@@ -225,6 +226,7 @@ def apply_preset_data(popup: Any, data: dict[str, Any]) -> None:
     ids.raster_x_btn.state = "down" if pat == PATTERN_RASTER_X else "normal"
     ids.raster_y_btn.state = "down" if pat == PATTERN_RASTER_Y else "normal"
     ids.raster_spiral_btn.state = "down" if pat == PATTERN_SPIRAL else "normal"
+    ids.raster_round_btn.state = "down" if pat == PATTERN_SPIRAL_ROUND else "normal"
 
     popup._sync_milling_spinner_for_pattern()
 

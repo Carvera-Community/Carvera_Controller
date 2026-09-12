@@ -19,6 +19,58 @@ from kivy.uix.widget import Widget
 from .facing_gcode import FacingEnvelope
 from .probe_grid_gcode import ProbeGridGeometry
 
+_PREVIEW_POINT_BUDGET = 2000
+# sin of heading change; ~3° so 90° envelope corners are kept, dense collinear
+# samples on a wall are not.
+_PREVIEW_CORNER_SIN = 0.05
+
+
+def _preview_vertex_is_corner(
+    prev: tuple[float, float],
+    p: tuple[float, float],
+    nxt: tuple[float, float],
+) -> bool:
+    ax, ay = p[0] - prev[0], p[1] - prev[1]
+    bx, by = nxt[0] - p[0], nxt[1] - p[1]
+    la = math.hypot(ax, ay)
+    lb = math.hypot(bx, by)
+    if la < 1e-12 or lb < 1e-12:
+        return True
+    return abs(ax * by - ay * bx) / (la * lb) > _PREVIEW_CORNER_SIN
+
+
+def decimate_preview_polyline(
+    pts: list[tuple[float, float]],
+    max_points: int = _PREVIEW_POINT_BUDGET,
+) -> list[tuple[float, float]]:
+    """Thin a polyline by arc length without skipping corners.
+
+    Index striding (keep every Nth vertex) turns a 4-corner outer loop into a
+    diagonal across the facing area. Arc-length sampling alone can still skip a
+    90° corner when a long collapsed wall follows a short leftover on the
+    previous edge.
+    """
+    n = len(pts)
+    if n <= 2 or n <= max_points:
+        return pts
+    total = 0.0
+    for a, b in zip(pts, pts[1:]):
+        total += math.hypot(b[0] - a[0], b[1] - a[1])
+    spacing = total / max(max_points - 1, 1)
+    if spacing <= 1e-9:
+        return pts
+    out: list[tuple[float, float]] = [pts[0]]
+    acc = 0.0
+    for i in range(1, n):
+        acc += math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+        is_last = i == n - 1
+        corner = (not is_last) and _preview_vertex_is_corner(pts[i - 1], pts[i], pts[i + 1])
+        if acc >= spacing or corner or is_last:
+            if out[-1] != pts[i]:
+                out.append(pts[i])
+            acc = 0.0
+    return out
+
 
 class FacingXYPreviewSketch(Widget):
     """Redraw when pos/size change via geometry setter."""
@@ -143,9 +195,7 @@ class FacingXYPreviewSketch(Widget):
 
         if toolpath:
             flat = []
-            step = max(1, len(toolpath) // 400)
-            for i in range(0, len(toolpath), step):
-                x, y = toolpath[i]
+            for x, y in decimate_preview_polyline(toolpath):
                 qx, qy = px(x, y)
                 flat.extend([qx, qy])
             Color(0.95, 0.72, 0.35, 0.65)

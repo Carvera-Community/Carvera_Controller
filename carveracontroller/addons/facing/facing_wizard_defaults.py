@@ -34,6 +34,7 @@ DEFAULT_TXT: dict[str, str] = {
     "txt_rough_f": "1200",
     "txt_rough_plunge": "400",
     "txt_rough_step": "2",
+    "txt_path_radius": "0",
     "txt_rough_doc": "1",
     "txt_rough_total": "2",
     "txt_finish_f": "600",
