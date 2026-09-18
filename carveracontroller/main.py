@@ -6894,25 +6894,27 @@ class Makera(RelativeLayout):
         self.controller.setJogMode(Controller.JOG_MODE_STEP)
         self.ids.jog_mode_btn.text = tr._("Jog Mode:Step")
         App.get_running_app().jog_mode_text = tr._("Jog Mode:Step")
-        self.ids.step_xy.disabled = False
-        self.ids.step_a.disabled = False
-        self.ids.step_z.disabled = False
-        self.probing_popup.ids.step_xy.disabled = False
-        self.probing_popup.ids.step_a.disabled = False
-        self.probing_popup.ids.step_z.disabled = False
+        self._set_jog_step_inputs_disabled(False)
         self.update_pendant_jog_text()
 
     def update_ui_for_jog_mode_cont(self):
         self.controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
         self.ids.jog_mode_btn.text = tr._("Jog Mode:Continuous")
         App.get_running_app().jog_mode_text = tr._("Jog Mode:Continuous")
-        self.ids.step_xy.disabled = True
-        self.ids.step_a.disabled = True
-        self.ids.step_z.disabled = True
-        self.probing_popup.ids.step_xy.disabled = True
-        self.probing_popup.ids.step_a.disabled = True
-        self.probing_popup.ids.step_z.disabled = True
+        self._set_jog_step_inputs_disabled(True)
         self.update_pendant_jog_text()
+
+    def _set_jog_step_inputs_disabled(self, disabled: bool) -> None:
+        # Main window and probing popup
+        for ids_map in (self.ids, self.probing_popup.ids):
+            for name in ("step_xy", "step_a", "step_z"):
+                if name in ids_map:
+                    ids_map[name].disabled = disabled
+        # CMM workbench popup
+        cmm = getattr(self, "cmm_workbench_popup", None)
+        jog = getattr(cmm, "_jog_popup", None) if cmm is not None else None
+        if jog is not None and hasattr(jog, "set_step_widgets_disabled"):
+            jog.set_step_widgets_disabled(disabled)
 
     def _popup_prevents_jogging(self):
         modals = [self.probing_popup]

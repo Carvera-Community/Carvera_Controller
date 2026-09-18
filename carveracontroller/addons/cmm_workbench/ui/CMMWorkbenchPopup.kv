@@ -1039,6 +1039,9 @@
     background: ''
     background_color: 0, 0, 0, 0
     border: [0, 0, 0, 0]
+    step_xy: scan_jog_step_xy
+    step_z: scan_jog_step_z
+    step_a: scan_jog_step_a
 
     canvas.before:
         Color:
@@ -1117,9 +1120,9 @@
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
-                                    text: 'Y-'
+                                    text: 'Y+' if app.invert_y_axis_jogging else 'Y-'
                                     height: 46
-                                    on_press: app.root.controller.jog("Y-{}".format(scan_jog_step_xy.text))
+                                    on_press: app.root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', scan_jog_step_xy.text))
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                             GridBoxLayout:
@@ -1135,7 +1138,8 @@
                                     center: 0.5, 0.5
                                     size_hint_y: None
                                     height: dp(39)
-                                    text: '10'
+                                    text: app.jog_step_xy
+                                    on_text: app.jog_step_xy = self.text
                                     values: '10', '1', '0.1', '0.01', '0.005'
                                 Label:
                             GridBoxLayout:
@@ -1147,9 +1151,9 @@
                             GridBoxLayout:
                             GridBoxLayout:
                                 SmallRoundButton:
-                                    text: 'Y+'
+                                    text: 'Y-' if app.invert_y_axis_jogging else 'Y+'
                                     height: 46
-                                    on_press: app.root.controller.jog("Y{}".format(scan_jog_step_xy.text))
+                                    on_press: app.root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', scan_jog_step_xy.text))
                                     on_release: app.root.controller.stopContinuousJog()
                             GridBoxLayout:
                 BoxLayout:
@@ -1187,7 +1191,8 @@
                                 center: 0.5, 0.5
                                 size_hint_y: None
                                 height: dp(48)
-                                text: '90'
+                                text: app.jog_step_a
+                                on_text: app.jog_step_a = self.text
                                 values: '90', '10', '1', '0.1'
                             Label:
                         GridBoxLayout:
@@ -1197,7 +1202,8 @@
                                 center: 0.5, 0.5
                                 size_hint_y: None
                                 height: dp(48)
-                                text: '1'
+                                text: app.jog_step_z
+                                on_text: app.jog_step_z = self.text
                                 values: '10', '1', '0.1', '0.01', '0.005'
                             Label:
                         GridBoxLayout:

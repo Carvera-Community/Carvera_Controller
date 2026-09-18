@@ -9,7 +9,7 @@ from kivy.clock import Clock
 from kivy.factory import Factory
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp, sp
-from kivy.properties import BooleanProperty, StringProperty
+from kivy.properties import BooleanProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
@@ -109,16 +109,38 @@ if "CMMWorkbenchSketchVisibilityToggle" not in Factory.classes:
 
 
 class JogCMMWorkbenchPopup(ModalView):
+    step_xy = ObjectProperty(None)
+    step_z = ObjectProperty(None)
+    step_a = ObjectProperty(None)
     _jog_height_tracking_inited = False
 
     def on_kv_post(self, base_widget):
         super().on_kv_post(base_widget)
         Clock.schedule_once(self._ensure_jog_height_tracking, 0)
+        Clock.schedule_once(self._sync_step_widgets_disabled, 0)
 
     def on_open(self):
         super().on_open()
         Clock.schedule_once(self._snap_modal_height_to_inner, -1)
         Clock.schedule_once(self._snap_modal_height_to_inner, 0.05)
+        self._sync_step_widgets_disabled()
+
+    def allows_external_jog(self) -> bool:
+        """This overlay exists specifically to expose the jog controls."""
+        return self._is_open
+
+    def set_step_widgets_disabled(self, disabled: bool) -> None:
+        for name in ("step_xy", "step_a", "step_z"):
+            widget = getattr(self, name, None)
+            if widget is not None:
+                widget.disabled = disabled
+
+    def _sync_step_widgets_disabled(self, _dt=None):
+        app = App.get_running_app()
+        root = getattr(app, "root", None) if app is not None else None
+        controller = getattr(root, "controller", None)
+        disabled = getattr(controller, "jog_mode", None) == Controller.JOG_MODE_CONTINUOUS
+        self.set_step_widgets_disabled(disabled)
 
     def _snap_modal_height_to_inner(self, _dt=None):
         try:
