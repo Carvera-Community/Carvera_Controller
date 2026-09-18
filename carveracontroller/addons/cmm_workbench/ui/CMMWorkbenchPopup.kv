@@ -1039,6 +1039,9 @@
     background: ''
     background_color: 0, 0, 0, 0
     border: [0, 0, 0, 0]
+    step_xy: scan_jog_step_xy
+    step_z: scan_jog_step_z
+    step_a: scan_jog_step_a
 
     canvas.before:
         Color:
@@ -1135,7 +1138,8 @@
                                     center: 0.5, 0.5
                                     size_hint_y: None
                                     height: dp(39)
-                                    text: '10'
+                                    text: app.jog_step_xy
+                                    on_text: app.jog_step_xy = self.text
                                     values: '10', '1', '0.1', '0.01', '0.005'
                                 Label:
                             GridBoxLayout:
@@ -1187,7 +1191,8 @@
                                 center: 0.5, 0.5
                                 size_hint_y: None
                                 height: dp(48)
-                                text: '90'
+                                text: app.jog_step_a
+                                on_text: app.jog_step_a = self.text
                                 values: '90', '10', '1', '0.1'
                             Label:
                         GridBoxLayout:
@@ -1197,7 +1202,8 @@
                                 center: 0.5, 0.5
                                 size_hint_y: None
                                 height: dp(48)
-                                text: '1'
+                                text: app.jog_step_z
+                                on_text: app.jog_step_z = self.text
                                 values: '10', '1', '0.1', '0.01', '0.005'
                             Label:
                         GridBoxLayout:
