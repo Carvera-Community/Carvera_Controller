@@ -1,5 +1,8 @@
 """Tests for the G-code helpers exposed by the CNC module."""
 
+import math
+
+from carveracontroller.addons.stock.stock_geometry import rotate_yz
 from carveracontroller.CNC import CNC, LASER_TOOL_NUMBER, detect_document_unit, unit_scale_to_mm
 
 
@@ -143,6 +146,52 @@ class TestOffAxisYCounts:
         assert cnc.feed_move_count == 0
         assert cnc.off_axis_y_count == 0
         assert not cnc.has_off_axis_y
+
+
+def _world_xyz(pt):
+    y, z = rotate_yz(pt[1], pt[2], pt[3])
+    return (pt[0], y, z)
+
+
+class TestMotionPathSampling:
+    def test_three_axis_g1_emits_endpoint_only(self):
+        cnc = CNC()
+        _parse_lines(cnc, ["G90 G21", "G0 X0 Y0 Z5", "G1 X100 F1000"])
+        assert len(cnc.coordinates) == 2
+        assert cnc.coordinates[-1][0] == 100.0
+
+    def test_wrapping_g1_samples_within_sagitta(self):
+        cnc = CNC()
+        _parse_lines(cnc, ["G90 G21", "G0 X0 Y0 Z5 A0", "G1 X10 A90 F200"])
+        assert len(cnc.coordinates) > 2
+        for a, b in zip(cnc.coordinates, cnc.coordinates[1:]):
+            w0 = _world_xyz(a)
+            w1 = _world_xyz(b)
+            mid_a = [0.5 * (a[i] + b[i]) for i in range(4)]
+            ty, tz = rotate_yz(mid_a[1], mid_a[2], mid_a[3])
+            true_mid = (mid_a[0], ty, tz)
+            chord_mid = tuple(0.5 * (w0[i] + w1[i]) for i in range(3))
+            err = math.hypot(
+                chord_mid[0] - true_mid[0],
+                chord_mid[1] - true_mid[1],
+                chord_mid[2] - true_mid[2],
+            )
+            assert err <= CNC.accuracy * 1.5
+
+    def test_feed_move_count_is_per_command_not_samples(self):
+        cnc = CNC()
+        _parse_lines(
+            cnc,
+            [
+                "G90 G21",
+                "G0 X0 Y0 Z5 A0",
+                "G1 X10 A90 F200",
+                "G1 X20 A180",
+                "G1 X30 A270",
+            ],
+        )
+        assert cnc.feed_move_count == 3
+        assert len(cnc.coordinates) > 4
 
 
 def test_has_off_axis_y_ignores_outliers():

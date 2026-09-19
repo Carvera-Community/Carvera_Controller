@@ -665,18 +665,20 @@ class CNC:
 
         # Execute g-code
         if self.gcode in (0, 1):  # fast move or line
-            # If any axis is moving, interpolate all axes including A
             if self.dx != 0.0 or self.dy != 0.0 or self.dz != 0.0 or self.da != 0.0:
-                # Determine the number of interpolation steps based on the largest movement
-                max_delta = max(abs(self.dx), abs(self.dy), abs(self.dz), abs(self.da))
-                steps = max(int(max_delta / 0.5), 1)  # 0.5 is an arbitrary resolution, adjust as needed
-                for i in range(1, steps + 1):
-                    t = i / steps
-                    x = self.x + t * self.dx
-                    y = self.y + t * self.dy
-                    z = self.z + t * self.dz
-                    a = self.a + t * self.da
-                    xyz.append((x, y, z, a))
+                # 3-axis move: directly use target position
+                # A axis rotation: densify so the helix around X stays within the same sagitta budget as G2/G3 (CNC.accuracy).
+                if abs(self.da) < 1e-12:
+                    xyz.append((self.xval, self.yval, self.zval, self.aval))
+                else:
+                    steps = self._rotary_sagitta_steps()
+                    for i in range(1, steps + 1):
+                        t = i / steps
+                        x = self.x + t * self.dx
+                        y = self.y + t * self.dy
+                        z = self.z + t * self.dz
+                        a = self.a + t * self.da
+                        xyz.append((x, y, z, a))
 
         elif self.gcode in (2, 3):  # CW = 2, CCW = 3 circle
             uc, vc = self.motionCenter()
@@ -805,6 +807,23 @@ class CNC:
                 z = clearz
                 xyz.append((x, y, z, a))  # ???
         return xyz
+
+    def _rotary_sagitta_steps(self):
+        """Samples along ΔA so world-space helix sagitta stays within ``CNC.accuracy``"""
+        r = max(math.hypot(self.y, self.z), math.hypot(self.yval, self.zval), 1e-9)
+        da_rad = abs(math.radians(self.da))
+        try:
+            sagitta = 1.0 - CNC.accuracy / r
+        except ZeroDivisionError:
+            sagitta = 0.0
+        if 0.0 < sagitta < 1.0:
+            df = 2.0 * math.acos(sagitta)
+            df = min(df, math.pi / 4.0)
+        else:
+            df = math.pi / 4.0
+        if df < 1e-12:
+            df = math.pi / 4.0
+        return max(int(math.ceil(da_rad / df)), 1)
 
     # ----------------------------------------------------------------------
     # move to end position

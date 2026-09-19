@@ -145,6 +145,31 @@ def test_rapid_xyz_plus_a_clamps_to_a_max():
     assert clamped[-1] == pytest.approx(12.0)
 
 
+def test_parsed_long_g1_time_is_length_over_feed():
+    cnc = CNC()
+    lines = [
+        "G90 G21",
+        "G0 X0 Y0 Z5",
+        "G1 X100 F1000",
+    ]
+    for i, line in enumerate(lines, 1):
+        cnc.parseLine(line, i)
+
+    assert len(cnc.coordinates) == 2
+    raw = []
+    angles = []
+    feeds = []
+    linenumbers = []
+    for pt in cnc.coordinates:
+        raw.extend([pt[0], pt[1], pt[2]])
+        angles.append(pt[3])
+        feeds.append(float(pt[7]) if pt[7] else 0.0)
+        linenumbers.append(pt[5])
+
+    times = _compute_line_times_worker(raw, linenumbers, feeds, None, 0, angles)
+    assert times[-1] == pytest.approx(100.0 / 1000.0 * 60.0)
+
+
 def test_parsed_a_only_g1_is_surface_time():
     cnc = CNC()
     lines = [

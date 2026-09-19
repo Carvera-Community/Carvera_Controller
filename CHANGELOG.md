@@ -25,6 +25,7 @@
 - Change: Replace the G-code first/previous/next/last buttons with a compact page bar that shows the current page and line range, and hides when the file fits on one page
 - Change: The WCS button now shows rotation in the subtext, alternating with the WCS name when a description is set.
 - Change: Add support for iOS 27
+- Change: Stop splitting 3-axis G0/G1 moves every 0.5mm and split A-axis moves using the same tolerance as G2/G3 instead of every 0.5°
 - Fixed: Harden the gcode parser against "zero length" movement, and prevent division by zero in play slider
 - Fixed: Time estimates ignoring speed for some 4th-axis moves
 - Fixed: Allow to select the bottom element of the MDI, Gcode and probing confirmation lists
