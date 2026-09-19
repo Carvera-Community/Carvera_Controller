@@ -52,6 +52,12 @@ varying float vs_vertex_z;
 
 // Kivy uniforms are float-only; -1 means show the full toolpath
 uniform float display_count;
+// Ghost: path_alpha is the floor; path_alpha_recent is the playhead peak.
+// When they differ, alpha ramps up over the last path_fade_span of path_fade_now.
+uniform float path_alpha;
+uniform float path_alpha_recent;
+uniform float path_fade_now;
+uniform float path_fade_span;
 // 0 = move type, 1 = tool, 2 = feed speed, 3 = Z height
 uniform float color_scheme;
 uniform float feed_min;
@@ -242,5 +248,12 @@ void main()
         float t = clamp((vs_vertex_z - z_min) / span, 0.0, 1.0);
         color = speed_colormap(t);
     }
-    gl_FragColor = vec4(color, 1.0) * texture2D(texture0, tex_coord0);
+    float alpha = path_alpha;
+    if (path_alpha_recent - path_alpha > 0.001 && path_fade_span > 1e-6) {
+        float t = clamp(1.0 - (path_fade_now - vs_distance_id) / path_fade_span, 0.0, 1.0);
+        // Cubic keep older path near the floor until close to the playhead.
+        t = t * t * t;
+        alpha = mix(path_alpha, path_alpha_recent, t);
+    }
+    gl_FragColor = vec4(color, alpha) * texture2D(texture0, tex_coord0);
 }

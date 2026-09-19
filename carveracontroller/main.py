@@ -2084,6 +2084,7 @@ class GcodeViewerDisplayMenuButton(ButtonBehavior, BoxLayout):
 class GcodeViewerDisplayDropDown(ToolTipDropDown):
     show_grid = BooleanProperty(True)
     ortho_projection = BooleanProperty(False)
+    show_ghost = BooleanProperty(False)
     show_stock = BooleanProperty(False)
     show_bed = BooleanProperty(False)
 
@@ -3036,6 +3037,7 @@ class Makera(RelativeLayout):
         self.gcode_viewer.bind(sim_hud_text=self._on_viewer_sim_hud_text)
         self._on_viewer_sim_hud_text(self.gcode_viewer, self.gcode_viewer.sim_hud_text)
         self.gcode_viewer_display_drop_down.show_grid = self.gcode_viewer.is_grid_visible()
+        self.gcode_viewer_display_drop_down.show_ghost = self.gcode_viewer.is_path_ghosted()
         self.gcode_viewer.bind(stock_visible=self._on_viewer_stock_visible)
         self._on_viewer_stock_visible(self.gcode_viewer, self.gcode_viewer.stock_visible)
         self.gcode_viewer.bind(bed_visible=self._on_viewer_bed_visible)
@@ -9314,6 +9316,8 @@ def set_config_defaults(default_lang):
     # G-code viewer defaults
     if not Config.has_option("carvera", "gcode_auto_show_stock"):
         Config.set("carvera", "gcode_auto_show_stock", "1")
+    if not Config.has_option("carvera", "gcode_viewer_ghost_paths"):
+        Config.set("carvera", "gcode_viewer_ghost_paths", "0")
     if not Config.has_option("carvera", "gcode_highlight_enabled"):
         Config.set("carvera", "gcode_highlight_enabled", "1")
     if not Config.has_option("carvera", "gcode_color_comment"):

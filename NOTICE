@@ -235,5 +235,11 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/link-variant/
    - Used in: carveracontroller/data/link-variant.png
 
+27. ghost-outline.png
+   - Author: Pictogrammers
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/ghost-outline/
+   - Used in: carveracontroller/data/GcodeViewer/ghost.png
+
 ===============================================================================
 Please see the respective license files for detailed information.

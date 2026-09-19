@@ -226,6 +226,14 @@ def bbox_max_side_length(min_pt, max_pt):
     return m
 
 
+def bbox_diagonal(min_pt, max_pt):
+    """Length of the bounding-box diagonal, or 0 if empty/invalid."""
+    d = hypot(max_pt[0] - min_pt[0], max_pt[1] - min_pt[1], max_pt[2] - min_pt[2])
+    if d <= 0.0 or not isfinite(d):
+        return 0.0
+    return d
+
+
 def vec3_distance(v1, v2):
     v3 = vec3_sub(v1, v2)
     return vec3_len(v3)
@@ -387,6 +395,10 @@ def speed_colormap_rgb(t):
 
 GRID_QUAD_MIN_SIZE = 10.0
 CONFIG_GRID_VISIBLE_KEY = "gcode_viewer_show_grid"
+CONFIG_GHOST_PATHS_KEY = "gcode_viewer_ghost_paths"
+PATH_GHOST_ALPHA = 0.08
+PATH_GHOST_RECENT_ALPHA = 1.0
+PATH_GHOST_RECENT_PART_FRACTION = 3.0
 VIEW_CUBE_SIZE = dp(96)
 VIEW_CUBE_MARGIN = dp(10)
 VIEW_CUBE_TOOLBAR_INSET = dp(48)
@@ -828,6 +840,8 @@ class GCodeViewer(Widget):
         self._proj_matrix = Matrix()
         self.m_viewMatrix = Matrix()
         self._grid_visible = Config.getboolean("carvera", CONFIG_GRID_VISIBLE_KEY, fallback=True)
+        self._path_ghosted = Config.getboolean("carvera", CONFIG_GHOST_PATHS_KEY, fallback=False)
+        self._apply_path_alpha_uniform()
         self._viewer_meshes_active = False
 
         self.viewcubemesh["texture0"] = VIEW_CUBE_TEXTURE_UNIT
@@ -1279,8 +1293,10 @@ class GCodeViewer(Widget):
             with self.canvas:
                 with self.linemesh:
                     self.cb = Callback(self.setup_gl_context)
+                    Callback(self._setup_path_gl)
                     for mesh in self.meshmanager.meshes:
                         Mesh(fmt=ff, vertices=mesh[0], indices=mesh[1], mode="line_strip")
+                    Callback(self._reset_path_gl)
 
                     self.cb = Callback(None)
 
@@ -1345,6 +1361,7 @@ class GCodeViewer(Widget):
 
             # rendering line meshes
             self.linemesh["display_count"] = -1.0
+            self._apply_path_alpha_uniform()
             self.reset_visibility_filters()
 
             self.pointermesh["offset"] = (-self.lines_center[0], -self.lines_center[1], -self.lines_center[2])
@@ -2676,6 +2693,7 @@ class GCodeViewer(Widget):
                 self.display_count = self.display_count + self.add_dir
 
         self.linemesh["display_count"] = float(self.display_count)
+        self._apply_path_alpha_uniform()
 
         # which segment we are located
         cur_display_distance = float(self.display_count)
@@ -2889,6 +2907,85 @@ class GCodeViewer(Widget):
 
     def is_grid_visible(self):
         return self._grid_visible
+
+    def _path_fade_now(self):
+        """Playhead distance used for Ghost recency; full-path (-1) fades toward the end."""
+        total = 0.0
+        lengths = getattr(self, "lengths", None)
+        if lengths:
+            total = float(lengths[-1])
+        now = float(getattr(self, "display_count", 0.0) or 0.0)
+        mesh = getattr(self, "linemesh", None)
+        if mesh is not None:
+            try:
+                shader_now = float(mesh["display_count"])
+            except (KeyError, TypeError, ValueError):
+                shader_now = now
+            if shader_now < 0.0:
+                return total
+        if now < 0.0:
+            return total
+        if total > 0.0:
+            return min(max(now, 0.0), total)
+        return max(now, 0.0)
+
+    def _path_part_diagonal_scaled(self):
+        """Toolpath AABB diagonal in the same scaled units as display_count / lengths."""
+        manager = getattr(self, "meshmanager", None)
+        if manager is None:
+            return 0.0
+        min_pt = getattr(manager, "min_pt", None)
+        max_pt = getattr(manager, "max_pt", None)
+        if min_pt is None or max_pt is None:
+            return 0.0
+        diag = bbox_diagonal(min_pt, max_pt)
+        if diag <= 0.0:
+            return 0.0
+        scale = float(getattr(manager, "position_scale", 0.0) or 0.0)
+        if scale <= 0.0:
+            scale = float(getattr(self, "move_scale_by_positon", 0.0) or 0.0)
+        if scale <= 0.0:
+            return 0.0
+        return diag * scale
+
+    def _path_ghost_span(self, now):
+        """Ghost recency length: one part-diagonal of travel, never longer than the playhead."""
+        part = self._path_part_diagonal_scaled() * PATH_GHOST_RECENT_PART_FRACTION
+        if now > 0.0 and part > 0.0:
+            return float(min(part, now))
+        return 1e-6
+
+    def _apply_path_alpha_uniform(self):
+        if getattr(self, "linemesh", None) is None:
+            return
+        ghost = bool(getattr(self, "_path_ghosted", False))
+        now = self._path_fade_now()
+        self.linemesh["path_alpha"] = PATH_GHOST_ALPHA if ghost else 1.0
+        self.linemesh["path_alpha_recent"] = PATH_GHOST_RECENT_ALPHA if ghost else 1.0
+        self.linemesh["path_fade_now"] = float(now)
+        self.linemesh["path_fade_span"] = float(self._path_ghost_span(now) if ghost else 1.0)
+
+    def _setup_path_gl(self, *_args):
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        # Ghosted lines must not stamp depth, otherwise overlapping wraps and stock stay hidden.
+        glDepthMask(GL_FALSE if self._path_ghosted else GL_TRUE)
+
+    def _reset_path_gl(self, *_args):
+        glDepthMask(GL_TRUE)
+
+    def set_path_ghosted(self, enabled=True):
+        enabled = bool(enabled)
+        if enabled == self._path_ghosted:
+            return
+        self._path_ghosted = enabled
+        Config.set("carvera", CONFIG_GHOST_PATHS_KEY, "1" if enabled else "0")
+        Config.write()
+        self._apply_path_alpha_uniform()
+        self._scene_dirty = True
+
+    def is_path_ghosted(self):
+        return self._path_ghosted
 
     def _ortho_zoom_factor(self):
         """Ortho zoom is r/PROJ_NEAR larger than perspective for the same apparent

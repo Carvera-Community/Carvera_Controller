@@ -1263,6 +1263,14 @@
             root.ortho_projection = not root.ortho_projection
             app.root.gcode_viewer.set_ortho_projection(root.ortho_projection)
     GcodeViewerDisplayMenuButton:
+        icon: 'data/GcodeViewer/ghost.png'
+        text: tr._('Ghost')
+        active: root.show_ghost
+        disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
+        on_release:
+            root.show_ghost = not root.show_ghost
+            app.root.gcode_viewer.set_path_ghosted(root.show_ghost)
+    GcodeViewerDisplayMenuButton:
         icon: 'data/GcodeViewer/stock.png'
         text: tr._('Stock...')
         active: root.show_stock
