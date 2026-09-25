@@ -46,8 +46,10 @@
             pos: self.pos
             size: (self.width - dp(5)) * (self.value / 100.0) + 5 if self.width > 0 else 0, self.height if self.width > 0 else 0
 
-<MCQCheckBox@CheckBox>:
+<CheckBox>:
     color: 255, 255, 255, 1
+
+<MCQCheckBox@CheckBox>:
     size_hint: 0.15, 1
 
 <MCQLabel@ButtonBehavior+Label>:
