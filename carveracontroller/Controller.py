@@ -34,6 +34,8 @@ except ImportError:
 
 STREAM_POLL = 0.2  # s
 DIAGNOSE_POLL = 0.5  # s
+# Probe an idle transport on this cadence. A tight send loop must not ioctl every spin.
+LINK_CHECK_INTERVAL = 0.5  # s
 RX_BUFFER_SIZE = 128
 
 GPAT = re.compile(r"[A-Za-z]\s*[-+]?\d+.*")
@@ -1614,10 +1616,9 @@ class Controller:
         self.comms.reset()
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[CNC.vars["state"]]
-
-        # Start reconnection if enabled (WiFi or USB; callback resolves the method).
-        if self.reconnect_enabled and self.reconnect_callback:
-            self.start_reconnection()
+        # Signal the UI thread so monitorSerial → updateStatus picks up the
+        # NOT_CONNECTED transition (reconnection popup, state cleanup, etc.).
+        self.posUpdate = True
 
     def close_manual(self):
         """Close connection manually (user initiated) - don't auto-reconnect"""
@@ -1656,49 +1657,18 @@ class Controller:
         self.cancel_reconnect_callback = cancel_callback
         self.reconnect_success_callback = success_callback
 
-    def start_reconnection(self):
-        """Start the reconnection process"""
-        if not self.reconnect_enabled or not self.reconnect_callback:
-            return
-
-        self.reconnect_countdown = self.reconnect_wait_time
-        self.reconnect_attempts_remaining = self.reconnect_attempts
-
-        # Schedule the first reconnection attempt
-        if self.reconnect_timer:
-            self.reconnect_timer.cancel()
-        self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
-        self.reconnect_timer.start()
-
-    def attempt_reconnect(self):
-        """Attempt to reconnect"""
-        self.reconnect_attempts_remaining -= 1
-
-        # Try to reconnect using the callback
-        if self.reconnect_callback:
-            self.reconnect_callback()
-
-        # Schedule next attempt if there are more attempts remaining
-        if self.reconnect_attempts_remaining > 0:
-            if self.reconnect_timer:
-                self.reconnect_timer.cancel()
-            self.reconnect_timer = threading.Timer(self.reconnect_wait_time, self.attempt_reconnect)
-            self.reconnect_timer.start()
-        else:
-            # All attempts exhausted, call the cancel callback
-            if self.cancel_reconnect_callback:
-                self.cancel_reconnect_callback()
-
     def cancel_reconnection(self):
-        """Cancel the reconnection process"""
-        if self.reconnect_timer:
-            self.reconnect_timer.cancel()
-            self.reconnect_timer = None
-        # Reset reconnection state
+        """Stop a leftover controller retry timer.
+
+        ReconnectionPopup owns attempts and reports failure itself. Calling the
+        cancel callback here used to surface "auto-reconnection failed" on a
+        successful reconnect and on shutdown.
+        """
+        timer = self.reconnect_timer
+        self.reconnect_timer = None
         self.reconnect_countdown = 0
-        self.reconnect_attempts_remaining = 0
-        if self.cancel_reconnect_callback:
-            self.cancel_reconnect_callback()
+        if timer is not None:
+            timer.cancel()
 
     def notify_reconnection_success(self):
         """Notify that reconnection was successful"""
@@ -2187,6 +2157,27 @@ class Controller:
                     self.load_buffer.put(line2)
                     self.load_buffer_size += len(line2) + 1
 
+    def _link_lost(self):
+        """Close when the active transport reports the link is down.
+
+        Returns True when ``streamIO`` should leave its loop. A probe that
+        raises is treated as link loss so the I/O thread cannot die with the
+        session still marked open.
+        """
+        stream = self.stream
+        if stream is None:
+            return False
+        try:
+            up = stream.is_link_up()
+        except Exception:
+            logger.exception("Link probe failed — closing connection")
+            up = False
+        if up:
+            return False
+        logger.error("Transport link lost — closing connection")
+        self.close()
+        return True
+
     # ----------------------------------------------------------------------
     # thread performing I/O on serial line
     # ----------------------------------------------------------------------
@@ -2196,6 +2187,7 @@ class Controller:
         dynamic_delay = 0.1
         tr = td = time.time()
         last_error = ""
+        last_link_check = 0.0
 
         while not self.stop.is_set():
             if not self.stream or self.paused:
@@ -2225,8 +2217,23 @@ class Controller:
                         allow_wire_switch = self.sendNUM == 0 and self.loadNUM == 0
                         for message in self.comms.feed(data, allow_wire_switch=allow_wire_switch):
                             self._handle_protocol_message(message)
-                    dynamic_delay = 0
+                        dynamic_delay = 0
+                    elif self._link_lost():
+                        # Readable socket/port returned no data — link is dead
+                        # (e.g. TCP peer sent FIN, or USB port vanished).
+                        break
+                    else:
+                        # Readable but empty while the link is still up. Sleep
+                        # so a disagreeing probe cannot peg a core.
+                        dynamic_delay = 0.05
                 else:
+                    # Idle fds are not "readable", so a dead USB port that
+                    # returns 0 bytes, or a TCP socket the kernel has since
+                    # failed, would otherwise never be probed.
+                    if t - last_link_check >= LINK_CHECK_INTERVAL:
+                        last_link_check = t
+                        if self._link_lost():
+                            break
                     if self.sendNUM == 0 and self.loadNUM == 0:
                         dynamic_delay = 0.1 if dynamic_delay >= 0.09 else dynamic_delay + 0.01
                     else:
@@ -2241,6 +2248,8 @@ class Controller:
                 if last_error != exc_msg:
                     self.log.put((Controller.MSG_ERROR, exc_msg))
                     last_error = exc_msg
+                if self._link_lost():
+                    break
 
             if dynamic_delay > 0:
                 time.sleep(dynamic_delay)

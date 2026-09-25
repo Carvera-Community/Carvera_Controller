@@ -13,6 +13,22 @@ TCP_PORT = 2222
 UDP_PORT = 3333
 BUFFER_SIZE = 1024
 SOCKET_TIMEOUT = 0.3  # s
+# Bound how long unacknowledged data (status polls included) may sit before the
+# kernel drops the connection. SO_KEEPALIVE alone never fires while we keep
+# writing "?" every poll interval.
+_LINK_LOSS_SEC = 8
+# TCP_RXT_CONNDROPTIME from macOS <netinet/tcp.h>. CPython does not export it.
+_TCP_RXT_CONNDROPTIME_DARWIN = 0x80
+
+
+def _tcp_option(name, darwin=None):
+    """Return a TCP socket option constant, including Darwin values CPython omits."""
+    value = getattr(socket, name, None)
+    if value is not None:
+        return value
+    if sys.platform == "darwin" and darwin is not None:
+        return darwin
+    return None
 
 
 # ==============================================================================
@@ -108,8 +124,46 @@ class WIFIStream:
         self.socket.settimeout(2)
         self.socket.connect((address.split(":")[0], (int)(address.split(":")[1]) if len(ip_port) > 1 else TCP_PORT))
         self.socket.settimeout(SOCKET_TIMEOUT)
+        self._arm_link_loss_detection()
 
         return True
+
+    def _arm_link_loss_detection(self):
+        """Ask the kernel to fail a socket whose peer has stopped answering.
+
+        Status polls write continuously, so an idle keepalive never starts.
+        ``TCP_USER_TIMEOUT`` (Linux) and ``TCP_RXT_CONNDROPTIME`` (macOS) limit
+        how long sent data may go unacknowledged. Keepalive still covers a
+        paused connection that is not writing.
+        """
+        sock = self.socket
+        if sock is None:
+            return
+        tcp = socket.IPPROTO_TCP
+        options = [(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)]
+        idle = _tcp_option("TCP_KEEPIDLE", darwin=socket.TCP_KEEPALIVE if hasattr(socket, "TCP_KEEPALIVE") else None)
+        if idle is not None:
+            options.append((tcp, idle, _LINK_LOSS_SEC))
+        interval = _tcp_option("TCP_KEEPINTVL")
+        if interval is not None:
+            options.append((tcp, interval, 1))
+        count = _tcp_option("TCP_KEEPCNT")
+        if count is not None:
+            options.append((tcp, count, 3))
+        user_timeout = _tcp_option("TCP_USER_TIMEOUT")
+        if user_timeout is not None:
+            options.append((tcp, user_timeout, _LINK_LOSS_SEC * 1000))
+        rxt_drop = _tcp_option("TCP_RXT_CONNDROPTIME", darwin=_TCP_RXT_CONNDROPTIME_DARWIN)
+        if rxt_drop is not None:
+            options.append((tcp, rxt_drop, _LINK_LOSS_SEC))
+        maxrt = _tcp_option("TCP_MAXRT")
+        if maxrt is not None:
+            options.append((tcp, maxrt, _LINK_LOSS_SEC))
+        for level, opt, value in options:
+            try:
+                sock.setsockopt(level, opt, value)
+            except OSError:
+                logger.debug("Socket option %s=%s was not applied", opt, value, exc_info=True)
 
     # ----------------------------------------------------------------------
     def close(self):
@@ -136,6 +190,31 @@ class WIFIStream:
         # Get the list sockets which are readable
         read_sockets, write_sockets, error_sockets = select.select(socket_list, [], [], 0)
         return any(sock == self.socket for sock in read_sockets)
+
+    # ----------------------------------------------------------------------
+    def is_link_up(self):
+        """Return True if the TCP connection is still alive.
+
+        An idle socket is reported up. A peer that vanished without FIN/RST
+        stays up until the kernel retransmission limit armed in ``open``
+        fails the socket; the next probe or read then returns False.
+        """
+        if self.socket is None:
+            return False
+        try:
+            # select for error condition; also peek for closed-by-peer.
+            r, _, e = select.select([self.socket], [], [self.socket], 0)
+            if e:
+                return False
+            if r:
+                # Socket is readable — peek without consuming.  Zero bytes
+                # from recv(…, MSG_PEEK) means the peer sent FIN.
+                data = self.socket.recv(1, socket.MSG_PEEK)
+                if not data:
+                    return False
+            return True
+        except (OSError, ValueError):
+            return False
 
     # ----------------------------------------------------------------------
     def getc(self, size, timeout=0.5):

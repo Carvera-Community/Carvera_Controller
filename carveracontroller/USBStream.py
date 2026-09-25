@@ -186,6 +186,27 @@ class USBStream:
         return self.serial.in_waiting
 
     # ----------------------------------------------------------------------
+    def is_link_up(self):
+        """Return True if the serial port is still open and present.
+
+        ``serial.is_open`` is only an internal flag (tracks whether .close()
+        was called) and stays True after a physical USB unplug.  Probing
+        ``in_waiting`` forces an ioctl on the fd and raises OSError (e.g.
+        errno 6 "Device not configured" on macOS) when the device is gone.
+        """
+        if self.serial is None:
+            return False
+        try:
+            if not self.serial.is_open:
+                return False
+            _ = self.serial.in_waiting  # ioctl probe — raises on dead device
+            return True
+        except OSError:
+            # SerialException subclasses OSError. Other errors propagate so a
+            # bug in the probe is not reported as a dead cable.
+            return False
+
+    # ----------------------------------------------------------------------
     def getc(self, size, timeout=1):
         if self.serial is None:
             return None

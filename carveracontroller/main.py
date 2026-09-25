@@ -558,15 +558,27 @@ class ReconnectionPopup(ModalView):
         self.wait_time = 10
         self.cancel_callback = None
         self.reconnect_callback = None
+        # Button press. Auto-retry uses reconnect_callback and stays quiet.
+        self.manual_reconnect_callback = None
+        # Returns True while a connect attempt is still opening.
+        self.in_progress = None
 
-    def start_countdown(self, max_attempts, wait_time, reconnect_callback, cancel_callback):
-        """Start auto-reconnect countdown mode"""
+    def start_countdown(
+        self, max_attempts, wait_time, reconnect_callback, cancel_callback, in_progress=None, manual_callback=None
+    ):
+        """Start auto-reconnect countdown mode.
+
+        ``reconnect_callback`` is the quiet auto-retry. ``manual_callback`` is
+        the Reconnect now button and reports why a try failed.
+        """
         self.auto_reconnect_mode = True
         self.max_attempts = max_attempts
         self.current_attempt = 0
         self.wait_time = wait_time
         self.reconnect_callback = reconnect_callback
+        self.manual_reconnect_callback = manual_callback or reconnect_callback
         self.cancel_callback = cancel_callback
+        self.in_progress = in_progress
         self.countdown = wait_time
         self.update_display()
 
@@ -574,6 +586,8 @@ class ReconnectionPopup(ModalView):
         """Show manual reconnect mode (no countdown)"""
         self.auto_reconnect_mode = False
         self.reconnect_callback = reconnect_callback
+        self.manual_reconnect_callback = reconnect_callback
+        self.in_progress = None
         self.update_display()
 
     def update_display(self):
@@ -593,17 +607,26 @@ class ReconnectionPopup(ModalView):
         if self.countdown > 0:
             self.countdown -= 1
             self.update_display()
-        else:
+            return
+
+        if self.in_progress is not None and self.in_progress():
+            # USB open runs on a worker. Counting this tick would burn an
+            # attempt that returned immediately, and the last tick would
+            # declare failure while that open is still in flight.
             self.countdown = self.wait_time
-            self.current_attempt += 1
-            if self.current_attempt <= self.max_attempts:
-                if self.reconnect_callback:
-                    self.reconnect_callback()
-                # Only call cancel_callback after the last attempt has been made
-                if self.current_attempt >= self.max_attempts:
-                    self.dismiss()
-                    if self.cancel_callback:
-                        self.cancel_callback()
+            self.update_display()
+            return
+
+        self.countdown = self.wait_time
+        self.current_attempt += 1
+        if self.current_attempt <= self.max_attempts:
+            if self.reconnect_callback:
+                self.reconnect_callback()
+            # Only call cancel_callback after the last attempt has been made
+            if self.current_attempt >= self.max_attempts:
+                self.dismiss()
+                if self.cancel_callback:
+                    self.cancel_callback()
 
     def cancel_reconnect(self):
         self.dismiss()
@@ -611,9 +634,10 @@ class ReconnectionPopup(ModalView):
             self.cancel_callback()
 
     def reconnect(self):
-        """Handle reconnect button press"""
-        if self.reconnect_callback:
-            self.reconnect_callback()
+        """Handle reconnect button press. Surfaces connection errors."""
+        callback = self.manual_reconnect_callback or self.reconnect_callback
+        if callback:
+            callback()
         self.dismiss()
 
     def on_dismiss(self):
@@ -2913,6 +2937,7 @@ class Makera(RelativeLayout):
     pausing = 0
     waiting = 0
     tooling = 0
+    comms_waiting = 0
     loading_dir = ""
 
     stop = threading.Event()
@@ -3731,6 +3756,13 @@ class Makera(RelativeLayout):
             self.status_data_view.color = STATECOLOR["Disable"]
             self.tooling = 1
 
+        if self.comms_waiting == 1:
+            self.status_data_view.color = STATECOLOR["Wait"]
+            self.comms_waiting = 2
+        elif self.comms_waiting == 2:
+            self.status_data_view.color = STATECOLOR["Disable"]
+            self.comms_waiting = 1
+
         # check heartbeat
         if self.controller.sendNUM != 0 or self.controller.loadNUM != 0:
             self.heartbeat_time = time.time()
@@ -3756,32 +3788,14 @@ class Makera(RelativeLayout):
             return
 
         if time.time() - self.heartbeat_time > HEARTBEAT_TIMEOUT and self.controller.stream:
-            logger.error("Connection to machine lost")
-            # Check reconnection configuration (only if not a manual disconnect and not already reconnecting)
-            if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
-                auto_reconnect_enabled = Config.getboolean("carvera", "auto_reconnect_enabled", fallback=True)
-                reconnect_wait_time = Config.getint("carvera", "reconnect_wait_time", fallback=10)
-                reconnect_attempts = Config.getint("carvera", "reconnect_attempts", fallback=3)
-
-                # Update controller reconnection settings
-                self.controller.set_reconnection_config(auto_reconnect_enabled, reconnect_wait_time, reconnect_attempts)
-
-                if auto_reconnect_enabled:
-                    # Show reconnection popup with countdown (WiFi or USB)
-                    self.reconnection_popup.start_countdown(
-                        reconnect_attempts, reconnect_wait_time, self.attempt_reconnect, self.on_reconnect_failed
-                    )
-                    self.reconnection_popup.open()
-
-                    # Start countdown timer
-                    Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
-                else:
-                    # Show reconnection popup in manual mode
-                    self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
-                    self.reconnection_popup.open()
-
-            self.controller.close()
-            self.updateStatus()
+            if not self.comms_waiting:
+                logger.warning("Machine status response delayed — waiting on comms")
+                self.comms_waiting = 1
+                self.status_data_view.main_text = tr._("Waiting on Comms")
+                if app is not None and app.playing:
+                    # Park remaining so the stall is not subtracted when replies resume.
+                    self._remaining_anchor_sec = self._current_remaining_sec()
+                    self._remaining_anchor_time = time.time()
 
     # -----------------------------------------------------------------------
     def switch_status(self, *args):
@@ -4049,12 +4063,23 @@ class Makera(RelativeLayout):
         return False
 
     # -----------------------------------------------------------------------
-    def attempt_reconnect(self):
-        """Attempt to reconnect to the last known connection"""
-        if self.reconnection_popup._is_open:
-            Clock.unschedule(self.reconnection_popup.countdown_tick)
-            self.reconnection_popup.dismiss()
-        self.reconnect_last_connection(quiet=False, for_app_launch=False)
+    def _reconnect_in_progress(self):
+        return bool(getattr(self, "_usb_connect_in_progress", False) or getattr(self.controller, "_connecting", False))
+
+    def _auto_attempt_reconnect(self):
+        """Quiet retry used by the popup countdown."""
+        self.attempt_reconnect(quiet=True)
+
+    def attempt_reconnect(self, quiet=False):
+        """Try the last connection once.
+
+        Auto-retry passes quiet=True so a failed attempt does not stack error
+        popups. Reconnect now uses the default and reports why it failed.
+        The countdown stays armed for auto-retry; this method does not dismiss it.
+        """
+        if self._reconnect_in_progress():
+            return False
+        return self.reconnect_last_connection(quiet=quiet, for_app_launch=False)
 
     def on_reconnect_failed(self):
         """Called when all reconnection attempts have failed"""
@@ -5912,6 +5937,7 @@ class Makera(RelativeLayout):
             or app.state == NOT_CONNECTED
             or (not app.selected_remote_filename and not app.selected_local_filename)
             or not self.selected_file_line_count
+            or self.comms_waiting
             or app.state in self._PROGRESS_TIMER_PAUSED_STATES
         ):
             # While held/paused/disconnected, leave the last progress_info unchanged so both timers freeze.
@@ -5946,6 +5972,18 @@ class Makera(RelativeLayout):
             # The App.get_running_app() can return None in certain situations, especially during initialization or shutdown.
             if app is None:
                 return
+
+            # Clear the comms-wait overlay. Machine state itself was never changed.
+            if self.comms_waiting:
+                self.comms_waiting = 0
+                if app.playing:
+                    # Remaining was parked when the overlay appeared.
+                    self._remaining_anchor_time = now
+                self.status_data_view.main_text = CNC.vars["state"]
+                CNC.vars["color"] = STATECOLOR.get(CNC.vars["state"], STATECOLORDEF)
+                self.status_data_view.color = CNC.vars["color"]
+                if CNC.vars["state"] != NOT_CONNECTED:
+                    logger.info("Machine status response received — comms restored")
 
             # First real machine state ends the post-connect heartbeat grace window.
             if CNC.vars["state"] not in (NOT_CONNECTED, CONNECTED):
@@ -6011,12 +6049,13 @@ class Makera(RelativeLayout):
                             self.reconnection_popup.start_countdown(
                                 reconnect_attempts,
                                 reconnect_wait_time,
-                                self.attempt_reconnect,
+                                self._auto_attempt_reconnect,
                                 self.on_reconnect_failed,
+                                in_progress=self._reconnect_in_progress,
+                                manual_callback=self.attempt_reconnect,
                             )
                             self.reconnection_popup.open()
                             Clock.schedule_interval(self.reconnection_popup.countdown_tick, 1.0)
-                            self.controller.start_reconnection()
                         else:
                             self.reconnection_popup.show_manual_reconnect(self.attempt_reconnect)
                             self.reconnection_popup.open()
@@ -8431,7 +8470,9 @@ def load_constants():
 
     SHORT_LOAD_TIMEOUT = 3  # s
     WIFI_LOAD_TIMEOUT = 30  # s
-    HEARTBEAT_TIMEOUT = 5
+    # Several status polls (STREAM_POLL is 0.2s). blink_state samples every
+    # 0.5s, so one late reply must not flip the status label.
+    HEARTBEAT_TIMEOUT = 1.5
     MAX_TOUCH_INTERVAL = 0.15
     GCODE_VIEW_SPEED = 1
 
