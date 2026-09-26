@@ -266,7 +266,7 @@ from .addons.camera.Z1Camera import (
     has_camera,
     set_resolution,
 )
-from .addons.intellisense.engine import highlight_mdi_line
+from .addons.intellisense.engine import correct_command_case, highlight_mdi_line
 from .addons.intellisense.ui import (
     IntellisenseExplainRowMixin,
     handle_mdi_intellisense_key,
@@ -2938,6 +2938,7 @@ class Makera(RelativeLayout):
 
     status_index = 0
     past_machine_addr = None
+    mdi_auto_correct_case = True
     allow_mdi_while_machine_running = "0"
     allow_jogging_while_machine_running = "1"
     allow_jogging_while_spindle_on = "0"
@@ -3129,6 +3130,9 @@ class Makera(RelativeLayout):
         if Config.has_option("carvera", "address"):
             self.past_machine_addr = Config.get("carvera", "address")
 
+        if Config.has_option("carvera", "mdi_auto_correct_case"):
+            self.mdi_auto_correct_case = Config.get("carvera", "mdi_auto_correct_case") == "1"
+
         if Config.has_option("carvera", "allow_mdi_while_machine_running"):
             self.allow_mdi_while_machine_running = Config.get("carvera", "allow_mdi_while_machine_running")
 
@@ -3274,6 +3278,12 @@ class Makera(RelativeLayout):
         for setting in controller_config_definition:
             if "default" in setting:
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
+                # The bool switch only recognises "0" and "1". An earlier default
+                # of "true" draws the switch off while the feature stays on.
+                if setting["key"] == "mdi_auto_correct_case":
+                    stored = Config.get(setting["section"], setting["key"])
+                    if str(stored).lower() == "true":
+                        Config.set(setting["section"], setting["key"], "1")
                 setting.pop("default", None)
             controller_config.append(setting)
 
@@ -8126,6 +8136,9 @@ class Makera(RelativeLayout):
             self.message_popup.lb_content.text = tr._("UI Density changed, restart application to apply.")
             self.message_popup.open()
 
+        if "mdi_auto_correct_case" in self.controller_setting_change_list:
+            self.mdi_auto_correct_case = self.controller_setting_change_list["mdi_auto_correct_case"] == "1"
+
         if "allow_mdi_while_machine_running" in self.controller_setting_change_list:
             self.allow_mdi_while_machine_running = self.controller_setting_change_list[
                 "allow_mdi_while_machine_running"
@@ -9094,6 +9107,8 @@ class Makera(RelativeLayout):
                             }
                         )
                     )
+                if self.mdi_auto_correct_case:
+                    sanitized_to_send = "\n".join(correct_command_case(line) for line in sanitized_to_send.split("\n"))
                 self.controller.executeCommand(sanitized_to_send)
         self.manual_cmd.text = ""
         hide_mdi_intellisense()

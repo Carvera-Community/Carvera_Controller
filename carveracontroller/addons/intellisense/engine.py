@@ -377,6 +377,155 @@ def _name_sort_key(name: str) -> tuple:
     return (2, name.lower(), 0, name)
 
 
+_GM_CORRECT_RE = re.compile(r"(?<![A-Za-z])([gGmM])\s*(\d+(?:\.\d+)?)")
+# Letter of a parameter word (x10, f-1.5, p 0). The number is left as typed.
+_PARAM_LETTER_RE = re.compile(r"(?<![A-Za-z])([A-Za-z])(?=\s*[-+]?(?:\d+\.?\d*|\.\d+))")
+_PARAM_TOKEN_RE = re.compile(r"\S+")
+
+
+def correct_command_case(line: str, catalog: CommandCatalog | None = None) -> str:
+    """Return *line* with recognised commands and their parameters in canonical case.
+
+    G/M codes, ``$``-prefixed commands and shell commands (``ls``, ``play``, …)
+    are matched against the catalog. Parameter words are corrected only when
+    that command defines them in the catalog (``g0 x10 f1`` becomes ``G0 X10 F1``).
+    Comments are left untouched.
+    """
+    catalog = catalog or get_catalog()
+    if not line or not line.strip():
+        return line
+
+    code = _strip_comments(line).strip()
+    if not code:
+        return line
+
+    tokens = code.split()
+    first = tokens[0]
+    spans = _comment_spans(line)
+
+    # Shell / $-prefixed commands: correct the command name, then its parameters.
+    if first.startswith("$"):
+        key = first.split("=", 1)[0]
+        command = catalog.lookup(key)
+        if command:
+            corrected = _replace_token_case(line, first, command.name, key)
+            return _correct_defined_parameters(corrected, [command], _comment_spans(corrected))
+        return line
+
+    command = catalog.lookup(first)
+    if command and not command.is_word_command:
+        # Shell-style command (e.g. "ls", "play", "upload").
+        idx = line.lower().find(first.lower())
+        if idx < 0:
+            return line
+        corrected = line[:idx] + command.name + line[idx + len(first) :]
+        return _correct_defined_parameters(corrected, [command], _comment_spans(corrected))
+
+    # G-code line: correct each G/M token, then parameter letters those commands define.
+    # The regex matches G/M letter + optional whitespace + digits, using a
+    # negative lookbehind so packed tokens like G90G0 are split correctly and
+    # a longer command like G10 is not partially matched when replacing G1.
+    commands = _gm_commands(line, catalog, spans)
+
+    def _replace_gm(match: re.Match) -> str:
+        if _pos_in_spans(match.start(), spans) or not _match_is_command(line, match):
+            return match.group(0)
+        raw = match.group(0).replace(" ", "")
+        matched = catalog.lookup(raw)
+        return matched.name if matched else match.group(0)
+
+    corrected = _correct_defined_parameters(line, commands, spans)
+    # Parameter edits only change case, so comment spans still line up.
+    return _GM_CORRECT_RE.sub(_replace_gm, corrected)
+
+
+def _gm_commands(line: str, catalog: CommandCatalog, spans: list[tuple[int, int]]) -> list[Command]:
+    """G/M commands whose match is the token itself or packed onto one.
+
+    A code buried in other text (``part-g01.nc``) is not a command, so its
+    parameter letters are not applied to the rest of the line.
+    """
+    commands: list[Command] = []
+    for match in _GM_CORRECT_RE.finditer(line):
+        if _pos_in_spans(match.start(), spans) or not _match_is_command(line, match):
+            continue
+        matched = catalog.lookup(match.group(0).replace(" ", ""))
+        if matched:
+            commands.append(matched)
+    return commands
+
+
+def _match_is_command(line: str, match: re.Match) -> bool:
+    start = match.start()
+    while start > 0 and not line[start - 1].isspace():
+        start -= 1
+    prefix = line[start : match.start()]
+    if not prefix:
+        return True
+    index = 0
+    while index < len(prefix):
+        packed = _GM_CORRECT_RE.match(prefix, index)
+        if not packed or packed.start() != index:
+            return False
+        index = packed.end()
+    return index == len(prefix)
+
+
+def _parameter_names(commands: Iterable[Command]) -> dict[str, str]:
+    """Map a case-folded parameter name to the spelling stored in the catalog."""
+    names: dict[str, str] = {}
+    for command in commands:
+        for name in command.parameters:
+            names.setdefault(name.lower(), name)
+    return names
+
+
+def _correct_defined_parameters(line: str, commands: Iterable[Command], spans: list[tuple[int, int]]) -> str:
+    names = _parameter_names(commands)
+    if not names:
+        return line
+    letters = {key: value for key, value in names.items() if len(value) == 1}
+    tokens = {key: value for key, value in names.items() if len(value) != 1}
+
+    def replace_letter(match: re.Match) -> str:
+        if _pos_in_spans(match.start(), spans):
+            return match.group(0)
+        canonical = letters.get(match.group(1).lower())
+        return canonical if canonical else match.group(0)
+
+    def replace_token(match: re.Match) -> str:
+        if _pos_in_spans(match.start(), spans):
+            return match.group(0)
+        canonical = tokens.get(match.group(0).lower())
+        return canonical if canonical else match.group(0)
+
+    if letters:
+        line = _PARAM_LETTER_RE.sub(replace_letter, line)
+    if tokens:
+        line = _PARAM_TOKEN_RE.sub(replace_token, line)
+    return line
+
+
+def _replace_token_case(line: str, token: str, canonical: str, key: str) -> str:
+    idx = line.find(token)
+    if idx < 0:
+        return line
+    return line[:idx] + canonical + token[len(key) :] + line[idx + len(token) :]
+
+
+def _comment_spans(line: str) -> list[tuple[int, int]]:
+    spans = [match.span() for match in PARENPAT.finditer(line)]
+    for match in SEMIPAT.finditer(line):
+        if not _pos_in_spans(match.start(), spans):
+            spans.append(match.span())
+            break
+    return spans
+
+
+def _pos_in_spans(pos: int, spans: list[tuple[int, int]]) -> bool:
+    return any(start <= pos < end for start, end in spans)
+
+
 def _suggest_sort_key(name: str, _prefix: str, normalized: str | None) -> tuple:
     exact = 0 if normalized and name == normalized else 1
     return (exact, *_name_sort_key(name))

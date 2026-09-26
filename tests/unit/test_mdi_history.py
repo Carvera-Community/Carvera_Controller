@@ -12,6 +12,7 @@ def _root(widget):
         manual_rv=SimpleNamespace(scroll_y=1, data=[]),
         controller=SimpleNamespace(executeCommand=Mock()),
         refocus_cmd=Mock(),
+        mdi_auto_correct_case=True,
     )
 
 
