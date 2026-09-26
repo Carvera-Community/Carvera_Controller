@@ -451,10 +451,130 @@ def test_config_backup_download_does_not_open_gcode_or_apply_settings(monkeypatc
     root.finishLoadConfig.assert_not_called()
     root.controller.queryTime.assert_not_called()
     root.update_recent_remote_dir_list.assert_not_called()
-    root._decompress_downloaded_file_in_place.assert_called_once_with(local_path)
+    root._decompress_downloaded_file_in_place.assert_called_once_with(local_path, integrity_label=None)
     assert root.downloading_config is True
     with open(local_path, encoding="utf-8") as handle:
         assert handle.read() == "downloaded"
+
+
+def _download_bytes_then_fail(tmp_filename, _md5, _progress_cb):
+    with open(tmp_filename, "w", encoding="utf-8") as handle:
+        handle.write("factory-config")
+    return
+
+
+def _collect_messages(root):
+    messages = []
+    root.show_message_popup = lambda message, _btn_disabled, *args: messages.append(message)
+    return messages
+
+
+def test_config_backup_md5_mismatch_keeps_file(monkeypatch, tmp_path):
+    root = _download_host(tmp_path)
+    root.backing_up_config = True
+    root.controller.stream.modem = SimpleNamespace(download_md5_failed=True)
+    root.controller.stream.download.side_effect = _download_bytes_then_fail
+    messages = _collect_messages(root)
+    scheduled = []
+    monkeypatch.setattr("carveracontroller.main.App.get_running_app", lambda: None)
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t=0: scheduled.append(cb))
+
+    local_path = str(tmp_path / "config.txt")
+    result = Makera.doDownload(root, "/sd/config.txt", local_path, show_progress=False, open_after=False)
+    for callback in scheduled:
+        callback(0)
+
+    assert result > 0
+    with open(local_path, encoding="utf-8") as handle:
+        assert handle.read() == "factory-config"
+    assert root._backup_md5_mismatches == ["/sd/config.txt"]
+    assert messages == []
+
+
+def test_download_md5_mismatch_still_fails_outside_backup(monkeypatch, tmp_path):
+    root = _download_host(tmp_path)
+    root.backing_up_config = False
+    root.controller.stream.modem = SimpleNamespace(download_md5_failed=True)
+    root.controller.stream.download.side_effect = _download_bytes_then_fail
+    messages = _collect_messages(root)
+    scheduled = []
+    monkeypatch.setattr("carveracontroller.main.App.get_running_app", lambda: None)
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t=0: scheduled.append(cb))
+
+    local_path = str(tmp_path / "job.nc")
+    result = Makera.doDownload(root, "/sd/gcodes/job.nc", local_path, show_progress=False, open_after=False)
+    for callback in scheduled:
+        callback(0)
+
+    assert result is None
+    assert not os.path.exists(local_path)
+    assert not os.path.exists(local_path + ".tmp")
+    assert messages
+    assert "MD5" in messages[0]
+    assert "factory" not in messages[0].lower()
+
+
+def test_backup_deferred_md5_mismatch_keeps_decompressed_file(monkeypatch, tmp_path):
+    root = Makera.__new__(Makera)
+    root.backing_up_config = True
+    path = tmp_path / "config.txt"
+    path.write_text("hello", encoding="utf-8")
+    root.controller = SimpleNamespace(stream=SimpleNamespace(modem=SimpleNamespace(deferred_download_md5="0" * 32)))
+    scheduled = []
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t=0: scheduled.append(cb))
+
+    assert Makera._verify_deferred_download_md5(root, str(path), label="/sd/config.txt") is True
+    assert path.read_text(encoding="utf-8") == "hello"
+    assert root._backup_md5_mismatches == ["/sd/config.txt"]
+    assert scheduled == []
+
+
+def test_deferred_md5_mismatch_still_rejects_outside_backup(monkeypatch, tmp_path):
+    root = Makera.__new__(Makera)
+    root.backing_up_config = False
+    path = tmp_path / "config.txt"
+    path.write_text("hello", encoding="utf-8")
+    root.controller = SimpleNamespace(stream=SimpleNamespace(modem=SimpleNamespace(deferred_download_md5="0" * 32)))
+    root.show_message_popup = MagicMock()
+    scheduled = []
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t=0: scheduled.append(cb))
+
+    assert Makera._verify_deferred_download_md5(root, str(path)) is False
+    assert not path.exists()
+    assert scheduled
+
+
+def test_finish_config_backup_warns_about_factory_md5_mismatch(monkeypatch, tmp_path):
+    root = Makera.__new__(Makera)
+    root.pick_file_popup = None
+    root.backing_up_config = True
+    root.downloading_config = False
+    root.file_popup = SimpleNamespace(restore_machine_root=MagicMock())
+    root._backup_md5_mismatches = ["/sd/config.txt", "/sd/config.default"]
+    messages = _collect_messages(root)
+    scheduled = []
+    monkeypatch.setattr("carveracontroller.main.Clock.schedule_once", lambda cb, t=0: scheduled.append(cb))
+
+    source = tmp_path / "config.txt"
+    source.write_text("config", encoding="utf-8")
+    other = tmp_path / "config.default"
+    other.write_text("default", encoding="utf-8")
+    dest_dir = tmp_path / "backup"
+    dest_dir.mkdir()
+
+    Makera.finish_backing_up_config(root, [str(source), str(other)], str(dest_dir), None)
+
+    assert (dest_dir / "config.txt").read_text(encoding="utf-8") == "config"
+    assert (dest_dir / "config.default").read_text(encoding="utf-8") == "default"
+    assert root.backing_up_config is False
+    assert root._backup_md5_mismatches == []
+    for callback in scheduled:
+        callback(0)
+    assert len(messages) == 1
+    assert "/sd/config.txt" in messages[0]
+    assert "/sd/config.default" in messages[0]
+    assert "factory" in messages[0].lower()
+    assert "backed up successfully" in messages[0].lower()
 
 
 def test_job_download_still_opens_gcode_viewer(monkeypatch, tmp_path):

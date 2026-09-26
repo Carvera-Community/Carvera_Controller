@@ -28,6 +28,7 @@
 - Change: Add support for iOS 27
 - Change: Stop splitting 3-axis G0/G1 moves every 0.5mm and split A-axis moves using the same tolerance as G2/G3 instead of every 0.5°
 - Change: Missed heartbeats with the machine are treated as comms backpressure, and the machine state is changed to "Waiting on comms". Only if link connection is lost will it be treated as a disconnect
+- Changed: Machine config backup completes when a file's MD5 checksum does not match, and warns that some machines ship with factory MD5 mismatches
 - Fixed: Harden the gcode parser against "zero length" movement, and prevent division by zero in play slider
 - Fixed: Time estimates ignoring speed for some 4th-axis moves
 - Fixed: Allow to select the bottom element of the MDI, Gcode and probing confirmation lists

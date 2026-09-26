@@ -4974,6 +4974,7 @@ class Makera(RelativeLayout):
 
         self.backing_up_config = True
         self.downloading_config = False
+        self._backup_md5_mismatches = []
         Clock.schedule_once(partial(self.progressStart, tr._("Downloading config files..."), None), 0)
 
         self.fill_remote_dir_callback = self.download_config_files
@@ -5040,8 +5041,36 @@ class Makera(RelativeLayout):
         self.progressFinish()
         self.backing_up_config = False
         self.downloading_config = False
+        self._backup_md5_mismatches = []
         self.fill_remote_dir_callback = None
         self.file_popup.restore_machine_root()
+
+    def _note_config_backup_md5_mismatch(self, filename):
+        name = str(filename or "").strip()
+        if not name:
+            return
+        mismatches = getattr(self, "_backup_md5_mismatches", None)
+        if mismatches is None:
+            mismatches = []
+            self._backup_md5_mismatches = mismatches
+        if name not in mismatches:
+            mismatches.append(name)
+        logger.warning(
+            "Config backup kept %s despite an MD5 mismatch. Some machines ship with factory checksum mismatches.",
+            name,
+        )
+
+    def _config_backup_md5_warning_message(self, filenames):
+        files = [str(name) for name in filenames if str(name).strip()]
+        note = tr._(
+            "It has been observed that some machines have been shipped with mismatching "
+            "MD5 checksums from the factory, so this might be normal."
+        )
+        if len(files) == 1:
+            detail = tr._("The MD5 checksum for '%s' did not match.") % files[0]
+        else:
+            detail = tr._("The MD5 checksum did not match for:\n%s") % "\n".join(files)
+        return tr._("Configuration files backed up successfully.") + "\n\n" + detail + "\n\n" + note
 
     # -----------------------------------------------------------------------
     def finish_backing_up_config(self, downloaded_file_paths, selected_dir, _selected_file):
@@ -5072,9 +5101,20 @@ class Makera(RelativeLayout):
         self.backing_up_config = False
         self.downloading_config = False
         self.file_popup.restore_machine_root()
-        if not failed:
+        md5_mismatches = list(getattr(self, "_backup_md5_mismatches", None) or [])
+        self._backup_md5_mismatches = []
+        if not failed and md5_mismatches:
             Clock.schedule_once(
-                partial(self.show_message_popup, tr._("Configuration files backed up successfully"), False), 0
+                partial(
+                    self.show_message_popup,
+                    self._config_backup_md5_warning_message(md5_mismatches),
+                    False,
+                ),
+                0,
+            )
+        elif not failed:
+            Clock.schedule_once(
+                partial(self.show_message_popup, tr._("Configuration files backed up successfully."), False), 0
             )
 
     # -----------------------------------------------------------------------
@@ -5290,6 +5330,7 @@ class Makera(RelativeLayout):
         self.downloading = True
         # None = error/abort; never use False — `False >= 0` is True in Python.
         download_result = None
+        md5_failed = False
         try:
             md5 = Utils.md5(tmp_filename) if os.path.exists(tmp_filename) else ""
             # Makera framed transfer: pause RX before the download command so
@@ -5304,9 +5345,13 @@ class Makera(RelativeLayout):
                 self.controller.pauseStream(0.2)
                 progress_cb = partial(self.downloadCallback, remote_path) if show_progress else None
             download_result = self.controller.stream.download(tmp_filename, md5, progress_cb)
+            md5_failed = bool(
+                getattr(getattr(getattr(self.controller, "stream", None), "modem", None), "download_md5_failed", False)
+            )
         except Exception:
             logger.error(sys.exc_info()[1])
             download_result = None
+            md5_failed = False
             self.controller.resumeStream()
             self.downloading = False
 
@@ -5315,13 +5360,20 @@ class Makera(RelativeLayout):
 
         self.heartbeat_time = time.time()
 
+        # Factory images sometimes advertise an MD5 that does not match the file.
+        # Keep the received bytes and let the backup finish; warn after it completes.
+        if download_result is None and was_backup and md5_failed and os.path.exists(tmp_filename):
+            self._note_config_backup_md5_mismatch(remote_path)
+            try:
+                kept_size = os.path.getsize(tmp_filename)
+            except OSError:
+                kept_size = 1
+            download_result = kept_size if kept_size > 0 else 1
+
         if download_result is None:
             if os.path.exists(tmp_filename):
                 os.remove(tmp_filename)
             # show message popup
-            md5_failed = bool(
-                getattr(getattr(getattr(self.controller, "stream", None), "modem", None), "download_md5_failed", False)
-            )
             if apply_config:
                 Clock.schedule_once(partial(self.finishLoadConfig, False), 0.1)
                 error_msg = (
@@ -5391,7 +5443,9 @@ class Makera(RelativeLayout):
                 self.load_gcode_file(local_path)
                 self._ingest_machine_gcode_thumbnail(remote_path, local_path)
             else:
-                if self._decompress_downloaded_file_in_place(local_path):
+                if self._decompress_downloaded_file_in_place(
+                    local_path, integrity_label=remote_path if was_backup else None
+                ):
                     self._ingest_machine_gcode_thumbnail(remote_path, local_path)
 
             if not was_config_download and not was_backup:
@@ -6040,7 +6094,7 @@ class Makera(RelativeLayout):
             return None
 
     # -----------------------------------------------------------------------
-    def _decompress_downloaded_file_in_place(self, filepath):
+    def _decompress_downloaded_file_in_place(self, filepath, integrity_label=None):
         """Decompress a QuickLZ download in place without a `.lz/` sidecar folder."""
         try:
             with open(filepath, "rb") as f:
@@ -6073,10 +6127,10 @@ class Makera(RelativeLayout):
             os.remove(lz_tmp)
         except OSError:
             pass
-        return self._verify_deferred_download_md5(filepath)
+        return self._verify_deferred_download_md5(filepath, label=integrity_label)
 
     # -----------------------------------------------------------------------
-    def _verify_deferred_download_md5(self, filepath):
+    def _verify_deferred_download_md5(self, filepath, label=None):
         """Verify a machine-advertised MD5 after .lz decompress. Returns False on mismatch."""
         modem = getattr(getattr(self.controller, "stream", None), "modem", None)
         expected = getattr(modem, "deferred_download_md5", None) if modem is not None else None
@@ -6095,6 +6149,9 @@ class Makera(RelativeLayout):
             expected,
             actual,
         )
+        if self.backing_up_config:
+            self._note_config_backup_md5_mismatch(label or filepath)
+            return True
         try:
             if os.path.exists(filepath):
                 os.remove(filepath)
