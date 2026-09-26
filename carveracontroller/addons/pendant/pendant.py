@@ -23,6 +23,7 @@ from kivy.uix.spinner import Spinner
 
 from carveracontroller.CNC import CNC
 from carveracontroller.Controller import Controller
+from carveracontroller.documentation import resolve_documentation_url
 from carveracontroller.translation import tr
 
 from . import gamepad as gamepad_module
@@ -362,11 +363,14 @@ if WHB04_SUPPORTED:
                     self._update_ui_on_jog_stop()
 
         def _handle_permission_error(self, daemon: whb04.Daemon) -> None:
+            docs_url = resolve_documentation_url(
+                "https://carvera-community.gitbook.io/docs/controller/features/pendant-support#linux"
+            )
             message = (
                 "The WHB04 pendant was found but cannot be opened due to\n"
                 "insufficient permissions on the USB HID device.\n\n"
                 "See the documentation on how to fix these permissions on Linux:\n"
-                "https://carvera-community.gitbook.io/docs/controller/features/pendant-support#linux"
+                f"{docs_url}"
             )
             print(f"\nERROR: {message}\n", flush=True)
 

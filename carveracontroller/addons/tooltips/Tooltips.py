@@ -18,6 +18,8 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
 
+from carveracontroller.documentation import resolve_documentation_url
+
 # Minimum tooltip box width for short labels (matches previous wrap floor).
 TOOLTIP_MIN_WIDTH = 200
 # Wrap long tooltip text at this width so multi-line content stays readable.
@@ -974,4 +976,4 @@ class HelpButton(ButtonBehavior, BoxLayout):
         fbind = self.fbind
 
     def open_link(self, *args):
-        webbrowser.open(self.helpPath)
+        webbrowser.open(resolve_documentation_url(self.helpPath))

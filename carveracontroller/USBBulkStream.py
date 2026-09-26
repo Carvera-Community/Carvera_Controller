@@ -16,6 +16,7 @@ import platform
 import time
 from urllib.parse import quote, unquote
 
+from .documentation import resolve_documentation_url
 from .XMODEM import XMODEM
 
 logger = logging.getLogger(__name__)
@@ -142,13 +143,13 @@ def _hint_for_open_failure(exc):
             "The Z1 USB device was found but could not be opened due to\n"
             "insufficient permissions on the USB device.\n\n"
             "See the documentation on how to fix these permissions on Linux:\n"
-            f"{Z1_USB_DOCS_URL}#linux"
+            f"{resolve_documentation_url(Z1_USB_DOCS_URL)}#linux"
         )
     if system == "Windows":
         return (
             "The Z1 USB device was found but could not be opened.\n\n"
             "See the documentation on how to install the WinUSB driver on Windows:\n"
-            f"{Z1_USB_DOCS_URL}#windows"
+            f"{resolve_documentation_url(Z1_USB_DOCS_URL)}#windows"
         )
     return message
 

@@ -34,6 +34,13 @@ class Version:
     def is_prerelease(self) -> bool:
         return self.prerelease is not None
 
+    @property
+    def is_stable_release(self) -> bool:
+        """Numbered releases. Unversioned 0.0.0, date-based majors above 99, and pre-release tags are not."""
+        if (self.major, self.minor, self.patch) == (0, 0, 0):
+            return False
+        return self.major <= 99 and not self.is_prerelease
+
     def display(self) -> str:
         if self.raw:
             text = self.raw[1:] if self.raw.lower().startswith("v") and self.raw[1:2].isdigit() else self.raw

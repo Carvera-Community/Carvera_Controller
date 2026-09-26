@@ -157,6 +157,7 @@ from carveracontroller.addons.stock.stock_defaults import (
 )
 from carveracontroller.addons.stock.stock_estimate import auto_stock_for_loaded_file, header_stock_usable
 from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPopup
+from carveracontroller.documentation import resolve_documentation_url
 from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.ui.file_browser import FileBrowserPopup
 from carveracontroller.ui.file_browser.sources import (
@@ -3380,7 +3381,7 @@ class Makera(RelativeLayout):
         self.file_popup.open_for_firmware()
 
     def open_online_docs(self):
-        webbrowser.open("https://carvera-community.gitbook.io/docs/controller/")
+        webbrowser.open(resolve_documentation_url("https://carvera-community.gitbook.io/docs/controller/"))
 
     def open_file_browser(self):
         app = App.get_running_app()
@@ -5430,7 +5431,9 @@ class Makera(RelativeLayout):
             btn_information = Button(text=tr._("More Information"))
             btn_information.bind(
                 on_release=lambda *a: (
-                    webbrowser.open("https://carvera-community.gitbook.io/docs/compatibility"),
+                    webbrowser.open(
+                        resolve_documentation_url("https://carvera-community.gitbook.io/docs/compatibility")
+                    ),
                     popup.dismiss(),
                 )
             )
