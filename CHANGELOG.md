@@ -1,4 +1,5 @@
 [unreleased]
+- Fixed: The probe button in the main menu is disabled unless community firmware is loaded, matching the Probing button on the control screen
 - Changed: Missed heartbeats with the machine are treated as comms backpressure, and the machine state is changed to "Waiting on comms". Only if link connection is lost will it be treated as a disconnect
 - Fixed: Consolidated the two different re-connection methods into one
 - Fixed: Checkboxes in the CMM Workbench and Facing wizard stay visible on the dark background
