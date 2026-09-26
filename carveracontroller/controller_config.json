@@ -105,6 +105,14 @@
     },
     {
         "type": "bool",
+        "title": "Auto-Correct MDI Command Case",
+        "desc": "Automatically correct the case of commands entered in the MDI when they match a known command, including parameters defined for that command. For example, 'g0 x10 f1' becomes 'G0 X10 F1'. Firmware commands are case-sensitive.",
+        "section": "carvera",
+        "key": "mdi_auto_correct_case",
+        "default": "1"
+    },
+    {
+        "type": "bool",
         "title": "Allow MDI Commands When Machine Running",
         "desc": "This could allow for dangerous movements, or firmware corruption if MDI commands are used while file uploads are occuring. Use this functionality with caution.",
         "section": "carvera",
