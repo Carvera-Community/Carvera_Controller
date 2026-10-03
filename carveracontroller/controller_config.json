@@ -338,5 +338,41 @@
         "section": "carvera",
         "key": "show_playbar_tool_change_markers",
         "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Enable Job Event Commands",
+        "desc": "Desktop only (Windows/Mac/Linux) - not available on iOS/Android. Run shell commands on this computer when a job starts, succeeds, or fails/is cancelled. On Windows commands run via cmd.exe, not bash. WARNING: these commands run with your full user permissions - only configure commands you trust.",
+        "section": "carvera",
+        "key": "enable_job_event_commands",
+        "default": "false",
+        "platforms": ["win", "macosx", "linux"]
+    },
+    {
+        "type": "string",
+        "title": "Job Start Command",
+        "desc": "Shell command to run when a job starts (cmd.exe on Windows, sh elsewhere). Available env vars: CARVERA_JOB_EVENT, CARVERA_JOB_OUTCOME, CARVERA_JOB_FILE.",
+        "section": "carvera",
+        "key": "job_start_command",
+        "default": "",
+        "platforms": ["win", "macosx", "linux"]
+    },
+    {
+        "type": "string",
+        "title": "Job Success Command",
+        "desc": "Shell command to run when a job finishes successfully (cmd.exe on Windows, sh elsewhere). Available env vars: CARVERA_JOB_EVENT, CARVERA_JOB_OUTCOME, CARVERA_JOB_FILE.",
+        "section": "carvera",
+        "key": "job_success_command",
+        "default": "",
+        "platforms": ["win", "macosx", "linux"]
+    },
+    {
+        "type": "string",
+        "title": "Job Failed/Cancelled Command",
+        "desc": "Shell command to run when a job fails (alarm/disconnect) or is cancelled/aborted (cmd.exe on Windows, sh elsewhere). Available env vars: CARVERA_JOB_EVENT, CARVERA_JOB_OUTCOME, CARVERA_JOB_FILE.",
+        "section": "carvera",
+        "key": "job_fail_or_cancel_command",
+        "default": "",
+        "platforms": ["win", "macosx", "linux"]
     }
 ]
