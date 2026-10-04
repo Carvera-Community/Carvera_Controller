@@ -38,6 +38,7 @@ from carveracontroller.updater.actions import (
     REASON_UNSUPPORTED_MODEL,
 )
 from carveracontroller.updater.config import CONFIG_INCLUDE_PRERELEASES, CONFIG_SHOW_UPDATE
+from carveracontroller.updater.version import parse_version
 
 TAB_CONTROLLER = "controller"
 TAB_FIRMWARE = "firmware"
@@ -152,6 +153,7 @@ class UpgradePopup(ModalView):
         if snapshot is not None:
             self._snapshot = snapshot
             self._check_failed = False
+            self._auto_enable_prereleases_for_rc(snapshot)
         else:
             self._check_failed = bool(error) and self._snapshot is None
         self.checking = checking
@@ -179,6 +181,17 @@ class UpgradePopup(ModalView):
         makera = _makera()
         if makera is not None and self._is_open:
             makera.apply_include_prereleases()
+
+    def _auto_enable_prereleases_for_rc(self, snapshot: UpdateSnapshot):
+        """Default to including pre-releases when either the controller app or
+        the machine firmware is already running a dev or pre-release build,
+        provided the user has not explicitly configured the setting."""
+        if Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES):
+            return
+        fw = parse_version(snapshot.firmware.current)
+        ctl = parse_version(snapshot.controller.current)
+        if (fw is not None and fw.is_prerelease) or (ctl is not None and ctl.is_prerelease):
+            self.include_prereleases = True
 
     def on_refresh(self):
         makera = _makera()

@@ -321,6 +321,20 @@ def test_firmware_one_click_is_limited_to_supported_models():
     assert not firmware_one_click_supported(None)
 
 
+def test_prerelease_versions_detected():
+    """parse_version identifies RC, BETA, ALPHA, and DEV builds as pre-release."""
+    assert parse_version("2.1.0c-RC1").is_prerelease
+    assert parse_version("2.1.0c-RC2").is_prerelease
+    assert parse_version("v2.2.0-RC1").is_prerelease
+    assert parse_version("v2.2.0-DEV1").is_prerelease
+    assert parse_version("v2.2.0-BETA1").is_prerelease
+    assert parse_version("v2.2.0-ALPHA1").is_prerelease
+    assert not parse_version("2.1.0c").is_prerelease
+    assert not parse_version("v2.2.0").is_prerelease
+    assert parse_version("") is None
+    assert parse_version(None) is None
+
+
 def test_matching_backup_paths_allowlist_and_empty_listing():
     listing = [
         {"path": "/sd/config.txt", "is_dir": False},

@@ -1,9 +1,11 @@
 """Smoke the Update Center tabs at normal and compact window sizes."""
 
+from kivy.config import Config
 from kivy.core.window import Window
 from kivy.metrics import dp
 
 from carveracontroller.ui.updates.UpgradePopup import UpdateNotesRow, _measure_note_height
+from carveracontroller.updater.config import CONFIG_INCLUDE_PRERELEASES
 from carveracontroller.updater.github import FetchResult, parse_release
 from carveracontroller.updater.notes import format_release_notes
 from carveracontroller.updater.service import snapshot_from_fetches
@@ -130,4 +132,136 @@ def test_update_center_tabs_normal_and_compact(kivy_app, connected_idle_state):
         assert popup.active_tab == "controller"
     finally:
         popup.dismiss()
+        pump_frames(5)
+
+
+def _prerelease_snapshot(*, current_controller="2.1.0", current_firmware="2.0.0c"):
+    """Build a snapshot with configurable current versions for prerelease tests."""
+    controller = parse_release(
+        {
+            "tag_name": "v2.2.0",
+            "name": "v2.2.0",
+            "html_url": "https://github.com/Carvera-Community/Carvera_Controller/releases/tag/v2.2.0",
+            "body": "## Added\n- Update Center",
+            "published_at": "2024-05-01T00:00:00Z",
+            "prerelease": False,
+            "draft": False,
+            "assets": [],
+        }
+    )
+    firmware = parse_release(
+        {
+            "tag_name": "2.1.0c",
+            "name": "2.1.0c",
+            "html_url": "https://github.com/example/repo/releases/tag/2.1.0c",
+            "body": "## Fixed\n- Homing",
+            "published_at": "2024-05-02T00:00:00Z",
+            "prerelease": False,
+            "draft": False,
+            "assets": [],
+        }
+    )
+    fetch_c = FetchResult(releases=(controller,), from_cache=False, etag_hit=False, error=None, fetched_at=None)
+    fetch_f = FetchResult(releases=(firmware,), from_cache=False, etag_hit=False, error=None, fetched_at=None)
+    return snapshot_from_fetches(
+        fetch_c,
+        fetch_f,
+        current_controller=current_controller,
+        current_firmware=current_firmware,
+        include_prereleases=False,
+        platform_key="linux-x64",
+    )
+
+
+def _save_and_clear_prerelease_config(popup):
+    """Save the current prerelease config and remove it to simulate a fresh install."""
+    saved = (
+        Config.get("carvera", CONFIG_INCLUDE_PRERELEASES)
+        if Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES)
+        else None
+    )
+    if Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES):
+        Config.remove_option("carvera", CONFIG_INCLUDE_PRERELEASES)
+    popup.include_prereleases = False
+    return saved
+
+
+def _restore_prerelease_config(popup, saved):
+    """Restore prerelease config after a test."""
+    if saved is not None:
+        Config.set("carvera", CONFIG_INCLUDE_PRERELEASES, saved)
+    elif Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES):
+        Config.remove_option("carvera", CONFIG_INCLUDE_PRERELEASES)
+    popup.include_prereleases = False
+    popup.dismiss()
+
+
+def test_rc_firmware_auto_enables_include_prereleases(kivy_app, connected_idle_state):
+    """When the machine runs RC firmware and the user hasn't explicitly
+    configured the prerelease setting, include_prereleases defaults to on."""
+    popup = kivy_app.root.upgrade_popup
+    saved = _save_and_clear_prerelease_config(popup)
+    try:
+        popup.apply_snapshot(_prerelease_snapshot(current_firmware="2.1.0c-RC1"))
+        pump_frames(5)
+        assert popup.include_prereleases is True
+    finally:
+        _restore_prerelease_config(popup, saved)
+        pump_frames(5)
+
+
+def test_rc_controller_auto_enables_include_prereleases(kivy_app, connected_idle_state):
+    """When the controller app is an RC/dev build and the user hasn't explicitly
+    configured the prerelease setting, include_prereleases defaults to on."""
+    popup = kivy_app.root.upgrade_popup
+    saved = _save_and_clear_prerelease_config(popup)
+    try:
+        popup.apply_snapshot(_prerelease_snapshot(current_controller="v2.2.0-RC1"))
+        pump_frames(5)
+        assert popup.include_prereleases is True
+    finally:
+        _restore_prerelease_config(popup, saved)
+        pump_frames(5)
+
+
+def test_dev_firmware_auto_enables_include_prereleases(kivy_app, connected_idle_state):
+    """A DEV firmware build also triggers the prerelease default."""
+    popup = kivy_app.root.upgrade_popup
+    saved = _save_and_clear_prerelease_config(popup)
+    try:
+        popup.apply_snapshot(_prerelease_snapshot(current_firmware="2.1.0c-DEV1"))
+        pump_frames(5)
+        assert popup.include_prereleases is True
+    finally:
+        _restore_prerelease_config(popup, saved)
+        pump_frames(5)
+
+
+def test_stable_versions_do_not_auto_enable_prereleases(kivy_app, connected_idle_state):
+    """When both versions are stable, include_prereleases stays off."""
+    popup = kivy_app.root.upgrade_popup
+    saved = _save_and_clear_prerelease_config(popup)
+    try:
+        popup.apply_snapshot(_prerelease_snapshot(current_controller="2.1.0", current_firmware="2.0.0c"))
+        pump_frames(5)
+        assert popup.include_prereleases is False
+    finally:
+        _restore_prerelease_config(popup, saved)
+        pump_frames(5)
+
+
+def test_prerelease_auto_enable_respects_explicit_user_setting(kivy_app, connected_idle_state):
+    """When the user explicitly disabled prereleases, running RC/dev software
+    should not override their choice."""
+    popup = kivy_app.root.upgrade_popup
+    saved = _save_and_clear_prerelease_config(popup)
+    try:
+        Config.set("carvera", CONFIG_INCLUDE_PRERELEASES, "0")
+        popup.include_prereleases = False
+
+        popup.apply_snapshot(_prerelease_snapshot(current_firmware="2.1.0c-RC1"))
+        pump_frames(5)
+        assert popup.include_prereleases is False
+    finally:
+        _restore_prerelease_config(popup, saved)
         pump_frames(5)

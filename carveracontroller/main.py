@@ -9695,8 +9695,9 @@ def set_config_defaults(default_lang):
     # Configurable config options. Don't change if they are already set
     if not Config.has_option("carvera", "show_update"):
         Config.set("carvera", "show_update", "1")
-    if not Config.has_option("carvera", CONFIG_INCLUDE_PRERELEASES):
-        Config.set("carvera", CONFIG_INCLUDE_PRERELEASES, "0")
+    # No default for CONFIG_INCLUDE_PRERELEASES — the popup infers a
+    # sensible default from the running controller/firmware versions and
+    # writes the key only when the user explicitly toggles the checkbox.
     if not Config.has_option("carvera", "show_firmware_check"):
         Config.set("carvera", "show_firmware_check", "1")
     if not Config.has_option("carvera", "show_tooltips"):
