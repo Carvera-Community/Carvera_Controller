@@ -259,5 +259,11 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/update/
    - Used in: carveracontroller/data/update.png
 
+31. hand-wave.png
+   - Author: Google
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/hand-wave/
+   - Used in: carveracontroller/data/hand-wave.png
+
 ===============================================================================
 Please see the respective license files for detailed information.

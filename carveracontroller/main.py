@@ -83,7 +83,21 @@ from kivy.app import App
 from kivy.clock import Clock, mainthread
 from kivy.config import Config
 from kivy.factory import Factory
-from kivy.graphics import Color, Ellipse, InstructionGroup, Line, PopMatrix, PushMatrix, Rectangle, Rotate, Translate
+from kivy.graphics import (
+    Color,
+    Ellipse,
+    InstructionGroup,
+    Line,
+    PopMatrix,
+    PushMatrix,
+    Rectangle,
+    Rotate,
+    StencilPop,
+    StencilPush,
+    StencilUnUse,
+    StencilUse,
+    Translate,
+)
 from kivy.metrics import Metrics, dp
 from kivy.properties import (
     BooleanProperty,
@@ -184,6 +198,8 @@ from carveracontroller.ui.file_browser.thumbnail import (
     machine_cache_key,
     thumbnail_cache_for_app,
 )
+from carveracontroller.ui.tutorial.session import demo_is_active, tutorial_blocks_motion
+from carveracontroller.ui.tutorial.tour import Tutorial, apply_demo_readout
 from carveracontroller.ui.updates import UpgradePopup
 from carveracontroller.updater import (
     EspOtaCancelled,
@@ -1978,6 +1994,12 @@ class CNCWorkspace(Widget):
         self.canvas.clear()
         zoom = self.width / CNC.vars["worksize_x"]
         with self.canvas:
+            # The bed drawing uses absolute coordinates and can extend past the
+            # preview. Keep the origin, work area, probe, and leveling marks inside it.
+            StencilPush()
+            Color(1, 1, 1, 1)
+            Rectangle(pos=self.pos, size=self.size)
+            StencilUse()
             # background
             Color(50 / 255, 50 / 255, 50 / 255, 1)
             if self.bg_image == "" or self.bg_image == "None":
@@ -2136,6 +2158,8 @@ class CNCWorkspace(Widget):
                             pos=((CNC.vars["xmin"] + x) * zoom - 5, (CNC.vars["ymin"] + y) * zoom - 5), size=(10, 10)
                         )
                 PopMatrix()
+            StencilUnUse()
+            StencilPop()
 
     def on_draw(self, obj, value):
         self.draw()
@@ -2799,6 +2823,7 @@ class Makera(RelativeLayout):
         self.tool_drop_down = ToolDropDown()
         self.laser_drop_down = LaserDropDown()
         self.func_drop_down = FuncDropDown()
+        self.help_drop_down = DropDown(auto_width=False, width=dp(200))
         self.status_drop_down = StatusDropDown()
         self.operation_drop_down = OperationDropDown()
         self.gcode_viewer_display_drop_down = GcodeViewerDisplayDropDown()
@@ -2984,6 +3009,10 @@ class Makera(RelativeLayout):
         # Auto-connect on startup only when auto-reconnect is enabled.
         if Config.getboolean("carvera", "auto_reconnect_enabled", fallback=True):
             Clock.schedule_once(lambda dt: self.reconnect_last_connection(quiet=True, for_app_launch=True))
+
+        self._suppress_reconnect_popup = False
+        self.tutorial = Tutorial(self)
+        self.tutorial.schedule_if_needed()
 
     def _parse_active_color(self, value):
         """Parse a color string like '0,255,255,255' into an RGBA list (0-1 range)."""
@@ -3191,6 +3220,28 @@ class Makera(RelativeLayout):
 
     def open_online_docs(self):
         webbrowser.open(resolve_documentation_url("https://carvera-community.gitbook.io/docs/controller/"))
+
+    def open_help_menu(self, button):
+        menu = self.help_drop_down
+        menu.clear_widgets()
+        documentation = Button(text=tr._("Documentation"), size_hint_y=None, height=dp(40))
+        documentation.bind(on_release=self._open_docs_from_help_menu)
+        getting_started = Button(text=tr._("Guided tour"), size_hint_y=None, height=dp(40))
+        getting_started.bind(on_release=self._open_tour_from_help_menu)
+        # The first widget added is placed at the top.
+        menu.add_widget(documentation)
+        menu.add_widget(getting_started)
+        menu.open(button)
+
+    def _open_docs_from_help_menu(self, *_args):
+        self.help_drop_down.dismiss()
+        self.func_drop_down.dismiss()
+        self.open_online_docs()
+
+    def _open_tour_from_help_menu(self, *_args):
+        self.help_drop_down.dismiss()
+        self.func_drop_down.dismiss()
+        self.tutorial.open_from_menu()
 
     def open_file_browser(self):
         app = App.get_running_app()
@@ -3578,6 +3629,8 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def play(self, file_name, start_line):
+        if tutorial_blocks_motion():
+            return
         # stop review play first
         self.gcode_playing = False
         self.gcode_viewer.dynamic_display = False
@@ -3593,6 +3646,8 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def apply(self, buffer=False):
+        if tutorial_blocks_motion():
+            return
         app = App.get_running_app()
 
         if app.has_4axis:
@@ -4041,6 +4096,8 @@ class Makera(RelativeLayout):
 
     def reconnect_last_connection(self, *args, quiet=False, for_app_launch=False):
         """Reconnect using preferred/last method (WiFi address or USB device id)."""
+        if demo_is_active():
+            return False
         method = self._preferred_reconnect_method(for_app_launch=for_app_launch)
         if method == "usb":
             path = self._resolve_usb_reconnect_path()
@@ -7109,6 +7166,10 @@ class Makera(RelativeLayout):
             if app is None:
                 return
 
+            if demo_is_active():
+                apply_demo_readout(self)
+                return
+
             # Clear the comms-wait overlay. Machine state itself was never changed.
             if self.comms_waiting:
                 self.comms_waiting = 0
@@ -7189,8 +7250,13 @@ class Makera(RelativeLayout):
                         self.unbind(light_state=self._on_light_state_changed)
                         delattr(self, "_light_toggle_bound")
 
-                    # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting)
-                    if not self.controller._manual_disconnect and not self.reconnection_popup._is_open:
+                    # Check if we should show reconnection popup (only if not a manual disconnect and not already reconnecting).
+                    # Leaving the practice view restores N/A without a link drop.
+                    if (
+                        not getattr(self, "_suppress_reconnect_popup", False)
+                        and not self.controller._manual_disconnect
+                        and not self.reconnection_popup._is_open
+                    ):
                         auto_reconnect_enabled = Config.getboolean("carvera", "auto_reconnect_enabled", fallback=True)
                         reconnect_wait_time = Config.getint("carvera", "reconnect_wait_time", fallback=10)
                         reconnect_attempts = Config.getint("carvera", "reconnect_attempts", fallback=3)
@@ -7873,6 +7939,8 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def openUSB(self, device):
         # Serial open + DTR reset sleeps (~1s) + protocol probe must not run on the UI thread.
+        if demo_is_active():
+            return
         if getattr(self, "_usb_connect_in_progress", False):
             return
         self._usb_connect_in_progress = True
@@ -7948,6 +8016,8 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def openWIFI(self, address):
+        if demo_is_active():
+            return
         try:
             if self.controller.open(CONN_WIFI, address):
                 self.controller.connection_type = CONN_WIFI
@@ -9083,13 +9153,18 @@ class Makera(RelativeLayout):
         self.message_popup.open(self)
 
     # ------------------------------------------------------------------------
+    def _tour_holds_file_browser(self) -> bool:
+        tutorial = getattr(self, "tutorial", None)
+        return bool(tutorial is not None and getattr(tutorial, "_files_open", False))
+
     def load_end(self, *args):
         if self.load_canceled:
             self.gcode_viewer.load_array([], True)
             self.gcode_cannot_visualise = False
             self.clear_selection()
             self.load_canceled = False
-            self.file_popup.dismiss()
+            if not self._tour_holds_file_browser():
+                self.file_popup.dismiss()
             self.progress_popup.dismiss()
             self.updateStatus()
             self.loading_file = False
@@ -9149,7 +9224,10 @@ class Makera(RelativeLayout):
         self.apply_bed_settings()
         self.coord_popup.load_config()
 
-        self.file_popup.dismiss()
+        # A finished preview normally closes the browser. The tour keeps it open
+        # so the file-browser steps can point at the tabs and actions.
+        if not self._tour_holds_file_browser():
+            self.file_popup.dismiss()
         if not getattr(self.gcode_viewer, "line_times_job_show_progress", False):
             self.progress_popup.dismiss()
 
@@ -9662,7 +9740,10 @@ def load_app_configs():
 
 
 def set_config_defaults(default_lang):
-    if not Config.has_section("carvera"):
+    # A missing section is a new install. An existing section without the key
+    # is an upgrade, and those users already know the workflow.
+    new_install = not Config.has_section("carvera")
+    if new_install:
         Config.add_section("carvera")
 
     if not Config.has_section("input"):
@@ -9780,6 +9861,8 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "show_playbar_tool_change_markers", "1")
     if not Config.has_option("carvera", "auto_lights_on_connect"):
         Config.set("carvera", "auto_lights_on_connect", "0")
+    if not Config.has_option("carvera", "tutorial_completed"):
+        Config.set("carvera", "tutorial_completed", "0" if new_install else "1")
 
     # G-code viewer defaults
     if not Config.has_option("carvera", "gcode_auto_show_stock"):

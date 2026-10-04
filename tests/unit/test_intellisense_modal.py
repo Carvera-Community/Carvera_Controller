@@ -9,7 +9,7 @@ from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
 
 from carveracontroller.addons.intellisense import ui as intel_ui
-from carveracontroller.addons.tooltips.Tooltips import is_blocked_by_modal
+from carveracontroller.addons.tooltips.Tooltips import is_blocked_by_modal, set_tooltips_suppressed
 
 
 def _modal():
@@ -31,6 +31,16 @@ def test_is_blocked_when_modal_is_on_window():
 def test_is_blocked_when_popup_is_on_window():
     with _window_children([Popup.__new__(Popup)]):
         assert is_blocked_by_modal()
+
+
+def test_tour_suppresses_tooltips_even_without_a_modal():
+    set_tooltips_suppressed(True)
+    try:
+        with _window_children([SimpleNamespace()]):
+            assert is_blocked_by_modal()
+            assert is_blocked_by_modal(SimpleNamespace(parent=None))
+    finally:
+        set_tooltips_suppressed(False)
 
 
 def test_not_blocked_without_modal():

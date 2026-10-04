@@ -190,6 +190,7 @@ def kivy_app():
 
     # Suppress hardware access and network requests AFTER config sections exist
     Config.set("carvera", "show_update", "0")
+    Config.set("carvera", "tutorial_completed", "1")
     Config.set("carvera", "address", "")
     Config.set("carvera", "pendant_type", "None")
 

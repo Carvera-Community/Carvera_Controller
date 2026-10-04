@@ -21,6 +21,7 @@ from functools import partial
 from . import Utils
 from .CNC import CMDPAT, CNC, LASER_TOOL_NUMBER, PARENPAT, SEMIPAT, ZPROBE_TOOL_NUMBER
 from .protocols import MessageKind, ProtocolSession
+from .ui.tutorial.session import blocks_machine_io, demo_is_active
 from .USBBulkStream import USBBulkStream, is_usb_bulk_address
 from .USBStream import USBStream
 from .WIFIStream import WIFIStream
@@ -245,6 +246,8 @@ class Controller:
     def executeCommand(self, line):
         # if self.sio_status != False or self.sio_diagnose != False:      #wait for the ? or * command
         #    time.sleep(0.5)
+        if blocks_machine_io(self.stream):
+            return
         if self.stream and line:
             try:
                 if isinstance(line, str) and not line.endswith("\n"):
@@ -278,6 +281,8 @@ class Controller:
 
     def executeRealtime(self, char):
         """Send a single-byte realtime control through the active protocol."""
+        if blocks_machine_io(self.stream):
+            return
         self.executeRealtimeSequence(char)
 
     def executeRealtimeSequence(self, *chars):
@@ -287,6 +292,8 @@ class Controller:
         ``1`` as separate writes races with other commands and leaves orphaned
         ``1`` bytes in the firmware command buffer (seen as ``111…$J …``).
         """
+        if blocks_machine_io(self.stream):
+            return
         if not self.stream or not chars:
             return
         try:
@@ -1648,6 +1655,8 @@ class Controller:
         return "WiFi"
 
     def open(self, conn_type, address):
+        if demo_is_active():
+            return False
         # init connection
         method = self._connection_method_label(conn_type, address)
         # Single user-visible connect log (monitorSerial emits one MDI Received line).
@@ -1807,6 +1816,8 @@ class Controller:
     # WARNING: it has to be a single line!
     # ----------------------------------------------------------------------
     def sendGCode(self, cmd):
+        if blocks_machine_io(self.stream):
+            return
         self.executeCommand(cmd)
 
     # ----------------------------------------------------------------------

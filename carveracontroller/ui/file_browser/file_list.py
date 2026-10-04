@@ -17,7 +17,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.widget import Widget
 
-from carveracontroller.addons.tooltips.Tooltips import Tooltip, _compute_tooltip_box_size
+from carveracontroller.addons.tooltips.Tooltips import Tooltip, _compute_tooltip_box_size, tooltips_suppressed
 
 from .sources import KIND_FILE, KIND_FOLDER
 
@@ -70,6 +70,8 @@ class FileBrowserThumb(Widget):
         self._mouse_bound = False
 
     def _is_blocked_by_modal(self):
+        if tooltips_suppressed():
+            return True
         for child in Window.children:
             if isinstance(child, (Popup, ModalView)):
                 current = self.parent
