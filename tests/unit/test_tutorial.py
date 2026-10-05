@@ -49,6 +49,7 @@ _KV_TEXT = "\n".join(
     )
 )
 _BROWSER_PY = (_ROOT / "carveracontroller" / "ui" / "file_browser" / "FileBrowserPopup.py").read_text(encoding="utf-8")
+_MAIN_PY = (_ROOT / "carveracontroller" / "main.py").read_text(encoding="utf-8")
 
 
 def _intersects(a: Rect, b: Rect) -> bool:
@@ -96,7 +97,7 @@ def test_adjacent_button_outlines_merge_into_one():
 
 def test_tour_steps_point_at_real_controls():
     steps = tour_steps()
-    assert len(steps) == 20
+    assert len(steps) == 26
     for step in steps:
         assert step.screen in ("Control", "File")
         assert step.popup in (None, "coord", "files")
@@ -106,6 +107,10 @@ def test_tour_steps_point_at_real_controls():
             in_kv = f"id: {target_id}" in _KV_TEXT
             in_browser = f'tour_id="{target_id}"' in _BROWSER_PY
             assert in_kv or in_browser
+        if step.dropdown:
+            dd_name, anchor_id = step.dropdown.split(":")
+            assert f"id: {anchor_id}" in _KV_TEXT
+            assert f"self.{dd_name}" in _MAIN_PY or f"{dd_name} = " in _MAIN_PY
 
 
 def test_new_install_marks_tutorial_incomplete():

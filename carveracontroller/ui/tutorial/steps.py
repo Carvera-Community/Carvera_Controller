@@ -17,6 +17,7 @@ class TourStep:
     icon: str = ""
     popup: str | None = None
     kind: str = "spotlight"
+    dropdown: str | None = None
 
 
 TOUR_STEPS: tuple[TourStep, ...] = (
@@ -30,6 +31,23 @@ TOUR_STEPS: tuple[TourStep, ...] = (
         target_ids=("status_data_view",),
         screen="Control",
         icon="data/status.png",
+    ),
+    TourStep(
+        step_id="status_menu",
+        title="Connection options",
+        body=(
+            "Clicking the status button opens the connection menu.\n\n"
+            "From here you can:\n"
+            "- Reconnect to the last machine\n"
+            "- Scan for machines on Wi-Fi\n"
+            "- Connect to a machine by entering a network address\n"
+            "- Connect over USB\n"
+            "- Unlock or reset the machine after an alarm"
+        ),
+        target_ids=("status_data_view",),
+        screen="Control",
+        icon="data/status.png",
+        dropdown="status_drop_down:status_data_view",
     ),
     TourStep(
         step_id="position",
@@ -52,6 +70,36 @@ TOUR_STEPS: tuple[TourStep, ...] = (
         icon="data/axis-arrow.png",
     ),
     TourStep(
+        step_id="axis_menu",
+        title="Axis menu",
+        body=(
+            "Clicking on an axis button opens a menu with quick actions.\n\n"
+            "Each axis lets you:\n"
+            "- Zero the axis: set the work origin to zero\n"
+            "- Set a value: enter a specific value for the work origin"
+        ),
+        target_ids=("x_data_view",),
+        screen="Control",
+        icon="data/axis-arrow.png",
+        dropdown="x_drop_down:x_data_view",
+    ),
+    TourStep(
+        step_id="coord_system_menu",
+        title="Coordinate system menu",
+        body=(
+            "The coordinate system button also opens a menu.\n\n"
+            "From here you can:\n"
+            "- Set a rotation offset for the current WCS\n"
+            "- Switch to a different work coordinate system (G54, G55, ...)\n"
+            "- Open the WCS settings to configure all coordinate systems\n\n"
+            "If you are new to machining, you will probably stick to using a single workspace (G54)."
+        ),
+        target_ids=("coord_system_data_view",),
+        screen="Control",
+        icon="data/axis-arrow.png",
+        dropdown="coordinate_system_drop_down:coord_system_data_view",
+    ),
+    TourStep(
         step_id="feed_and_speed",
         title="Feed and speed",
         body=("Those buttons show you the current feed and spindle speed and allow you to override them."),
@@ -60,12 +108,56 @@ TOUR_STEPS: tuple[TourStep, ...] = (
         icon="data/spindle.png",
     ),
     TourStep(
+        step_id="feed_menu",
+        title="Feed rate menu",
+        body=(
+            "The feed button opens a panel where you can see the current feed status "
+            "and adjust the speed scaling.\n\n"
+            "Use the slider or the +/- buttons to override the feed rate "
+            "during a job, from 10% to 300%.\n\n"
+            "If you are running a new tool for the first time, it might be useful to initially run the Feed at 10% speed, and increase as you gain confidence."
+        ),
+        target_ids=("feed_data_view",),
+        screen="Control",
+        icon="data/feed.png",
+        dropdown="feed_drop_down:feed_data_view",
+    ),
+    TourStep(
+        step_id="spindle_menu",
+        title="Spindle menu",
+        body=(
+            "The spindle button opens a panel with:\n"
+            "- Current spindle speed, target, and temperature\n"
+            "- Auto vacuum and external output toggles\n"
+            "- RPM scaling slider to override spindle rpm during a job"
+        ),
+        target_ids=("spindle_laser_data_view",),
+        screen="Control",
+        icon="data/spindle.png",
+        dropdown="spindle_drop_down:spindle_laser_data_view",
+    ),
+    TourStep(
         step_id="tool",
         title="Tool selection",
-        body=("This button shows you the currently loaded tool. You can change it by clicking on it."),
+        body=("This button shows you the currently selected tool number. You can change it by clicking on it."),
         target_ids=("tool_data_view",),
         screen="Control",
         icon="data/tool.png",
+    ),
+    TourStep(
+        step_id="tool_menu",
+        title="Tool menu",
+        body=(
+            "The tool button opens a panel where you can:\n"
+            "- See the current tool length offset (TLO) and probe voltage\n"
+            "- Toggle laser mode on or off\n"
+            "- Change or calibrate the current tool\n"
+            "- Set the loaded tool number without a tool change"
+        ),
+        target_ids=("tool_data_view",),
+        screen="Control",
+        icon="data/tool.png",
+        dropdown="tool_drop_down:tool_data_view",
     ),
     TourStep(
         step_id="jogging",

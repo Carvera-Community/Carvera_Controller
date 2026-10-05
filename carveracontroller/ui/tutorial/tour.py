@@ -82,6 +82,7 @@ class Tutorial:
         self._coord_open = False
         self._files_open = False
         self._saved_browser: dict | None = None
+        self._open_dropdown_name: str | None = None
         self._loaded_demo = False
         self._demo_path = ""
         self._load_thread = None
@@ -182,6 +183,7 @@ class Tutorial:
             return
         set_demo_active(False)
         self._restore_transitions()
+        self._close_dropdown()
         self._close_file_browser()
         self._close_coord_popup()
         root = self.root
@@ -236,16 +238,22 @@ class Tutorial:
             self._switch_screen(getattr(root, "content", None), step.screen)
         if step.popup == "coord":
             self._close_file_browser()
+            self._close_dropdown()
             self._open_coord_popup()
         elif step.popup == "files":
             if self._coord_open:
                 self._close_coord_popup()
+            self._close_dropdown()
             self._open_file_browser()
         else:
             if self._coord_open:
                 self._close_coord_popup()
             if self._files_open:
                 self._close_file_browser()
+        if step.dropdown:
+            self._open_dropdown(step.dropdown)
+        else:
+            self._close_dropdown()
         if step.step_id in ("gcode_mdi", "toolpath"):
             self._ensure_sample()
             app = App.get_running_app()
@@ -297,6 +305,11 @@ class Tutorial:
 
     def _layout_step_body(self, step: TourStep, token: int, attempt: int) -> None:
         widgets = self._target_widgets(step)
+        if step.dropdown and self._open_dropdown_name:
+            dd_name = step.dropdown.split(":")[0]
+            dropdown = getattr(self.root, dd_name, None)
+            if dropdown is not None and dropdown.parent is not None:
+                widgets.append(dropdown)
         for widget in widgets:
             _reveal(widget)
         rects = _measure_targets(widgets)
@@ -465,6 +478,33 @@ class Tutorial:
             popup.selected_device_file = saved["device_file"]
         if popup._is_open:
             popup.dismiss()
+
+    def _open_dropdown(self, spec: str) -> None:
+        """Open a status-bar dropdown.  *spec* is ``"attr_name:anchor_id"``."""
+        parts = spec.split(":")
+        if len(parts) != 2:
+            return
+        dd_name, anchor_id = parts
+        if self._open_dropdown_name == dd_name:
+            return
+        self._close_dropdown()
+        root = self.root
+        dropdown = getattr(root, dd_name, None)
+        anchor = root.ids.get(anchor_id) if hasattr(root, "ids") else None
+        if dropdown is None or anchor is None:
+            return
+        dropdown.auto_dismiss = False
+        dropdown.open(anchor)
+        self._open_dropdown_name = dd_name
+
+    def _close_dropdown(self) -> None:
+        if self._open_dropdown_name is None:
+            return
+        dropdown = getattr(self.root, self._open_dropdown_name, None)
+        if dropdown is not None:
+            dropdown.dismiss()
+            dropdown.auto_dismiss = True
+        self._open_dropdown_name = None
 
     def _open_coord_popup(self) -> None:
         popup = self.root.coord_popup
