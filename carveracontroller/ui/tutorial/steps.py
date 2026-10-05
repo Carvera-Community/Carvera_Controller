@@ -314,7 +314,7 @@ TOUR_STEPS: tuple[TourStep, ...] = (
         title="Config and Run",
         body=(
             "The Config and Run dialog allows you to setup the file before it is run.\n\n"
-            "You can choose the work origin, and wether or not features such as scan margin, auto Z probe, and auto leveling should be run before the file."
+            "You can choose the work origin, and whether or not features such as scan margin, auto Z probe, and auto leveling should be run before the file."
         ),
         target_ids=("origin_card", "margin_card", "zprobe_card", "leveling_card"),
         screen="File",
