@@ -378,7 +378,7 @@ class TourOverlay(FloatLayout):
             self._add_connect_actions()
             self.buttons.add_widget(self._button("Done", self.on_done, "data/check.png", primary=True))
             return
-        self.buttons.add_widget(self._button("Next", self.on_next, "data/forward.png", primary=True))
+        self.buttons.add_widget(self._button("Next", self.on_next, "data/next.png", primary=True))
         self.buttons.add_widget(self._button("Skip", self.on_skip, "data/close.png"))
 
     def _add_connect_actions(self) -> None:
