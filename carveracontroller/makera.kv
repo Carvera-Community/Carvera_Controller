@@ -1176,10 +1176,9 @@
         small_icon: True
         size_hint_y: None
         height: '50dp'
-        tooltip_txt: tr._('Online Documentation')
+        tooltip_txt: tr._('Help')
         on_release:
-            root.select('')
-            app.root.open_online_docs()
+            app.root.open_help_menu(self)
 
 <StatusDropDown>:
     btn_connect_usb: btn_connect_usb
@@ -2803,6 +2802,7 @@
                 text: ''
 
             IconButton:
+                id: menu_button
                 icon: 'data/list.png'
                 icon_size: 24
                 notify: app.fw_has_update or app.ctl_has_update
@@ -2830,6 +2830,7 @@
                                 size: self.size
                                 radius: [self.height / 2,]
                         BoxLayout:
+                            id: jog_pad
                             disabled: not app.jog_controls_enabled
                             padding: '25dp'
                             canvas.before:
@@ -2905,6 +2906,7 @@
                                 size_hint_y: 0.3
                                 size_hint_min_y: '41dp'  # 35dp button + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
+                                    id: macro_bar
                                     padding: '3dp'
                                     canvas.before:
                                         Color:
@@ -2958,22 +2960,26 @@
                                             size: self.size
                                             radius: [dp(12),]
                                     GridLayout:
+                                        id: manual_actions
                                         padding: '10dp'
                                         cols: 3
                                         rows: 4
                                         spacing: dp(3)
                                         GridBoxLayout:
                                             SmallRoundButton:
+                                                id: unlock_btn
                                                 disabled: app.state != 'Idle'
                                                 text: tr._('Unlock')
                                                 on_release: root.controller.unlock()
                                         GridBoxLayout:
                                             SmallRoundButton:
+                                                id: reset_btn
                                                 disabled: app.state != 'Idle'
                                                 text: tr._('Reset')
                                                 on_release: root.controller.reset()
                                         GridBoxLayout:
                                             SmallRoundButton:
+                                                id: home_btn
                                                 disabled: app.state != 'Idle'
                                                 text: tr._('Home')
                                                 on_release: root.controller.home()
@@ -3066,6 +3072,7 @@
                                 size_hint_y: 0.5
                                 size_hint_min_y: '79dp'  # 35dp button x2 + 3dp spacing between buttons + 3dp padding top + 3dp padding bottom
                                 BoxLayout:
+                                    id: jog_controls_bar
                                     padding: '3dp'
                                     canvas.before:
                                         Color:
@@ -3109,6 +3116,7 @@
                                                 on_release: app.root.toggle_pendant_jog_control()
 
                         BoxLayout:
+                            id: az_jog_pad
                             disabled: not app.jog_controls_enabled
                             padding: '25dp'
                             orientation: 'horizontal'
@@ -3197,6 +3205,7 @@
                                     pos: self.x, self.y + self.height - self.strip_size
                                     size: self.width, self.strip_size
                             BoxLayout:
+                                id: gcode_pane
                                 # size_hint_x: 0.5
                                 orientation: 'vertical'
                                 canvas.before:
@@ -3512,6 +3521,7 @@
                         pos: self.pos
                         size: self.size
                 IconButton:
+                    id: select_file_btn
                     icon: 'data/file.png'
                     tooltip_txt: tr._('Select File')
                     icon_size: 21
@@ -3521,77 +3531,86 @@
                     size_hint_x: None
                     width: '3dp'
                 IconButton:
+                    id: start_file_btn
                     icon: 'data/start.png' if app.state == 'Pause' else 'data/config_start.png'
                     icon_size: 25
                     tooltip_txt: tr._('Start File')
                     disabled: (app.state != 'Idle' or app.selected_remote_filename == '' or app.playing) and app.state != 'Pause'
                     on_release: root.handle_start_file_action()
-                IconButton:
-                    icon: 'data/suspend.png'
-                    disabled: app.state != 'Run' or not app.playing
-                    tooltip_txt: tr._('Pause File at Next Safe Opportunity and Enable MDI Control')
-                    on_release:
-                        app.root.controller.suspendCommand()
-                IconButton:
-                    icon: 'data/abort.png'
-                    icon_size: 24
-                    tooltip_txt: tr._('Abort File Now')
-                    disabled: (app.state != 'Run' and app.state != 'Pause') or not app.playing
-                    on_release:
-                        app.root.controller.abortCommand()
-                Label:
-                    size_hint_x: None
-                    width: '3dp'
-                IconButton:
-                    icon: 'data/feedhold2.png' if app.state == 'Hold' else 'data/feedhold1.png'
-                    icon_size: 24
-                    tooltip_txt: tr._('Pause File Without MDI')
-                    disabled: app.state != 'Run' and app.state != 'Idle' and app.state != 'Hold'
-                    on_release:
-                        self.disabled = True
-                        app.root.controller.toggleFeedholdCommand(app.state == 'Hold')
-                Label:
-                    size_hint_x: None
-                    width: '3dp'
                 BoxLayout:
-                    padding: 0, 0, 0, dp(0.5)
-                    WideProgressBar:
-                        id: wpb_margin
+                    id: job_controls_bar
+                    spacing: '2dp'
+                    IconButton:
+                        id: pause_file_btn
+                        icon: 'data/suspend.png'
+                        disabled: app.state != 'Run' or not app.playing
+                        tooltip_txt: tr._('Pause File at Next Safe Opportunity and Enable MDI Control')
+                        on_release:
+                            app.root.controller.suspendCommand()
+                    IconButton:
+                        id: abort_file_btn
+                        icon: 'data/abort.png'
+                        icon_size: 24
+                        tooltip_txt: tr._('Abort File Now')
+                        disabled: (app.state != 'Run' and app.state != 'Pause') or not app.playing
+                        on_release:
+                            app.root.controller.abortCommand()
+                    Label:
                         size_hint_x: None
-                        width: '25dp'
-                        color: 0, 0.8, 0, 1
-                    WideProgressBar:
-                        id: wpb_zprobe
+                        width: '3dp'
+                    IconButton:
+                        id: feedhold_btn
+                        icon: 'data/feedhold2.png' if app.state == 'Hold' else 'data/feedhold1.png'
+                        icon_size: 24
+                        tooltip_txt: tr._('Pause File Without MDI')
+                        disabled: app.state != 'Run' and app.state != 'Idle' and app.state != 'Hold'
+                        on_release:
+                            self.disabled = True
+                            app.root.controller.toggleFeedholdCommand(app.state == 'Hold')
+                    Label:
                         size_hint_x: None
-                        width: '25dp'
-                        color: 231/255, 76/255, 60/255, 1
-                    WideProgressBar:
-                        id: wpb_leveling
-                        size_hint_x: None
-                        width: '25dp'
-                        color: 244/255, 208/255, 63/255, 1
-                    PlayProgressBar:
-                        id: wpb_play
-                        Label:
+                        width: '3dp'
+                    BoxLayout:
+                        padding: 0, 0, 0, dp(0.5)
+                        WideProgressBar:
+                            id: wpb_margin
                             size_hint_x: None
-                            width: '5dp'
-                        Label:
-                            text: root.progress_info
-                            text_size: self.size
-                            halign: 'left'
-                            valign: 'middle'
-                            font_size: '16sp'
-                            color: 240/255, 240/255, 240/255, 1
+                            width: '25dp'
+                            color: 0, 0.8, 0, 1
+                        WideProgressBar:
+                            id: wpb_zprobe
+                            size_hint_x: None
+                            width: '25dp'
+                            color: 231/255, 76/255, 60/255, 1
+                        WideProgressBar:
+                            id: wpb_leveling
+                            size_hint_x: None
+                            width: '25dp'
+                            color: 244/255, 208/255, 63/255, 1
+                        PlayProgressBar:
+                            id: wpb_play
+                            Label:
+                                size_hint_x: None
+                                width: '5dp'
+                            Label:
+                                text: root.progress_info
+                                text_size: self.size
+                                halign: 'left'
+                                valign: 'middle'
+                                font_size: '16sp'
+                                color: 240/255, 240/255, 240/255, 1
 
-                IconButton:
-                    icon: 'data/stop.png'
-                    tooltip_txt: tr._('E-Stop')
-                    icon_size: 40
-                    disabled: app.state == 'N/A'
-                    on_release:
-                        app.root.controller.estopCommand()
+                    IconButton:
+                        id: estop_btn
+                        icon: 'data/stop.png'
+                        tooltip_txt: tr._('E-Stop')
+                        icon_size: 40
+                        disabled: app.state == 'N/A'
+                        on_release:
+                            app.root.controller.estopCommand()
 
     Button:
+        id: screen_toggle
         size_hint: None, None
         size: '40dp', '100dp'
         pos: root.width - self.width - app.safe_area_padding[2], (root.height - self.height) / 2 + (app.safe_area_padding[3] - app.safe_area_padding[1]) / 2

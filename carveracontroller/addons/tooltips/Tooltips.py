@@ -25,9 +25,23 @@ TOOLTIP_MIN_WIDTH = 200
 # Wrap long tooltip text at this width so multi-line content stays readable.
 TOOLTIP_MAX_WIDTH = 360
 
+_tooltips_suppressed = False
+
+
+def set_tooltips_suppressed(suppressed: bool) -> None:
+    """Hide hover tips while another layer, such as the tour, owns the pointer."""
+    global _tooltips_suppressed
+    _tooltips_suppressed = bool(suppressed)
+
+
+def tooltips_suppressed() -> bool:
+    return _tooltips_suppressed
+
 
 def is_blocked_by_modal(widget=None):
     """True when a Popup or ModalView is on the Window and widget is not inside it."""
+    if _tooltips_suppressed:
+        return True
     try:
         children = Window.children
     except Exception:
@@ -271,6 +285,8 @@ class ToolTipSwitch(Switch):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
+        if is_blocked_by_modal():
+            return
         Window.add_widget(self._tooltip)
 
 
@@ -429,6 +445,8 @@ class ToolTipTextInput(TextInput):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
+        if is_blocked_by_modal():
+            return
         Window.add_widget(self._tooltip)
 
 
@@ -668,6 +686,8 @@ class ToolTipButton(Button):
         # Rasterizing is expensive, so it waits until the hover delay has
         # elapsed rather than running on every mouse move across the widget.
         # The box then has to be re-measured around the new image.
+        if is_blocked_by_modal():
+            return
         if self._ensure_tooltip_texture() and self._hover_pos is not None:
             self._layout_tooltip_at(self._hover_pos)
         Window.add_widget(self._tooltip)
@@ -824,6 +844,8 @@ class ToolTipDropDown(DropDown):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
+        if is_blocked_by_modal():
+            return
         Window.add_widget(self._tooltip)
 
 
@@ -1005,6 +1027,8 @@ class ToolTipLabel(Label):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
+        if is_blocked_by_modal():
+            return
         Window.add_widget(self._tooltip)
 
 

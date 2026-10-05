@@ -299,12 +299,13 @@ class FileBrowserPopup(ModalView):
     def restore_machine_root(self):
         self.machine_dir = MACHINE_BASE_DIR
 
-    def list_device_dir(self, path: str):
+    def list_device_dir(self, path: str, *, remember: bool = True):
         target = path or self.device_dir or default_device_dir()
         if not os.path.isdir(target):
             target = default_device_dir()
         self.device_dir = os.path.normpath(target)
-        self._remember_device_dir()
+        if remember:
+            self._remember_device_dir()
         self._clear_list_selection()
         self._device_entries = list_device_directory(self.device_dir)
         self._rebuild_list(reset_scroll=True)
@@ -1118,6 +1119,9 @@ class FileBrowserPopup(ModalView):
         if bar is None:
             return
         bar.clear_widgets()
+        for key in ("file_preview_btn", "file_upload_select_btn"):
+            if key in self.ids:
+                self.ids.pop(key)
         if state.show_upload_and_use:
             bar.add_widget(
                 self._footer_btn(
@@ -1126,6 +1130,7 @@ class FileBrowserPopup(ModalView):
                     icon="data/play.png",
                     primary=state.primary == "upload_and_use",
                     tooltip=self._upload_dest_tooltip(),
+                    tour_id="file_upload_select_btn",
                 )
             )
         if state.show_upload:
@@ -1145,6 +1150,7 @@ class FileBrowserPopup(ModalView):
                     self.on_preview,
                     icon="data/eye.png",
                     primary=state.primary == "preview",
+                    tour_id="file_preview_btn",
                 )
             )
         if state.show_use_as_job:
@@ -1178,7 +1184,7 @@ class FileBrowserPopup(ModalView):
                 )
             )
 
-    def _footer_btn(self, text, callback, *, icon="", primary=False, destructive=False, tooltip=""):
+    def _footer_btn(self, text, callback, *, icon="", primary=False, destructive=False, tooltip="", tour_id=""):
         btn = PopupActionButton(
             btn_text=text,
             icon=icon,
@@ -1187,6 +1193,8 @@ class FileBrowserPopup(ModalView):
             flat=True,
             tooltip_txt=tooltip,
         )
+        if tour_id:
+            self.ids[tour_id] = btn
         if self.compact and primary:
             btn.size_hint_x = 1
             btn.width = 0

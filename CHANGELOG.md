@@ -24,6 +24,7 @@
 - Enhancement: Auto-correct MDI command case. When a command entered in the MDI matches a known command, its case is corrected to the canonical form before sending (e.g. 'g0 x10' sends as 'G0 X10'). Controlled by a new "Auto-Correct MDI Command Case" setting, enabled by default.
 - Enhancement: The documentation site base URL is changed to the dev version when a non-stable version number is set 
 - Enhancement: Migrate stock simulation to a native implementation for better performances
+- Enhancement: Add a guided tour on first startup
 - Change: Update screen is now accessible when not connected to a machine
 - Change: Facing wizard now supports center WCS origin
 - Change: Hide Auto Vacuum on the Config and Run screen when the machine is not a C1

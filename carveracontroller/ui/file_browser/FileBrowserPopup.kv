@@ -263,12 +263,14 @@
             opacity: 0 if root.firmware_mode else 1
             spacing: dp(4)
             FileBrowserLocationTab:
+                id: tab_device
                 tab_text: tr._('This device')
                 icon: 'data/laptop.png'
                 path_text: root.device_tab_path
                 selected: root.location == 'device'
                 on_release: root.set_location('device')
             FileBrowserLocationTab:
+                id: tab_machine
                 tab_text: tr._('CNC Machine')
                 icon: 'data/makera.png'
                 path_text: root.machine_tab_path
