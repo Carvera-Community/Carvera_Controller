@@ -39,11 +39,15 @@ jobs:
       with:
         os: windows
 
-    - uses: git-for-windows/setup-git-for-windows-sdk@v1
-      with:
-        flavor: minimal
-      # We install git-for-windows so as to have access to the msgfmt.exe binary
-      # from the GNU gettext package.
+    - name: Install gettext via WinGet
+      shell: pwsh
+      run: winget install --id GNU.Gettext --exact --silent --accept-source-agreements --accept-package-agreements
+
+    - name: Add gettext to PATH
+      shell: pwsh
+      run: |
+        # Add gettext bin directory to PATH if not automatically added
+        echo "C:\Program Files\gettext\bin" >> $env:GITHUB_PATH
 
     - name: "Install Windows-Mesa OpenGL DLL"
       run: |
