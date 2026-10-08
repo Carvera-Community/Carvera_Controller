@@ -6,6 +6,8 @@
     "parameters.<name>.required is true or false.",
     "parameters.<name>.default is a number, string, or null when there is no fixed default.",
     "default_source names a config key when the default comes from configuration.",
+    "C1 uses src/config.default; CA1 uses src/config2.default; Z1 uses src/config_z1.default, Z1 Pro uses src/config_z1pro.default.",
+    "the SD config.txt overlay overrides all of these defaults.",
     "3D-printer leftovers are listed because the firmware still parses them; they are not used on Carvera."
   ],
   "commands": {
@@ -39,6 +41,11 @@
           "default": 3000,
           "unit": "mm/min",
           "default_source": "default_seek_rate"
+        },
+        "S": {
+          "required": false,
+          "description": "Laser power for this move. Stays in effect until another S is given.",
+          "default": null
         }
       }
     },
@@ -72,6 +79,11 @@
           "default": 1000,
           "unit": "mm/min",
           "default_source": "default_feed_rate"
+        },
+        "S": {
+          "required": false,
+          "description": "Laser power for this move. Stays in effect until another S is given.",
+          "default": null
         }
       }
     },
@@ -120,6 +132,11 @@
           "default": 1000,
           "unit": "mm/min",
           "default_source": "default_feed_rate"
+        },
+        "S": {
+          "required": false,
+          "description": "Laser power for this move. Stays in effect until another S is given.",
+          "default": null
         }
       }
     },
@@ -168,6 +185,11 @@
           "default": 1000,
           "unit": "mm/min",
           "default_source": "default_feed_rate"
+        },
+        "S": {
+          "required": false,
+          "description": "Laser power for this move. Stays in effect until another S is given.",
+          "default": null
         }
       }
     },
@@ -179,6 +201,12 @@
           "required": true,
           "description": "Dwell time.",
           "default": null,
+          "unit": "seconds"
+        },
+        "S": {
+          "required": false,
+          "description": "Additional dwell in whole seconds, added to P.",
+          "default": 0,
           "unit": "seconds"
         }
       }
@@ -216,6 +244,12 @@
           "required": false,
           "description": "A offset or coordinate.",
           "default": null
+        },
+        "R": {
+          "required": false,
+          "description": "Workspace XY rotation. Only read when L is 2 or 20 and P is present.",
+          "default": null,
+          "unit": "deg"
         }
       }
     },
@@ -253,7 +287,28 @@
     "G28.2": {
       "type": "gcode",
       "description": "Homing cycle",
-      "parameters": {}
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Home X only. Omit all axes to home every configured axis.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Home Y only.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Home Z only.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Home A, if that axis has a home switch. Original Carvera 4th axis don't have a magnetic home switch, others do.",
+          "default": null
+        }
+      }
     },
     "G29": {
       "type": "gcode",
@@ -283,6 +338,11 @@
           "required": false,
           "description": "Probe height",
           "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "1 skips the home move before probing.",
+          "default": null
         }
       }
     },
@@ -311,12 +371,7 @@
     },
     "G31": {
       "type": "gcode",
-      "description": "Grid probe report, and enable leveling compensation (same family as G32).",
-      "parameters": {}
-    },
-    "G32": {
-      "type": "gcode",
-      "description": "Probe a grid and enable bed compensation until reset or M370.",
+      "description": "Same as G32. Probe a grid and enable bed compensation until reset or M370.",
       "parameters": {
         "X": {
           "required": false,
@@ -355,6 +410,60 @@
           "description": "Probe height.",
           "default": null,
           "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "1 skips the home move before probing.",
+          "default": null
+        }
+      }
+    },
+    "G32": {
+      "type": "gcode",
+      "description": "Same as G31. Probe a grid and enable bed compensation until reset or M370.",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Grid start X.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Grid start Y.",
+          "default": null
+        },
+        "A": {
+          "required": false,
+          "description": "Grid width.",
+          "default": null,
+          "unit": "mm"
+        },
+        "B": {
+          "required": false,
+          "description": "Grid length.",
+          "default": null,
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Number of points in X.",
+          "default": null
+        },
+        "J": {
+          "required": false,
+          "description": "Number of points in Y.",
+          "default": null
+        },
+        "H": {
+          "required": false,
+          "description": "Probe height.",
+          "default": null,
+          "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "1 skips the home move before probing.",
+          "default": null
         }
       }
     },
@@ -363,20 +472,42 @@
       "description": "Record an X-axis flex profile and enable flex compensation.",
       "parameters": {
         "X": {
-          "required": false,
+          "required": true,
           "description": "Travel distance along X.",
           "default": null,
           "unit": "mm"
         },
         "Y": {
-          "required": false,
+          "required": true,
           "description": "Y position for the profile.",
           "default": null
         },
         "I": {
-          "required": false,
+          "required": true,
           "description": "Number of sample intervals.",
           "default": null
+        },
+        "L": {
+          "required": false,
+          "description": "Repeat measurements at each point.",
+          "default": 1
+        },
+        "D": {
+          "required": false,
+          "description": "Print the measurement detail.",
+          "default": null
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed.",
+          "default": 600,
+          "unit": "mm/min"
+        },
+        "R": {
+          "required": false,
+          "description": "Rapid feed between points.",
+          "default": 800,
+          "unit": "mm/min"
         }
       }
     },
@@ -510,8 +641,21 @@
     },
     "G38.6": {
       "type": "gcode",
-      "description": "Calibrate-Z style probe. Hard-disabled in Community firmware.",
-      "parameters": {}
+      "description": "Probe in Z until the tool-setter triggers. Used for tool-length measurement.",
+      "parameters": {
+        "Z": {
+          "required": true,
+          "description": "Z travel distance. Must be non-zero.",
+          "default": null,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probe feed.",
+          "default": null,
+          "unit": "mm/min"
+        }
+      }
     },
     "G53": {
       "type": "gcode",
@@ -632,6 +776,11 @@
           "required": false,
           "description": "With A0, shrink the A axis into 0–360 range.",
           "default": null
+        },
+        "R": {
+          "required": false,
+          "description": "With A, take the short rotation onto that position.",
+          "default": null
         }
       }
     },
@@ -715,6 +864,24 @@
           "required": false,
           "description": "1 run automatic TLO after the change, 0 skip it.",
           "default": 1
+        },
+        "X": {
+          "required": false,
+          "description": "One-off tool-setter offset on X.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "One-off tool-setter offset on Y.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "One-off tool-setter offset on Z.",
+          "default": null,
+          "unit": "mm"
         }
       }
     },
@@ -799,6 +966,17 @@
       "type": "mcode",
       "description": "Report playback progress (Marlin-style), used to sync the controller display.",
       "parameters": {}
+    },
+    "M28": {
+      "type": "mcode",
+      "description": "Start writing following G-code lines to an SD-card file. End with M29. Unavailable when local file storage is disabled.",
+      "parameters": {
+        "filename": {
+          "required": true,
+          "description": "File to create.",
+          "default": null
+        }
+      }
     },
     "M30": {
       "type": "mcode",
@@ -1006,7 +1184,7 @@
     },
     "M204": {
       "type": "mcode",
-      "description": "Set default acceleration. S sets the default; X Y Z set per-axis acceleration.",
+      "description": "Set acceleration. S sets the default; X Y Z A set per-axis acceleration.",
       "parameters": {
         "S": {
           "required": false,
@@ -1029,6 +1207,12 @@
         "Z": {
           "required": false,
           "description": "Z acceleration.",
+          "default": null,
+          "unit": "mm/s^2"
+        },
+        "A": {
+          "required": false,
+          "description": "A-axis acceleration.",
           "default": null,
           "unit": "mm/s^2"
         }
@@ -1248,7 +1432,7 @@
     },
     "M337": {
       "type": "mcode",
-      "description": "Set the LED bar color. (Works on all machines except for Carvera C1)",
+      "description": "Set LED colour. Without R/U/B, reports the current colour",
       "parameters": {
         "R": {
           "required": false,
@@ -1264,8 +1448,18 @@
           "required": false,
           "description": "Blue 0–255.",
           "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "LED index 1–5. Omit to address all the leds.",
+          "default": null
         }
       }
+    },
+    "M338": {
+      "type": "mcode",
+      "description": "Restore the LEDs to the current machine status colour.",
+      "parameters": {}
     },
     "M370": {
       "type": "mcode",
@@ -1327,20 +1521,72 @@
       "description": "Calibrate the 3D probe tip. Default is against a bore of known diameter.",
       "parameters": {
         "X": {
-          "required": true,
-          "description": "Known diameter or X size of the feature.",
+          "required": false,
+          "description": "Known bore diameter in X. At least one of X or Y is required.",
           "default": null,
           "unit": "mm"
         },
         "Y": {
           "required": false,
-          "description": "Known Y size. Defaults to X if omitted.",
+          "description": "Known bore diameter in Y. Defaults to X if omitted.",
           "default": null,
           "unit": "mm"
         },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
+        },
+        "U": {
+          "required": false,
+          "description": "Extra rotation applied between repeat measurements.",
+          "default": 0,
+          "unit": "deg"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin.",
+          "default": 0
+        },
         "I": {
           "required": false,
-          "description": "Invert probe for NC.",
+          "description": "Invert probe pin for a normally-closed probe.",
           "default": 0
         }
       }
@@ -1350,26 +1596,73 @@
       "description": "Calibrate probe tip diameter in a known bore. Prints a config-set line in MDI.",
       "parameters": {
         "X": {
-          "required": true,
-          "description": "Known bore diameter in X.",
+          "required": false,
+          "description": "Known bore diameter in X. At least one of X or Y is required.",
           "default": null,
           "unit": "mm"
         },
         "Y": {
           "required": false,
-          "description": "Known bore diameter in Y.",
-          "default": "same as X",
+          "description": "Known bore diameter in Y. Defaults to X if omitted.",
+          "default": null,
           "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used between probes.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
         },
         "R": {
           "required": false,
-          "description": "Repeat measurements.",
-          "default": 1
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
+        },
+        "U": {
+          "required": false,
+          "description": "Extra rotation applied between repeat measurements.",
+          "default": 0,
+          "unit": "deg"
         },
         "S": {
           "required": false,
-          "description": "Save-position flag.",
-          "default": null
+          "description": "Save result: 0 none, 1 set XY WCS origin.",
+          "default": 0
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
         }
       }
     },
@@ -1378,14 +1671,78 @@
       "description": "Calibrate the probe on a known boss.",
       "parameters": {
         "X": {
-          "required": true,
-          "description": "Known boss diameter.",
+          "required": false,
+          "description": "Known boss size in X. Give X or Y, not both.",
           "default": null,
           "unit": "mm"
         },
+        "Y": {
+          "required": false,
+          "description": "Known boss size in Y. Give X or Y, not both.",
+          "default": null,
+          "unit": "mm"
+        },
+        "J": {
+          "required": false,
+          "description": "Clearance when moving around the outside.",
+          "default": 4,
+          "unit": "mm"
+        },
+        "E": {
+          "required": false,
+          "description": "Depth below the top surface at which side probes run.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Height above the feature before starting. The top is probed when this is not 0.",
+          "default": 0,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance height used when dropping to the side-probe depth.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Probing feed rate.",
+          "default": 300,
+          "unit": "mm/min"
+        },
+        "K": {
+          "required": false,
+          "description": "Rapid feed rate for positioning moves.",
+          "default": 800,
+          "unit": "mm/min"
+        },
+        "L": {
+          "required": false,
+          "description": "Number of repeat measurements.",
+          "default": 1
+        },
+        "R": {
+          "required": false,
+          "description": "Retract distance after a touch.",
+          "default": 1.5,
+          "unit": "mm"
+        },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
+        },
+        "S": {
+          "required": false,
+          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "default": 0
+        },
         "I": {
           "required": false,
-          "description": "Invert probe.",
+          "description": "Invert probe pin for a normally-closed probe.",
           "default": 0
         }
       }
@@ -1423,12 +1780,6 @@
           "default": "zprobe.probe_tip_diameter",
           "unit": "mm",
           "default_source": "zprobe.probe_tip_diameter"
-        },
-        "E": {
-          "required": false,
-          "description": "Depth below the top surface at which side probes run.",
-          "default": 2,
-          "unit": "mm"
         },
         "H": {
           "required": false,
@@ -1470,6 +1821,12 @@
           "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
           "default": 0
         },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
+        },
         "I": {
           "required": false,
           "description": "Invert probe pin for a normally-closed probe.",
@@ -1482,14 +1839,14 @@
       "description": "Probe a boss or rectangular block for center and size. Start near the center.",
       "parameters": {
         "X": {
-          "required": true,
-          "description": "X travel / half-size.",
+          "required": false,
+          "description": "X travel / half-size. At least one of X or Y is required.",
           "default": null,
           "unit": "mm"
         },
         "Y": {
-          "required": true,
-          "description": "Y travel / half-size.",
+          "required": false,
+          "description": "Y travel / half-size. At least one of X or Y is required.",
           "default": null,
           "unit": "mm"
         },
@@ -1552,6 +1909,12 @@
           "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
           "default": 0
         },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
+        },
         "I": {
           "required": false,
           "description": "Invert probe pin for a normally-closed probe.",
@@ -1581,12 +1944,6 @@
           "default": "zprobe.probe_tip_diameter",
           "unit": "mm",
           "default_source": "zprobe.probe_tip_diameter"
-        },
-        "E": {
-          "required": false,
-          "description": "Depth below the top surface at which side probes run.",
-          "default": 2,
-          "unit": "mm"
         },
         "H": {
           "required": false,
@@ -1627,6 +1984,12 @@
           "required": false,
           "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
           "default": 0
+        },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
         },
         "I": {
           "required": false,
@@ -1704,6 +2067,12 @@
           "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
           "default": 0
         },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
+        },
         "I": {
           "required": false,
           "description": "Invert probe pin for a normally-closed probe.",
@@ -1729,13 +2098,6 @@
           "required": false,
           "description": "Visualize-path distance.",
           "default": 0
-        },
-        "D": {
-          "required": false,
-          "description": "Probe tip diameter used to offset the result.",
-          "default": "zprobe.probe_tip_diameter",
-          "unit": "mm",
-          "default_source": "zprobe.probe_tip_diameter"
         },
         "E": {
           "required": false,
@@ -1780,8 +2142,14 @@
         },
         "S": {
           "required": false,
-          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "description": "1 stores the measured angle as the work-coordinate rotation.",
           "default": 0
+        },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
         },
         "I": {
           "required": false,
@@ -1838,6 +2206,11 @@
           "required": false,
           "description": "Save the A-axis offset if set.",
           "default": null
+        },
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
         }
       }
     },
@@ -1845,15 +2218,15 @@
       "type": "mcode",
       "description": "Same as M465.1 but positions from the configured 4th-axis offsets first.",
       "parameters": {
-        "Y": {
+        "X": {
           "required": true,
-          "description": "Total probing span; machine uses +Y/2 and −Y/2.",
+          "description": "Offset from the 4th-axis origin.",
           "default": null,
           "unit": "mm"
         },
-        "H": {
+        "Y": {
           "required": true,
-          "description": "Probe depth from the current position.",
+          "description": "Total probing span; machine uses +Y/2 and −Y/2.",
           "default": null,
           "unit": "mm"
         },
@@ -1875,8 +2248,8 @@
           "default": 1
         },
         "R": {
-          "required": false,
-          "description": "Retract distance.",
+          "required": true,
+          "description": "Retract distance after a touch. Required on this command.",
           "default": 1.5,
           "unit": "mm"
         },
@@ -1890,11 +2263,10 @@
           "description": "Save the A-axis offset if set.",
           "default": null
         },
-        "X": {
-          "required": true,
-          "description": "Offset from the 4th-axis origin.",
-          "default": null,
-          "unit": "mm"
+        "I": {
+          "required": false,
+          "description": "Invert probe pin for a normally-closed probe.",
+          "default": 0
         }
       }
     },
@@ -1924,34 +2296,10 @@
           "unit": "mm",
           "default_source": "zprobe.probe_tip_diameter"
         },
-        "E": {
-          "required": false,
-          "description": "Depth below the top surface at which side probes run.",
-          "default": 2,
-          "unit": "mm"
-        },
-        "H": {
-          "required": false,
-          "description": "Height above the feature before starting.",
-          "default": 0,
-          "unit": "mm"
-        },
-        "C": {
-          "required": false,
-          "description": "Clearance height used between probes.",
-          "default": 2,
-          "unit": "mm"
-        },
         "F": {
           "required": false,
           "description": "Probing feed rate.",
           "default": 300,
-          "unit": "mm/min"
-        },
-        "K": {
-          "required": false,
-          "description": "Rapid feed rate for positioning moves.",
-          "default": 800,
           "unit": "mm/min"
         },
         "L": {
@@ -1967,8 +2315,14 @@
         },
         "S": {
           "required": false,
-          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
+          "description": "Save result: 0 none, 1 set the probed X/Y origin, 2 also set Z origin.",
           "default": 0
+        },
+        "Q": {
+          "required": false,
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
         },
         "I": {
           "required": false,
@@ -1982,38 +2336,21 @@
       "description": "Rectangle / square probe variant of the single-axis family.",
       "parameters": {
         "X": {
-          "required": false,
+          "required": true,
           "description": "X size.",
-          "default": null
+          "default": null,
+          "unit": "mm"
         },
         "Y": {
-          "required": false,
+          "required": true,
           "description": "Y size.",
-          "default": null
-        },
-        "D": {
-          "required": false,
-          "description": "Probe tip diameter used to offset the result.",
-          "default": "zprobe.probe_tip_diameter",
-          "unit": "mm",
-          "default_source": "zprobe.probe_tip_diameter"
-        },
-        "E": {
-          "required": false,
-          "description": "Depth below the top surface at which side probes run.",
-          "default": 2,
+          "default": null,
           "unit": "mm"
         },
         "H": {
-          "required": false,
-          "description": "Height above the feature before starting.",
-          "default": 0,
-          "unit": "mm"
-        },
-        "C": {
-          "required": false,
-          "description": "Clearance height used between probes.",
-          "default": 2,
+          "required": true,
+          "description": "Downward probe distance at each corner.",
+          "default": null,
           "unit": "mm"
         },
         "F": {
@@ -2039,10 +2376,11 @@
           "default": 1.5,
           "unit": "mm"
         },
-        "S": {
+        "Q": {
           "required": false,
-          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
-          "default": 0
+          "description": "Rotation added to the active work coordinate rotation.",
+          "default": 0,
+          "unit": "deg"
         },
         "I": {
           "required": false,
@@ -2053,77 +2391,8 @@
     },
     "M467": {
       "type": "mcode",
-      "description": "Probe a square/rectangle feature (community square probe).",
-      "parameters": {
-        "X": {
-          "required": false,
-          "description": "X size.",
-          "default": null
-        },
-        "Y": {
-          "required": false,
-          "description": "Y size.",
-          "default": null
-        },
-        "D": {
-          "required": false,
-          "description": "Probe tip diameter used to offset the result.",
-          "default": "zprobe.probe_tip_diameter",
-          "unit": "mm",
-          "default_source": "zprobe.probe_tip_diameter"
-        },
-        "E": {
-          "required": false,
-          "description": "Depth below the top surface at which side probes run.",
-          "default": 2,
-          "unit": "mm"
-        },
-        "H": {
-          "required": false,
-          "description": "Height above the feature before starting.",
-          "default": 0,
-          "unit": "mm"
-        },
-        "C": {
-          "required": false,
-          "description": "Clearance height used between probes.",
-          "default": 2,
-          "unit": "mm"
-        },
-        "F": {
-          "required": false,
-          "description": "Probing feed rate.",
-          "default": 300,
-          "unit": "mm/min"
-        },
-        "K": {
-          "required": false,
-          "description": "Rapid feed rate for positioning moves.",
-          "default": 800,
-          "unit": "mm/min"
-        },
-        "L": {
-          "required": false,
-          "description": "Number of repeat measurements.",
-          "default": 1
-        },
-        "R": {
-          "required": false,
-          "description": "Retract distance after a touch.",
-          "default": 1.5,
-          "unit": "mm"
-        },
-        "S": {
-          "required": false,
-          "description": "Save result: 0 none, 1 set XY WCS origin, 2 also set Z origin when H was given.",
-          "default": 0
-        },
-        "I": {
-          "required": false,
-          "description": "Invert probe pin for a normally-closed probe.",
-          "default": 0
-        }
-      }
+      "description": "Not implemented. The square probe is M466.1.",
+      "parameters": {}
     },
     "M469.1": {
       "type": "mcode",
@@ -2178,12 +2447,67 @@
     "M469.5": {
       "type": "mcode",
       "description": "Calibrate rotation_offset_z by probing a known-diameter pin in the 4th-axis chuck from four A orientations.",
-      "parameters": {}
+      "parameters": {
+        "I": {
+          "required": false,
+          "description": "1 inverts the probe.",
+          "default": 0
+        },
+        "X": {
+          "required": false,
+          "description": "X offset from the rotary anchor to the pin.",
+          "default": 60,
+          "unit": "mm"
+        },
+        "C": {
+          "required": false,
+          "description": "Retract height between probes.",
+          "default": 4,
+          "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "Pin diameter.",
+          "default": 6,
+          "unit": "mm"
+        }
+      }
     },
     "M469.6": {
       "type": "mcode",
       "description": "Calibrate A-axis centre of rotation. This is the current Controller calibration flow for the 4th axis.",
-      "parameters": {}
+      "parameters": {
+        "I": {
+          "required": false,
+          "description": "1 inverts the probe.",
+          "default": 0
+        },
+        "R": {
+          "required": false,
+          "description": "Diameter of the round artifact in the chuck.",
+          "default": 50,
+          "unit": "mm"
+        },
+        "D": {
+          "required": false,
+          "description": "Probe tip diameter.",
+          "default": "zprobe.probe_tip_diameter",
+          "unit": "mm",
+          "default_source": "zprobe.probe_tip_diameter"
+        },
+        "C": {
+          "required": false,
+          "description": "Clearance past the artifact before each side probe.",
+          "default": 2,
+          "unit": "mm"
+        },
+        "F": {
+          "required": false,
+          "description": "Positioning feed.",
+          "default": 400,
+          "unit": "mm/min"
+        }
+      }
     },
     "M469.7": {
       "type": "mcode",
@@ -2644,7 +2968,31 @@
     "M491": {
       "type": "mcode",
       "description": "Calibrate TLO for the current tool on the tool setter.",
-      "parameters": {}
+      "parameters": {
+        "R": {
+          "required": false,
+          "description": "Repeat the tool-length measurement.",
+          "default": 1
+        },
+        "X": {
+          "required": false,
+          "description": "One-off tool-setter offset on X.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": false,
+          "description": "One-off tool-setter offset on Y.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "One-off tool-setter offset on Z.",
+          "default": null,
+          "unit": "mm"
+        }
+      }
     },
     "M491.2": {
       "type": "mcode",
@@ -2685,7 +3033,13 @@
     "M493": {
       "type": "mcode",
       "description": "Set or report the current tool number / TLO state.",
-      "parameters": {}
+      "parameters": {
+        "R": {
+          "required": false,
+          "description": "Tool slot whose stored length is applied.",
+          "default": 1
+        }
+      }
     },
     "M493.1": {
       "type": "mcode",
@@ -2716,6 +3070,12 @@
         "Z": {
           "required": true,
           "description": "TLO value.",
+          "default": null,
+          "unit": "mm"
+        },
+        "H": {
+          "required": false,
+          "description": "Set tool length from the current Z, as a height above Z0.",
           "default": null,
           "unit": "mm"
         }
@@ -2929,6 +3289,11 @@
       "description": "Erase EEPROM data. Do not run unless you intend to wipe stored offsets.",
       "parameters": {}
     },
+    "M498.3": {
+      "type": "mcode",
+      "description": "Dump the complete EEPROM as hexadecimal data followed by its CRC16-CCITT.",
+      "parameters": {}
+    },
     "M499": {
       "type": "mcode",
       "description": "Print current tool information.",
@@ -3025,11 +3390,6 @@
           "description": "Include A.",
           "default": null
         },
-        "B": {
-          "required": false,
-          "description": "Include B.",
-          "default": null
-        },
         "C": {
           "required": false,
           "description": "Include C.",
@@ -3121,6 +3481,12 @@
           "required": false,
           "description": "Invert probe.",
           "default": null
+        },
+        "D": {
+          "required": false,
+          "description": "Dwell before a probe starts.",
+          "default": null,
+          "unit": "seconds"
         }
       }
     },
@@ -3258,13 +3624,74 @@
     },
     "M890": {
       "type": "mcode",
-      "description": "ATC/public-data helper related to home or tool checks.",
-      "parameters": {}
+      "description": "Add or update a custom tool slot and save it.",
+      "parameters": {
+        "T": {
+          "required": true,
+          "description": "Tool number.",
+          "default": null
+        },
+        "X": {
+          "required": true,
+          "description": "Slot position on X.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Y": {
+          "required": true,
+          "description": "Slot position on Y.",
+          "default": null,
+          "unit": "mm"
+        },
+        "Z": {
+          "required": false,
+          "description": "Slot position on Z. Omitted slots keep the previous slot's Z.",
+          "default": null,
+          "unit": "mm"
+        }
+      }
     },
     "M891": {
       "type": "mcode",
-      "description": "ATC/public-data helper related to home or tool checks.",
+      "description": "Remove a custom tool slot and save the file.",
+      "parameters": {
+        "T": {
+          "required": true,
+          "description": "Tool number to remove.",
+          "default": null
+        }
+      }
+    },
+    "M940": {
+      "type": "mcode",
+      "description": "Report CANopen configuration, bus state, and remote-device status.",
       "parameters": {}
+    },
+    "M941": {
+      "type": "mcode",
+      "description": "Send a raw CAN frame, or use M941.1 through M941.8 to access a CANopen object.",
+      "parameters": {
+        "N": {
+          "required": true,
+          "description": "CAN node ID.",
+          "default": null
+        },
+        "X": {
+          "required": false,
+          "description": "CANopen object index for M941.1 through M941.8.",
+          "default": null
+        },
+        "L": {
+          "required": false,
+          "description": "CANopen object sub-index for M941.1 through M941.8.",
+          "default": 0
+        },
+        "A-H": {
+          "required": false,
+          "description": "Raw CAN payload bytes.",
+          "default": null
+        }
+      }
     },
     "M951": {
       "type": "mcode",
@@ -3304,6 +3731,98 @@
           "required": false,
           "description": "Derivative term.",
           "default": null
+        }
+      }
+    },
+    "M959": {
+      "type": "mcode",
+      "description": "Set or report the analog spindle PWM map. Duty = offset + scale * (rpm / max_rpm), limited to [deadzone_bottom, 1 - deadzone_top]. Analog spindle type only.",
+      "parameters": {
+        "L": {
+          "required": false,
+          "description": "Minimum RPM. Commands below this run at this speed.",
+          "default": 100,
+          "unit": "rpm",
+          "default_source": "spindle.min_rpm"
+        },
+        "H": {
+          "required": false,
+          "description": "Maximum RPM. This is also the speed at full scaled duty.",
+          "default": 5000,
+          "unit": "rpm",
+          "default_source": "spindle.max_rpm"
+        },
+        "B": {
+          "required": false,
+          "description": "Bottom dead zone. Lowest duty that turns the spindle.",
+          "default": 0,
+          "unit": "duty",
+          "default_source": "spindle.pwm_deadzone_bottom"
+        },
+        "T": {
+          "required": false,
+          "description": "Top dead zone. Unused duty above the speed where RPM stops increasing.",
+          "default": 0,
+          "unit": "duty",
+          "default_source": "spindle.pwm_deadzone_top"
+        },
+        "O": {
+          "required": false,
+          "description": "Duty added to the scaled RPM command.",
+          "default": 0,
+          "unit": "duty",
+          "default_source": "spindle.pwm_offset"
+        },
+        "S": {
+          "required": false,
+          "description": "Scales duty across 0..max RPM. 1 with zero offset and dead zones matches rpm/max_rpm.",
+          "default": 1,
+          "default_source": "spindle.pwm_scale"
+        }
+      }
+    },
+    "M959.1": {
+      "type": "mcode",
+      "description": "Auto-tune the analog spindle PWM map from RPM feedback. The spindle runs from 0 to full duty. Also measures delay_on_s, delay_off_s, and delay_s. Requires spindle.feedback_pin. Halt or e-stop aborts and keeps the previous map. Prints config-set commands for the result.",
+      "parameters": {
+        "P": {
+          "required": false,
+          "description": "PWM step from 0 to 1. Clamped to 0.02–0.20.",
+          "default": 0.05,
+          "unit": "duty"
+        },
+        "D": {
+          "required": false,
+          "description": "Settling time at each PWM step. Omitting uses 1.5 times the measured delay_s. Clamped to 0.2–30.",
+          "default": null,
+          "unit": "s"
+        },
+        "N": {
+          "required": false,
+          "description": "Number of sweeps. RPM readings are averaged before the fit. Clamped to 1–5.",
+          "default": 1
+        },
+        "A": {
+          "required": false,
+          "description": "Apply the fitted map in memory. 0 leaves the current map unchanged.",
+          "default": 1
+        },
+        "V": {
+          "required": false,
+          "description": "Run a map check after the sweeps and print the largest RPM error. 0 skips it.",
+          "default": 1
+        }
+      }
+    },
+    "M959.2": {
+      "type": "mcode",
+      "description": "Check the current analog spindle PWM map against RPM feedback. The spindle runs from minimum to maximum RPM. Each speed is held for delay_on_s or delay_s, whichever is longer. Stopping waits for delay_off_s. Prints the largest speed error. Does not change the map.",
+      "parameters": {
+        "P": {
+          "required": false,
+          "description": "Step through the speed range. 0.05 checks 21 speeds. Clamped to 0.02–0.20.",
+          "default": 0.05,
+          "unit": "duty"
         }
       }
     },
@@ -3594,6 +4113,11 @@
     "diagnose": {
       "type": "shell",
       "description": "Print diagnostic status including spindle, laser, switches, endstops, probe, ATC pins, e-stop, and Wi-Fi.",
+      "parameters": {}
+    },
+    "laserabort": {
+      "type": "shell",
+      "description": "Stop engraving-laser output during playback abort handling.",
       "parameters": {}
     },
     "sleep": {
