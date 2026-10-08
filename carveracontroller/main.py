@@ -7170,6 +7170,7 @@ class Makera(RelativeLayout):
                 apply_demo_readout(self)
                 return
 
+
             # Clear the comms-wait overlay. Machine state itself was never changed.
             if self.comms_waiting:
                 self.comms_waiting = 0

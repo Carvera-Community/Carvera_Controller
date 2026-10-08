@@ -35,7 +35,6 @@
 - Change: The WCS button now shows rotation in the subtext, alternating with the WCS name when a description is set.
 - Change: Add support for iOS 27
 - Change: Stop splitting 3-axis G0/G1 moves every 0.5mm and split A-axis moves using the same tolerance as G2/G3 instead of every 0.5°
-- Change: Missed heartbeats with the machine are treated as comms backpressure, and the machine state is changed to "Waiting on comms". Only if link connection is lost will it be treated as a disconnect
 - Changed: Machine config backup completes when a file's MD5 checksum does not match, and warns that some machines ship with factory MD5 mismatches
 - Changed: Keep the Z1 camera panel open if the stream drops, and reconnect while a spinner is shown in the camera view
 - Changed: If running RC controller/firmware default to selecting RC releases in update screen as well
@@ -50,20 +49,24 @@
 - Fixed: Fixed rotary previews so toolpaths, pointers, and stock rotate around the WCS origin without unwanted orbiting.
 - Fixed: Keep thin tool icon fills visible by drawing the outline outside the silhouette.
 - Fixed: Upload-and-select on the Z1 would not select the file after uploading. The select callback ran on the wrong thread because Z1 does not use .lz compression.
-- Fixed: Keyboard jogging in the CMM Workbench now uses the workbench step size, synchronized with the main screen
-- Fixed: Y+/Y- jogging buttons on the CMM Workbench respect the configured Y axis inversion setting
 - Fixed: Connecting to a different machine now clears the previous job's file view, tool-change flags, and 3D simulation
 - Fixed: Hiding tools in the G-code viewer now always hides the moves between tool changes
-- Fixed: Commands sent using the "Send" buttons are now added to the MDI history
 - Fixed: The probe button in the main menu is disabled unless community firmware is loaded, matching the Probing button on the control screen
-- Fixed: Consolidated the two different re-connection methods into one
 - Fixed: Firmware detection now updates the UI on the main thread, and the tool Change/Set dropdowns no longer keep community-only entries (3D Probe, Laser) after connecting to stock firmware
 - Fixed: Continuous jogging no longer stops when the firmware reports a leftover internal stop reset on the next `$J`
 - Fixed: Prevent a blank space sometimes being displayed above the text of some tooltips
 
+[2.2.0]
+- Changed: Missed heartbeats with the machine are treated as comms backpressure, and the machine state is changed to "Waiting on comms". Only if link connection is lost will it be treated as a disconnect
+- Fixed: Consolidated the two different re-connection methods into one
+- Fixed: Checkboxes in the CMM Workbench and Facing wizard stay visible on the dark background
+- Fixed: Commands sent using the "Send" buttons are now added to the MDI history
+
 [2.2.0-RC3]
 - Enhancement: The step size is now synchronized between the main screen and the Probing screen
 - Fixed: Y+/Y- jogging buttons on the Probing screen respect the configured Y axis inversion setting
+- Fixed: Keyboard jogging in the CMM Workbench now uses the workbench step size, synchronized with the main screen
+- Fixed: Y+/Y- jogging buttons on the CMM Workbench respect the configured Y axis inversion setting
 
 [2.2.0-RC2]
 - Enhancement: Adds "Allow Jogging When Spindle or Laser Is On" option (disabled by default). "Allow Jogging When Machine Running" will now be enabled by default. Existing configs that already allowed jogging while the machine is running also enable the new spindle/laser option.
