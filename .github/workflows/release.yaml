@@ -41,13 +41,11 @@ jobs:
 
     - name: Install gettext via WinGet
       shell: pwsh
-      run: winget install --id GNU.Gettext --exact --silent --accept-source-agreements --accept-package-agreements
+      run: winget install --id mlocati.GetText --exact --source winget --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
 
     - name: Add gettext to PATH
       shell: pwsh
-      run: |
-        # Add gettext bin directory to PATH if not automatically added
-        echo "C:\Program Files\gettext\bin" >> $env:GITHUB_PATH
+      run: Add-Content -Path $env:GITHUB_PATH -Value "$env:LOCALAPPDATA\Programs\gettext-iconv\bin"
 
     - name: "Install Windows-Mesa OpenGL DLL"
       run: |
