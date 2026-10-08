@@ -157,9 +157,6 @@ class ToolTipSwitch(Switch):
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
 
-    def _is_blocked_by_modal(self):
-        return is_blocked_by_modal(self)
-
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
         if self._tooltip:
@@ -245,7 +242,7 @@ class ToolTipSwitch(Switch):
             self.close_tooltip()
             return
 
-        if self._is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             self.close_tooltip()
             return
 
@@ -285,7 +282,7 @@ class ToolTipSwitch(Switch):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
-        if is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             return
         Window.add_widget(self._tooltip)
 
@@ -317,9 +314,6 @@ class ToolTipTextInput(TextInput):
         if value:
             App.get_running_app().root.toggle_keyboard_jog_control(True)
 
-    def _is_blocked_by_modal(self):
-        return is_blocked_by_modal(self)
-
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
         if self._tooltip:
@@ -405,7 +399,7 @@ class ToolTipTextInput(TextInput):
             self.close_tooltip()
             return
 
-        if self._is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             self.close_tooltip()
             return
 
@@ -445,7 +439,7 @@ class ToolTipTextInput(TextInput):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
-        if is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             return
         Window.add_widget(self._tooltip)
 
@@ -487,9 +481,6 @@ class ToolTipButton(Button):
         Window.bind(mouse_pos=self.on_mouse_pos)
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
-
-    def _is_blocked_by_modal(self):
-        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -630,7 +621,7 @@ class ToolTipButton(Button):
             self.close_tooltip()
             return
 
-        if self._is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             self.close_tooltip()
             return
 
@@ -686,7 +677,7 @@ class ToolTipButton(Button):
         # Rasterizing is expensive, so it waits until the hover delay has
         # elapsed rather than running on every mouse move across the widget.
         # The box then has to be re-measured around the new image.
-        if is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             return
         if self._ensure_tooltip_texture() and self._hover_pos is not None:
             self._layout_tooltip_at(self._hover_pos)
@@ -715,9 +706,6 @@ class ToolTipDropDown(DropDown):
         Window.bind(mouse_pos=self.on_mouse_pos)
         self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
-
-    def _is_blocked_by_modal(self):
-        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -804,7 +792,7 @@ class ToolTipDropDown(DropDown):
             self.close_tooltip()
             return
 
-        if self._is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             self.close_tooltip()
             return
 
@@ -844,7 +832,7 @@ class ToolTipDropDown(DropDown):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
-        if is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             return
         Window.add_widget(self._tooltip)
 
@@ -872,9 +860,6 @@ class ToolTipLabel(Label):
         if "on_release" in self.events():
             self.bind(on_release=self.close_tooltip)
         self._build_tooltip()
-
-    def _is_blocked_by_modal(self):
-        return is_blocked_by_modal(self)
 
     def _build_tooltip(self, *largs):
         # Only build the tooltip if it hasn't been created yet
@@ -978,7 +963,7 @@ class ToolTipLabel(Label):
             self.close_tooltip()
             return
 
-        if self._is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             self.close_tooltip()
             return
 
@@ -1027,7 +1012,7 @@ class ToolTipLabel(Label):
             Window.remove_widget(self._tooltip)
 
     def display_tooltip(self, *args):
-        if is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             return
         Window.add_widget(self._tooltip)
 
