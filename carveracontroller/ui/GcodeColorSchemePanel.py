@@ -17,7 +17,7 @@ from kivy.uix.widget import Widget
 
 from carveracontroller.addons.tool_visualization.icon_builder import build_tool_legend_icon, build_tool_tooltip_icon
 from carveracontroller.addons.tool_visualization.tooltip_builder import format_tool_tooltip, format_tool_type_label
-from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
+from carveracontroller.addons.tooltips.Tooltips import ToolTipButton, is_blocked_by_modal
 from carveracontroller.CNC import LASER_TOOL_NUMBER, PROBE_3D_TOOL_NUMBER, ZPROBE_TOOL_NUMBER
 from carveracontroller.GcodeViewer import (
     COLOR_SCHEME_BY_SPEED,
@@ -305,7 +305,7 @@ class _RowHoverToolTip(ToolTipButton):
 
     def _is_blocked_by_overlay(self):
         """True when a Spinner dropdown (or modal) is open over the legend."""
-        if self._is_blocked_by_modal():
+        if is_blocked_by_modal(self):
             return True
         # Spinner menus attach a DropDown to Window; suppress while any is open
         # so the row under the menu does not keep a pending hover tooltip.
