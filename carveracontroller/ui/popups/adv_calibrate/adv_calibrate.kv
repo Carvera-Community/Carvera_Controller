@@ -10,7 +10,7 @@
         Label:
             canvas.before:
                 Color:
-                    rgba: 45/255, 45/255, 45/255, 1
+                    rgba: app.theme.panel
                 Rectangle:
                     pos: self.pos
                     size: self.size
@@ -45,7 +45,6 @@
                         width: dp(90)
                         font_size: '14dp'
                         hint_text: tr._("1")
-                        hint_text_color: (0.2, 0.5, 0.5, 0.5)
                         tooltip_txt: tr._('Number of TLO measurement repeats. For facemills: probe once per cycle, rotate the face mill between cycles; the TLO uses the lowest cutting edge')
                         tooltip_image: ''
                         multiline: False
@@ -68,7 +67,6 @@
                         width: dp(90)
                         font_size: '14dp'
                         hint_text: tr._("0")
-                        hint_text_color: (0.2, 0.5, 0.5, 0.5)
                         tooltip_txt: tr._('Offset the tool setter location by this amount (positive or negative) in X')
                         tooltip_image: ''
                         multiline: False
@@ -91,7 +89,6 @@
                         width: dp(90)
                         font_size: '14dp'
                         hint_text: tr._("0")
-                        hint_text_color: (0.2, 0.5, 0.5, 0.5)
                         tooltip_txt: tr._('Offset the tool setter location by this amount (positive or negative) in Y')
                         tooltip_image: ''
                         multiline: False

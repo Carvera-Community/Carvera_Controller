@@ -128,6 +128,10 @@ from kivy.uix.stencilview import StencilView
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
+import carveracontroller.ui.square_grid  # noqa: F401  (registers jog pad widgets)
+from carveracontroller.ui.theme import SettingTheme, Theme
+from carveracontroller.ui.themes import DEFAULT_THEME, theme_names
+
 
 def _safe_widget_destructor(uid, _ref):
     # Kivy 2.3.1 does `del _widget_destructors[uid]` in a weakref callback.
@@ -280,6 +284,9 @@ from pathlib import Path
 from kivy.config import ConfigParser
 from kivy.lang import Builder
 
+from carveracontroller.ui.theme import get_theme, machine_state_color, watch_theme
+from carveracontroller.ui.themes import gcode_syntax_colors
+
 from . import Utils, custom_widgets
 from .__version__ import __version__
 from .addons.camera.CameraView import ADJUST_DEFAULT
@@ -306,7 +313,6 @@ from .addons.tool_visualization import (
 from .addons.tooltips.Tooltips import Tooltip, ToolTipButton, ToolTipDropDown
 from .CNC import (
     CNC,
-    GCODE_DEFAULT_COLORS,
     LASER_TOOL_NUMBER,
     OCODE_PATTERN,
     PROBE_3D_TOOL_NUMBER,
@@ -329,8 +335,6 @@ from .Controller import (
     LOAD_WIFI,
     NOT_CONNECTED,
     SEND_FILE,
-    STATECOLOR,
-    STATECOLORDEF,
     Controller,
 )
 from .GcodeViewer import (
@@ -512,8 +516,6 @@ class GcodePlaySlider(Slider):
 
     sim_progress = NumericProperty(0.0)  # 0–100, path-distance percent carved by the voxel sim
     sim_checkpoints = ListProperty([])  # path-distance percents (0–100) of stored checkpoints
-    _SIM_BAR_COLOR = (0.25, 0.82, 0.35, 0.95)
-    _SIM_MARKER_COLOR = (0.3, 0.55, 0.95, 1.0)
     _SIM_BAR_HEIGHT = dp(3)
     _SIM_MARKER_WIDTH = dp(2)
     _SIM_MARKER_HEIGHT = dp(7)
@@ -522,9 +524,12 @@ class GcodePlaySlider(Slider):
         super().__init__(**kwargs)
         self._pending_line_update = None  # Track pending scheduled line update
         with self.canvas.after:
-            self._sim_color = Color(*self._SIM_BAR_COLOR)
+            theme = get_theme()
+            self._sim_color = Color(*theme.sim_bar)
             self._sim_rect = Rectangle(pos=(0, 0), size=(0, 0))
             self._sim_marker_group = InstructionGroup()
+        self._sim_marker_rgba = list(theme.sim_marker)
+        self._stop_theme_watch = watch_theme(self._apply_sim_theme)
         self.bind(
             pos=self._update_sim_bar,
             size=self._update_sim_bar,
@@ -534,6 +539,11 @@ class GcodePlaySlider(Slider):
             sim_progress=self._update_sim_bar,
             sim_checkpoints=self._update_sim_bar,
         )
+
+    def _apply_sim_theme(self, theme) -> None:
+        self._sim_color.rgba = list(theme.sim_bar)
+        self._sim_marker_rgba = list(theme.sim_marker)
+        self._update_sim_bar()
 
     def _update_sim_bar(self, *_args):
         if not hasattr(self, "_sim_rect"):
@@ -569,7 +579,7 @@ class GcodePlaySlider(Slider):
             if p < 0.0 or p > 100.0:
                 continue
             x = self.x + pad + track_w * (p / 100.0) - marker_w / 2.0
-            group.add(Color(*self._SIM_MARKER_COLOR))
+            group.add(Color(*self._sim_marker_rgba))
             group.add(Rectangle(pos=(x, marker_y), size=(marker_w, marker_h)))
 
     def on_touch_down(self, touch):
@@ -1632,9 +1642,9 @@ class WCSSettingsPopup(ModalView):
             if hasattr(self.ids, button_id):
                 button = getattr(self.ids, button_id)
                 if wcs == active_wcs:
-                    button.color = (0 / 255, 255 / 255, 255 / 255, 1)  # Blue color
+                    button.color = get_theme().highlight_text
                 else:
-                    button.color = (1, 1, 1, 1)  # Default color
+                    button.color = get_theme().text
 
     def activate_wcs(self, wcs):
         """Activate the specified WCS and update the active coordinate system index"""
@@ -1766,9 +1776,9 @@ class MakeraConfigPanel(SettingsWithSidebar):
         super().__init__(*args, **kwargs)
         self.register_type("pendant", SettingPendantSelector)
         self.register_type("gcodesnippet", custom_widgets.SettingGCodeSnippet)
-        self.register_type("colorpicker", custom_widgets.SettingColorPicker)
         self.register_type("gamepad_bindings", SettingGamepadBindings)
         self.register_type("keyboard_shortcuts", SettingKeyboardShortcuts)
+        self.register_type("theme", SettingTheme)
         self.interface.content.bind(current_uid=self._reset_panel_scroll)
 
     @staticmethod
@@ -1875,7 +1885,55 @@ class CoordinateSystemDropDown(ToolTipDropDown):
 
 
 class FuncDropDown(ToolTipDropDown):
-    pass
+    def on_kv_post(self, _base_widget):
+        app = App.get_running_app()
+        if app is not None:
+            app.bind(model=self._sync_pair_probe)
+        self._pair_probe = hold_menu_button(self.container, self.ids.get("pair_probe"))
+        self._sync_pair_probe()
+
+    def _sync_pair_probe(self, *_args):
+        app = App.get_running_app()
+        show = app is not None and app.model == "C1"
+        sync_optional_menu_item(self.container, self._pair_probe, show)
+
+
+def hold_menu_button(container, proxy):
+    """Return the real widget for a kv id.
+
+    ``ids`` stores a weak proxy. Removing the row drops the last strong
+    reference, and the next model change then crashes on that proxy.
+    """
+    if container is None or proxy is None:
+        return None
+    try:
+        target_uid = proxy.uid
+    except ReferenceError:
+        return None
+    for child in container.children:
+        if child.uid == target_uid:
+            return child
+    return None
+
+
+def sync_optional_menu_item(container, button, show):
+    """Include a menu row only while it is meant to be seen.
+
+    A row with height 0 still takes a grid gap, so the next button looks
+    farther away than the others.
+    """
+    if container is None or button is None:
+        return
+    try:
+        parent = button.parent
+    except ReferenceError:
+        return
+    if show:
+        if parent is None:
+            container.add_widget(button, index=getattr(button, "_menu_index", 0))
+    elif parent is container:
+        button._menu_index = container.children.index(button)
+        container.remove_widget(button)
 
 
 class StatusDropDown(ToolTipDropDown):
@@ -1926,6 +1984,9 @@ class MachineButton(ToolTipButton):
 
 class IconButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
+    # Monochrome artwork is multiplied by the theme icon color. Colored artwork
+    # (the e-stop) keeps its own pixels.
+    colored = BooleanProperty(False)
 
 
 class TransparentButton(BoxLayout, ToolTipButton):
@@ -1958,6 +2019,7 @@ class CNCWorkspace(Widget):
         self.bind(size=self.on_resize, pos=self.on_resize)
         super().__init__(**kwargs)
         self.bg_rect = None
+        self._stop_theme_watch = watch_theme(lambda _theme: self.draw())
 
     def on_resize(self, *args):
         self.draw()
@@ -1993,6 +2055,11 @@ class CNCWorkspace(Widget):
             return
         self.canvas.clear()
         zoom = self.width / CNC.vars["worksize_x"]
+        theme = get_theme()
+        map_bg = theme.map_bg
+        map_anchor = theme.map_anchor
+        map_anchor_active = theme.map_anchor_active
+        map_rotation_base = theme.map_rotation_base
         with self.canvas:
             # The bed drawing uses absolute coordinates and can extend past the
             # preview. Keep the origin, work area, probe, and leveling marks inside it.
@@ -2001,22 +2068,22 @@ class CNCWorkspace(Widget):
             Rectangle(pos=self.pos, size=self.size)
             StencilUse()
             # background
-            Color(50 / 255, 50 / 255, 50 / 255, 1)
+            Color(*map_bg)
             if self.bg_image == "" or self.bg_image == "None":
-                Color(50 / 255, 50 / 255, 50 / 255, 1)
+                Color(*map_bg)
             else:
                 Color(1, 1, 1, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size, source=self.bg_image)
 
             app = App.get_running_app()
             if self.bg_image == "" or self.bg_image == "None":
-                Color(50 / 255, 50 / 255, 50 / 255, 1)
+                Color(*map_bg)
                 if not app.has_4axis:
                     # anchor1
                     if self.config["origin"]["anchor"] == 1:
-                        Color(75 / 255, 75 / 255, 75 / 255, 1)
+                        Color(*map_anchor_active)
                     else:
-                        Color(55 / 255, 55 / 255, 55 / 255, 1)
+                        Color(*map_anchor)
                     Rectangle(
                         pos=(self.x, self.y), size=(CNC.vars["anchor_length"] * zoom, CNC.vars["anchor_width"] * zoom)
                     )
@@ -2026,9 +2093,9 @@ class CNCWorkspace(Widget):
 
                     if app.has_anchor2:
                         if self.config["origin"]["anchor"] == 2:
-                            Color(75 / 255, 75 / 255, 75 / 255, 1)
+                            Color(*map_anchor_active)
                         else:
-                            Color(55 / 255, 55 / 255, 55 / 255, 1)
+                            Color(*map_anchor)
                         Rectangle(
                             pos=(
                                 self.x + CNC.vars["anchor2_offset_x"] * zoom,
@@ -2047,20 +2114,20 @@ class CNCWorkspace(Widget):
                 else:
                     rotation_base_y_center = (CNC.vars["anchor_width"] + CNC.vars["rotation_offset_y"]) * zoom
                     # draw rotation base
-                    Color(60 / 255, 60 / 255, 60 / 255, 1)
+                    Color(*map_rotation_base)
                     Rectangle(
                         pos=(self.x, self.y + rotation_base_y_center - CNC.vars["rotation_base_height"] * zoom / 2),
                         size=(CNC.vars["rotation_base_width"] * zoom, CNC.vars["rotation_base_height"] * zoom),
                     )
                     # draw rotation head
-                    Color(75 / 255, 75 / 255, 75 / 255, 1)
+                    Color(*map_anchor_active)
                     Rectangle(
                         pos=(self.x, self.y + rotation_base_y_center - CNC.vars["rotation_head_height"] * zoom / 2),
                         size=(CNC.vars["rotation_head_width"] * zoom, CNC.vars["rotation_head_height"] * zoom),
                     )
 
                     # draw rotation chuck
-                    Color(75 / 255, 75 / 255, 75 / 255, 1)
+                    Color(*map_anchor_active)
                     Rectangle(
                         pos=(
                             self.x + (CNC.vars["rotation_head_width"] + CNC.vars["rotation_chuck_interval"]) * zoom,
@@ -2070,7 +2137,7 @@ class CNCWorkspace(Widget):
                     )
 
                     # draw rotation tail
-                    Color(75 / 255, 75 / 255, 75 / 255, 1)
+                    Color(*map_anchor_active)
                     Rectangle(
                         pos=(
                             self.x + (CNC.vars["rotation_base_width"] - CNC.vars["rotation_tail_width"]) * zoom,
@@ -2090,13 +2157,13 @@ class CNCWorkspace(Widget):
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
 
             # origin
-            Color(52 / 255, 152 / 255, 219 / 255, 1)
+            Color(*theme.map_origin)
             origin_x = CNC.vars["wcox"] - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x
             origin_y = CNC.vars["wcoy"] - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y
             Ellipse(pos=(self.x + origin_x * zoom - 10, self.y + origin_y * zoom - 10), size=(20, 20))
 
             # work area
-            Color(0, 0.8, 0, 1)
+            Color(*theme.map_work_area)
             PushMatrix()
             Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
             if not app.has_4axis:
@@ -2114,7 +2181,7 @@ class CNCWorkspace(Widget):
 
             # z probe
             if self.config["zprobe"]["active"]:
-                Color(231 / 255, 76 / 255, 60 / 255, 1)
+                Color(*theme.map_zprobe)
                 PushMatrix()
                 if app.has_4axis:
                     Translate(self.x, self.y)
@@ -2139,7 +2206,7 @@ class CNCWorkspace(Widget):
 
             # auto leveling
             if self.config["leveling"]["active"]:
-                Color(244 / 255, 208 / 255, 63 / 255, 1)
+                Color(*theme.map_leveling)
                 PushMatrix()
                 Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
                 if not app.has_4axis:
@@ -2588,6 +2655,19 @@ class ManualCMDPage(Screen):
     pass
 
 
+def remap_mdi_entry(entry, theme):
+    """Copy an MDI row, moving any stored theme color onto ``theme``'s current palette."""
+    updated = dict(entry)
+    for key in ("color", "original_color"):
+        value = updated.get(key)
+        if not value:
+            continue
+        mapped = theme.remap_color(value)
+        if mapped is not None:
+            updated[key] = list(mapped)
+    return updated
+
+
 class Makera(RelativeLayout):
     holding = 0
     pausing = 0
@@ -2752,6 +2832,8 @@ class Makera(RelativeLayout):
 
     def __init__(self, ctl_version):
         super().__init__()
+        Window.bind(size=self._sync_control_layout)
+        self._sync_control_layout()
 
         Window.bind(on_request_close=self.on_request_close)
 
@@ -2778,7 +2860,7 @@ class Makera(RelativeLayout):
         )
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
-        CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
+        CNC.vars["color"] = machine_state_color(NOT_CONNECTED)
 
         self.coord_config = {
             "origin": {"anchor": 1, "x_offset": 0.0, "y_offset": 0.0},
@@ -2984,10 +3066,8 @@ class Makera(RelativeLayout):
         if Config.has_option("carvera", "invert_y_axis_jogging"):
             App.get_running_app().invert_y_axis_jogging = Config.get("carvera", "invert_y_axis_jogging") == "1"
 
-        if Config.has_option("carvera", "active_color"):
-            App.get_running_app().active_color = self._parse_active_color(Config.get("carvera", "active_color"))
-
         self._load_gcode_highlight_settings()
+        self._stop_syntax_theme = watch_theme(self._refresh_syntax_highlighting)
         self._load_playbar_tool_change_marker_settings()
         if self.wpb_play:
             self.wpb_play.marker_tooltip_provider = self._playbar_tool_change_tooltip
@@ -3014,18 +3094,45 @@ class Makera(RelativeLayout):
         self.tutorial = Tutorial(self)
         self.tutorial.schedule_if_needed()
 
-    def _parse_active_color(self, value):
-        """Parse a color string like '0,255,255,255' into an RGBA list (0-1 range)."""
-        try:
-            if not value:
-                return [0, 1, 1, 1]  # Default cyan
-            parts = [float(x.strip()) for x in value.split(",")]
-            if len(parts) == 3:
-                parts.append(255.0)  # Add alpha if missing
-            # Assume 0-255 range, convert to 0-1
-            return [parts[0] / 255, parts[1] / 255, parts[2] / 255, parts[3] / 255 if parts[3] > 1 else parts[3]]
-        except Exception:
-            return [0, 1, 1, 1]  # Default cyan
+    def _sync_control_layout(self, *_args):
+        """Stack the jog pads above the actions when the window is narrow.
+
+        The control page scrolls when it is shorter than the buttons, so a
+        short window cannot push them outside the screen.
+        """
+        from carveracontroller.ui.common.compact import is_compact_width
+
+        if "jog_pad" not in self.ids:
+            return
+        compact = is_compact_width(Window.width)
+        app = App.get_running_app()
+        if app is not None:
+            app.control_compact = compact
+        self._place_control_widgets(compact)
+
+    def _place_control_widgets(self, compact):
+        jog = self.ids.jog_pad
+        actions = self.ids.action_column
+        az = self.ids.az_jog_pad
+        wide = self.ids.wide_row
+        pads = self.ids.pad_row
+        stack = self.ids.compact_stack
+        if compact:
+            self._move_widget(jog, pads)
+            self._move_widget(az, pads)
+            self._move_widget(actions, stack)
+            return
+        self._move_widget(jog, wide)
+        self._move_widget(actions, wide)
+        self._move_widget(az, wide)
+
+    @staticmethod
+    def _move_widget(widget, parent):
+        if widget.parent is parent:
+            return
+        if widget.parent is not None:
+            widget.parent.remove_widget(widget)
+        parent.add_widget(widget)
 
     def _load_playbar_tool_change_marker_settings(self):
         """Read playback bar tool-change marker visibility from config."""
@@ -3044,30 +3151,23 @@ class Makera(RelativeLayout):
             else "1"
         )
         self.gcode_highlight_enabled = raw_enabled not in ("0", "false", "False")
-        self.gcode_highlight_colors = {}
-        for cat in GCODE_DEFAULT_COLORS:
-            config_key = f"gcode_color_{cat}"
-            raw = Config.get("carvera", config_key) if Config.has_option("carvera", config_key) else None
-            if raw:
-                self.gcode_highlight_colors[cat] = self._config_color_to_hex(raw)
 
-    @staticmethod
-    def _config_color_to_hex(value):
-        """Convert a 'R,G,B,A' config string (0-255) to a Kivy markup hex color.
-
-        Returns '#RRGGBBAA' when alpha < 255, otherwise '#RRGGBB'.
-        """
-        try:
-            parts = [int(float(x.strip())) for x in value.split(",")]
-            r, g, b = parts[0], parts[1], parts[2]
-            a = parts[3] if len(parts) >= 4 else 255
-            if a < 255:
-                return f"#{r:02X}{g:02X}{b:02X}{a:02X}"
-            return f"#{r:02X}{g:02X}{b:02X}"
-        except Exception:
-            return "#C8C8C8"
+    def _refresh_syntax_highlighting(self, _theme=None):
+        """Reload g-code and MDI markup when theme syntax colors change."""
+        app = App.get_running_app()
+        if app is None:
+            return
+        if getattr(self, "lines", None) and hasattr(self, "gcode_rv") and self.gcode_rv.data:
+            self.load_page(app.curr_page)
+        manual = getattr(self, "manual_rv", None)
+        if manual is not None and manual.data:
+            manual.data = [self._format_mdi_entry(entry) for entry in manual.data]
 
     def on_request_close(self, *args):
+        stop_syntax = getattr(self, "_stop_syntax_theme", None)
+        if stop_syntax is not None:
+            stop_syntax()
+            self._stop_syntax_theme = None
         # Cleanup the temporary directory when the app is closed
         shortcut_manager = getattr(self, "shortcut_manager", None)
         if shortcut_manager is not None:
@@ -3105,6 +3205,9 @@ class Makera(RelativeLayout):
 
         # Set default controller config values
         for setting in controller_config_definition:
+            if setting.get("key") == "theme" and setting.get("section") == "carvera":
+                # Stored values stay the theme names. SettingTheme shows each title.
+                setting["options"] = theme_names()
             if "default" in setting:
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
                 # The bool switch only recognises "0" and "1". An earlier default
@@ -3738,38 +3841,38 @@ class Makera(RelativeLayout):
         if self.uploading or self.downloading:
             return
         if self.holding == 1:
-            self.status_data_view.color = STATECOLOR["Hold"]
+            self.status_data_view.color = machine_state_color("Hold")
             self.holding = 2
         elif self.holding == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.holding = 1
 
         if self.pausing == 1:
-            self.status_data_view.color = STATECOLOR["Pause"]
+            self.status_data_view.color = machine_state_color("Pause")
             self.pausing = 2
         elif self.pausing == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.pausing = 1
 
         if self.waiting == 1:
-            self.status_data_view.color = STATECOLOR["Wait"]
+            self.status_data_view.color = machine_state_color("Wait")
             self.waiting = 2
         elif self.waiting == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.waiting = 1
 
         if self.tooling == 1:
-            self.status_data_view.color = STATECOLOR["Tool"]
+            self.status_data_view.color = machine_state_color("Tool")
             self.tooling = 2
         elif self.tooling == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.tooling = 1
 
         if self.comms_waiting == 1:
-            self.status_data_view.color = STATECOLOR["Wait"]
+            self.status_data_view.color = machine_state_color("Wait")
             self.comms_waiting = 2
         elif self.comms_waiting == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.comms_waiting = 1
 
         # check heartbeat
@@ -3845,7 +3948,7 @@ class Makera(RelativeLayout):
                 text=tr._("No USB devices found"),
                 size_hint_y=None,
                 height="35dp",
-                color=(180 / 255, 180 / 255, 180 / 255, 1),
+                color=get_theme().text_secondary,
             )
             self.comports_drop_down.add_widget(btn)
         else:
@@ -3859,7 +3962,7 @@ class Makera(RelativeLayout):
                 text=tr._("Manually Enter"),
                 size_hint_y=None,
                 height="35dp",
-                color=(225 / 255, 225 / 255, 225 / 255, 1),
+                color=get_theme().text,
             )
             btn.bind(on_release=lambda btn: self.manually_input_usb_device())
             self.comports_drop_down.add_widget(btn)
@@ -4174,7 +4277,7 @@ class Makera(RelativeLayout):
             text=tr._("Searching for nearby machines..."),
             size_hint_y=None,
             height="35dp",
-            color=(180 / 255, 180 / 255, 180 / 255, 1),
+            color=get_theme().text_secondary,
         )
         self.wifi_conn_drop_down.add_widget(btn)
         self.wifi_conn_drop_down.open(button)
@@ -4193,7 +4296,7 @@ class Makera(RelativeLayout):
                 text=tr._("None found, enter address manually..."),
                 size_hint_y=None,
                 height="35dp",
-                color=(225 / 255, 225 / 255, 225 / 255, 1),
+                color=get_theme().text,
             )
             btn.bind(on_release=lambda btn: self.manually_input_ip())
             self.wifi_conn_drop_down.add_widget(btn)
@@ -4336,7 +4439,7 @@ class Makera(RelativeLayout):
                         logger.info(f"MDI Received: {line}")
                         entry = {
                             "text": line,
-                            "color": (103 / 255, 150 / 255, 186 / 255, 1),
+                            "color": list(get_theme().info_text),
                             "entry_type": "output",
                         }
                         self._append_to_mdi([entry], log_to_mdi_data=line not in [" ", "ok", "Done ATC"])
@@ -4344,7 +4447,7 @@ class Makera(RelativeLayout):
                         logger.error(f"MDI Received: {line}")
                         entry = {
                             "text": line,
-                            "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                            "color": list(get_theme().danger_text),
                             "entry_type": "output",
                         }
                         self._append_to_mdi([entry], log_to_mdi_data=line not in [" ", "ok", "Done ATC"])
@@ -5744,7 +5847,7 @@ class Makera(RelativeLayout):
             self.wifi_ap_status_bar.ssid = tr._("WiFi: Searching for network...")
         else:
             self.wifi_ap_status_bar = WiFiButton(
-                ssid=tr._("WiFi: Searching for network..."), color=(180 / 255, 180 / 255, 180 / 255, 1)
+                ssid=tr._("WiFi: Searching for network..."), color=get_theme().text_secondary
             )
             self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
 
@@ -5778,7 +5881,7 @@ class Makera(RelativeLayout):
         self.wifi_ap_status_bar = None
         self.wifi_ap_status_bar = WiFiButton(
             ssid=tr._("WiFi: Connected") if has_connected else tr._("WiFi: Not Connected"),
-            color=(180 / 255, 180 / 255, 180 / 255, 1),
+            color=get_theme().text_secondary,
         )
         self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
         if has_connected:
@@ -5804,7 +5907,7 @@ class Makera(RelativeLayout):
         if self.wifi_ap_status_bar != None:
             self.wifi_ap_status_bar.ssid = "WiFi: " + error_msg
         else:
-            self.wifi_ap_status_bar = WiFiButton(ssid="WiFi: " + error_msg, color=(200 / 255, 200 / 255, 200 / 255, 1))
+            self.wifi_ap_status_bar = WiFiButton(ssid="WiFi: " + error_msg, color=get_theme().text_secondary)
             self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
 
     # -----------------------------------------------------------------------
@@ -7177,7 +7280,7 @@ class Makera(RelativeLayout):
                     # Remaining was parked when the overlay appeared.
                     self._remaining_anchor_time = now
                 self.status_data_view.main_text = CNC.vars["state"]
-                CNC.vars["color"] = STATECOLOR.get(CNC.vars["state"], STATECOLORDEF)
+                CNC.vars["color"] = machine_state_color(CNC.vars["state"])
                 self.status_data_view.color = CNC.vars["color"]
                 if CNC.vars["state"] != NOT_CONNECTED:
                     logger.info("Machine status response received — comms restored")
@@ -7189,7 +7292,7 @@ class Makera(RelativeLayout):
             if app.state != CNC.vars["state"]:
                 prev_state = app.state
                 app.state = CNC.vars["state"]
-                CNC.vars["color"] = STATECOLOR[app.state]
+                CNC.vars["color"] = machine_state_color(app.state)
                 self.status_data_view.color = CNC.vars["color"]
                 self.holding = 1 if app.state == "Hold" else 0
                 self.pausing = 1 if app.state == "Pause" else 0
@@ -7889,7 +7992,7 @@ class Makera(RelativeLayout):
         entries = [
             {
                 "text": cmd,
-                "color": (200 / 255, 200 / 255, 200 / 255, 1),
+                "color": list(get_theme().text_secondary),
                 "entry_type": "command",
             }
             for cmd in line.strip().split("\n")
@@ -7899,9 +8002,10 @@ class Makera(RelativeLayout):
     def _format_mdi_entry(self, entry):
         """Syntax-highlight sent MDI commands; keep machine output in status colors."""
         text = str(entry.get("text") or "")
-        original_color = tuple(entry.get("original_color") or entry.get("color") or (1, 1, 1, 1))
+        original_color = tuple(entry.get("original_color") or entry.get("color") or get_theme().text)
         plain = text.strip()
         color = original_color
+        mdi_command_color = tuple(get_theme().text_secondary[:3])
         entry_type = entry.get("entry_type")
         if entry_type is not None:
             should_highlight = entry_type == "command"
@@ -7909,14 +8013,14 @@ class Makera(RelativeLayout):
             should_highlight = bool(entry.get("highlight"))
         else:
             # Compatibility with MDI history entries saved before entry_type existed.
-            should_highlight = tuple(original_color[:3]) == (200 / 255, 200 / 255, 200 / 255)
+            should_highlight = tuple(original_color[:3]) == mdi_command_color
         entry_type = "command" if should_highlight else "output"
         hl_enabled = getattr(self, "gcode_highlight_enabled", False)
-        hl_colors = getattr(self, "gcode_highlight_colors", None)
+        hl_colors = gcode_syntax_colors(get_theme()) if hl_enabled else None
         if hl_enabled and should_highlight and plain:
             highlighted = highlight_mdi_line(plain, hl_colors)
             if "[color=" in highlighted:
-                color = (1.0, 1.0, 1.0, 1.0)
+                color = list(get_theme().text)
         else:
             highlighted = escape_gcode_markup(plain)
         formatted = dict(entry)
@@ -7927,6 +8031,19 @@ class Makera(RelativeLayout):
         formatted["entry_type"] = entry_type
         formatted["highlight"] = should_highlight
         return formatted
+
+    def _recolor_mdi_history(self):
+        """Status lines keep the color they were logged with. Repaint them after a palette switch."""
+        theme = get_theme()
+        rv = getattr(self, "manual_rv", None)
+        if rv is not None and rv.data:
+            scroll = rv.scroll_y
+            rv.data = [self._format_mdi_entry(remap_mdi_entry(entry, theme)) for entry in rv.data]
+            rv.scroll_y = scroll
+        app = App.get_running_app()
+        data = getattr(app, "mdi_data", None) if app is not None else None
+        if data:
+            app.mdi_data = [remap_mdi_entry(entry, theme) for entry in data]
 
     @mainthread
     def _append_to_mdi(self, entries, log_to_mdi_data=False, scroll_to_bottom=False):
@@ -8588,10 +8705,9 @@ class Makera(RelativeLayout):
             delay_value = float(self.controller_setting_change_list.get("tooltip_delay"))
             App.get_running_app().tooltip_delay = delay_value if delay_value > 0 else 0.5
 
-        if self.controller_setting_change_list.get("active_color"):
-            App.get_running_app().active_color = self._parse_active_color(
-                self.controller_setting_change_list.get("active_color")
-            )
+        if self.controller_setting_change_list.get("theme"):
+            App.get_running_app().set_theme(self.controller_setting_change_list["theme"])
+            self.refresh_gcode_color_legend()
 
         pendant_changed = any(
             k == "pendant_type" or k.startswith("gamepad_") for k in self.controller_setting_change_list
@@ -8640,27 +8756,13 @@ class Makera(RelativeLayout):
                 self.refresh_gcode_color_legend()
                 self._refresh_idle_progress_info()
 
-        gcode_hl_changed = False
         if "gcode_highlight_enabled" in self.controller_setting_change_list:
             self.gcode_highlight_enabled = self.controller_setting_change_list["gcode_highlight_enabled"] not in (
                 "0",
                 "false",
                 "False",
             )
-            gcode_hl_changed = True
-        for cat in GCODE_DEFAULT_COLORS:
-            config_key = f"gcode_color_{cat}"
-            if config_key in self.controller_setting_change_list:
-                self.gcode_highlight_colors[cat] = self._config_color_to_hex(
-                    self.controller_setting_change_list[config_key]
-                )
-                gcode_hl_changed = True
-        if gcode_hl_changed:
-            app = App.get_running_app()
-            if hasattr(self, "gcode_rv") and self.gcode_rv.data:
-                self.load_page(app.curr_page)
-            if hasattr(self, "manual_rv") and self.manual_rv.data:
-                self.manual_rv.data = [self._format_mdi_entry(entry) for entry in self.manual_rv.data]
+            self._refresh_syntax_highlighting()
 
         if "show_playbar_tool_change_markers" in self.controller_setting_change_list:
             raw_enabled = self.controller_setting_change_list["show_playbar_tool_change_markers"]
@@ -9086,7 +9188,7 @@ class Makera(RelativeLayout):
             page_no = app.total_pages
         self.gcode_rv.data = []
         hl_enabled = getattr(self, "gcode_highlight_enabled", False)
-        hl_colors = getattr(self, "gcode_highlight_colors", None)
+        hl_colors = gcode_syntax_colors(get_theme()) if hl_enabled else None
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line.rstrip("\r\n")
@@ -9101,7 +9203,7 @@ class Makera(RelativeLayout):
                         "line_no": line_no,
                         "text": plain,
                         "highlighted_text": hl,
-                        "color": (200 / 255, 200 / 255, 200 / 255, 1),
+                        "color": list(get_theme().text_secondary),
                     }
                 )
             except IndexError:
@@ -9584,7 +9686,7 @@ class Makera(RelativeLayout):
                         self._format_mdi_entry(
                             {
                                 "text": "clear command can't be used together with other commands",
-                                "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                                "color": list(get_theme().danger_text),
                             }
                         )
                     )
@@ -9651,7 +9753,9 @@ class MakeraApp(App):
     jog_step_xy = StringProperty("10")
     jog_step_z = StringProperty("1")
     jog_step_a = StringProperty("90")
-    active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
+    # rebind so kv `app.theme.<token>` follows token edits and a replaced instance.
+    theme = ObjectProperty(None, rebind=True)
+    control_compact = BooleanProperty(False)
     jog_mode_text = StringProperty(tr._("Jog Mode:Step"))
     jog_speed_text = StringProperty(tr._("Jog Speed:Max"))
     jog_keyboard_enable = StringProperty("normal")
@@ -9660,6 +9764,46 @@ class MakeraApp(App):
     # [left, top, right, bottom] in pixels — populated on iOS from
     # UIWindow.safeAreaInsets (see _update_safe_area_padding).
     safe_area_padding = ListProperty([0, 0, 0, 0])
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.theme = Theme(self._configured_theme_name())
+
+    @staticmethod
+    def _configured_theme_name():
+        """Theme chosen in the settings, or the default when it is missing or unknown."""
+        name = Config.get("carvera", "theme", fallback=DEFAULT_THEME) or DEFAULT_THEME
+        if name not in theme_names():
+            logger.warning("Unknown theme %r in config, using %r", name, DEFAULT_THEME)
+            return DEFAULT_THEME
+        return name
+
+    def set_theme(self, name):
+        """Switch the whole interface to the palette ``name``."""
+        if name not in theme_names():
+            logger.warning("Unknown theme %r, keeping %r", name, self.theme.name)
+            return
+        if name != self.theme.name:
+            self.theme.apply_palette(name)
+            # MDI rows store the info color from the palette that was active when
+            # the line arrived. The list background follows the theme immediately,
+            # so a dark-theme cyan would sit on the light list until this repaint.
+            root = self.root
+            if root is not None and hasattr(root, "_recolor_mdi_history"):
+                root._recolor_mdi_history()
+            # The status icon's Kv rule binds color to text_muted, so the palette
+            # update clears the Run/Idle/Alarm tint. Paint the current state again.
+            self._reapply_status_color()
+
+    def _reapply_status_color(self):
+        """Put the machine-state tint back on the top-bar status icon."""
+        root = self.root
+        status = getattr(root, "status_data_view", None) if root is not None else None
+        if status is None:
+            return
+        color = machine_state_color(self.state)
+        CNC.vars["color"] = color
+        status.color = color
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -9785,10 +9929,10 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "show_tooltips", "1")
     if not Config.has_option("carvera", "tooltip_delay"):
         Config.set("carvera", "tooltip_delay", "1.5")
-    if not Config.has_option("carvera", "active_color"):
-        Config.set("carvera", "active_color", "0,255,255,255")
     if not Config.has_option("carvera", "language"):
         Config.set("carvera", "language", default_lang)
+    if not Config.has_option("carvera", "theme"):
+        Config.set("carvera", "theme", DEFAULT_THEME)
     if not Config.has_option("carvera", "local_folder_1"):
         Config.set("carvera", "local_folder_1", "")
     if not Config.has_option("carvera", "local_folder_2"):
@@ -9874,34 +10018,6 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "gcode_viewer_ghost_paths", "0")
     if not Config.has_option("carvera", "gcode_highlight_enabled"):
         Config.set("carvera", "gcode_highlight_enabled", "1")
-    if not Config.has_option("carvera", "gcode_color_comment"):
-        Config.set("carvera", "gcode_color_comment", "106,153,85,255")
-    if not Config.has_option("carvera", "gcode_color_g_command"):
-        Config.set("carvera", "gcode_color_g_command", "86,156,214,255")
-    if not Config.has_option("carvera", "gcode_color_m_command"):
-        Config.set("carvera", "gcode_color_m_command", "197,134,192,255")
-    if not Config.has_option("carvera", "gcode_color_coordinate"):
-        Config.set("carvera", "gcode_color_coordinate", "206,145,120,255")
-    if not Config.has_option("carvera", "gcode_color_feedrate"):
-        Config.set("carvera", "gcode_color_feedrate", "78,201,176,255")
-    if not Config.has_option("carvera", "gcode_color_spindle"):
-        Config.set("carvera", "gcode_color_spindle", "209,105,105,255")
-    if not Config.has_option("carvera", "gcode_color_tool"):
-        Config.set("carvera", "gcode_color_tool", "181,206,168,255")
-    if not Config.has_option("carvera", "gcode_color_line_number"):
-        Config.set("carvera", "gcode_color_line_number", "133,133,133,255")
-    if not Config.has_option("carvera", "gcode_color_parameter"):
-        Config.set("carvera", "gcode_color_parameter", "156,220,254,255")
-    if not Config.has_option("carvera", "gcode_color_o_label"):
-        Config.set("carvera", "gcode_color_o_label", "86,156,214,255")
-    if not Config.has_option("carvera", "gcode_color_o_keyword"):
-        Config.set("carvera", "gcode_color_o_keyword", "220,220,170,255")
-    if not Config.has_option("carvera", "gcode_color_param_ref"):
-        Config.set("carvera", "gcode_color_param_ref", "181,206,168,255")
-    if not Config.has_option("carvera", "gcode_color_math_keyword"):
-        Config.set("carvera", "gcode_color_math_keyword", "215,186,125,255")
-    if not Config.has_option("carvera", "gcode_color_shell_command"):
-        Config.set("carvera", "gcode_color_shell_command", "47,117,181,255")
 
     Config.write()
 

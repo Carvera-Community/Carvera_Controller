@@ -13,18 +13,20 @@
     padding: dp(8), dp(10)
     canvas.before:
         Color:
-            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
-        Rectangle:
+            rgba: app.theme.selection_fill(0.12 if self.selected else 0, app.theme.revision)
+        RoundedRectangle:
             pos: self.pos
             size: self.size
+            radius: [dp(8)]
         Color:
-            rgba: (50/255, 164/255, 206/255, 1) if self.selected else (0, 0, 0, 0)
-        Rectangle:
-            pos: self.x, self.y
-            size: self.width, dp(3)
+            rgba: app.theme.accent if self.selected else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.x + dp(12), self.y + dp(3)
+            size: self.width - dp(24), dp(3)
+            radius: [dp(2)]
     canvas.after:
         Color:
-            rgba: 50/255, 164/255, 206/255, 1
+            rgba: app.theme.accent
         Ellipse:
             pos: self.x + self.width - dp(16), self.y + self.height - dp(16)
             size: dp(10) if (self.notify and not self.badge_text) else 0, dp(10) if (self.notify and not self.badge_text) else 0
@@ -42,12 +44,12 @@
             pos_hint: {'center_y': 0.5}
             allow_stretch: True
             keep_ratio: True
-            color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+            color: app.theme.icon if root.selected else app.theme.text_muted
         Label:
             text: root.tab_text
             size_hint_x: None
             width: self.texture_size[0]
-            color: (1, 1, 1, 1) if root.selected else (180/255, 180/255, 180/255, 1)
+            color: app.theme.text if root.selected else app.theme.text_secondary
             bold: root.selected
             font_size: dp(16)
             valign: 'middle'
@@ -62,7 +64,7 @@
             width: tab_badge.width
         Label:
             text: root.path_text
-            color: 150/255, 150/255, 150/255, 1
+            color: app.theme.text_muted
             font_size: dp(12)
             halign: 'center'
             valign: 'middle'
@@ -80,7 +82,7 @@
         source: root.icon
         allow_stretch: True
         keep_ratio: True
-        color: (110/255, 110/255, 110/255, 1) if root.disabled else (1, 1, 1, 1)
+        color: app.theme.text_disabled if root.disabled else app.theme.icon
 
 <FileBrowserBadge>:
     size_hint: None, None
@@ -89,13 +91,13 @@
     opacity: 1 if self.text else 0
     font_size: dp(12)
     bold: True
-    color: 1, 1, 1, 1
+    color: app.theme.text_on_fill
     halign: 'center'
     valign: 'middle'
     text_size: None, self.height
     canvas.before:
         Color:
-            rgba: (32/255, 114/255, 148/255, 1) if self.text else (0, 0, 0, 0)
+            rgba: app.theme.primary if self.text else (0, 0, 0, 0)
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -116,7 +118,7 @@
     spacing: dp(8)
     canvas.before:
         Color:
-            rgba: (80/255, 80/255, 80/255, 1) if self.selected or self.checked else ((56/255, 56/255, 56/255, 1) if int(self.row_index) % 2 == 0 else (48/255, 48/255, 48/255, 1))
+            rgba: app.theme.row_selected if self.selected or self.checked else (app.theme.row if int(self.row_index) % 2 == 0 else app.theme.row_alt)
         Rectangle:
             pos: self.pos
             size: self.size
@@ -125,12 +127,12 @@
         width: dp(22) if root.show_checkbox else 0
         canvas.after:
             Color:
-                rgba: (200/255, 200/255, 200/255, 1) if root.show_checkbox else (0, 0, 0, 0)
+                rgba: app.theme.text_secondary if root.show_checkbox else (0, 0, 0, 0)
             Line:
                 rectangle: self.center_x - dp(7), self.center_y - dp(7), dp(14), dp(14)
                 width: 1
             Color:
-                rgba: (50/255, 164/255, 206/255, 1) if root.show_checkbox and root.checked else (0, 0, 0, 0)
+                rgba: app.theme.accent if root.show_checkbox and root.checked else (0, 0, 0, 0)
             Rectangle:
                 pos: self.center_x - dp(5), self.center_y - dp(5)
                 size: dp(10), dp(10)
@@ -154,7 +156,7 @@
         width: dp(48) if not root.thumbnail else 0
         canvas.after:
             Color:
-                rgba: (250/255, 250/255, 250/255, 1) if not root.thumbnail else (0, 0, 0, 0)
+                rgba: app.theme.icon if not root.thumbnail else (0, 0, 0, 0)
             Rectangle:
                 source: '' if root.thumbnail else root.icon
                 pos: self.center_x - dp(10), self.center_y - dp(10)
@@ -168,7 +170,7 @@
             text: root.filename
             size_hint_y: None
             height: dp(20)
-            color: 230/255, 230/255, 230/255, 1
+            color: app.theme.text
             bold: root.is_current_job
             font_size: dp(15)
             halign: 'left'
@@ -181,7 +183,7 @@
             height: 0 if root.kind != 'file' else dp(16)
             opacity: 1 if root.kind == 'file' else 0
             text: root.subtitle
-            color: 150/255, 150/255, 150/255, 1
+            color: app.theme.text_muted
             font_size: dp(12)
             halign: 'left'
             valign: 'middle'
@@ -208,6 +210,7 @@
             spacing: dp(8)
             Image:
                 source: 'data/memory.png' if root.firmware_mode else 'data/folder-32.png'
+                color: app.theme.icon
                 size_hint: None, None
                 size: dp(22), dp(22)
                 pos_hint: {'center_y': 0.5}
@@ -229,14 +232,14 @@
                 text: tr._('Current file:')
                 size_hint_x: None
                 width: self.texture_size[0]
-                color: 180/255, 180/255, 180/255, 1
+                color: app.theme.text_secondary
                 font_size: dp(14)
                 valign: 'middle'
             Label:
                 text: root.job_filename
                 size_hint_x: None
                 width: self.texture_size[0]
-                color: (230/255, 230/255, 230/255, 1) if root.can_clear_job else (150/255, 150/255, 150/255, 1)
+                color: app.theme.text if root.can_clear_job else app.theme.text_muted
                 bold: root.can_clear_job
                 font_size: dp(14)
                 halign: 'left'
@@ -285,7 +288,7 @@
                 spacing: dp(6)
                 canvas.before:
                     Color:
-                        rgba: 56/255, 56/255, 56/255, 1
+                        rgba: app.theme.row
                     Rectangle:
                         pos: self.pos
                         size: self.size
@@ -335,18 +338,24 @@
                     width: dp(36) if root.compact and not root.search_expanded else self.width
                     canvas.before:
                         Color:
-                            rgba: 80/255, 80/255, 80/255, 1
+                            rgba: app.theme.field_bg
                         RoundedRectangle:
                             pos: self.pos
                             size: self.size
                             radius: [dp(8)]
+                    canvas.after:
+                        Color:
+                            rgba: app.theme.border
+                        Line:
+                            width: dp(1)
+                            rounded_rectangle: (self.x + dp(0.5), self.y + dp(0.5), max(0, self.width - dp(1)), max(0, self.height - dp(1)), dp(8) - dp(0.5))
                     TextInput:
                         id: ti_search
                         hint_text: tr._('Search')
                         multiline: False
                         padding: dp(10), dp(6)
-                        cursor_color: 1, 1, 1, 1
-                        foreground_color: 1, 1, 1, 1
+                        cursor_color: app.theme.text
+                        foreground_color: app.theme.text
                         background_color: 0, 0, 0, 0
                         background_normal: ''
                         background_active: ''
@@ -358,7 +367,8 @@
                         width: dp(36) if root.compact and not root.search_expanded else (dp(36) if root.search_text else 0)
                         text: '...' if root.compact and not root.search_expanded else '×'
                         font_size: dp(16)
-                        color: 1, 1, 1, 1
+                        chrome: False
+                        color: app.theme.text
                         background_color: 0, 0, 0, 0
                         background_normal: ''
                         background_active: ''
@@ -404,7 +414,7 @@
                     height: dp(24) if root.listing_banner_text else 0
                     opacity: 1 if root.listing_banner_text else 0
                     text: root.listing_banner_text
-                    color: 50/255, 164/255, 206/255, 1
+                    color: app.theme.accent
                     font_size: dp(13)
                     halign: 'left'
                     valign: 'middle'
@@ -438,7 +448,7 @@
                         spacing: dp(12)
                         Label:
                             text: root.empty_state_text
-                            color: 180/255, 180/255, 180/255, 1
+                            color: app.theme.text_secondary
                             font_size: dp(15)
                             halign: 'center'
                             valign: 'middle'

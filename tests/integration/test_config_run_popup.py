@@ -194,13 +194,17 @@ def test_extout_switch_enables_when_firmware_flags_are_set_off_ui_thread(kivy_ap
         pump_frames(2)
 
         def set_flags():
-            try:
-                kivy_app.is_community_firmware = True
-                kivy_app.fw_version_digitized = digitize_v("2.2.0c")
-            except Exception:
-                # Kv canvas updates from this thread are expected to fail.
-                # The stored flags are what the dialog reads afterwards.
-                pass
+            # Theme canvas instructions raise once the value is already stored.
+            # One try around both writes skips the firmware version, and the
+            # dialog then keeps this row hidden. The dialog reads the stored flags.
+            for assign in (
+                lambda: setattr(kivy_app, "is_community_firmware", True),
+                lambda: setattr(kivy_app, "fw_version_digitized", digitize_v("2.2.0c")),
+            ):
+                try:
+                    assign()
+                except Exception:
+                    pass
 
         worker = threading.Thread(target=set_flags)
         worker.start()

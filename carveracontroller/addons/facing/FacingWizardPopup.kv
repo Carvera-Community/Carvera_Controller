@@ -12,7 +12,7 @@
     padding_y: dp(2)
     halign: 'left'
     valign: 'middle'
-    color: 200/255, 200/255, 200/255, 1
+    color: app.theme.text_secondary
 
 <FacingSavePresetContent>:
     orientation: 'vertical'
@@ -28,7 +28,7 @@
         text_size: self.width, None
         halign: 'left'
         valign: 'bottom'
-        color: 0.78, 0.79, 0.82, 1
+        color: app.theme.text_secondary
     TextInput:
         id: ti_name
         size_hint_y: None
@@ -50,7 +50,7 @@
     size_hint: 0.88, 0.9
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     auto_dismiss: False
-    overlay_color: 0, 0, 0, 0.35
+    overlay_color: app.theme.overlay
 
     BoxLayout:
         orientation: 'vertical'
@@ -72,7 +72,7 @@
                     do_default_tab: False
                     tab_width: dp(120)
                     bar_width: dp(8)
-                    bar_color: 0.85, 0.25, 0.2, 1
+                    bar_color: app.theme.danger
                     padding: dp(8), dp(8), dp(8), dp(10)
 
                     TabbedPanelItem:
@@ -94,7 +94,7 @@
                                     size_hint_x: 1
                                     font_size: dp(14)
                                     line_spacing: dp(5)
-                                    color: 0.72, 0.73, 0.76, 1
+                                    color: app.theme.text_secondary
                                     text_size: self.width, None
                                     halign: 'left'
                                     valign: 'top'
@@ -186,7 +186,7 @@
                                     size_hint_x: 1
                                     font_size: dp(14)
                                     line_spacing: dp(5)
-                                    color: 0.72, 0.73, 0.76, 1
+                                    color: app.theme.text_secondary
                                     text_size: self.width, None
                                     halign: 'left'
                                     valign: 'top'
@@ -355,7 +355,7 @@
                                     size_hint_x: 1
                                     font_size: dp(14)
                                     line_spacing: dp(5)
-                                    color: 0.72, 0.73, 0.76, 1
+                                    color: app.theme.text_secondary
                                     text_size: self.width, None
                                     halign: 'left'
                                     valign: 'top'
@@ -455,7 +455,7 @@
                                     size_hint_x: 1
                                     font_size: dp(14)
                                     line_spacing: dp(5)
-                                    color: 0.72, 0.73, 0.76, 1
+                                    color: app.theme.text_secondary
                                     text_size: self.width, None
                                     halign: 'left'
                                     valign: 'top'
@@ -567,7 +567,7 @@
                         max_lines: 2
                         multiline: True
                         text: ''
-                        color: 0.92, 0.42, 0.35, 1
+                        color: app.theme.danger_text
 
                     Label:
                         size_hint_y: None
@@ -576,7 +576,7 @@
                         text_size: self.width - dp(8), None
                         halign: 'center'
                         valign: 'top'
-                        color: 0.65, 0.66, 0.7, 1
+                        color: app.theme.text_muted
                         text: tr._('Gray solid: stock outline · Dashed ring: margin · Red: facing path · Blue: probe grid (inset from stock edge) · Bright marker: X Y zero')
 
             BoxLayout:
@@ -588,7 +588,7 @@
                 Label:
                     size_hint_y: None
                     font_size: dp(13)
-                    color: 0.7, 0.71, 0.74, 1
+                    color: app.theme.text_secondary
                     text_size: self.width, None
                     halign: 'left'
                     valign: 'middle'
@@ -599,7 +599,7 @@
                     size_hint_y: 1
                     canvas.before:
                         Color:
-                            rgba: 35/255, 35/255, 35/255, 1
+                            rgba: app.theme.panel_inset
                         Rectangle:
                             pos: self.pos
                             size: self.size
@@ -626,7 +626,7 @@
             spacing: dp(6)
             canvas.before:
                 Color:
-                    rgba: 0.22, 0.22, 0.24, 1
+                    rgba: app.theme.row
                 Rectangle:
                     pos: self.pos[0], self.pos[1] + self.height - dp(1)
                     size: self.width, dp(1)

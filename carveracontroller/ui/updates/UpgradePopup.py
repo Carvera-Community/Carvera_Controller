@@ -21,6 +21,7 @@ from kivy.utils import platform as kivy_platform
 from carveracontroller.translation import tr
 from carveracontroller.ui.common.action_button import PopupActionButton
 from carveracontroller.ui.common.compact import COMPACT_WIDTH_DP, is_compact_width
+from carveracontroller.ui.theme import DARK, get_theme
 from carveracontroller.updater import (
     ChannelStatus,
     UpdateSnapshot,
@@ -43,12 +44,15 @@ from carveracontroller.updater.version import parse_version
 TAB_CONTROLLER = "controller"
 TAB_FIRMWARE = "firmware"
 
-_BADGE_COLORS = {
-    "enhancement": [32 / 255, 114 / 255, 148 / 255, 1],
-    "fixed": [46 / 255, 125 / 255, 50 / 255, 1],
-    "change": [150 / 255, 110 / 255, 40 / 255, 1],
-    "breaking": [160 / 255, 55 / 255, 55 / 255, 1],
-}
+
+def _badge_color(kind: str) -> list:
+    theme = get_theme()
+    by_kind = {
+        "fixed": theme.success,
+        "change": theme.warning,
+        "breaking": theme.danger,
+    }
+    return list(by_kind.get(kind, [0.0, 0.0, 0.0, 0.0]))
 
 
 class UpdateNotesRow(RecycleDataViewBehavior, BoxLayout):
@@ -60,7 +64,7 @@ class UpdateNotesRow(RecycleDataViewBehavior, BoxLayout):
     show_bullet = BooleanProperty(False)
     body_font_size = NumericProperty(13)
     body_bold = BooleanProperty(False)
-    body_color = ListProperty([220 / 255, 220 / 255, 220 / 255, 1])
+    body_color = ListProperty(list(DARK["text"]))
     links = ListProperty([])
 
     def __init__(self, **kwargs):
@@ -569,11 +573,11 @@ def _note_view_data(row, height: float) -> dict:
         "text": row.text,
         "markup_text": row.markup or row.text,
         "badge": row.badge,
-        "badge_color": _BADGE_COLORS.get(row.kind, [0.0, 0.0, 0.0, 0.0]),
+        "badge_color": _badge_color(row.kind),
         "show_bullet": row.kind == "bullet",
         "body_font_size": _note_font_size(row.kind),
         "body_bold": heading,
-        "body_color": [50 / 255, 164 / 255, 206 / 255, 1] if heading else [220 / 255, 220 / 255, 220 / 255, 1],
+        "body_color": list(get_theme().accent_text if heading else get_theme().text),
         "links": list(row.links),
         "height": height,
     }

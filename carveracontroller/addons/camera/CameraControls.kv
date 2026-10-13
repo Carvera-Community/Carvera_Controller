@@ -23,7 +23,7 @@
     spacing: '4dp'
     canvas.before:
         Color:
-            rgba: 0, 0, 0, 0.6
+            rgba: app.theme.overlay_strong
         Rectangle:
             pos: self.pos
             size: self.size
@@ -74,7 +74,7 @@
             font_size: '13sp'
             halign: 'left'
             valign: 'top'
-            color: 0.92, 0.92, 0.92, 1
+            color: app.theme.text
             size_hint_y: None
             height: self.texture_size[1] if app.timelapse_status else 0
             opacity: 1 if app.timelapse_status else 0

@@ -22,12 +22,13 @@ from carveracontroller.addons.tool_visualization.icon_geometry import (
     geometry_cache_key,
 )
 from carveracontroller.addons.tool_visualization.mesh_builder import FLUTE_COLOR, SHANK_COLOR
+from carveracontroller.ui.theme import DARK
 
 # Normalized float RGBA. Opaque variants of the 3D viewer colors (those carry
 # transparency for GL blending); the rasterizer converts to 0..255.
 ICON_FLUTE_COLOR = (FLUTE_COLOR[0], FLUTE_COLOR[1], FLUTE_COLOR[2], 1.0)
 ICON_SHANK_COLOR = (SHANK_COLOR[0], SHANK_COLOR[1], SHANK_COLOR[2], 1.0)
-ICON_OUTLINE_COLOR = (45 / 255, 45 / 255, 45 / 255, 1.0)
+ICON_OUTLINE_COLOR = tuple(DARK["tool_outline"])
 
 # Silhouette outline stroke width in dp (scaled with density / supersampling).
 ICON_OUTLINE_WIDTH_DP = 1.25

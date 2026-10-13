@@ -33,6 +33,7 @@ from carveracontroller.ui.LocalFilePicker import (
     confirm_overwrite_then,
     open_local_file_picker,
 )
+from carveracontroller.ui.theme import get_theme, rgba_to_hex
 
 from ..core.features import (
     DEFAULT_CIRCLE_CLASSIFY_TOLERANCE_MM,
@@ -73,10 +74,13 @@ from .sketch import CMMWorkbenchPreviewSketch
 if "CMMWorkbenchPreviewSketch" not in Factory.classes:
     Factory.register("CMMWorkbenchPreviewSketch", cls=CMMWorkbenchPreviewSketch)
 
-# Feature list row highlight (canvas.before Color on each row BoxLayout).
-_FEATURE_ROW_FOCUS_RGBA_ON = (0.18, 0.38, 0.58, 0.22)
-_FEATURE_ROW_FOCUS_RGBA_OFF = (0.18, 0.38, 0.58, 0.0)
-_HIDDEN_FEATURE_LABEL_COLOR = "5a5a5f"
+
+def _feature_row_focus_rgba(focused: bool) -> list:
+    rgba = list(get_theme().cmm_row_focus)
+    if not focused:
+        rgba[3] = 0.0
+    return rgba
+
 
 _SESSION_FILE_FILTERS = {
     "JSON": ["*.json"],
@@ -326,10 +330,12 @@ class CMMWorkbenchPopup(ModalView):
 
     @staticmethod
     def _feature_row_label_text(line1: str, line2: str, *, visible: bool, detail_font: float) -> tuple[str, bool]:
-        title = line1 if visible else f"[color={_HIDDEN_FEATURE_LABEL_COLOR}]{line1}[/color]"
+        theme = get_theme()
+        hidden_hex = rgba_to_hex(theme.text_muted)
+        title = line1 if visible else f"[color={hidden_hex}]{line1}[/color]"
         if not line2:
             return title, not visible
-        detail_color = "78797f" if visible else _HIDDEN_FEATURE_LABEL_COLOR
+        detail_color = rgba_to_hex(theme.text_secondary if visible else theme.text_muted)
         text = f"{title}\n[color={detail_color}][size={int(round(detail_font))}]{line2}[/size][/color]"
         return text, True
 
@@ -358,11 +364,7 @@ class CMMWorkbenchPopup(ModalView):
                 if fc is None or fid is None:
                     continue
                 feat = next((f for f in self.session.features if f.id == fid), None)
-                fc.rgba = (
-                    _FEATURE_ROW_FOCUS_RGBA_ON
-                    if feat is not None and feat.sketch_visible and fid == fid_focus
-                    else _FEATURE_ROW_FOCUS_RGBA_OFF
-                )
+                fc.rgba = _feature_row_focus_rgba(feat is not None and feat.sketch_visible and fid == fid_focus)
         except Exception:
             logger.debug("Could not toggle row focus", exc_info=True)
 
@@ -805,13 +807,7 @@ class CMMWorkbenchPopup(ModalView):
                     padding=[0, 0, dp(4), 0],
                 )
                 with row.canvas.before:
-                    fc = Color(
-                        *(
-                            _FEATURE_ROW_FOCUS_RGBA_ON
-                            if feat.sketch_visible and feat.id == self._preview_focus_id
-                            else _FEATURE_ROW_FOCUS_RGBA_OFF
-                        )
-                    )
+                    fc = Color(*_feature_row_focus_rgba(feat.sketch_visible and feat.id == self._preview_focus_id))
                     rect = Rectangle(pos=row.pos, size=row.size)
 
                 def _upd_focus_bg(*_a, r=rect, rw=row):

@@ -5,9 +5,10 @@ Each tool is approximated by revolving a simple 2D profile.
 import math
 
 from carveracontroller.addons.tool_visualization.tool_definition import ToolType
+from carveracontroller.ui.theme import DARK
 
-FLUTE_COLOR = (0.85, 0.65, 0.15, 0.45)
-SHANK_COLOR = (0.5, 0.5, 0.52, 0.3)
+FLUTE_COLOR = tuple(DARK["tool_flute"])
+SHANK_COLOR = tuple(DARK["tool_shank"])
 
 VERTEX_FORMAT = [
     (b"v_pos", 3, "float"),

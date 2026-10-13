@@ -22,6 +22,8 @@ from carveracontroller.addons.intellisense.engine import (
     highlight_mdi_line,
 )
 from carveracontroller.addons.tooltips.Tooltips import is_blocked_by_modal
+from carveracontroller.ui.theme import get_theme
+from carveracontroller.ui.themes import gcode_syntax_colors
 
 _POPUP_MAX_WIDTH = 440
 _POPUP_MAX_HEIGHT = 320
@@ -42,15 +44,9 @@ def machine_settings() -> dict:
         return {}
 
 
-def highlight_colors() -> dict | None:
-    try:
-        app = App.get_running_app()
-        root = getattr(app, "root", None) if app else None
-        if root is None:
-            return None
-        return getattr(root, "gcode_highlight_colors", None)
-    except Exception:
-        return None
+def highlight_colors() -> dict:
+    """Syntax colors of the active theme, for MDI and IntelliSense markup."""
+    return gcode_syntax_colors(get_theme())
 
 
 class IntellisensePopupBase(BoxLayout):

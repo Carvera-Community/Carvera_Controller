@@ -4,10 +4,10 @@
     font_size: '13sp'
     text_size: self.size
     valign: 'middle'
-    color: 150/255, 150/255, 150/255, 1
+    color: app.theme.text_muted
     canvas.before:
         Color:
-            rgba: 60/255, 60/255, 60/255, 1
+            rgba: app.theme.row_strip
         Rectangle:
             pos: self.pos
             size: self.size

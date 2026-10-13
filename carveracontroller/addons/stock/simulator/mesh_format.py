@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from carveracontroller.ui.theme import DARK
+
 # Same layout as tool meshes: pos(3) + normal(3) + color(4) + tc(2)
 VERTEX_FORMAT = [
     (b"v_pos", 3, "float"),
@@ -10,4 +12,4 @@ VERTEX_FORMAT = [
     (b"v_tc0", 2, "float"),
 ]
 
-DEFAULT_COLOR = (0.75, 0.72, 0.55, 1.0)
+DEFAULT_COLOR = tuple(DARK["stock_default"])
