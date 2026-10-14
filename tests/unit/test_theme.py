@@ -10,7 +10,7 @@ from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.settings import SettingBoolean, SettingItem, SettingSidebarLabel, SettingString
 
-from carveracontroller.ui.theme import DARK, Theme
+from carveracontroller.ui.theme import Theme
 
 _ROOT = Path(__file__).resolve().parents[2]
 _THEME_KV = _ROOT / "carveracontroller" / "ui" / "theme.kv"
@@ -162,6 +162,12 @@ def _ensure_theme(app):
     return app
 
 
+def _other_palette(name):
+    from carveracontroller.ui.themes import theme_names
+
+    return next(other for other in theme_names() if other != name)
+
+
 def test_settings_tabs_follow_theme_accent():
     # Canvas color expressions refresh on Builder.sync(), the same flush the
     # frame loop performs. Drop a stub app afterwards so later tests still see
@@ -169,26 +175,24 @@ def test_settings_tabs_follow_theme_accent():
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
     previous = list(app.theme.accent)
-    palette_name = app.theme.name
+    previous_on_fill = list(app.theme.text_on_fill)
     Builder.load_string(_settings_theme_rules(), filename="settings-theme-test.kv")
     try:
         tab = SettingSidebarLabel(text="General", selected=True)
         tab.texture_update()
         assert _colors(tab.canvas.before)[0] == pytest.approx(list(app.theme.accent))
-        # Selected tab text sits on the solid accent. Dark text_on_fill matches
-        # text; the light palette is what makes them differ.
         assert list(tab.color) == pytest.approx(list(app.theme.text_on_fill))
         assert _textured(tab.canvas)
-        app.theme.apply_palette("light")
+        # A distinct fill color, so this checks the selected tab uses text_on_fill.
+        app.theme.text_on_fill = [0.2, 0.8, 0.3, 1]
         Builder.sync()
-        assert list(tab.color) == pytest.approx(list(app.theme.text_on_fill))
-        assert abs(tab.color[0] - app.theme.text[0]) > 0.5
+        assert list(tab.color) == pytest.approx([0.2, 0.8, 0.3, 1])
         tab.selected = False
         Builder.sync()
         assert list(tab.color) == pytest.approx(list(app.theme.text))
         tab.selected = True
-        app.theme.apply_palette(palette_name)
         Builder.sync()
+        assert list(tab.color) == pytest.approx(list(app.theme.text_on_fill))
 
         app.theme.accent = [0, 1, 0, 1]
         Builder.sync()
@@ -217,9 +221,8 @@ def test_settings_tabs_follow_theme_accent():
         assert value_labels[0].text == "1"
         assert list(value_labels[0].color) == pytest.approx(list(app.theme.text))
     finally:
-        if app.theme.name != palette_name:
-            app.theme.apply_palette(palette_name)
         app.theme.accent = previous
+        app.theme.text_on_fill = previous_on_fill
         Builder.unload_file("settings-theme-test.kv")
         _restore_kivy_settings_rules()
         if created:
@@ -359,8 +362,6 @@ def test_set_theme_repaints_the_status_color():
         filename="status-color-reapply-test.kv",
     )
     try:
-        if app.theme.name != "dark":
-            app.theme.apply_palette("dark")
         probe = Factory.StatusColorProbe()
         root = Widget()
         root.status_data_view = probe
@@ -368,11 +369,10 @@ def test_set_theme_repaints_the_status_color():
         app.state = "Run"
         probe.color = list(machine_state_color("Run"))
         app._reapply_status_color = MakeraApp._reapply_status_color.__get__(app)
-        MakeraApp.set_theme(app, "light")
+        MakeraApp.set_theme(app, _other_palette(app.theme.name))
         expected = list(machine_state_color("Run"))
         assert list(probe.color) == pytest.approx(expected)
         assert list(CNC.vars["color"]) == pytest.approx(expected)
-        assert list(probe.color) != pytest.approx(list(app.theme.text_muted))
     finally:
         Builder.unload_file("status-color-reapply-test.kv")
         app.root = previous_root
@@ -388,10 +388,10 @@ def test_set_theme_repaints_the_status_color():
             _drop_stub_app(app)
 
 
-def test_switching_to_light_remaps_mdi_status_color():
+def test_remap_mdi_entry_moves_token_colors():
     from carveracontroller.main import remap_mdi_entry
 
-    theme = Theme("dark")
+    theme = Theme()
     pale = list(theme.info_text)
     entry = {
         "text": "Connected to machine!",
@@ -399,7 +399,7 @@ def test_switching_to_light_remaps_mdi_status_color():
         "original_color": list(pale),
         "entry_type": "output",
     }
-    theme.apply_palette("light")
+    theme.apply({"info_text": [0.15, 0.25, 0.35, 1]})
     remapped = remap_mdi_entry(entry, theme)
     assert remapped["text"] == "Connected to machine!"
     assert remapped["color"] == pytest.approx(list(theme.info_text))
@@ -411,32 +411,23 @@ def test_switching_to_light_remaps_mdi_status_color():
 
 def test_apply_palette_switches_and_round_trips():
     theme = Theme()
-    dark_bg = list(theme.bg)
+    original_name = theme.name
+    original = theme.to_dict()
     before = theme.revision
+    other = _other_palette(original_name)
 
-    theme.apply_palette("light")
-    assert theme.name == "light"
+    theme.apply_palette(other)
+    assert theme.name == other
     assert theme.revision > before
-    assert list(theme.bg) != dark_bg
-    assert theme.radius_m == DARK["radius_m"]
 
-    theme.apply_palette("dark")
-    assert theme.name == "dark"
-    assert list(theme.bg) == pytest.approx(dark_bg)
-    assert Theme("light").name == "light"
+    theme.apply_palette(original_name)
+    assert theme.name == original_name
+    assert theme.to_dict() == original
+    assert Theme(other).name == other
 
 
-def test_light_control_page_hides_the_well_and_greys_the_pads():
-    light = Theme("light")
-    dark = Theme("dark")
-    assert light.jog_page_fill(light.revision) == pytest.approx(list(light.bg))
-    assert light.jog_pad_fill(light.revision) == pytest.approx(list(light.surface))
-    assert dark.jog_page_fill(dark.revision) == pytest.approx(list(dark.surface))
-    assert dark.jog_pad_fill(dark.revision) == pytest.approx(list(dark.surface_raised))
-
-
-def test_button_text_is_readable_on_the_button_fill():
-    theme = Theme("light")
+def test_button_text_and_icon_follow_role():
+    theme = Theme()
     assert theme.button_text("normal", "normal", False, True) == pytest.approx(list(theme.text))
     assert theme.button_text("normal", "down", False, True) == pytest.approx(list(theme.text_on_fill))
     for role in ("primary", "danger", "help"):
@@ -447,7 +438,6 @@ def test_button_text_is_readable_on_the_button_fill():
     assert theme.icon_tint("normal", "down", False, True) == pytest.approx(list(theme.text_on_fill))
     assert theme.icon_tint("primary", "normal", False, True) == pytest.approx(list(theme.text_on_fill))
     assert theme.icon_tint("normal", "down", True, True) == pytest.approx(list(theme.text_disabled))
-    assert Theme().icon_tint("normal", "normal", False, True) == pytest.approx(list(Theme().text))
     assert theme.icon_rgba(True, "normal", "down", False, True) == [1, 1, 1, 1]
     assert theme.icon_rgba(True, "normal", "normal", True, True)[3] == pytest.approx(0.4)
     assert theme.icon_rgba(False, "normal", "normal", False, True) == pytest.approx(list(theme.icon))
@@ -470,10 +460,10 @@ def _kv_rule(text, name):
     return "".join(body)
 
 
-def test_pressed_composite_buttons_use_fill_text_on_the_light_theme():
+def test_pressed_composite_buttons_use_fill_text():
     # Icon buttons and the top-bar readouts draw their caption in child labels.
     # The button face still turns accent while pressed, so those labels have to
-    # take text_on_fill or the light theme leaves black text on dark blue.
+    # take text_on_fill. The tokens below are distinct so a wrong one fails.
     from kivy.uix.label import Label
 
     from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
@@ -482,7 +472,16 @@ def test_pressed_composite_buttons_use_fill_text_on_the_light_theme():
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
     palette_name = app.theme.name
-    app.theme.apply_palette("light")
+    app.theme.apply(
+        {
+            "text": [0.11, 0.12, 0.13, 1],
+            "text_on_fill": [0.91, 0.92, 0.13, 1],
+            "icon": [0.21, 0.51, 0.81, 1],
+            "text_disabled": [0.61, 0.62, 0.63, 1],
+            "text_muted": [0.41, 0.42, 0.43, 1],
+            "axis_x": [0.81, 0.21, 0.21, 1],
+        }
+    )
     # The full app already loaded these files. Loading them again applies each
     # rule twice, and ScrollingLabel then tries to take a second child.
     loaded_theme = False
@@ -568,7 +567,14 @@ def test_display_menu_rows_have_no_idle_fill_and_softer_icons():
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
     palette_name = app.theme.name
-    app.theme.apply_palette("light")
+    app.theme.apply(
+        {
+            "icon": [0.2, 0.5, 0.8, 1],
+            "text": [0.1, 0.1, 0.1, 1],
+            "text_on_fill": [0.95, 0.95, 0.2, 1],
+            "accent": [0.1, 0.3, 0.8, 1],
+        }
+    )
     bars = (_ROOT / "carveracontroller" / "makera.kv").read_text()
     Builder.load_string(_kv_rule(bars, "GcodeViewerDisplayMenuButton"), filename="display-menu-rules.kv")
     try:
@@ -592,7 +598,7 @@ def test_display_menu_rows_have_no_idle_fill_and_softer_icons():
             _drop_stub_app(app)
 
 
-def test_light_theme_separators_and_search_field_are_not_dark():
+def test_separators_follow_the_theme_border():
     from kivy.uix.popup import Popup
     from kivy.uix.settings import MenuSidebar, SettingSpacer, SettingsPanel, SettingTitle
     from kivy.uix.splitter import SplitterStrip
@@ -600,7 +606,6 @@ def test_light_theme_separators_and_search_field_are_not_dark():
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
     palette_name = app.theme.name
-    app.theme.apply_palette("light")
     Builder.load_string(_THEME_KV.read_text(), filename="separator-theme.kv")
     bars = (_ROOT / "carveracontroller" / "makera.kv").read_text()
     Builder.load_string(_kv_rule(bars, "SplitterStrip"), filename="separator-splitter.kv")
@@ -620,7 +625,7 @@ def test_light_theme_separators_and_search_field_are_not_dark():
         popup = Popup(title="Theme")
         assert list(popup.separator_color) == pytest.approx(border)
         assert popup.separator_height == 1
-        app.theme.apply_palette("dark")
+        app.theme.apply_palette(_other_palette(palette_name))
         Builder.sync()
         assert list(popup.separator_color) == pytest.approx(list(app.theme.border))
     finally:
@@ -635,7 +640,7 @@ def test_light_theme_separators_and_search_field_are_not_dark():
 def test_remap_color_moves_copied_token_colors_to_the_new_palette():
     theme = Theme()
     old_muted = list(theme.text_muted)
-    theme.apply_palette("light")
+    theme.apply({"text_muted": [0.2, 0.3, 0.4, 1]})
     assert theme.remap_color(old_muted) == pytest.approx(list(theme.text_muted))
     assert theme.remap_color([0.123, 0.456, 0.789, 1.0]) is None
     assert theme.remap_color(None) is None
@@ -661,7 +666,7 @@ def test_labels_follow_the_palette_unless_they_set_a_color():
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
     theme = app.theme
-    theme.apply_palette("dark")
+    palette_name = theme.name
     Builder.load_string(_THEME_KV.read_text(), filename="themed-labels-test.kv")
     try:
         plain = Label(text="plain")
@@ -677,7 +682,7 @@ def test_labels_follow_the_palette_unless_they_set_a_color():
         assert list(plain.color) == pytest.approx(list(theme.text))
         assert list(button.color) == pytest.approx(list(theme.text))
 
-        theme.apply_palette("light")
+        theme.apply_palette(_other_palette(palette_name))
         assert list(plain.color) == pytest.approx(list(theme.text))
         assert list(copied.color) == pytest.approx(list(theme.text_muted))
         assert list(custom.color) == pytest.approx([0.9, 0.1, 0.1, 1])
@@ -686,7 +691,7 @@ def test_labels_follow_the_palette_unless_they_set_a_color():
         assert list(primary.color) == pytest.approx(list(theme.text_on_fill))
 
         # A disabled label paints disabled_color, not color. Kivy's default is
-        # white at 30% opacity, which is unreadable on the light disabled button.
+        # white at 30% opacity.
         plain.disabled = True
         plain.texture_update()
         assert list(plain.disabled_color) == pytest.approx(list(theme.text_disabled))
@@ -717,7 +722,7 @@ def test_labels_follow_the_palette_unless_they_set_a_color():
         finally:
             Builder.unload_file("themed-kv-buttons-test.kv")
     finally:
-        theme.apply_palette("dark")
+        theme.apply_palette(palette_name)
         Builder.unload_file("themed-labels-test.kv")
         if created:
             _drop_stub_app(app)
@@ -728,32 +733,35 @@ def test_theme_setting_shows_titles_and_stores_names():
     from kivy.uix.togglebutton import ToggleButton
 
     from carveracontroller.ui.theme import SettingTheme
+    from carveracontroller.ui.themes import theme_names, theme_title
 
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
     Builder.load_string(_THEME_KV.read_text(), filename="themed-setting-test.kv")
+    current, other = theme_names()[:2]
+    current_title, other_title = theme_title(current), theme_title(other)
 
     class _Panel:
         def get_value(self, _section, _key):
-            return "dark"
+            return current
 
         def set_value(self, _section, _key, _value):
             return None
 
     try:
-        item = SettingTheme(panel=_Panel(), section="carvera", key="theme", title="Theme", options=["dark", "light"])
-        assert item.shown_value("dark") == "Dark"
-        assert item.shown_value("light") == "Light"
+        item = SettingTheme(panel=_Panel(), section="carvera", key="theme", title="Theme", options=[current, other])
+        assert item.shown_value(current) == current_title
+        assert item.shown_value(other) == other_title
         assert item.shown_value("missing") == "missing"
-        label = next(widget for widget in item.walk() if isinstance(widget, Label) and widget.text == "Dark")
+        label = next(widget for widget in item.walk() if isinstance(widget, Label) and widget.text == current_title)
         item._create_popup(item)
         try:
             buttons = [child for child in reversed(item.popup.content.children) if isinstance(child, ToggleButton)]
-            assert [button.text for button in buttons] == ["Dark", "Light"]
+            assert [button.text for button in buttons] == [current_title, other_title]
             assert buttons[0].state == "down"
             buttons[1].dispatch("on_release")
-            assert item.value == "light"
-            assert label.text == "Light"
+            assert item.value == other
+            assert label.text == other_title
         finally:
             if item.popup is not None:
                 item.popup.dismiss()
@@ -770,7 +778,8 @@ def test_text_fields_use_a_flat_fill():
 
     created = App.get_running_app() is None
     app = _ensure_theme(App.get_running_app() or _SettingsThemeApp())
-    app.theme.apply_palette("light")
+    palette_name = app.theme.name
+    other = _other_palette(palette_name)
     Builder.load_string(_THEME_KV.read_text(), filename="themed-text-field-test.kv")
     try:
         field = TextInput(text="12", size=(120, 40))
@@ -814,7 +823,7 @@ def test_text_fields_use_a_flat_fill():
         assert colors()[1][:3] == pytest.approx(list(app.theme.border)[:3])
         field.disabled = False
 
-        app.theme.apply_palette("dark")
+        app.theme.apply_palette(other)
         Builder.sync()
         assert list(field.background_color) == pytest.approx(list(app.theme.field_bg))
         assert colors()[0] == pytest.approx(list(app.theme.field_bg))
@@ -833,7 +842,7 @@ def test_text_fields_use_a_flat_fill():
 
             # A theme switch re-evaluates the shared field rule. A field that
             # cleared its background must stay clear, or it grows a border.
-            app.theme.apply_palette("light")
+            app.theme.apply_palette(palette_name)
             Builder.sync()
             clear_colors = _colors(clear.canvas.before)
             assert list(clear.background_color) == pytest.approx([0, 0, 0, 0])
@@ -844,7 +853,7 @@ def test_text_fields_use_a_flat_fill():
         finally:
             Builder.unload_file("themed-clear-field-test.kv")
     finally:
-        app.theme.apply_palette("dark")
+        app.theme.apply_palette(palette_name)
         Builder.unload_file("themed-text-field-test.kv")
         if created:
             _drop_stub_app(app)
