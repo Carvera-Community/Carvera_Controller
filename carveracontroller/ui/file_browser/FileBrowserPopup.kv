@@ -13,7 +13,7 @@
     padding: dp(8), dp(10)
     canvas.before:
         Color:
-            rgba: app.theme.selection_fill(0.12 if self.selected else 0, app.theme.revision)
+            rgba: app.theme.row_selected if self.selected else (0, 0, 0, 0)
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -26,7 +26,7 @@
             radius: [dp(2)]
     canvas.after:
         Color:
-            rgba: app.theme.accent
+            rgba: app.theme.accent_text
         Ellipse:
             pos: self.x + self.width - dp(16), self.y + self.height - dp(16)
             size: dp(10) if (self.notify and not self.badge_text) else 0, dp(10) if (self.notify and not self.badge_text) else 0
@@ -64,7 +64,7 @@
             width: tab_badge.width
         Label:
             text: root.path_text
-            color: app.theme.text_muted
+            color: app.theme.text_secondary if root.selected else app.theme.text_muted
             font_size: dp(12)
             halign: 'center'
             valign: 'middle'

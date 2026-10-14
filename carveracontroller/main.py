@@ -1642,7 +1642,7 @@ class WCSSettingsPopup(ModalView):
             if hasattr(self.ids, button_id):
                 button = getattr(self.ids, button_id)
                 if wcs == active_wcs:
-                    button.color = get_theme().highlight_text
+                    button.color = get_theme().active_color
                 else:
                     button.color = get_theme().text
 

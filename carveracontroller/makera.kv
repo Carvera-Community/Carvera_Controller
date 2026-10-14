@@ -119,12 +119,13 @@
     size_hint: None, None
     width: dp(app.theme.top_bar_height - app.theme.bar_pad * 2)
     height: self.width
+    radius_dp: app.theme.top_bar_radius
     canvas.after:
         Color:
             rgba: app.theme.bg[0], app.theme.bg[1], app.theme.bg[2], .28
         Line:
             width: dp(1)
-            rounded_rectangle: (self.x + dp(0.5), self.y + dp(0.5), self.width - dp(1), self.height - dp(1), dp(app.theme.radius_m) - dp(0.5))
+            rounded_rectangle: (self.x + dp(0.5), self.y + dp(0.5), self.width - dp(1), self.height - dp(1), dp(self.radius_dp) - dp(0.5))
 
 <TransparentButton>:
     height: '32dp'
@@ -1265,6 +1266,7 @@
     size_hint_x: 1
     size_hint_max_x: '100dp'
     size_hint_min: '90dp', None
+    radius_dp: app.theme.top_bar_radius
     scale: 100
     padding: '3dp'
     active: False
