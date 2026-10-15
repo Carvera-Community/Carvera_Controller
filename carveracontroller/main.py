@@ -175,7 +175,7 @@ from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPo
 from carveracontroller.documentation import resolve_documentation_url
 from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.timelapse import format_timelapse_status, timelapse_is_recording
-from carveracontroller.ui.config_run import CoordPopup
+from carveracontroller.ui.config_run import CoordPopup, start_wcs_origin
 from carveracontroller.ui.file_browser import FileBrowserPopup
 from carveracontroller.ui.file_browser.sources import (
     LOCATION_DEVICE,
@@ -998,20 +998,21 @@ class OriginPopup(ModalView):
 
     def on_open(self):
         super().on_open()
+        _name, wcox, wcoy, _rotation = start_wcs_origin()
         # Use the same logic as CoordPopup.load_origin_label to set offsets
         app = App.get_running_app()
         if app.has_4axis:
-            x = round(CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4)
-            y = round(CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4)
+            x = round(wcox - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4)
+            y = round(wcoy - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4)
         else:
             laser_x = CNC.vars["laser_module_offset_x"] if CNC.vars["lasermode"] else 0.0
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
             if self.coord_popup.config["origin"]["anchor"] == 2 and app.has_anchor2:
-                x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
-                y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
+                x = round(wcox + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
+                y = round(wcoy + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
             elif self.coord_popup.config["origin"]["anchor"] == 1:
-                x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"], 4)
-                y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"], 4)
+                x = round(wcox + laser_x - CNC.vars["anchor1_x"], 4)
+                y = round(wcoy + laser_y - CNC.vars["anchor1_y"], 4)
             else:
                 x = 0
                 y = 0
@@ -1031,22 +1032,23 @@ class OriginPopup(ModalView):
         return 1
 
     def update_offsets(self):
+        _name, wcox, wcoy, _rotation = start_wcs_origin()
         # Use the same logic as CoordPopup.load_origin_label to set offsets
         app = App.get_running_app()
         x = 0
         y = 0
         if app.has_4axis:
-            x = round(CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4)
-            y = round(CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4)
+            x = round(wcox - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4)
+            y = round(wcoy - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4)
         else:
             laser_x = CNC.vars["laser_module_offset_x"] if CNC.vars["lasermode"] else 0.0
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
             if self.cbx_anchor1.active:
-                x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"], 4)
-                y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"], 4)
+                x = round(wcox + laser_x - CNC.vars["anchor1_x"], 4)
+                y = round(wcoy + laser_y - CNC.vars["anchor1_y"], 4)
             elif self.cbx_anchor2.active and app.has_anchor2:
-                x = round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
-                y = round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
+                x = round(wcox + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4)
+                y = round(wcoy + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4)
             elif self.cbx_current_position.active:
                 x = 0
                 y = 0
@@ -1993,6 +1995,7 @@ class CNCWorkspace(Widget):
             return
         self.canvas.clear()
         zoom = self.width / CNC.vars["worksize_x"]
+        _name, wcox, wcoy, rotation = start_wcs_origin()
         with self.canvas:
             # The bed drawing uses absolute coordinates and can extend past the
             # preview. Keep the origin, work area, probe, and leveling marks inside it.
@@ -2091,8 +2094,8 @@ class CNCWorkspace(Widget):
 
             # origin
             Color(52 / 255, 152 / 255, 219 / 255, 1)
-            origin_x = CNC.vars["wcox"] - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x
-            origin_y = CNC.vars["wcoy"] - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y
+            origin_x = wcox - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x
+            origin_y = wcoy - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y
             Ellipse(pos=(self.x + origin_x * zoom - 10, self.y + origin_y * zoom - 10), size=(20, 20))
 
             # work area
@@ -2100,7 +2103,7 @@ class CNCWorkspace(Widget):
             PushMatrix()
             Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
             if not app.has_4axis:
-                Rotate(angle=CNC.vars["rotation_angle"])  # Use degrees directly
+                Rotate(angle=rotation)  # Use degrees directly
             Line(
                 width=(2 if self.config["margin"]["active"] else 1),
                 rectangle=(
@@ -2127,7 +2130,7 @@ class CNCWorkspace(Widget):
                         zprobe_y = CNC.vars["rotation_offset_y"] + CNC.vars["anchor_width"]
                 else:
                     Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-                    Rotate(angle=CNC.vars["rotation_angle"])
+                    Rotate(angle=rotation)
                     zprobe_x = self.config["zprobe"]["x_offset"] + (
                         0 if self.config["zprobe"]["origin"] == 1 else CNC.vars["xmin"]
                     )
@@ -2143,7 +2146,7 @@ class CNCWorkspace(Widget):
                 PushMatrix()
                 Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
                 if not app.has_4axis:
-                    Rotate(angle=CNC.vars["rotation_angle"])
+                    Rotate(angle=rotation)
                 for x in Utils.xfrange(
                     self.config["leveling"]["xn_offset"],
                     CNC.vars["xmax"] - CNC.vars["xmin"] - self.config["leveling"]["xp_offset"],
@@ -2666,6 +2669,7 @@ class Makera(RelativeLayout):
     used_tools = ListProperty()
     upcoming_tool = 0
     file_has_ocodes = False
+    program_start_wcs = None  # WCS the loaded program selects before its first move
     tool_change_markers = []
     tool_table = {}
     cam_metadata = None
@@ -2776,6 +2780,7 @@ class Makera(RelativeLayout):
         self.controller.set_reconnection_callbacks(
             self.attempt_reconnect, self.on_reconnect_failed, self.on_reconnect_success
         )
+        self.controller.wcs_table_callback = self.on_wcs_table
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
         CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
@@ -3284,10 +3289,23 @@ class Makera(RelativeLayout):
             app.state == "Idle" and bool(app.selected_remote_filename) and not app.playing and not self._is_popup_open()
         )
 
+    def on_wcs_table(self):
+        # "get wcs" values arrive on the controller thread; the start job popup may show another WCS
+        Clock.schedule_once(self.refresh_start_wcs, 0)
+
+    def refresh_start_wcs(self, *args):
+        popup = getattr(self, "coord_popup", None)
+        if popup is None:
+            return
+        popup.load_origin_label()
+        popup.cnc_workspace.draw()
+
     def open_start_job_popup(self):
         if not self.can_open_start_job_popup():
             return False
         self.coord_popup.mode = "Run"
+        # the start WCS of the program may not be the active one, so read all WCS
+        self.controller.viewWCS()
         self.coord_popup.load_config()
         self.coord_popup.open()
         return True
@@ -3638,7 +3656,7 @@ class Makera(RelativeLayout):
         # without feed moves, or inside the path area without margin, Z probe or leveling)
         self.controller.liftToClearance(buffer=True)
         # apply and play
-        self.apply(True)
+        self.apply(True, select_wcs=not start_line)
         # play file
         CNC.vars["playedseconds"] = 0
         if start_line:
@@ -3648,7 +3666,7 @@ class Makera(RelativeLayout):
             self.controller.playCommand(file_name, has_ocodes=self.file_has_ocodes)
 
     # -----------------------------------------------------------------------
-    def apply(self, buffer=False):
+    def apply(self, buffer=False, select_wcs=True):
         if tutorial_blocks_motion():
             return
         app = App.get_running_app()
@@ -3671,6 +3689,10 @@ class Makera(RelativeLayout):
                 or CNC.vars["wy"] > CNC.vars["ymax"]
             ):
                 goto_origin = True
+
+        # M495 runs in the active WCS, so select the one the program starts in first
+        if select_wcs and self.program_start_wcs is not None:
+            self.controller.executeCommand(("buffer " if buffer else "") + self.program_start_wcs)
 
         zprobe_abs = False
         # calculate zprobe offset
@@ -3726,7 +3748,14 @@ class Makera(RelativeLayout):
             origin_x += CNC.vars["anchor1_x"] + CNC.vars["rotation_offset_x"]
             origin_y += CNC.vars["anchor1_y"] + CNC.vars["rotation_offset_y"]
 
-        self.controller.wcsSetM(origin_x, origin_y, None, None)
+        # the WCS the job starts in, as shown in the start job popup
+        name = start_wcs_origin()[0]
+        active = CNC.wcs_names[CNC.vars["active_coord_system"]]
+        if name == active:
+            self.controller.wcsSetM(origin_x, origin_y, None, None)
+        else:
+            self.controller.wcsSetM(origin_x, origin_y, None, None, CNC.wcs_names.index(name) + 1)
+            self.controller.viewWCS()  # the shown values of another WCS come from "get wcs"
 
         # refresh after 1 seconds
         Clock.schedule_once(self.refresh_work_origin, 1)
@@ -9198,10 +9227,11 @@ class Makera(RelativeLayout):
             self.coord_popup.set_config("leveling", "active", False)
             self.coord_popup.set_config("origin", "anchor", 3)
         else:
+            _name, wcox, wcoy, _rotation = start_wcs_origin()
             if (
                 app.has_anchor2
-                and (CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"]) >= 0
-                and (CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"]) >= 0
+                and (wcox - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"]) >= 0
+                and (wcoy - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"]) >= 0
             ):
                 self.coord_popup.set_config("origin", "anchor", 2)
             else:
@@ -9265,6 +9295,7 @@ class Makera(RelativeLayout):
         self.load_event.set()
         self.upcoming_tool = 0
         self.file_has_ocodes = False
+        self.program_start_wcs = None
         self.used_tools = []
         self.tool_change_markers = []
         self.tool_table = {}
@@ -9299,6 +9330,7 @@ class Makera(RelativeLayout):
             self.lines = f.readlines()
             self.selected_file_line_count = len(self.lines)
             f.close()
+            self.program_start_wcs = self.controller.program_start_wcs(self.lines)
 
             # Detect tools/stock metadata and set document unit if available
             self.document_unit = detect_document_unit(self.lines)

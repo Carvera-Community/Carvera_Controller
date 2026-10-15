@@ -37,6 +37,24 @@ _PACKAGE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 _BUILTIN_BACKGROUND_DIR = os.path.join(_PACKAGE_ROOT, "data", "play_file_image_backgrounds")
 
 
+def start_wcs_origin():
+    """
+    Name, origin (machine X, Y) and rotation of the WCS a job starts in: the one the loaded program
+    selects before its first move, else the active one. The active WCS comes from the machine
+    status, another one from the table read with "get wcs"; while the table does not have it yet,
+    the active WCS is returned.
+    """
+    app = App.get_running_app()
+    root = app.root if app is not None else None
+    active = CNC.wcs_names[CNC.vars["active_coord_system"]]
+    name = getattr(root, "program_start_wcs", None) or active
+    table = getattr(getattr(root, "controller", None), "wcs_table", {})
+    if name != active and name in table:
+        x, y, _z, _a, _b, rotation = table[name]
+        return name, x, y, rotation
+    return active, CNC.vars["wcox"], CNC.vars["wcoy"], CNC.vars["rotation_angle"]
+
+
 def background_image_model(name):
     """Return the machine model a built-in background belongs to, or None if unknown."""
     if name.startswith("CA1") or name.startswith("Air "):
@@ -441,26 +459,27 @@ class CoordPopup(ModalView):
         self.load_leveling_label()
 
     def load_origin_label(self):
+        name, wcox, wcoy, _rotation = start_wcs_origin()
         app = App.get_running_app()
         if app.has_4axis:
             self.lb_origin.text = "(%g, %g) " % (
-                round(CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4),
-                round(CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4),
+                round(wcox - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4),
+                round(wcoy - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4),
             ) + tr._("from Headstock")
         else:
             laser_x = CNC.vars["laser_module_offset_x"] if CNC.vars["lasermode"] else 0.0
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
             if self.config["origin"]["anchor"] == 2 and app.has_anchor2:
                 self.lb_origin.text = "(%g, %g) " % (
-                    round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4),
-                    round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4),
+                    round(wcox + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4),
+                    round(wcoy + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4),
                 ) + tr._("from Anchor2")
             else:
                 self.lb_origin.text = "(%g, %g) " % (
-                    round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"], 4),
-                    round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"], 4),
+                    round(wcox + laser_x - CNC.vars["anchor1_x"], 4),
+                    round(wcoy + laser_y - CNC.vars["anchor1_y"], 4),
                 ) + tr._("from Anchor1")
-        self.lb_origin.text = CNC.wcs_names[CNC.vars["active_coord_system"]] + ": " + self.lb_origin.text
+        self.lb_origin.text = name + ": " + self.lb_origin.text
 
     def load_zprobe_label(self):
         app = App.get_running_app()

@@ -188,6 +188,8 @@ class Controller:
         self.diagnosing = False
 
         self.is_community_firmware = False
+        self.wcs_table = {}  # last "get wcs" values: {"G54": [x, y, z, a, b, rotation], ...}
+        self.wcs_table_callback = None
         self._session_lights_applied = False
 
         # Connection-scoped comms protocol (detect on open; follows M485 switches)
@@ -1117,6 +1119,29 @@ class Controller:
 
         return (None, None)
 
+    def program_start_wcs(self, lines):
+        """
+        Return the work coordinate system a program selects before its first move (e.g. "G55"),
+        or None when it moves before selecting one. Moves in machine coordinates (G53) do not
+        count as the first move.
+        """
+        start_wcs = None
+        for line in lines:
+            tokens = self._gcode_line_to_cmd_tokens(line)
+            # a WCS word applies before a move on the same line
+            names = [
+                name for token in tokens for name in CNC.wcs_names if self._command_token_matches_base(token, name)
+            ]
+            if names:
+                start_wcs = names[-1]
+            if not any(self._command_token_matches_base(token, "G53") for token in tokens) and any(
+                self._command_token_matches_base(token, motion)
+                for token in tokens
+                for motion in ("G0", "G1", "G2", "G3")
+            ):
+                break
+        return start_wcs
+
     def _has_movement_after_line(self, lines, after_line, before_start_line):
         """
         Return True if any G0–G3 command appears on a line strictly after after_line
@@ -2043,9 +2068,9 @@ class Controller:
 
         self.sendGCode(cmd)
 
-    def wcsSetM(self, x=None, y=None, z=None, a=None):
-        # p = WCS.index(CNC.vars["WCS"])
-        cmd = "G10L2P0"
+    def wcsSetM(self, x=None, y=None, z=None, a=None, wcs=0):
+        # wcs: 1 = G54 to 9 = G59.3, 0 = the active one
+        cmd = "G10L2P%d" % wcs
 
         pos = ""
         if x is not None and abs(x) < 10000.0:
@@ -2433,6 +2458,11 @@ class Controller:
 
                 except (ValueError, IndexError):
                     logger.error(f"Error parsing WCS values for {wcs_code}: {values_str}")
+
+        if wcs_data:
+            self.wcs_table.update(wcs_data)
+            if self.wcs_table_callback:
+                self.wcs_table_callback()
 
         # Send the parsed data to the WCS Settings popup if it's open
         if hasattr(self, "wcs_popup_callback") and self.wcs_popup_callback:

@@ -692,7 +692,8 @@ def test_open_videos_browser_is_blocked_while_the_machine_is_busy():
 def test_start_job_applicability_and_opening():
     app = SimpleNamespace(state="Idle", selected_remote_filename="job.nc", playing=False)
     popup = SimpleNamespace(mode="", load_config=Mock(), open=Mock())
-    root = SimpleNamespace(_is_popup_open=Mock(return_value=False), coord_popup=popup)
+    controller = SimpleNamespace(viewWCS=Mock())
+    root = SimpleNamespace(_is_popup_open=Mock(return_value=False), coord_popup=popup, controller=controller)
     root.can_open_start_job_popup = lambda: Makera.can_open_start_job_popup(root)
 
     with patch("carveracontroller.main.App.get_running_app", return_value=app):
@@ -700,6 +701,7 @@ def test_start_job_applicability_and_opening():
         assert Makera.open_start_job_popup(root) is True
 
     assert popup.mode == "Run"
+    controller.viewWCS.assert_called_once_with()
     popup.load_config.assert_called_once_with()
     popup.open.assert_called_once_with()
 
