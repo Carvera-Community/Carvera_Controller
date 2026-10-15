@@ -177,8 +177,11 @@ from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.timelapse import format_timelapse_status, timelapse_is_recording
 from carveracontroller.ui.config_run import CoordPopup
 from carveracontroller.ui.file_browser import FileBrowserPopup
+from carveracontroller.ui.file_browser.MachineFileEditorPopup import MachineFileEditorPopup
 from carveracontroller.ui.file_browser.sources import (
     LOCATION_DEVICE,
+    editor_display_name,
+    is_editable_gcode_name,
     is_job_file,
     is_machine_video_path,
     listing_has_directory,
@@ -2850,6 +2853,10 @@ class Makera(RelativeLayout):
         self._remote_deleted_paths = []
         self.input_popup = InputPopup()
         self.manual_wifi_popup = ManualWifiPopup()
+        self.machine_file_editor_popup = MachineFileEditorPopup()
+        self._machine_editor_original_remote = ""
+        self._machine_editor_was_loaded = False
+        self._upload_remote_path_override = None
 
         self.probing_popup = ProbingPopup(self.controller)
         self.cmm_workbench_popup = None
@@ -4921,6 +4928,99 @@ class Makera(RelativeLayout):
         threading.Thread(target=self.doDownload, args=(remote_path, local_path)).start()
 
     # -----------------------------------------------------------------------
+    def open_machine_file_editor(self):
+        app = App.get_running_app()
+        if app is None or app.state != "Idle":
+            return
+        remote_path = self.file_popup.selected_machine_file
+        if not remote_path:
+            return
+        filename = os.path.basename(os.path.normpath(remote_path))
+        if not is_editable_gcode_name(filename):
+            return
+        remote_post_path = remote_path.replace("/sd/", "").replace("\\sd\\", "")
+        local_path = os.path.join(self.temp_dir, remote_post_path)
+        self._machine_editor_original_remote = remote_path
+        self.downloading_file = remote_path
+        self.downloading_size = self.file_popup.selected_machine_filesize
+        self.downloading_config = False
+        threading.Thread(
+            target=self._download_for_machine_editor,
+            args=(remote_path, local_path),
+            daemon=True,
+        ).start()
+
+    def _download_for_machine_editor(self, remote_path, local_path):
+        result = self.doDownload(remote_path, local_path, show_progress=True, open_after=False)
+        if result is not None and result >= 0:
+            Clock.schedule_once(partial(self._open_machine_editor_popup, remote_path, local_path), 0)
+
+    def _open_machine_editor_popup(self, remote_path, local_path, *args):
+        try:
+            with open(local_path, encoding="utf-8") as handle:
+                content = handle.read()
+        except OSError:
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Download file error!"), False), 0)
+            return
+        self.machine_file_editor_popup.open_editor(editor_display_name(remote_path), content)
+
+    def save_machine_file_editor(self, filename, content):
+        app = App.get_running_app()
+        if app is None or app.state != "Idle":
+            return
+        new_name = (filename or "").strip()
+        if not new_name:
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Filename is required"), False), 0)
+            return
+        if os.path.basename(new_name) != new_name or ".." in new_name or new_name in (".", ".."):
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Invalid filename"), False), 0)
+            return
+        if not is_editable_gcode_name(new_name):
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Only G-code files can be edited"), False), 0)
+            return
+
+        original_remote = self._machine_editor_original_remote
+        if not original_remote:
+            return
+        machine_dir = self.file_popup.machine_dir
+        new_remote = os.path.join(machine_dir, new_name).replace("\\", "/")
+        renamed = machine_path_key(original_remote) != machine_path_key(new_remote)
+        if renamed and self.file_popup.machine_listing_has(new_name):
+            self.confirm_popup.lb_title.text = tr._("File Already Exists")
+            self.confirm_popup.lb_content.text = tr._("Confirm to overwrite file:") + " \n '%s'?" % (new_name)
+            self.confirm_popup.cancel = None
+            self.confirm_popup.confirm = partial(self._perform_machine_file_editor_save, new_remote, content)
+            self.confirm_popup.open()
+            return
+        self._perform_machine_file_editor_save(new_remote, content)
+
+    def _perform_machine_file_editor_save(self, new_remote, content):
+        original_remote = self._machine_editor_original_remote
+        renamed = machine_path_key(original_remote) != machine_path_key(new_remote)
+        remote_post_path = new_remote.replace("/sd/", "").replace("\\sd\\", "")
+        local_path = os.path.join(self.temp_dir, remote_post_path)
+        try:
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            with open(local_path, "w", encoding="utf-8", newline="") as handle:
+                handle.write(content)
+        except OSError:
+            Clock.schedule_once(partial(self.show_message_popup, tr._("Upload file error!"), False), 0)
+            return
+
+        app = App.get_running_app()
+        # Reload only for in-place edits; a new filename is saved as a copy.
+        self._machine_editor_was_loaded = not renamed and machine_path_key(
+            app.selected_remote_filename or ""
+        ) == machine_path_key(original_remote)
+        self.machine_file_editor_popup.dismiss()
+
+        def after_upload(remote, local):
+            if self._machine_editor_was_loaded:
+                self.select_file(remote, local)
+
+        self.uploadLocalFile(local_path, after_upload, remote_path=new_remote)
+
+    # -----------------------------------------------------------------------
     def check_and_save_to_device(self):
         paths = self.file_popup.selected_files()
         if not paths:
@@ -6564,10 +6664,12 @@ class Makera(RelativeLayout):
         if path:
             self._remove_path_quietly(path)
 
-    def uploadLocalFile(self, filepath, callback=None, firmware=None):
+    # -----------------------------------------------------------------------
+    def uploadLocalFile(self, filepath, callback=None, firmware=None, remote_path=None):
         if firmware is None:
             firmware = bool(self.file_popup.firmware_mode)
         self._uploading_firmware = bool(firmware)
+        self._upload_remote_path_override = remote_path
         self.controller.sendNUM = SEND_FILE
         self.uploading_file = filepath
         self.original_upload_filepath = filepath  # Store original path for recent directory tracking
@@ -6595,9 +6697,18 @@ class Makera(RelativeLayout):
                 self._log_firmware("SD transfer failed: %s" % exc, error=True)
             self._cleanup_firmware_temp(success=False)
             self._uploading_firmware = False
+            self._upload_remote_path_override = None
             self._fail_batch_transfer()
             return
-        remotename = os.path.join(self.file_popup.machine_dir, os.path.basename(os.path.normpath(self.uploading_file)))
+        if self._upload_remote_path_override:
+            remotename = os.path.normpath(self._upload_remote_path_override)
+            # A compressed upload keeps the .lz suffix, which tells the machine to decompress it
+            if self.uploading_file.endswith(".lz") and not remotename.endswith(".lz"):
+                remotename += ".lz"
+        else:
+            remotename = os.path.join(
+                self.file_popup.machine_dir, os.path.basename(os.path.normpath(self.uploading_file))
+            )
         if firmware:
             remotename = self._firmware_plan(self.uploading_file).remote_path
         displayname = self.uploading_file
@@ -6659,12 +6770,15 @@ class Makera(RelativeLayout):
             )
         else:
             # copy file to application directory if needed
-            remote_path = os.path.join(
-                self.file_popup.machine_dir, os.path.basename(os.path.normpath(self.uploading_file))
-            )
+            remote_path = remotename
             remote_post_path = remote_path.replace("/sd/", "").replace("\\sd\\", "")
             local_path = os.path.join(self.temp_dir, remote_post_path)
-            if self.uploading_file != local_path and not firmware:
+            # The machine file editor uploads the cached file itself, possibly spelled with other separators
+            same_file = os.path.normcase(os.path.normpath(self.uploading_file)) == os.path.normcase(
+                os.path.normpath(local_path)
+            )
+            origin_path = local_path[0:-3] if self.uploading_file.endswith(".lz") else local_path
+            if not same_file and not firmware:
                 if self.uploading_file.endswith(".lz"):
                     # copy lz file to .lz dir
                     lzpath, filename = os.path.split(local_path)
@@ -6677,7 +6791,6 @@ class Makera(RelativeLayout):
 
                     # copy the origin file
                     origin_file = self.uploading_file[0:-3]
-                    origin_path = local_path[0:-3]
                     if not os.path.exists(os.path.dirname(origin_path)):
                         # os.mkdir(os.path.dirname(origin_path))
                         os.makedirs(os.path.dirname(origin_path))
@@ -6690,21 +6803,18 @@ class Makera(RelativeLayout):
             if firmware:
                 self._log_firmware("SD transfer succeeded")
                 Clock.schedule_once(self.confirm_reset, 0)
-            # update recent folder
+            # update recent folder; a file from the machine file editor comes from the download cache
             if not firmware:
-                self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
+                if not self._upload_remote_path_override:
+                    self.update_recent_local_dir_list(os.path.dirname(self.original_upload_filepath))
                 remote_thumb = remotename[:-3] if str(remotename).endswith(".lz") else remotename
                 self.queue_machine_thumbnail(remote_thumb, self.original_upload_filepath)
 
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith(".lz") and getattr(self, "_batch_kind", None) != "upload":
                 self.log = logging.getLogger("File.Decompress")
-                self.decompstatus = True
                 os.remove(self.uploading_file)
-                self.decomptime = time.time()
-                Clock.schedule_once(
-                    partial(self.progressStart, tr._("Decompressing") + "\n%s" % displayname, False), 0.2
-                )
+                Clock.schedule_once(partial(self._start_decompress_wait, displayname), 0.2)
             elif self.uploading_file.endswith(".lz"):
                 self.log = logging.getLogger("File.Decompress")
                 self.decompstatus = True
@@ -6729,6 +6839,7 @@ class Makera(RelativeLayout):
             Clock.schedule_once(self.file_popup.refresh_machine, 0)
         self._cleanup_firmware_temp(success=bool(upload_result))
         self._uploading_firmware = False
+        self._upload_remote_path_override = None
         if getattr(self, "_batch_kind", None) == "upload" and not upload_result:
             # A failure or cancel leaves the operator to notice it, so do not start the rest.
             self._fail_batch_transfer()
@@ -6825,6 +6936,13 @@ class Makera(RelativeLayout):
         else:
             self.progress_popup.btn_cancel.disabled = True
         self.progress_popup.open()
+
+    def _start_decompress_wait(self, displayname, *args):
+        # The machine reports decompress progress before "upload success", so a small file can be
+        # finished already. Watch for it only once the popup is open, so the finish closes this popup.
+        self.progressStart(tr._("Decompressing") + "\n%s" % displayname, False)
+        self.decomptime = time.time()
+        self.decompstatus = True
 
     def _schedule_progress_finish(self, delay=0):
         """Close the progress popup later, unless a newer transfer has already taken it."""

@@ -670,6 +670,7 @@ class ToolTipButton(Button):
         self._tooltip.pos = (x, y)
 
     def close_tooltip(self, *args):
+        Clock.unschedule(self.display_tooltip)
         if self._tooltip:  # for memory leaks
             Window.remove_widget(self._tooltip)
 
@@ -677,7 +678,7 @@ class ToolTipButton(Button):
         # Rasterizing is expensive, so it waits until the hover delay has
         # elapsed rather than running on every mouse move across the widget.
         # The box then has to be re-measured around the new image.
-        if is_blocked_by_modal(self):
+        if self._tooltip is None or self.parent is None or is_blocked_by_modal(self):
             return
         if self._ensure_tooltip_texture() and self._hover_pos is not None:
             self._layout_tooltip_at(self._hover_pos)

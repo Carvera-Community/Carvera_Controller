@@ -47,6 +47,7 @@ from .sources import (
     device_tab_path_display,
     download_dest_tooltip,
     group_and_sort_entries,
+    is_editable_gcode_name,
     is_gcode_machine_dir,
     is_ios_platform,
     is_local_preview,
@@ -418,6 +419,11 @@ class FileBrowserPopup(ModalView):
         makera = _makera()
         if makera is not None:
             makera.check_and_save_to_device()
+
+    def on_edit(self):
+        makera = _makera()
+        if makera is not None:
+            makera.open_machine_file_editor()
 
     def on_rename(self):
         makera = _makera()
@@ -958,9 +964,12 @@ class FileBrowserPopup(ModalView):
         file_count = sum(1 for path in paths if path and not self._path_is_dir(path))
         if self.multi_select_mode:
             selected_is_file = False
+            selected_is_editable_gcode = False
             selected_count = len(paths)
         else:
             selected_is_file = bool(highlight) and not self._path_is_dir(highlight)
+            highlight_name = os.path.basename(highlight) if highlight else ""
+            selected_is_editable_gcode = selected_is_file and is_editable_gcode_name(highlight_name)
             selected_count = len(paths) or (1 if highlight else 0)
             if selected_is_file and file_count == 0:
                 file_count = 1
@@ -971,6 +980,7 @@ class FileBrowserPopup(ModalView):
             machine_connected=connected,
             machine_idle=idle,
             selected_is_file=selected_is_file,
+            selected_is_editable_gcode=selected_is_editable_gcode,
             selected_count=selected_count,
             multi_select_mode=self.multi_select_mode,
             selected_file_count=file_count,
@@ -1118,6 +1128,10 @@ class FileBrowserPopup(ModalView):
         bar = self.ids.get("footer_actions")
         if bar is None:
             return
+        for child in list(bar.children):
+            close = getattr(child, "close_tooltip", None)
+            if callable(close):
+                close()
         bar.clear_widgets()
         for key in ("file_preview_btn", "file_upload_select_btn"):
             if key in self.ids:
@@ -1169,6 +1183,14 @@ class FileBrowserPopup(ModalView):
                     self.on_download,
                     icon="data/download.png",
                     tooltip=self._download_dest_tooltip(),
+                )
+            )
+        if state.show_edit:
+            bar.add_widget(
+                self._footer_btn(
+                    tr._("Edit"),
+                    self.on_edit,
+                    icon="data/file-code-outline.png",
                 )
             )
         if state.show_rename:

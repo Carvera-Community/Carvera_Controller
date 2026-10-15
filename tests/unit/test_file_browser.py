@@ -25,10 +25,12 @@ from carveracontroller.ui.file_browser.sources import (
     current_row_badge,
     device_tab_path_display,
     download_dest_tooltip,
+    editor_display_name,
     file_type_key,
     file_type_label,
     group_and_sort_entries,
     is_compact_width,
+    is_editable_gcode_name,
     is_gcode_machine_dir,
     is_job_file,
     is_machine_root,
@@ -81,6 +83,15 @@ def test_file_type_key_and_label():
     assert file_type_key("notes.txt") == "other"
     assert file_type_label("part.nc", translate=IDENTITY) == "G-code"
     assert file_type_label("fw.bin", translate=IDENTITY) == "Firmware"
+
+
+def test_editable_gcode_name_and_display():
+    assert is_editable_gcode_name("part.nc") is True
+    assert is_editable_gcode_name("part.nc.lz") is True
+    assert is_editable_gcode_name("fw.bin") is False
+    assert is_editable_gcode_name("notes.txt") is False
+    assert editor_display_name("/sd/gcodes/part.nc.lz") == "part.nc"
+    assert editor_display_name("/sd/gcodes/part.nc") == "part.nc"
 
 
 def test_row_icon_by_kind_and_type():
@@ -1071,12 +1082,14 @@ def test_action_state_machine_file_and_folder():
         machine_connected=True,
         machine_idle=True,
         selected_is_file=True,
+        selected_is_editable_gcode=True,
         selected_count=1,
         multi_select_mode=False,
         selected_name="part.nc",
     )
     assert file_state.show_use_as_job is True
     assert file_state.show_download is True
+    assert file_state.show_edit is True
     assert file_state.show_rename is True
     assert file_state.show_delete is True
     assert file_state.show_new_folder is True
@@ -1108,6 +1121,7 @@ def test_action_state_machine_file_and_folder():
     )
     assert busy.show_use_as_job is True
     assert busy.show_download is False
+    assert busy.show_edit is False
 
 
 def test_action_state_machine_disconnected_and_multi():

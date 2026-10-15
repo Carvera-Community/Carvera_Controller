@@ -1,0 +1,59 @@
+#:import tr carveracontroller.__main__.tr
+#:import dp kivy.metrics.dp
+
+<MachineFileEditorPopup>:
+    size_hint: 0.85, 0.85
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+    BoxLayout:
+        orientation: "vertical"
+        padding: "15dp"
+        spacing: "8dp"
+        Label:
+            text: tr._("Edit file on machine")
+            size_hint_y: None
+            height: "32dp"
+            bold: True
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+        BoxLayout:
+            size_hint_y: None
+            height: "35dp"
+            spacing: "8dp"
+            Label:
+                text: tr._("Filename")
+                size_hint_x: None
+                width: "90dp"
+                halign: "right"
+                valign: "middle"
+                text_size: self.size
+            TextInput:
+                id: ti_filename
+                multiline: False
+                write_tab: False
+        ScrollView:
+            id: content_scroll
+            size_hint_y: 1
+            do_scroll_x: False
+            scroll_type: ["bars", "content"]
+            bar_width: dp(12)
+            bar_color: 0.55, 0.55, 0.55, 0.9
+            bar_inactive_color: 0.35, 0.35, 0.35, 0.5
+            TextInput:
+                id: ti_content
+                size_hint_y: None
+                height: dp(200)
+                multiline: True
+                write_tab: False
+                padding: [dp(8), dp(8), dp(8), dp(8)]
+        BoxLayout:
+            size_hint_y: None
+            height: "40dp"
+            spacing: "8dp"
+            Button:
+                text: tr._("Cancel")
+                on_release: root.cancel()
+            Button:
+                text: tr._("Save")
+                on_release: root.save()

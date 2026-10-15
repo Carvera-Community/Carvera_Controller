@@ -307,6 +307,26 @@ def file_type_key(name: str) -> str:
     return TYPE_OTHER
 
 
+def is_editable_gcode_name(name: str) -> bool:
+    """True for plain or QuickLZ-compressed G-code job files."""
+    if not name:
+        return False
+    if file_type_key(name) == TYPE_GCODE:
+        return True
+    lowered = name.lower()
+    if lowered.endswith(".lz"):
+        return file_type_key(name[:-3]) == TYPE_GCODE
+    return False
+
+
+def editor_display_name(remote_path: str) -> str:
+    """Basename shown in the machine file editor (strip a trailing .lz)."""
+    name = os.path.basename(remote_path or "")
+    if name.lower().endswith(".lz") and file_type_key(name[:-3]) == TYPE_GCODE:
+        return name[:-3]
+    return name
+
+
 def is_job_file(name: str) -> bool:
     """True for G-code and compressed G-code. Videos and other files are not jobs."""
     return file_type_key(name) in (TYPE_GCODE, TYPE_COMPRESSED)
@@ -525,6 +545,7 @@ class ActionState:
     show_upload_and_use: bool = False
     show_use_as_job: bool = False
     show_download: bool = False
+    show_edit: bool = False
     show_rename: bool = False
     show_delete: bool = False
     show_new_folder: bool = False
@@ -544,6 +565,7 @@ def compute_action_state(
     machine_connected: bool,
     machine_idle: bool,
     selected_is_file: bool,
+    selected_is_editable_gcode: bool = False,
     selected_count: int,
     multi_select_mode: bool,
     selected_file_count: int = 0,
@@ -615,6 +637,7 @@ def compute_action_state(
     return ActionState(
         show_use_as_job=job_file,
         show_download=single_file and machine_idle,
+        show_edit=single_file and machine_idle and selected_is_editable_gcode,
         show_rename=single_item,
         show_delete=selected_count > 0,
         show_new_folder=machine_idle,
