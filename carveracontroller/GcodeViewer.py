@@ -951,7 +951,28 @@ class GCodeViewer(Widget):
     def _on_theme_changed(self, theme) -> None:
         self._update_grid_uniforms()
         self._update_toolpath_color_uniforms(theme)
+        self._refresh_tool_colors()
+        if self.stock_bounds_mm is not None:
+            self._rebuild_stock_mesh()
+        self._update_carved_uniforms()
         self._scene_dirty = True
+
+    def _refresh_tool_colors(self) -> None:
+        """Rebuild tool meshes so flute and shank pick up the current theme."""
+        if not self._tool_meshes and self._default_tool_mesh is None:
+            return
+        scale = getattr(self, "move_scale_by_positon", None)
+        if not scale:
+            return
+        self._tool_meshes, self._default_tool_mesh = build_tool_meshes(
+            self.tool_table or {}, scale=scale * self.tool_unit_scale
+        )
+        if not self.pointer_mesh_instrs:
+            return
+        vertices, indices, _fmt = self._get_tool_mesh(self._active_tool_number)
+        for mesh in self.pointer_mesh_instrs:
+            mesh.vertices = vertices
+            mesh.indices = indices
 
     def _update_toolpath_color_uniforms(self, theme) -> None:
         for name, rgb in toolpath_color_uniforms(theme).items():

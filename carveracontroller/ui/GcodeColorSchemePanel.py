@@ -32,7 +32,7 @@ from carveracontroller.GcodeViewer import (
     tool_palette_rgb,
 )
 from carveracontroller.translation import tr
-from carveracontroller.ui.theme import get_theme
+from carveracontroller.ui.theme import get_theme, watch_theme
 from carveracontroller.Utils import second2hour
 
 LEGEND_PANEL_MAX_HEIGHT = dp(280)
@@ -616,6 +616,7 @@ class GcodeColorSchemePanel(BoxLayout):
             theme = getattr(app, "theme", None)
             if theme is not None:
                 theme.bind(active_color=self._on_active_color_changed)
+        self._stop_theme = watch_theme(self._on_theme_changed)
 
     def _is_hidden(self):
         return not self.opacity
@@ -643,6 +644,10 @@ class GcodeColorSchemePanel(BoxLayout):
     def _on_active_tool_changed(self, *_args):
         if self._makera_root is not None:
             self._refresh_active_tool_highlight()
+
+    def _on_theme_changed(self, _theme) -> None:
+        if self._makera_root is not None and self.ids.get("legend_box") is not None:
+            self.refresh(self._makera_root)
 
     def _on_active_color_changed(self, *_args):
         if self._makera_root is not None:

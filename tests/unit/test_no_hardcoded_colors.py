@@ -36,9 +36,6 @@ _SKIPPED_FILES = {
 
 # file -> substrings of source lines that may keep a literal, with the reason.
 _ALLOWED = {
-    # Inline markup inside translatable msgids: changing the text would orphan the .po entries.
-    "addons/cmm_workbench/ui/CMMWorkbenchPopup.kv": [("[color=78797f]", "translatable msgid markup")],
-    "ui/theme.kv": [("[color=999999]", "stock Kivy settings-row description markup")],
     "GcodeViewer.py": [
         ("[1.0, 0.0, 0.0] if linedata[4] == 0.0 else [0.0, 1.0, 0.0]", "rapid/feed move-type vertex colours"),
     ],

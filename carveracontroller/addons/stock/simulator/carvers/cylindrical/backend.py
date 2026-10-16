@@ -27,7 +27,7 @@ from carveracontroller.addons.stock.simulator.carvers.laser_map import (
     stroke_parts,
     stroke_radius_mm,
 )
-from carveracontroller.addons.stock.simulator.mesh_format import DEFAULT_COLOR
+from carveracontroller.addons.stock.simulator.mesh_format import default_stock_color
 from carveracontroller.addons.stock.stock_geometry import StockBounds, stock_theta_deg
 from carveracontroller.addons.stock.stock_shape import (
     RectangularStock,
@@ -465,5 +465,5 @@ def _mesh_cylindrical_field(backend: CylindricalBackend) -> list[tuple[list[floa
         sin_t=backend._sin_t,
         cos_t=backend._cos_t,
         floor_r=shell_floor_radius_mm(backend.cell_size),
-        color=DEFAULT_COLOR,
+        color=default_stock_color(),
     )

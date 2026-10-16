@@ -17,14 +17,23 @@ from kivy.uix.settings import SettingOptions
 from kivy.uix.textinput import TextInput
 from kivy.uix.togglebutton import ToggleButton
 
-from carveracontroller.ui.themes import BASE_THEME, ThemeError, load_palette, theme_names, theme_title
+from carveracontroller.ui.fonts import ARIALUNI, resolve_theme_fonts
+from carveracontroller.ui.themes import (
+    BASE_THEME,
+    ThemeError,
+    load_behaviors,
+    load_fonts,
+    load_palette,
+    theme_names,
+    theme_title,
+)
 
-# Palettes in ui/themes/*.json. DARK is the base schema and the import-time default.
+# Bundled palettes. DARK is the full token set.
 DARK: dict = load_palette(BASE_THEME)
 
 
 class _Palettes(Mapping):
-    """Read-only ``{name: palette}`` view over the JSON files in ``ui/themes``."""
+    """Read-only ``{name: palette}`` view over the JSON files in ``ui/themes/bundled``."""
 
     def __getitem__(self, name):
         try:
@@ -66,6 +75,16 @@ class Theme(EventDispatcher):
 
     revision = NumericProperty(0)
     name = StringProperty("dark")
+    # Kivy ``font_name`` values: the ARIALUNI alias or an absolute font file path.
+    # They come from the theme's ``fonts`` and are not color tokens, so ``apply()``
+    # leaves them alone. Other roles follow ``font_default`` unless the theme sets them.
+    font_default = StringProperty(ARIALUNI)
+    font_top_bar = StringProperty(ARIALUNI)
+    font_jog_pad = StringProperty(ARIALUNI)
+    font_code_list = StringProperty(ARIALUNI)
+    # Theme behaviors are not palette tokens. ``apply()`` leaves them alone.
+    jog_pad_axis_colors = BooleanProperty(False)
+    group_main_menu = BooleanProperty(False)
 
     def __init__(self, palette: str = BASE_THEME, **kwargs):
         self._applying = False
@@ -74,7 +93,10 @@ class Theme(EventDispatcher):
         self.apply(DARK, name=BASE_THEME)
         if palette != BASE_THEME:
             self.apply_palette(palette)
-        for key in DARK:
+        else:
+            self.apply_fonts(BASE_THEME)
+            self.apply_behaviors(BASE_THEME)
+        for key in (*DARK, "jog_pad_axis_colors", "group_main_menu"):
             self.bind(**{key: self._on_token})
 
     def _on_token(self, *_args):
@@ -136,7 +158,31 @@ class Theme(EventDispatcher):
         except KeyError:
             known = ", ".join(sorted(PALETTES))
             raise ValueError(f"Unknown theme palette {palette_name!r}. Known: {known}") from None
+        self.apply_fonts(palette_name)
+        # apply() bumps the revision, so jog keys see the new flag and colors together.
+        self._applying = True
+        try:
+            self.apply_behaviors(palette_name)
+        finally:
+            self._applying = False
         self.apply(values, name=palette_name)
+
+    def apply_fonts(self, palette_name: str) -> None:
+        """Set each font role from the ``fonts`` of ``palette_name``.
+
+        A theme that leaves a role out uses the resolved default font.
+        """
+        fonts = resolve_theme_fonts(load_fonts(palette_name))
+        self.font_default = fonts["default"]
+        self.font_top_bar = fonts["top_bar"]
+        self.font_jog_pad = fonts["jog_pad"]
+        self.font_code_list = fonts["code_list"]
+
+    def apply_behaviors(self, palette_name: str) -> None:
+        """Set each behavior flag from the ``behaviors`` of ``palette_name``."""
+        flags = load_behaviors(palette_name)
+        self.jog_pad_axis_colors = flags["jog_pad_axis_colors"]
+        self.group_main_menu = flags["group_main_menu"]
 
     def to_dict(self) -> dict:
         """JSON-friendly snapshot of the current tokens."""
@@ -192,20 +238,6 @@ class Theme(EventDispatcher):
             # Disabled fades the texture. The RGB stays white: a theme tint would recolor it.
             return [1, 1, 1, 0.4 if disabled else 1]
         return self.icon_tint(role, state, disabled, chrome, _revision)
-
-    def jog_page_fill(self, _revision=0):
-        """Control-page well."""
-        del _revision
-        if self.name == "light":
-            return list(self.bg)
-        return list(self.surface)
-
-    def jog_pad_fill(self, _revision=0):
-        """Jog circles and action cards."""
-        del _revision
-        if self.name == "light":
-            return list(self.surface)
-        return list(self.surface_raised)
 
     def selection_fill(self, alpha, _revision=0):
         """Accent with a caller-supplied alpha. ``_revision`` is a Kv dependency."""
@@ -425,6 +457,8 @@ def install_theme_properties() -> None:
         # Design units, clockwise from the top left. Empty uses field_radius.
         _declare(TextInput, "field_radii", ListProperty([]))
         _declare(TextInput, "field_edge", ListProperty([0, 0, 0, 0]))
+        # The MDI command field turns this off; its row has no outline.
+        _declare(TextInput, "show_field_edge", BooleanProperty(True))
         # Kv fills theme_field_fill from the theme. theme_field_sync copies it
         # onto background_color while the field is still using the theme fill.
         # An on_ handler would miss that first value and leave the white default.
@@ -456,6 +490,11 @@ def install_theme_properties() -> None:
                     gap = float(container.spacing[1])
                     container.padding = [0, gap, 0, gap]
                 container._controller_theme_padded = True
+            # Kv post runs inside the original constructor, before this spacing.
+            # The main menu groups its buttons there, so reapply once the gap is in place.
+            regroup = getattr(self, "_apply_menu_grouping", None)
+            if regroup is not None:
+                regroup()
 
         DropDown.__init__ = __init__
         DropDown._controller_theme = True
@@ -476,21 +515,26 @@ def rgba_to_hex(rgba, *, with_hash: bool = False) -> str:
     return hex_rgb
 
 
+def heading_markup(title: str, detail: str, detail_color) -> str:
+    """Bold ``title``, then ``detail`` in ``detail_color`` (a theme rgba)."""
+    return f"[b]{title}[/b]\n[color={rgba_to_hex(detail_color)}]{detail}[/color]"
+
+
 def machine_state_color(state: str) -> list:
     """Status label colour for a Grbl-style machine state name."""
     theme = get_theme()
     by_state = {
-        "Idle": theme.map_origin,
-        "Pause": theme.map_origin,
-        "Run": theme.axis_y,
-        "Tool": theme.axis_y,
-        "Hold": theme.axis_y,
-        "Alarm": theme.axis_x,
-        "Home": theme.axis_a,
-        "Wait": theme.axis_a,
-        "Disable": theme.toggle_off,
-        "Sleep": theme.text,
-        "N/A": theme.text_muted,
+        "Idle": theme.machine_idle,
+        "Pause": theme.machine_pause,
+        "Run": theme.machine_run,
+        "Tool": theme.machine_tool,
+        "Hold": theme.machine_hold,
+        "Alarm": theme.machine_alarm,
+        "Home": theme.machine_home,
+        "Wait": theme.machine_wait,
+        "Disable": theme.machine_disable,
+        "Sleep": theme.machine_sleep,
+        "N/A": theme.machine_not_connected,
     }
     # dict.get(key, fallback) is Any | None when the fallback is Any, so list() rejects it.
     color = by_state.get(state)

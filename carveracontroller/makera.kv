@@ -44,10 +44,10 @@
 #:include addons/camera/CameraControls.kv
 
 <Label>:
-    font_name: 'ARIALUNI'
+    font_name: app.theme.font_default
 
 <TextInput>:
-    font_name: 'ARIALUNI'
+    font_name: app.theme.font_default
     write_tab: False
 
 <WideProgressBar@BoxLayout>:
@@ -125,7 +125,7 @@
             rgba: app.theme.bg[0], app.theme.bg[1], app.theme.bg[2], .28
         Line:
             width: dp(1)
-            rounded_rectangle: (self.x + dp(0.5), self.y + dp(0.5), self.width - dp(1), self.height - dp(1), dp(self.radius_dp) - dp(0.5))
+            rounded_rectangle: (self.x + dp(0.5), self.y + dp(0.5), max(0, self.width - dp(1)), max(0, self.height - dp(1)), max(0, (self.corner_radii[0] if self.corner_radii else dp(self.radius_dp)) - dp(0.5)), max(0, (self.corner_radii[1] if len(self.corner_radii) > 1 else dp(self.radius_dp)) - dp(0.5)), max(0, (self.corner_radii[2] if len(self.corner_radii) > 2 else dp(self.radius_dp)) - dp(0.5)), max(0, (self.corner_radii[3] if len(self.corner_radii) > 3 else dp(self.radius_dp)) - dp(0.5)))
 
 <TransparentButton>:
     height: '32dp'
@@ -275,6 +275,7 @@
     valign: 'center'
 
 <Row>:
+    font_name: app.theme.font_code_list
     markup: True
     text: root.highlighted_text or root.plain_text
     canvas.before:
@@ -302,6 +303,7 @@
         size_hint_x: None
         width: dp(72)
         text: str(int(root.line_no))
+        font_name: app.theme.font_code_list
         color: root.color
         halign: 'left'
         valign: 'middle'
@@ -313,6 +315,7 @@
         source: 'data/open_iconic_UI/flag-8x.png'
     Label:
         text: root.highlighted_text or root.text
+        font_name: app.theme.font_code_list
         markup: True
         color: root.color
         halign: 'left'
@@ -1245,6 +1248,7 @@
             root.select('')
 
 <ScrollingLabel>:
+    font_name: app.theme.font_default
     do_scroll_x: True
     do_scroll_y: False
     bar_width: 0
@@ -1258,6 +1262,7 @@
             size_hint_x: None
             width: self.texture_size[0]
             text: root.text
+            font_name: root.font_name
             font_size: root.effective_font_size
             color: root.color
 
@@ -1288,17 +1293,20 @@
                 size: dp(28) if root.data_icon else 0, dp(28) if root.data_icon else 0
         text: root.data_text if root.data_text else ''
         size_hint_x: 0.22
+        font_name: app.theme.font_top_bar
         font_size: '23sp'
         color: app.theme.button_text('normal', root.state, root.disabled, True, app.theme.revision) if root.state == 'down' else (tuple(app.theme.active_color) if root.active else root.color)
     BoxLayout:
         orientation: 'vertical'
         ScrollingLabel:
             text: root.main_text
+            font_name: app.theme.font_top_bar
             font_size: '18sp'
             color: app.theme.button_text('normal', root.state, root.disabled, True, app.theme.revision) if root.state == 'down' else (tuple(app.theme.active_color) if root.scale != 100 else app.theme.text)
         Label:
             text: root.minr_text
             color: app.theme.button_text('normal', root.state, root.disabled, True, app.theme.revision) if root.state == 'down' else app.theme.text_muted
+            font_name: app.theme.font_top_bar
             font_size: '11sp'
             text_size: self.size
             halign: "right"
@@ -2580,11 +2588,31 @@
             pos: self.pos
             size: self.size
 
-# Light fields sit on the white console list, so the outline — including the
-# accent edge drawn while focused — reads as a bar across the input. Dark keeps it.
+# Drop the full-width pane divider. Only a short handle stays visible.
+<-MdiSplitterStrip@SplitterStrip>:
+    chrome: False
+    use_theme_text: False
+    background_normal: ''
+    background_down: ''
+    background_disabled_normal: ''
+    background_disabled_down: ''
+    canvas.after:
+        Color:
+            rgba: app.theme.control
+        RoundedRectangle:
+            pos: self.center_x - dp(16), self.center_y - dp(1.5)
+            size: dp(32), dp(3)
+            radius: [dp(1.5),]
+
+# strip_cls has to be set before the child is added, or Kivy keeps the default strip.
+<MdiSplitter@Splitter>:
+    strip_cls: Factory.MdiSplitterStrip
+
 # The right corners stay square so the send button continues the field.
+# No outline: the generic field rule would otherwise draw one on focus,
+# and that stroke sits a pixel outside the button.
 <MDITextInput>:
-    field_edge: (0, 0, 0, 0) if app.theme.name == 'light' else (app.theme.accent if self.focus else app.theme.border)
+    show_field_edge: False
     field_radii: app.theme.radius_m, 0, 0, app.theme.radius_m
 
 <Makera>:
@@ -2765,7 +2793,7 @@
                         spacing: dp(app.theme.spacing)
                         canvas.before:
                             Color:
-                                rgba: app.theme.jog_page_fill(app.theme.revision)
+                                rgba: app.theme.jog_page
                             RoundedRectangle:
                                 pos: self.pos
                                 size: self.size
@@ -2787,7 +2815,7 @@
                                 disabled: not app.jog_controls_enabled
                                 canvas.before:
                                     Color:
-                                        rgba: app.theme.jog_pad_fill(app.theme.revision)
+                                        rgba: app.theme.jog_pad
                                     Ellipse:
                                         pos: self.center_x - min(self.width, self.height) / 2, self.center_y - min(self.width, self.height) / 2
                                         size: min(self.width, self.height), min(self.width, self.height)
@@ -2800,7 +2828,7 @@
                                     padding: min(self.width, self.height) * 0.12
                                     Widget:
                                     JogAxisTipButton:
-                                        text: 'Y+' if app.invert_y_axis_jogging else "Y-"
+                                        axis_label: 'Y+' if app.invert_y_axis_jogging else "Y-"
                                         on_press: root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
                                         tooltip_image: 'data/AxisMotion/AxisMotion_YPos.png' if app.invert_y_axis_jogging else 'data/AxisMotion/AxisMotion_YNeg.png'
@@ -2808,7 +2836,7 @@
                                         small_icon: True
                                     Widget:
                                     JogAxisTipButton:
-                                        text: 'X-'
+                                        axis_label: 'X-'
                                         on_press: root.controller.jog("X-{}".format(root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
                                         tooltip_image: 'data/AxisMotion/AxisMotion_XNeg.png'
@@ -2826,7 +2854,7 @@
                                             values: '10', '1', '0.1', '0.01', '0.005'
                                         Label:
                                     JogAxisTipButton:
-                                        text: 'X+'
+                                        axis_label: 'X+'
                                         on_press: root.controller.jog("X{}".format(root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
                                         tooltip_image: 'data/AxisMotion/AxisMotion_XPos.png'
@@ -2834,7 +2862,7 @@
                                         small_icon: True
                                     Widget:
                                     JogAxisTipButton:
-                                        text: 'Y-' if app.invert_y_axis_jogging else "Y+"
+                                        axis_label: 'Y-' if app.invert_y_axis_jogging else "Y+"
                                         on_press: root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', root.step_xy.text))
                                         on_release: root.controller.stopContinuousJog()
                                         tooltip_image: 'data/AxisMotion/AxisMotion_YNeg.png' if app.invert_y_axis_jogging else 'data/AxisMotion/AxisMotion_YPos.png'
@@ -2859,7 +2887,7 @@
                                         padding: '3dp'
                                         canvas.before:
                                             Color:
-                                                rgba: app.theme.jog_pad_fill(app.theme.revision)
+                                                rgba: app.theme.jog_pad
                                             RoundedRectangle:
                                                 pos: self.pos
                                                 size: self.size
@@ -2903,7 +2931,7 @@
                                         padding: '3dp'
                                         canvas.before:
                                             Color:
-                                                rgba: app.theme.jog_pad_fill(app.theme.revision)
+                                                rgba: app.theme.jog_pad
                                             RoundedRectangle:
                                                 pos: self.pos
                                                 size: self.size
@@ -3025,7 +3053,7 @@
                                         padding: '3dp'
                                         canvas.before:
                                             Color:
-                                                rgba: app.theme.jog_pad_fill(app.theme.revision)
+                                                rgba: app.theme.jog_pad
                                             RoundedRectangle:
                                                 pos: self.pos
                                                 size: self.size
@@ -3069,7 +3097,7 @@
                                 disabled: not app.jog_controls_enabled
                                 canvas.before:
                                     Color:
-                                        rgba: app.theme.jog_pad_fill(app.theme.revision)
+                                        rgba: app.theme.jog_pad
                                     Ellipse:
                                         pos: self.center_x - min(self.width, self.height) / 2, self.center_y - min(self.width, self.height) / 2
                                         size: min(self.width, self.height), min(self.width, self.height)
@@ -3081,14 +3109,14 @@
                                     spacing: dp(8)
                                     padding: min(self.width, self.height) * 0.12
                                     JogAxisTipButton:
-                                        text: 'A+'
+                                        axis_label: 'A+'
                                         on_press: root.controller.jog("A{}".format(root.step_a.text))
                                         on_release: root.controller.stopContinuousJog()
                                         tooltip_image: 'data/AxisMotion/AxisMotion_APos.png'
                                         tooltip_image_size: [300,300]
                                         small_icon: True
                                     JogAxisButton:
-                                        text: 'Z+'
+                                        axis_label: 'Z+'
                                         on_press: root.controller.jog("Z{}".format(root.step_z.text))
                                         on_release: root.controller.stopContinuousJog()
                                     GridBoxLayout:
@@ -3114,14 +3142,14 @@
                                             values: '10', '1', '0.1', '0.01', '0.005'
                                         Label:
                                     JogAxisTipButton:
-                                        text: 'A-'
+                                        axis_label: 'A-'
                                         on_press: root.controller.jog("A-{}".format(root.step_a.text))
                                         on_release: root.controller.stopContinuousJog()
                                         tooltip_image: 'data/AxisMotion/AxisMotion_ANeg.png'
                                         tooltip_image_size: [300,300]
                                         small_icon: True
                                     JogAxisButton:
-                                        text: 'Z-'
+                                        axis_label: 'Z-'
                                         on_press: root.controller.jog("Z-{}".format(root.step_z.text))
                                         on_release: root.controller.stopContinuousJog()
                         BoxLayout:
@@ -3166,7 +3194,6 @@
                                 BoxLayout:
                                     size_hint_y: None
                                     height: dp(40)
-                                    spacing: dp(4)
                                     CmdPaneTab:
                                         tab_text: tr._('File')
                                         tooltip_txt: tr._('Show the loaded G-code file')
@@ -3214,7 +3241,6 @@
                                         name: 'manual_cmd_page'
                                         BoxLayout:
                                             orientation: 'vertical'
-                                            spacing: 0 if app.theme.name == 'light' else '5dp'
                                             ManualRV:
                                                 id: manual_rv
                                                 scroll_type: ['bars', 'content']
@@ -3231,27 +3257,39 @@
                                                     spacing: dp(0.5)
                                                     multiselect: False
                                                     touch_multiselect: False
-                                            BoxLayout:
-                                                orientation: 'horizontal'
+                                            MdiSplitter:
+                                                sizable_from: 'top'
                                                 size_hint_y: None
-                                                height: '66dp'
-                                                MDITextInput:
-                                                    id: manual_cmd
-                                                    hint_text: tr._('Enter command...')
-                                                    multiline: True
-                                                    on_text_validate:
-                                                        if app.state == 'Idle' or app.state == 'Pause' or root.allow_mdi_while_machine_running == '1' : root.send_cmd()
-                                                ToolTipButton:
-                                                    id: send_cmd
-                                                    width: '40dp'
-                                                    size_hint_x: None
-                                                    # Square the side that meets the field. Clockwise from the top left.
-                                                    corner_radii: 0, dp(app.theme.radius_m), dp(app.theme.radius_m), 0
-                                                    text: tr._('send')
-                                                    tooltip_txt: tr._('The MDI is a console that allows you to send individual gcodes, and commands such as to change config values on the machine')
-                                                    disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running in ['0', 'false', False])
-                                                    on_release:
-                                                        root.send_cmd()
+                                                strip_size: '5dp'
+                                                min_size: dp(40) + self.strip_size
+                                                max_size: max(self.min_size, self.parent.height - dp(80)) if self.parent else dp(500)
+                                                keep_within_parent: True
+                                                height: dp(66) + self.strip_size
+                                                BoxLayout:
+                                                    orientation: 'horizontal'
+                                                    MDITextInput:
+                                                        id: manual_cmd
+                                                        hint_text: tr._('Enter command...')
+                                                        multiline: True
+                                                        on_text_validate:
+                                                            if app.state == 'Idle' or app.state == 'Pause' or root.allow_mdi_while_machine_running == '1' : root.send_cmd()
+                                                    ToolTipButton:
+                                                        id: send_cmd
+                                                        width: '48dp'
+                                                        size_hint_x: None
+                                                        padding: dp(4), 0
+                                                        corner_radii: 0, 0, 0, 0
+                                                        canvas.before:
+                                                            Color:
+                                                                rgba: app.theme.control if self.disabled else self.theme_fill
+                                                            Rectangle:
+                                                                pos: self.pos
+                                                                size: self.size
+                                                        text: tr._('send')
+                                                        tooltip_txt: tr._('The MDI is a console that allows you to send individual gcodes, and commands such as to change config values on the machine')
+                                                        disabled: (app.state != 'Idle' and app.state != 'Pause' and root.allow_mdi_while_machine_running in ['0', 'false', False])
+                                                        on_release:
+                                                            root.send_cmd()
                         FloatBox:
                             id: float_layout
                             color_scheme_panel: color_scheme_panel

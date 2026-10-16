@@ -2,6 +2,7 @@
 #:import retheme_label carveracontroller.ui.theme.retheme_label
 #:import follow_theme carveracontroller.ui.theme.follow_theme
 #:import follow_theme_popup carveracontroller.ui.theme.follow_theme_popup
+#:import rgba_to_hex carveracontroller.ui.theme.rgba_to_hex
 # Pass app.theme.revision into button_fill so Kv rebinds on token changes.
 
 <Button>:
@@ -58,7 +59,7 @@
     cursor_color: app.theme.text
     hint_text_color: app.theme.hint_text
     field_radius: app.theme.radius_m
-    field_edge: app.theme.border if self.disabled or not self.focus else app.theme.accent
+    field_edge: [0, 0, 0, 0] if not self.show_field_edge else (app.theme.border if self.disabled or not self.focus else app.theme.accent)
 
 <DropDown>:
     canvas.before:
@@ -83,6 +84,7 @@
 # Jog keys share one face. SquareGrid gives them a square box; the radius
 # stays in dp so a large key is a rounded square and a small one stays tappable.
 <JogAxisButton,JogAxisTipButton>:
+    font_name: app.theme.font_jog_pad
     radius_dp: app.theme.radius_pad
     font_size: min(sp(24), max(sp(16), self.height * 0.28))
     text_size: self.size
@@ -222,7 +224,7 @@
             size_hint_x: .66
             id: labellayout
             markup: True
-            text: u'{0}\n[size=13sp][color=999999]{1}[/color][/size]'.format(root.title or '', root.desc or '')
+            text: u'{0}\n[size=13sp][color={2}]{1}[/color][/size]'.format(root.title or '', root.desc or '', rgba_to_hex(app.theme.text_muted))
             font_size: '15sp'
             text_size: self.width - 32, None
 

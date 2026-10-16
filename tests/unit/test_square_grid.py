@@ -5,7 +5,7 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.widget import Widget
 
-from carveracontroller.ui.square_grid import SquareGrid
+from carveracontroller.ui.SquareGrid import SquareGrid
 
 
 def _packed(cols, rows, size, spacing=0, padding=0):

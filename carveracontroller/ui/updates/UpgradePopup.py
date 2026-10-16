@@ -605,7 +605,7 @@ def _measure_note_height(row, wrap_width: float) -> float:
 
 def _core_label(text: str, font_size: float, **kwargs) -> CoreLabel:
     try:
-        label = CoreLabel(text=text, font_size=font_size, font_name="ARIALUNI", **kwargs)
+        label = CoreLabel(text=text, font_size=font_size, font_name=get_theme().font_default, **kwargs)
         label.refresh()
         return label
     except Exception:

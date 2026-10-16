@@ -303,7 +303,7 @@ class PlayProgressBar(BoxLayout):
                 text=label,
                 font_size=dp(9),
                 color=get_theme().text_inverse,
-                font_name="ARIALUNI",
+                font_name=get_theme().font_default,
             )
             core.refresh()
             label_w, label_h = core.texture.size

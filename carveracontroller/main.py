@@ -128,9 +128,12 @@ from kivy.uix.stencilview import StencilView
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
-import carveracontroller.ui.square_grid  # noqa: F401  (registers jog pad widgets)
+import carveracontroller.ui.JogAxisButton  # noqa: F401  (registers jog axis buttons)
+import carveracontroller.ui.SquareGrid  # noqa: F401  (registers the jog pad layout)
+from carveracontroller.ui.fonts import register_arialuni
 from carveracontroller.ui.theme import SettingTheme, Theme
-from carveracontroller.ui.themes import DEFAULT_THEME, theme_names
+from carveracontroller.ui.themes import DEFAULT_THEME, set_user_themes_dir, theme_names
+from carveracontroller.ui.themes.editor import SettingThemeEditor
 
 
 def _safe_widget_destructor(uid, _ref):
@@ -248,7 +251,6 @@ class LightProperty(BooleanProperty):
 import webbrowser
 from functools import partial
 
-from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.resources import resource_add_path
 
@@ -409,13 +411,9 @@ def app_base_path():
     return os.path.abspath(os.path.dirname(__file__))
 
 
-def register_fonts(base_path):
-    """
-    To support both frozen and normal execution of the application font locations
-    should be registered
-    """
-    arialuni_location = os.path.abspath(os.path.join(os.path.dirname(__file__), "ARIALUNI.ttf"))
-    LabelBase.register(name="ARIALUNI", fn_regular=arialuni_location)
+def register_fonts():
+    """Register the bundled font so labels can use it."""
+    register_arialuni()
 
 
 def register_images(base_path):
@@ -1441,6 +1439,11 @@ class ConfigPopup(ModalView):
 
     def _apply_changes(self):
         app = App.get_running_app()
+        # Custom theme files must exist before the theme name is stored and applied.
+        for widget in self._all_setting_items():
+            commit = getattr(widget, "commit_for_apply", None)
+            if commit is not None:
+                commit()
         # Write pending widget values to their Config instances
         for widget in self._all_setting_items():
             original = self._widget_snapshot.get((widget.section, widget.key))
@@ -1449,6 +1452,10 @@ class ConfigPopup(ModalView):
                 config.set(widget.section, widget.key, widget.value)
         Config.write()
         app.root.apply_setting_changes()
+        for widget in self._all_setting_items():
+            finish = getattr(widget, "finish_apply", None)
+            if finish is not None:
+                finish()
         self._widget_snapshot = {}
         for widget in self._all_setting_items():
             self._widget_snapshot[(widget.section, widget.key)] = widget.value
@@ -1465,6 +1472,10 @@ class ConfigPopup(ModalView):
             original = self._widget_snapshot.get((widget.section, widget.key))
             if original is not None and str(widget.value) != str(original):
                 widget.value = original
+        for widget in self._all_setting_items():
+            revert = getattr(widget, "revert_pending", None)
+            if revert is not None:
+                revert()
         makera.config_loading = False
         makera.controller_setting_change_list.clear()
         makera.setting_change_list.clear()
@@ -1779,6 +1790,7 @@ class MakeraConfigPanel(SettingsWithSidebar):
         self.register_type("gamepad_bindings", SettingGamepadBindings)
         self.register_type("keyboard_shortcuts", SettingKeyboardShortcuts)
         self.register_type("theme", SettingTheme)
+        self.register_type("theme_editor", SettingThemeEditor)
         self.interface.content.bind(current_uid=self._reset_panel_scroll)
 
     @staticmethod
@@ -1890,12 +1902,41 @@ class FuncDropDown(ToolTipDropDown):
         if app is not None:
             app.bind(model=self._sync_pair_probe)
         self._pair_probe = hold_menu_button(self.container, self.ids.get("pair_probe"))
+        self._stop_menu_group = watch_theme(self._apply_menu_grouping)
         self._sync_pair_probe()
 
     def _sync_pair_probe(self, *_args):
         app = App.get_running_app()
         show = app is not None and app.model == "C1"
         sync_optional_menu_item(self.container, self._pair_probe, show)
+        self._apply_menu_grouping()
+
+    def _apply_menu_grouping(self, *_args):
+        theme = get_theme()
+        apply_main_menu_grouping(self.container, bool(theme.group_main_menu), dp(theme.top_bar_radius))
+
+
+def apply_main_menu_grouping(container, grouped, radius):
+    """Stack the main menu items, or restore the spaced rounded buttons.
+
+    The button that opens this menu is not in the container, so it keeps its
+    own corners. ``radius`` is in pixels. A hidden row is already removed, so
+    the first and last visible items are the ones that stay rounded.
+    """
+    if container is None:
+        return
+    buttons = [child for child in reversed(container.children) if hasattr(child, "corner_radii")]
+    if not grouped:
+        container.spacing = (dp(4), dp(4))
+        for button in buttons:
+            button.corner_radii = []
+        return
+    container.spacing = (0, 0)
+    last = len(buttons) - 1
+    for index, button in enumerate(buttons):
+        top = radius if index == 0 else 0
+        bottom = radius if index == last else 0
+        button.corner_radii = [top, top, bottom, bottom]
 
 
 def hold_menu_button(container, proxy):
@@ -3008,6 +3049,7 @@ class Makera(RelativeLayout):
         self.machine_settings_model = None
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_theme_config()
         self.load_keyboard_shortcuts_config()
         self.load_gcode_viewer_config()
         self.load_pendant_config()
@@ -3205,9 +3247,6 @@ class Makera(RelativeLayout):
 
         # Set default controller config values
         for setting in controller_config_definition:
-            if setting.get("key") == "theme" and setting.get("section") == "carvera":
-                # Stored values stay the theme names. SettingTheme shows each title.
-                setting["options"] = theme_names()
             if "default" in setting:
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
                 # The bool switch only recognises "0" and "1". An earlier default
@@ -3222,6 +3261,18 @@ class Makera(RelativeLayout):
         self.config_popup.settings_panel.add_json_panel(tr._("Controller"), Config, data=json.dumps(controller_config))
 
         self._update_macro_button_text()
+
+    def load_theme_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), "ui", "themes", "config.json")
+        with open(config_def_file) as file:
+            theme_config_definition = json.load(file)
+        theme_config = []
+        for setting in theme_config_definition:
+            if "default" in setting:
+                Config.setdefault(setting["section"], setting["key"], setting["default"])
+                setting.pop("default", None)
+            theme_config.append(setting)
+        self.config_popup.settings_panel.add_json_panel(tr._("Theme"), Config, data=json.dumps(theme_config))
 
     def load_keyboard_shortcuts_config(self):
         config_def_file = os.path.join(
@@ -8646,6 +8697,16 @@ class Makera(RelativeLayout):
         if command is not None:
             self.controller.jog(command)
 
+    def _theme_editor(self):
+        """The theme editor, once the settings popup has built that page."""
+        popup = getattr(self, "config_popup", None)
+        if popup is None:
+            return None
+        for widget in popup._all_setting_items():
+            if hasattr(widget, "consume_force_reload"):
+                return widget
+        return None
+
     def apply_setting_changes(self):
         if self.setting_change_list:
             self.apply_machine_setting_changes()
@@ -8706,7 +8767,10 @@ class Makera(RelativeLayout):
             App.get_running_app().tooltip_delay = delay_value if delay_value > 0 else 0.5
 
         if self.controller_setting_change_list.get("theme"):
-            App.get_running_app().set_theme(self.controller_setting_change_list["theme"])
+            theme_name = self.controller_setting_change_list["theme"]
+            editor = self._theme_editor()
+            force = editor.consume_force_reload() if editor is not None else False
+            App.get_running_app().set_theme(theme_name, force=force)
             self.refresh_gcode_color_legend()
 
         pendant_changed = any(
@@ -9767,6 +9831,8 @@ class MakeraApp(App):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # Custom themes live in the app data folder, and must be found before the first palette load.
+        set_user_themes_dir(Path(self.user_data_dir) / "themes")
         self.theme = Theme(self._configured_theme_name())
 
     @staticmethod
@@ -9778,12 +9844,16 @@ class MakeraApp(App):
             return DEFAULT_THEME
         return name
 
-    def set_theme(self, name):
-        """Switch the whole interface to the palette ``name``."""
+    def set_theme(self, name, *, force=False):
+        """Switch the whole interface to the palette ``name``.
+
+        ``force`` reloads the palette even when it is already selected, so a
+        Custom theme overwritten on disk replaces the one on screen.
+        """
         if name not in theme_names():
             logger.warning("Unknown theme %r, keeping %r", name, self.theme.name)
             return
-        if name != self.theme.name:
+        if force or name != self.theme.name:
             self.theme.apply_palette(name)
             # MDI rows store the info color from the palette that was active when
             # the line arrived. The list background follows the theme immediately,
@@ -10072,7 +10142,7 @@ def main():
     HALT_REASON = load_halt_translations(tr)
 
     base_path = app_base_path()
-    register_fonts(base_path)
+    register_fonts()
     register_images(base_path)
 
     # Make it global to be able to access it from native APIs

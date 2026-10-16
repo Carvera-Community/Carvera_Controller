@@ -494,12 +494,12 @@
                     padding: dp(4)
                     Widget:
                     JogAxisButton:
-                        text: 'Y+' if app.invert_y_axis_jogging else 'Y-'
+                        axis_label: 'Y+' if app.invert_y_axis_jogging else 'Y-'
                         on_press: app.root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     Widget:
                     JogAxisButton:
-                        text: 'X-'
+                        axis_label: 'X-'
                         on_press: app.root.controller.jog("X-{}".format(step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     BoxLayout:
@@ -515,12 +515,12 @@
                             values: '10', '1', '0.1', '0.01', '0.005'
                         Widget:
                     JogAxisButton:
-                        text: 'X+'
+                        axis_label: 'X+'
                         on_press: app.root.controller.jog("X{}".format(step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     Widget:
                     JogAxisButton:
-                        text: 'Y-' if app.invert_y_axis_jogging else 'Y+'
+                        axis_label: 'Y-' if app.invert_y_axis_jogging else 'Y+'
                         on_press: app.root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     Widget:
@@ -541,11 +541,11 @@
                     spacing: dp(8)
                     padding: dp(4)
                     JogAxisButton:
-                        text: 'A+'
+                        axis_label: 'A+'
                         on_press: app.root.controller.jog("A{}".format(step_a.text))
                         on_release: app.root.controller.stopContinuousJog()
                     JogAxisButton:
-                        text: 'Z+'
+                        axis_label: 'Z+'
                         on_press: app.root.controller.jog("Z{}".format(step_z.text))
                         on_release: app.root.controller.stopContinuousJog()
                     BoxLayout:
@@ -573,11 +573,11 @@
                             values: '10', '1', '0.1', '0.01', '0.005'
                         Widget:
                     JogAxisButton:
-                        text: 'A-'
+                        axis_label: 'A-'
                         on_press: app.root.controller.jog("A-{}".format(step_a.text))
                         on_release: app.root.controller.stopContinuousJog()
                     JogAxisButton:
-                        text: 'Z-'
+                        axis_label: 'Z-'
                         on_press: app.root.controller.jog("Z-{}".format(step_z.text))
                         on_release: app.root.controller.stopContinuousJog()
 

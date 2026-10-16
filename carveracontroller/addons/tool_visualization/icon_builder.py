@@ -2,7 +2,7 @@
 
 Tooltip and legend icons are generated on demand from ``ToolDefinition``
 profiles (same source as the 3D viewer), cropped with body or thumb framing,
-and cached by geometry signature + pixel size.
+and cached by geometry, pixel size, and the current tool colors.
 
 Pixels are rasterized on the CPU and uploaded with ``Texture.blit_buffer``.
 """
@@ -21,14 +21,26 @@ from carveracontroller.addons.tool_visualization.icon_geometry import (
     build_icon_geometry,
     geometry_cache_key,
 )
-from carveracontroller.addons.tool_visualization.mesh_builder import FLUTE_COLOR, SHANK_COLOR
-from carveracontroller.ui.theme import DARK
+from carveracontroller.addons.tool_visualization.mesh_builder import flute_color, shank_color
+from carveracontroller.ui.theme import get_theme
 
-# Normalized float RGBA. Opaque variants of the 3D viewer colors (those carry
-# transparency for GL blending); the rasterizer converts to 0..255.
-ICON_FLUTE_COLOR = (FLUTE_COLOR[0], FLUTE_COLOR[1], FLUTE_COLOR[2], 1.0)
-ICON_SHANK_COLOR = (SHANK_COLOR[0], SHANK_COLOR[1], SHANK_COLOR[2], 1.0)
-ICON_OUTLINE_COLOR = tuple(DARK["tool_outline"])
+
+def icon_flute_color():
+    """Opaque flute color. The 3D mesh keeps its own transparency."""
+    red, green, blue, _alpha = flute_color()
+    return (red, green, blue, 1.0)
+
+
+def icon_shank_color():
+    """Opaque shank color. The 3D mesh keeps its own transparency."""
+    red, green, blue, _alpha = shank_color()
+    return (red, green, blue, 1.0)
+
+
+def icon_outline_color():
+    """Silhouette stroke from the current theme."""
+    return tuple(get_theme().tool_outline)
+
 
 # Silhouette outline stroke width in dp (scaled with density / supersampling).
 ICON_OUTLINE_WIDTH_DP = 1.25
@@ -179,9 +191,9 @@ def _rasterize_icon(geometry, width, height):
     shank = _scale_triangles(geometry["shank_triangles"], render_w, render_h)
     outline = _scale_outline(geometry["outline"], render_w, render_h)
 
-    flute_rgba = _to_bytes_rgba(ICON_FLUTE_COLOR)
-    shank_rgba = _to_bytes_rgba(ICON_SHANK_COLOR)
-    outline_rgba = _to_bytes_rgba(ICON_OUTLINE_COLOR)
+    flute_rgba = _to_bytes_rgba(icon_flute_color())
+    shank_rgba = _to_bytes_rgba(icon_shank_color())
+    outline_rgba = _to_bytes_rgba(icon_outline_color())
 
     for tri in flute:
         _fill_triangle(buf, render_w, render_h, tri, flute_rgba)
@@ -225,7 +237,7 @@ def build_tool_tooltip_icon_texture(tool_def, size=None):
     if size is None:
         size = tooltip_icon_size()
     width, height = _normalize_size(size)
-    key = (geometry_cache_key(tool_def, framing=FRAMING_BODY), width, height)
+    key = (geometry_cache_key(tool_def, framing=FRAMING_BODY), width, height, _icon_color_key())
     cached = _texture_cache.get(key)
     if cached is not None:
         _texture_cache.move_to_end(key)
@@ -259,7 +271,7 @@ def build_tool_legend_icon(tool_def, size=None):
     if size is None:
         size = (dp(20), dp(20))
     width, height = _normalize_size(size)
-    key = (geometry_cache_key(tool_def, framing=FRAMING_THUMB), width, height)
+    key = (geometry_cache_key(tool_def, framing=FRAMING_THUMB), width, height, _icon_color_key())
     cached = _texture_cache.get(key)
     if cached is not None:
         _texture_cache.move_to_end(key)
@@ -272,6 +284,10 @@ def build_tool_legend_icon(tool_def, size=None):
     while len(_texture_cache) > _CACHE_MAX:
         _texture_cache.popitem(last=False)
     return texture, (width, height)
+
+
+def _icon_color_key():
+    return (icon_flute_color(), icon_shank_color(), icon_outline_color())
 
 
 def clear_tool_icon_cache():

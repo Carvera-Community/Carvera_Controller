@@ -1,6 +1,7 @@
 #:import tr carveracontroller.__main__.tr
 #:import digitize_v carveracontroller.Utils.digitize_v
 #:import Window kivy.core.window.Window
+#:import heading_markup carveracontroller.ui.theme.heading_markup
 
 
 <CMMWorkbenchSketchVisibilityToggle>:
@@ -107,7 +108,7 @@
                                     markup: True
                                     halign: 'left'
                                     color: app.theme.text
-                                    text: tr._("[b]Manual (no motion)[/b]\n[color=78797f]Live position is shown below. Load it into the fields or type your own, then add a point or circle.[/color]")
+                                    text: heading_markup(tr._("Manual (no motion)"), tr._("Live position is shown below. Load it into the fields or type your own, then add a point or circle."), app.theme.text_muted)
                                 BoxLayout:
                                     orientation: 'horizontal'
                                     size_hint_y: None
@@ -196,7 +197,7 @@
                                     markup: True
                                     halign: 'left'
                                     color: app.theme.text
-                                    text: tr._("[b]Single-axis probe[/b]\n[color=78797f][b]M466[/b][/color]")
+                                    text: heading_markup(tr._("Single-axis probe"), "[b]M466[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -307,7 +308,7 @@
                                     color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Circular pocket / bore center[/b]\n[color=78797f][b]M461[/b][/color]")
+                                    text: heading_markup(tr._("Circular pocket / bore center"), "[b]M461[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -428,7 +429,7 @@
                                     color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Outside boss / block center[/b]\n[color=78797f][b]M462[/b][/color]")
+                                    text: heading_markup(tr._("Outside boss / block center"), "[b]M462[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -554,7 +555,7 @@
                                     color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Inside corner[/b]\n[color=78797f][b]M463[/b][/color]")
+                                    text: heading_markup(tr._("Inside corner"), "[b]M463[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -670,7 +671,7 @@
                                     color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Outside corner[/b]\n[color=78797f][b]M464[/b][/color]")
+                                    text: heading_markup(tr._("Outside corner"), "[b]M464[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -786,7 +787,7 @@
                                     color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Axis angle[/b]\n[color=78797f][b]M465[/b][/color]")
+                                    text: heading_markup(tr._("Axis angle"), "[b]M465[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -1096,12 +1097,12 @@
                     padding: dp(4)
                     Widget:
                     JogAxisButton:
-                        text: 'Y+' if app.invert_y_axis_jogging else 'Y-'
+                        axis_label: 'Y+' if app.invert_y_axis_jogging else 'Y-'
                         on_press: app.root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     Widget:
                     JogAxisButton:
-                        text: 'X-'
+                        axis_label: 'X-'
                         on_press: app.root.controller.jog("X-{}".format(scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     BoxLayout:
@@ -1117,12 +1118,12 @@
                             values: '10', '1', '0.1', '0.01', '0.005'
                         Widget:
                     JogAxisButton:
-                        text: 'X+'
+                        axis_label: 'X+'
                         on_press: app.root.controller.jog("X{}".format(scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     Widget:
                     JogAxisButton:
-                        text: 'Y-' if app.invert_y_axis_jogging else 'Y+'
+                        axis_label: 'Y-' if app.invert_y_axis_jogging else 'Y+'
                         on_press: app.root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
                     Widget:
@@ -1143,11 +1144,11 @@
                     spacing: dp(8)
                     padding: dp(4)
                     JogAxisButton:
-                        text: 'A+'
+                        axis_label: 'A+'
                         on_press: app.root.controller.jog("A{}".format(scan_jog_step_a.text))
                         on_release: app.root.controller.stopContinuousJog()
                     JogAxisButton:
-                        text: 'Z+'
+                        axis_label: 'Z+'
                         on_press: app.root.controller.jog("Z{}".format(scan_jog_step_z.text))
                         on_release: app.root.controller.stopContinuousJog()
                     BoxLayout:
@@ -1175,11 +1176,11 @@
                             values: '10', '1', '0.1', '0.01', '0.005'
                         Widget:
                     JogAxisButton:
-                        text: 'A-'
+                        axis_label: 'A-'
                         on_press: app.root.controller.jog("A-{}".format(scan_jog_step_a.text))
                         on_release: app.root.controller.stopContinuousJog()
                     JogAxisButton:
-                        text: 'Z-'
+                        axis_label: 'Z-'
                         on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
                         on_release: app.root.controller.stopContinuousJog()
 

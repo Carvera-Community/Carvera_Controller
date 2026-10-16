@@ -145,7 +145,8 @@ def _kivy_rule(name):
 def _settings_theme_rules():
     text = _THEME_KV.read_text()
     start = text.index("<-SettingSidebarLabel>:")
-    return text[start:]
+    import_line = next(line for line in text.splitlines() if line.startswith("#:import rgba_to_hex "))
+    return f"{import_line}\n{text[start:]}"
 
 
 def _drop_stub_app(app):
@@ -274,6 +275,53 @@ def test_main_menu_buttons_share_one_square_size():
             _drop_stub_app(app)
 
 
+def test_grouped_main_menu_rounds_only_the_first_and_last_buttons():
+    from kivy.metrics import dp
+    from kivy.uix.button import Button
+    from kivy.uix.gridlayout import GridLayout
+
+    from carveracontroller.main import apply_main_menu_grouping
+
+    grid = GridLayout(cols=1, spacing=(dp(4), dp(4)), size_hint_y=None)
+    buttons = [Button(size_hint_y=None, height=10) for _ in range(3)]
+    for button in buttons:
+        grid.add_widget(button)
+
+    apply_main_menu_grouping(grid, True, 8)
+    visual = [child for child in reversed(grid.children)]
+    assert visual[0].corner_radii == [8, 8, 0, 0]
+    assert visual[1].corner_radii == [0, 0, 0, 0]
+    assert visual[2].corner_radii == [0, 0, 8, 8]
+    assert list(grid.spacing) == [0, 0]
+
+    apply_main_menu_grouping(grid, False, 8)
+    assert all(button.corner_radii == [] for button in visual)
+    assert list(grid.spacing) == pytest.approx([dp(4), dp(4)])
+
+
+def test_menu_grouping_survives_the_dropdown_spacing_applied_after_kv():
+    from kivy.metrics import dp
+    from kivy.uix.button import Button
+    from kivy.uix.dropdown import DropDown
+
+    from carveracontroller.main import apply_main_menu_grouping
+
+    class GroupedMenu(DropDown):
+        def on_kv_post(self, _base):
+            for _ in range(3):
+                self.add_widget(Button())
+            apply_main_menu_grouping(self.container, True, 8)
+            self._apply_menu_grouping = lambda *_args: apply_main_menu_grouping(self.container, True, 8)
+
+    menu = GroupedMenu(pad_menu=False, menu_fill=False)
+    visual = list(reversed(menu.container.children))
+    assert list(menu.container.spacing) == [0, 0]
+    assert list(menu.container.padding) == pytest.approx([0, dp(4), 0, dp(4)])
+    assert visual[0].corner_radii == [8, 8, 0, 0]
+    assert visual[1].corner_radii == [0, 0, 0, 0]
+    assert visual[2].corner_radii == [0, 0, 8, 8]
+
+
 def test_hidden_menu_row_does_not_leave_an_extra_gap():
     from kivy.uix.gridlayout import GridLayout
     from kivy.uix.widget import Widget
@@ -331,7 +379,10 @@ def test_theme_helpers_return_tokens():
     from carveracontroller.ui.theme import get_theme, machine_state_color, watch_theme
 
     theme = get_theme()
-    assert machine_state_color("Idle") == pytest.approx(list(theme.map_origin))
+    assert machine_state_color("Idle") == pytest.approx(list(theme.machine_idle))
+    assert machine_state_color("Run") == pytest.approx(list(theme.machine_run))
+    assert machine_state_color("Alarm") == pytest.approx(list(theme.machine_alarm))
+    assert machine_state_color("N/A") == pytest.approx(list(theme.machine_not_connected))
     assert machine_state_color("unknown") == pytest.approx(list(theme.text_muted))
 
     seen = []
@@ -859,13 +910,16 @@ def test_text_fields_use_a_flat_fill():
             _drop_stub_app(app)
 
 
-def test_theme_setting_is_in_the_controller_config():
+def test_theme_setting_is_on_its_own_page():
     import json
 
     from carveracontroller.ui.themes import DEFAULT_THEME
 
-    settings = json.loads((_ROOT / "carveracontroller" / "controller_config.json").read_text())
+    controller = json.loads((_ROOT / "carveracontroller" / "controller_config.json").read_text())
+    assert all(item.get("key") != "theme" for item in controller)
+    settings = json.loads((_ROOT / "carveracontroller" / "ui" / "themes" / "config.json").read_text())
     option = next(item for item in settings if item.get("key") == "theme")
     assert option["section"] == "carvera"
-    assert option["type"] == "theme"
+    assert option["type"] == "theme_editor"
     assert option["default"] == DEFAULT_THEME
+    assert not option.get("desc")

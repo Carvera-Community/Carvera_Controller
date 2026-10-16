@@ -32,14 +32,6 @@
         "default": "1.5"
     },
     {
-        "type": "theme",
-        "title": "Theme",
-        "desc": "Color theme of the interface. Applied immediately.",
-        "section": "carvera",
-        "key": "theme",
-        "default": "dark"
-    },
-    {
         "type": "bool",
         "title": "Allow Screensaver",
         "desc": "Should the screensaver be allowed to run?",

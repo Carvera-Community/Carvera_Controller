@@ -1,10 +1,11 @@
-"""Pack children into equal squares, centered as a group."""
+"""Jog-pad layout: pack children into equal squares, centered as a group.
+
+The control page, the probing popup, and the CMM workbench place jog keys in
+this grid so a wide or tall pad still yields square keys.
+"""
 
 from kivy.properties import NumericProperty
-from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-
-from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
 
 
 class SquareGrid(FloatLayout):
@@ -57,11 +58,3 @@ class SquareGrid(FloatLayout):
                 origin_x + col * step,
                 origin_y + (rows - 1 - row) * step,
             )
-
-
-class JogAxisButton(Button):
-    """Square jog key without a hover diagram. Styled from theme.kv."""
-
-
-class JogAxisTipButton(ToolTipButton):
-    """Square jog key that can show an axis-motion tooltip."""

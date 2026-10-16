@@ -5,10 +5,18 @@ Each tool is approximated by revolving a simple 2D profile.
 import math
 
 from carveracontroller.addons.tool_visualization.tool_definition import ToolType
-from carveracontroller.ui.theme import DARK
+from carveracontroller.ui.theme import get_theme
 
-FLUTE_COLOR = tuple(DARK["tool_flute"])
-SHANK_COLOR = tuple(DARK["tool_shank"])
+
+def flute_color():
+    """Cutting color from the current theme."""
+    return tuple(get_theme().tool_flute)
+
+
+def shank_color():
+    """Shank color from the current theme."""
+    return tuple(get_theme().tool_shank)
+
 
 VERTEX_FORMAT = [
     (b"v_pos", 3, "float"),
@@ -107,7 +115,7 @@ def _surface_normal(dz, dr, theta):
 
 
 def _profile_color(index, shank_start_index):
-    return SHANK_COLOR if index >= shank_start_index else FLUTE_COLOR
+    return shank_color() if index >= shank_start_index else flute_color()
 
 
 def _add_vertex(positions, normals, colors, x, y, z, nx, ny, nz, color):
@@ -181,9 +189,9 @@ def _build_revolve_mesh(profile, segments=RADIAL_SEGMENTS, shank_start_index=Non
     Vertices are indexed and share smooth analytical normals derived from the
     profile tangent. Flat end caps use separate vertices with ±Z normals.
 
-    Profile points at index >= `shank_start_index` are colored as SHANK_COLOR;
-    earlier points keep the flute FLUTE_COLOR. When omitted, the whole tool is color
-    using FLUTE_COLOR.
+    Profile points at index >= `shank_start_index` use the theme shank color;
+    earlier points use the theme flute color. When omitted, the whole tool
+    uses the flute color.
     """
     if len(profile) < 2:
         raise ValueError("A tool profile needs at least two points")

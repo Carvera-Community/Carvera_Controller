@@ -15,6 +15,7 @@ from kivy.uix.settings import SettingItem
 from kivy.uix.textinput import TextInput
 
 from carveracontroller.translation import tr
+from carveracontroller.ui.fonts import ARIALUNI
 
 
 class ScrollingLabel(ScrollView):
@@ -25,6 +26,8 @@ class ScrollingLabel(ScrollView):
     """
 
     text = StringProperty("")
+    # Forwarded to the inner label in the kv rule. Kv sets it, so the default is only a fallback.
+    font_name = StringProperty(ARIALUNI)
     font_size = StringProperty("18sp")
     color = ListProperty([1, 1, 1, 1])
     effective_font_size = StringProperty("18sp")
@@ -119,6 +122,11 @@ class ScrollingLabel(ScrollView):
 
     def on_font_size(self, instance, value):
         self.effective_font_size = value
+
+    def on_font_name(self, instance, value):
+        # A new face changes the text width, so the fit check runs again.
+        self._marquee_only = False
+        Clock.schedule_once(self._start_marquee, 0.1)
 
     def on_text(self, instance, value):
         self._marquee_only = False

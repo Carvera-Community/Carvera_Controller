@@ -14,6 +14,16 @@ os.environ.setdefault("KIVY_HOME", _kivy_home)
 os.environ.setdefault("KIVY_NO_FILELOG", "1")
 os.environ.setdefault("KIVY_NO_CONSOLELOG", "1")
 
+import pytest  # noqa: E402
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _register_app_fonts():
+    """The app registers ARIALUNI at startup. Kv rules loaded by unit tests name it."""
+    from carveracontroller.ui.fonts import register_arialuni
+
+    register_arialuni()
+
 
 def pytest_sessionfinish(session, exitstatus):
     shutil.rmtree(_kivy_home, ignore_errors=True)
