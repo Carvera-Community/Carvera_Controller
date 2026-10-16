@@ -19,6 +19,7 @@ from carveracontroller.ui.themes import (
     theme_title,
 )
 from carveracontroller.ui.themes.editor import (
+    MIN_PANE_HEIGHT,
     PREVIEW_PANE_WIDTH,
     SettingThemeEditor,
     fields_pane_width,
@@ -78,11 +79,84 @@ def _editor():
     return SettingThemeEditor(panel=_Panel(), section="carvera", key="theme", title="Theme", desc="")
 
 
-def test_color_edit_updates_the_draft_and_preview_only():
+def _reset_editor(editor, body_width, font_values):
+    """Drop edits on the shared page and show the theme it was opened on."""
+    from kivy.uix.settings import SettingsPanel
+
+    for role, row in editor._font_fields.items():
+        row.field.values = list(font_values[role])
+
+    settings_panel = editor.parent if isinstance(editor.parent, SettingsPanel) else None
+    if settings_panel is not None and editor._panel_hooks:
+        settings_panel.unbind(height=editor._sync_viewport_height, parent=editor._on_panel_parent)
+        editor._panel_hooks = False
+    scroll = editor._viewport_scroll
+    if scroll is not None:
+        scroll.unbind(height=editor._sync_viewport_height)
+        editor._viewport_scroll = None
+    if editor.parent is not None:
+        editor.parent.remove_widget(editor)
+
+    editor._force_reload = False
+    editor._committing = False
+    editor._opened_name = BASE_THEME
+    editor._assign_value(BASE_THEME)
+    editor._load_form(BASE_THEME)
+    editor._show_section("colors")
+    editor._sync_fields_column_height()
+
+    # Restoring a narrow width would hide the preview. Put the widgets back by hand.
+    editor._body_row.unbind(width=editor._on_body_width)
+    editor._body_row.width = body_width
+    editor._body_row.bind(width=editor._on_body_width)
+    editor._preview_visible = True
+    editor._fields_pane.size_hint_x = 1
+    editor._fields_pane.size_hint_min_x = fields_pane_width()
+    editor._preview_column.disabled = False
+    editor._preview_column.opacity = 1
+    editor._preview_column.size_hint_x = None
+    editor._preview_column.width = PREVIEW_PANE_WIDTH
+    if editor._preview_column.parent is None:
+        editor._body_row.add_widget(editor._preview_column)
+    editor._pane_height = MIN_PANE_HEIGHT
+    editor._apply_pane_heights()
+    editor._editor_height = editor._measure_editor_height()
+    editor._restore_editor_height(0)
+
+
+@pytest.fixture(scope="module")
+def _shared_editor():
+    """Building the page takes about a second, so the module keeps one instance."""
+    slot = {}
+    yield slot
+    editor = slot.get("editor")
+    if editor is None:
+        return
+    from kivy.core.window import Window
+
+    Window.unbind(size=editor._sync_viewport_height)
+    if editor.parent is not None:
+        editor.parent.remove_widget(editor)
+
+
+@pytest.fixture
+def editor(listed_font_families, _shared_editor, request):
+    if "user_themes" in request.fixturenames:
+        request.getfixturevalue("user_themes")
+    if "editor" not in _shared_editor:
+        built = _editor()
+        _shared_editor["editor"] = built
+        _shared_editor["body_width"] = built._body_row.width
+        _shared_editor["font_values"] = {role: list(row.field.values) for role, row in built._font_fields.items()}
+    current = _shared_editor["editor"]
+    _reset_editor(current, _shared_editor["body_width"], _shared_editor["font_values"])
+    return current
+
+
+def test_color_edit_updates_the_draft_and_preview_only(editor):
     app = App.get_running_app()
     app_primary = list(app.theme.primary) if app is not None and getattr(app, "theme", None) is not None else None
     builtin = _DARK_FILE.read_bytes()
-    editor = _editor()
     bg = list(editor.draft.bg)
     body = list(editor.preview.body.color)
 
@@ -101,9 +175,8 @@ def test_color_edit_updates_the_draft_and_preview_only():
     assert _DARK_FILE.read_bytes() == builtin
 
 
-def test_save_writes_grouped_custom_theme_and_leaves_the_builtin(user_themes):
+def test_save_writes_grouped_custom_theme_and_leaves_the_builtin(user_themes, editor):
     builtin = _DARK_FILE.read_bytes()
-    editor = _editor()
     assert editor._draft_is_dirty() is False
     assert editor.set_token("primary", "#112233") is True
     assert editor._draft_is_dirty() is True
@@ -137,8 +210,7 @@ def test_save_writes_grouped_custom_theme_and_leaves_the_builtin(user_themes):
     assert _DARK_FILE.read_bytes() == builtin
 
 
-def test_save_records_the_edited_theme_and_keeps_it_when_saving_custom(user_themes):
-    editor = _editor()
+def test_save_records_the_edited_theme_and_keeps_it_when_saving_custom(user_themes, editor):
     title = next(text for text, name in editor._title_to_name.items() if name == "light")
     editor._spinner.text = title
     assert editor.set_token("primary", "#112233") is True
@@ -157,14 +229,13 @@ def test_save_records_the_edited_theme_and_keeps_it_when_saving_custom(user_them
     assert saved["primary"] == "#445566"
 
 
-def test_choosing_a_theme_drops_unsaved_edits_without_applying(user_themes):
+def test_choosing_a_theme_drops_unsaved_edits_without_applying(user_themes, editor):
     from kivy.config import Config
 
     app = App.get_running_app()
     live_name = app.theme.name if app is not None and getattr(app, "theme", None) is not None else None
     had_theme = Config.has_option("carvera", "theme")
     config_before = Config.get("carvera", "theme") if had_theme else None
-    editor = _editor()
     assert editor.set_token("primary", "#112233") is True
     title = next(text for text, name in editor._title_to_name.items() if name == "light")
 
@@ -207,8 +278,7 @@ class _PendingRoot:
         self.config_popup = type("Popup", (), {"btn_apply": _ApplyButton()})()
 
 
-def test_dirty_edit_of_the_open_theme_stays_pending(user_themes, monkeypatch):
-    editor = _editor()
+def test_dirty_edit_of_the_open_theme_stays_pending(user_themes, monkeypatch, editor):
     assert editor.set_token("primary", "#112233") is True
     editor.commit_for_apply()
     assert editor.value == CUSTOM_THEME
@@ -228,8 +298,7 @@ def test_dirty_edit_of_the_open_theme_stays_pending(user_themes, monkeypatch):
     assert root.config_popup.btn_apply.disabled is True
 
 
-def test_revert_pending_restores_the_opened_theme_without_writing(user_themes):
-    editor = _editor()
+def test_revert_pending_restores_the_opened_theme_without_writing(user_themes, editor):
     opened = editor._opened_name
     primary = list(editor.draft.primary)
     assert editor.set_token("primary", "#112233") is True
@@ -246,12 +315,11 @@ def test_revert_pending_restores_the_opened_theme_without_writing(user_themes):
     assert not (user_themes / "custom.json").exists()
 
 
-def test_editor_bypasses_setting_item_selection_highlight():
+def test_editor_bypasses_setting_item_selection_highlight(editor):
     from unittest.mock import patch
 
     from kivy.uix.floatlayout import FloatLayout
 
-    editor = _editor()
     touch = object()
     with patch.object(FloatLayout, "on_touch_down", return_value=True) as dispatch:
         assert editor.on_touch_down(touch) is True
@@ -259,8 +327,7 @@ def test_editor_bypasses_setting_item_selection_highlight():
     assert editor.selected_alpha == 0
 
 
-def test_color_swatch_opens_the_picker(monkeypatch):
-    editor = _editor()
+def test_color_swatch_opens_the_picker(monkeypatch, editor):
     row = editor._rows["primary"]
     opened = {}
 
@@ -274,10 +341,9 @@ def test_color_swatch_opens_the_picker(monkeypatch):
     assert opened["rgba"] == pytest.approx(list(editor.draft.primary))
 
 
-def test_color_picker_updates_draft_like_set_token():
+def test_color_picker_updates_draft_like_set_token(editor):
     app = App.get_running_app()
     app_primary = list(app.theme.primary) if app is not None and getattr(app, "theme", None) is not None else None
-    editor = _editor()
     row = editor._rows["bg"]
     chosen = parse_hex_color("#445566")
 
@@ -290,8 +356,7 @@ def test_color_picker_updates_draft_like_set_token():
         assert list(app.theme.primary) == pytest.approx(app_primary)
 
 
-def test_revert_one_color_keeps_other_draft_edits():
-    editor = _editor()
+def test_revert_one_color_keeps_other_draft_edits(editor):
     baseline_primary = list(editor.draft.primary)
     assert editor.set_token("primary", "#112233") is True
     assert editor.set_token("surface", "#aabbcc") is True
@@ -305,10 +370,9 @@ def test_revert_one_color_keeps_other_draft_edits():
     assert editor._draft_is_dirty() is False
 
 
-def test_jog_pad_font_updates_the_preview():
+def test_jog_pad_font_updates_the_preview(editor):
     from carveracontroller.ui.fonts import arialuni_path
 
-    editor = _editor()
     path = arialuni_path()
     editor.font_jog_pad_field.field.text = path
     editor._apply_font_fields()
@@ -323,8 +387,7 @@ def test_jog_pad_font_updates_the_preview():
     assert editor.preview.body.font_name == editor.draft.font_default
 
 
-def test_jog_pad_axis_colors_color_only_the_letter_in_the_preview(user_themes):
-    editor = _editor()
+def test_jog_pad_axis_colors_color_only_the_letter_in_the_preview(user_themes, editor):
     row = editor._behavior_fields["jog_pad_axis_colors"]
     assert row.switch.active is False
     assert editor.preview.jog_x.label.text == "X+"
@@ -352,8 +415,7 @@ def test_jog_pad_axis_colors_color_only_the_letter_in_the_preview(user_themes):
     assert editor._draft_is_dirty() is False
 
 
-def test_saving_jog_pad_axis_colors_reloads_the_behavior(user_themes):
-    editor = _editor()
+def test_saving_jog_pad_axis_colors_reloads_the_behavior(user_themes, editor):
     editor._behavior_fields["jog_pad_axis_colors"].switch.active = True
 
     editor.commit_for_apply()
@@ -366,10 +428,9 @@ def test_saving_jog_pad_axis_colors_reloads_the_behavior(user_themes):
     assert editor._draft_is_dirty() is False
 
 
-def test_code_list_font_updates_the_gcode_preview():
+def test_code_list_font_updates_the_gcode_preview(editor):
     from carveracontroller.ui.fonts import arialuni_path
 
-    editor = _editor()
     path = arialuni_path()
     editor.font_code_list_field.field.text = path
     editor._apply_font_fields()
@@ -381,7 +442,7 @@ def test_code_list_font_updates_the_gcode_preview():
     assert editor.preview.body.font_name == editor.draft.font_default
 
 
-def test_font_weight_lists_installed_faces_and_same_as_default_mirrors_it(monkeypatch):
+def test_font_weight_lists_installed_faces_and_same_as_default_mirrors_it(monkeypatch, editor):
     from carveracontroller.ui.fonts import FontFace, arialuni_path
 
     path = arialuni_path()
@@ -392,7 +453,6 @@ def test_font_weight_lists_installed_faces_and_same_as_default_mirrors_it(monkey
     )
     monkeypatch.setattr(fonts, "_load_font_index", lambda: {"DejaVu Sans": faces})
     fonts._index_cache = None
-    editor = _editor()
     default = editor.font_default_field
     default.field.text = "DejaVu Sans"
 
@@ -421,8 +481,7 @@ def test_font_family_search_ignores_case_spaces_and_punctuation():
     assert matching_font_families(families, "zzz") == []
 
 
-def test_font_family_field_opens_a_filtered_list():
-    editor = _editor()
+def test_font_family_field_opens_a_filtered_list(editor):
     field = editor.font_default_field.field
     field.values = ["ARIALUNI", "DejaVu Sans", "Liberation Mono"]
     field._open()
@@ -449,8 +508,7 @@ def test_font_family_field_opens_a_filtered_list():
             popup.dismiss()
 
 
-def test_font_edit_enables_save_until_the_field_matches_again():
-    editor = _editor()
+def test_font_edit_enables_save_until_the_field_matches_again(editor):
     field = editor.font_top_bar_field.field
     original = field.text
 
@@ -461,13 +519,12 @@ def test_font_edit_enables_save_until_the_field_matches_again():
     assert editor._draft_is_dirty() is False
 
 
-def test_font_fields_list_families_and_optional_roles_follow_the_default(monkeypatch):
+def test_font_fields_list_families_and_optional_roles_follow_the_default(monkeypatch, editor):
     from carveracontroller.ui.fonts import arialuni_path
 
     path = arialuni_path()
     monkeypatch.setattr(fonts, "_load_font_index", lambda: {"DejaVu Sans": path})
     fonts._index_cache = None
-    editor = _editor()
     same = tr._("Same as default")
 
     default = editor.font_default_field
@@ -496,8 +553,7 @@ def test_font_fields_list_families_and_optional_roles_follow_the_default(monkeyp
     assert editor._draft_is_dirty() is False
 
 
-def test_token_rows_fit_below_the_theme_chooser():
-    editor = _editor()
+def test_token_rows_fit_below_the_theme_chooser(editor):
     column = editor._fields_column
     needed = editor._column_height(column)
     assert column.height == pytest.approx(needed)
@@ -511,15 +567,13 @@ def test_token_rows_fit_below_the_theme_chooser():
     assert editor._tab_scroll not in editor._fields_scroll.walk()
 
 
-def test_fields_and_preview_use_separate_scroll_views():
-    editor = _editor()
+def test_fields_and_preview_use_separate_scroll_views(editor):
     assert editor._fields_scroll is not editor._preview_scroll
     assert editor.preview.parent is editor._preview_scroll
     assert editor._fields_column.parent is editor._fields_scroll
 
 
-def test_category_tabs_show_one_section_and_share_the_preview():
-    editor = _editor()
+def test_category_tabs_show_one_section_and_share_the_preview(editor):
     assert editor._active_section == "colors"
     assert editor._sections["colors"].parent is editor._fields_column
     assert editor._sections["axis"].parent is None
@@ -539,8 +593,7 @@ def test_category_tabs_show_one_section_and_share_the_preview():
     assert editor._rows["bg"].parent is editor._sections["colors"]
 
 
-def test_gcode_preview_uses_multiple_draft_syntax_colors():
-    editor = _editor()
+def test_gcode_preview_uses_multiple_draft_syntax_colors(editor):
     sample = editor.preview.gcode_sample
     assert editor.set_token("gcode_comment", "#111111") is True
     assert editor.set_token("gcode_g_command", "#222222") is True
@@ -550,8 +603,7 @@ def test_gcode_preview_uses_multiple_draft_syntax_colors():
     assert "T1" in sample.text
 
 
-def test_preview_gets_the_spare_width():
-    editor = _editor()
+def test_preview_gets_the_spare_width(editor):
     wide = fields_pane_width() + float(PREVIEW_PANE_WIDTH) + 400
     editor._body_row.width = wide
     editor._apply_pane_widths(wide)
@@ -562,8 +614,7 @@ def test_preview_gets_the_spare_width():
     assert editor._tab_scroll.right <= editor._fields_pane.right + 1
 
 
-def test_descriptions_fit_and_controls_stay_centered():
-    editor = _editor()
+def test_descriptions_fit_and_controls_stay_centered(editor):
     row = editor._rows["axis_a"]
     row.width = fields_pane_width()
     row.do_layout()
@@ -580,8 +631,7 @@ def test_descriptions_fit_and_controls_stay_centered():
     assert row.revert.fill_color is not None
 
 
-def test_preview_samples_keep_a_realistic_size():
-    editor = _editor()
+def test_preview_samples_keep_a_realistic_size(editor):
     preview = editor.preview
     assert editor._preview_header.parent is editor._preview_column
     assert preview.axis_row.parent is preview.bar
@@ -614,10 +664,9 @@ def test_preview_samples_keep_a_realistic_size():
     assert radii == pytest.approx([dp(20)] * 4)
 
 
-def test_pane_fills_the_settings_viewport():
+def test_pane_fills_the_settings_viewport(editor):
     from kivy.uix.settings import ContentPanel, SettingsPanel
 
-    editor = _editor()
     panel = SettingsPanel()
     scroll = ContentPanel(size=(800, 900))
     scroll.add_widget(panel)
@@ -627,12 +676,11 @@ def test_pane_fills_the_settings_viewport():
     assert editor._body_row.height == pytest.approx(editor._pane_height)
 
 
-def test_preview_visibility_follows_body_width():
+def test_preview_visibility_follows_body_width(editor):
     minimum = fields_pane_width() + float(PREVIEW_PANE_WIDTH)
     assert preview_shown_for_width(minimum - 1) is False
     assert preview_shown_for_width(minimum + float(PREVIEW_PANE_WIDTH)) is True
 
-    editor = _editor()
     editor._on_body_width(editor._body_row, minimum - 1)
     assert editor._preview_visible is False
     assert editor._preview_column.parent is None

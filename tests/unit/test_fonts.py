@@ -68,7 +68,10 @@ def test_family_name_resolves_from_the_index(monkeypatch, tmp_path):
     assert resolve_font("DejaVu Sans") == "DejaVu Sans [Regular Roman]"
     assert resolve_font("dejavu sans") == "DejaVu Sans [Regular Roman]"
     assert resolve_font({"family": "DejaVu Sans", "weight": "Bold", "style": "Roman"}) == "DejaVu Sans [Bold Roman]"
-    assert resolve_font({"family": "DejaVu Sans", "weight": "Regular", "style": "Italic"}) == "DejaVu Sans [Regular Italic]"
+    assert (
+        resolve_font({"family": "DejaVu Sans", "weight": "Regular", "style": "Italic"})
+        == "DejaVu Sans [Regular Italic]"
+    )
     assert resolve_font("Nobody Has This") == ARIALUNI
 
     from kivy.core.text import LabelBase

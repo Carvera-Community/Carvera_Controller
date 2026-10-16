@@ -298,8 +298,8 @@ def _index_from_records(
             )
             display[key_name] = family.strip()
     grouped: dict[str, list[FontFace]] = {}
-    for (key_name, _weight, _italic), (_penalty, _order, face) in chosen.items():
-        grouped.setdefault(key_name, []).append(face)
+    for (key_name, _weight, _italic), (_penalty, _order, chosen_face) in chosen.items():
+        grouped.setdefault(key_name, []).append(chosen_face)
     return {
         display[key_name]: tuple(sorted(faces, key=lambda item: (item.order, item.italic, item.path)))
         for key_name, faces in grouped.items()
@@ -399,6 +399,8 @@ def _records_from_registry(entries: list[tuple[str, str]], fonts_dir: str) -> li
 
 def _windows_font_index() -> dict[str, tuple[FontFace, ...]]:
     """Installed faces from the machine font registry, then the user one."""
+    if sys.platform != "win32":
+        return {}
     import winreg
 
     fonts_dir = os.path.join(os.environ.get("SYSTEMROOT", r"C:\Windows"), "Fonts")

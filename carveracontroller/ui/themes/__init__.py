@@ -481,7 +481,7 @@ def custom_theme_document(
         else:
             prefix = _GROUP_PREFIXES[owner]
             groups[owner][key[len(prefix) :]] = encoded
-    document = {"name": CUSTOM_THEME, "title": CUSTOM_TITLE}
+    document: dict = {"name": CUSTOM_THEME, "title": CUSTOM_TITLE}
     if extends is not None:
         parent = extends.strip() if isinstance(extends, str) else ""
         if not parent or not _NAME_RE.match(parent) or parent == CUSTOM_THEME:

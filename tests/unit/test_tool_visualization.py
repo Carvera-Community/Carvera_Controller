@@ -50,14 +50,14 @@ from carveracontroller.addons.tool_visualization.mesh_builder import (
     FALLBACK_TOOL_DISPLAY_HEIGHT,
     FALLBACK_TOOL_DISPLAY_RADIUS,
     FLOATS_PER_VERTEX,
-    flute_color,
     INFERRED_SHOULDER_DIAMETER_FACTOR,
     LENGTH_DIAMETER_FACTOR,
     MIN_VISIBLE_RADIUS,
-    shank_color,
     VERTEX_FORMAT,
     build_tool_mesh,
     build_tool_meshes,
+    flute_color,
+    shank_color,
     tool_profile,
 )
 from carveracontroller.addons.tool_visualization.tool_definition import resolve_tool_type

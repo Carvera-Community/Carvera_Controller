@@ -7,8 +7,6 @@ import pytest
 from carveracontroller.addons.stock.stock_aabb_mesh import (
     DEFAULT_CYLINDER_SEGMENTS,
     FLOATS_PER_VERTEX,
-    stock_edge_color,
-    stock_fill_color,
     STOCK_VERTEX_FORMAT,
     build_box_edges,
     build_box_triangles,
@@ -16,6 +14,8 @@ from carveracontroller.addons.stock.stock_aabb_mesh import (
     build_cylinder_triangles,
     build_x_cylinder_edges,
     build_x_cylinder_triangles,
+    stock_edge_color,
+    stock_fill_color,
 )
 
 

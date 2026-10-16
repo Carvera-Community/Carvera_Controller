@@ -288,7 +288,7 @@ def test_grouped_main_menu_rounds_only_the_first_and_last_buttons():
         grid.add_widget(button)
 
     apply_main_menu_grouping(grid, True, 8)
-    visual = [child for child in reversed(grid.children)]
+    visual = list(reversed(grid.children))
     assert visual[0].corner_radii == [8, 8, 0, 0]
     assert visual[1].corner_radii == [0, 0, 0, 0]
     assert visual[2].corner_radii == [0, 0, 8, 8]

@@ -104,11 +104,14 @@ _SECTION_TITLES = {
 }
 
 
+_cached_name_column_width: float | None = None
+
+
 def _name_column_width() -> float:
     """Width that fits the longest token name and its one-line description."""
-    cached = getattr(_name_column_width, "value", None)
-    if cached is not None:
-        return cached
+    global _cached_name_column_width
+    if _cached_name_column_width is not None:
+        return _cached_name_column_width
     probe = Label(font_name=ARIALUNI, font_size=sp(11))
     width = 0.0
     for text in TOKEN_DESCRIPTIONS.values():
@@ -120,8 +123,8 @@ def _name_column_width() -> float:
         probe.text = key
         probe.texture_update()
         width = max(width, float(probe.texture_size[0]))
-    _name_column_width.value = width + dp(8)
-    return _name_column_width.value
+    _cached_name_column_width = width + dp(8)
+    return _cached_name_column_width
 
 
 def _control_cluster_width() -> float:
@@ -269,6 +272,10 @@ class _ColorSwatch(ButtonBehavior, Widget):
 
 
 class _DescribedRow:
+    _name_column: BoxLayout
+    _name: Label
+    _description: Label | None
+
     def _fit_labels(self, *_args) -> None:
         width = max(float(self._name_column.width), float(_name_column_width()))
         self._name.text_size = (width, None)
@@ -592,6 +599,14 @@ class _BehaviorFieldRow(_DescribedRow, BoxLayout):
 
 
 class SettingThemeEditor(SettingItem):
+    # Kivy's ``value`` is an untyped ObjectProperty. This editor stores a theme name.
+    value: str
+    _baseline: dict
+    _baseline_fonts: dict
+    _baseline_behaviors: dict
+    _sections: dict
+    _section_tabs: dict
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # This page is the whole row, so drop SettingItem's title column.
@@ -612,13 +627,13 @@ class SettingThemeEditor(SettingItem):
         self._opened_name = ""
         self._title_to_name = {}
         self._rows = {}
-        self._baseline: dict = {}
-        self._baseline_fonts: dict = {}
-        self._baseline_behaviors: dict = {}
+        self._baseline = {}
+        self._baseline_fonts = {}
+        self._baseline_behaviors = {}
         self._preview_visible = True
         self._active_section = ""
-        self._sections: dict = {}
-        self._section_tabs: dict = {}
+        self._sections = {}
+        self._section_tabs = {}
         self._tab_group = f"theme-sections-{id(self)}"
         self._viewport_scroll = None
         self._panel_hooks = False

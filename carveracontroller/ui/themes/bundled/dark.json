@@ -18,6 +18,8 @@
   "jog_pad": "#32343a",
   "control": "#44464c",
   "control_disabled": "#2e2f33",
+  "mdi_send_bg": "#28292d",
+  "mdi_send_text": "#ecedf1",
   "menu": "#24252a",
   "text": "#ecedf1",
   "icon": "#ecedf1",

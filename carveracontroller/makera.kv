@@ -3279,9 +3279,11 @@
                                                         size_hint_x: None
                                                         padding: dp(4), 0
                                                         corner_radii: 0, 0, 0, 0
+                                                        use_theme_text: False
+                                                        color: app.theme.text_on_fill if self.state == 'down' and not self.disabled else app.theme.mdi_send_text
                                                         canvas.before:
                                                             Color:
-                                                                rgba: app.theme.control if self.disabled else self.theme_fill
+                                                                rgba: app.theme.accent if self.state == 'down' and not self.disabled else app.theme.mdi_send_bg
                                                             Rectangle:
                                                                 pos: self.pos
                                                                 size: self.size

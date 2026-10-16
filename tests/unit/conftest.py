@@ -19,10 +19,15 @@ import pytest  # noqa: E402
 
 @pytest.fixture(scope="session", autouse=True)
 def _register_app_fonts():
-    """The app registers ARIALUNI at startup. Kv rules loaded by unit tests name it."""
+    """Match startup: the bundled font, and icons addressed as ``data/...``."""
+    from pathlib import Path
+
+    from kivy.resources import resource_add_path
+
     from carveracontroller.ui.fonts import register_arialuni
 
     register_arialuni()
+    resource_add_path(str(Path(__file__).resolve().parents[2] / "carveracontroller"))
 
 
 def pytest_sessionfinish(session, exitstatus):

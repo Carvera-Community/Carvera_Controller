@@ -9,6 +9,8 @@
   "jog_pad": "#e4e7ee",
   "control": "#d5d8e0",
   "control_disabled": "#dcdfe5",
+  "mdi_send_bg": "#d5d8e0",
+  "mdi_send_text": "#1e2026",
   "menu": "#fbfbfd",
   "text": "#1e2026",
   "icon": "#585e6a",

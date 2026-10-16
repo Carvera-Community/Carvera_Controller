@@ -94,6 +94,8 @@ TOKEN_DESCRIPTIONS = {
     "map_rotation_base": tr._("Map rotation control base"),
     "map_work_area": tr._("Work area bounds on the map"),
     "map_zprobe": tr._("Z probe points on the map"),
+    "mdi_send_bg": tr._("MDI send button fill"),
+    "mdi_send_text": tr._("MDI send button label"),
     "menu": tr._("Dropdown and menu panel background"),
     "overlay": tr._("Light modal scrim over the UI"),
     "overlay_strong": tr._("Stronger modal scrim for blocking dialogs"),
