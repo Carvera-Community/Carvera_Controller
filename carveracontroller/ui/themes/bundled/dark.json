@@ -9,6 +9,8 @@
   },
   "behaviors": {
     "jog_pad_axis_colors": false,
+    "jog_pad_sign_colors": false,
+    "jog_pad_axis_background": false,
     "group_main_menu": false
   },
   "bg": "#18181a",
@@ -50,7 +52,6 @@
   "border": "#585858",
   "overlay": "#00000059",
   "overlay_strong": "#00000099",
-  "hud_bg": "#0a0a0a80",
   "hint_text": "#a0a4ac",
   "success": "#2e7d32",
   "success_fill": "#1f612e",
@@ -82,10 +83,6 @@
     "z": "#3498db",
     "a": "#f7dc6f"
   },
-  "sim": {
-    "bar": "#40d159f2",
-    "marker": "#4d8cf2"
-  },
   "map": {
     "bg": "#323232",
     "anchor": "#373737",
@@ -105,6 +102,8 @@
     "spindle": "#d16969",
     "tool": "#b5cea8",
     "line_number": "#858585",
+    "list_element": "#32343a",
+    "list_element_selected": "#44464c",
     "parameter": "#9cdcfe",
     "o_label": "#569cd6",
     "o_keyword": "#dcdcaa",
@@ -152,27 +151,26 @@
     "grid_major": "#8c8c8c",
     "axis_x": "#ff0000",
     "axis_y": "#00ff00",
-    "axis_z": "#0000ff"
-  },
-  "tool": {
-    "color_1": "#68bc3c",
-    "color_2": "#0075d6",
-    "color_3": "#c75121",
-    "color_4": "#bd3cb3",
-    "color_5": "#00c19a",
-    "color_6": "#d20b0b",
-    "color_7": "#e4b700",
-    "color_8": "#2193e0",
-    "color_9": "#6e44d6",
-    "color_10": "#3fc667",
-    "flute": "#d9a62673",
-    "shank": "#8080854d",
-    "outline": "#2d2d2d"
-  },
-  "stock": {
-    "fill": "#b8ad7a47",
-    "edge": "#f2e68ce6",
-    "default": "#bfb88c"
+    "axis_z": "#0000ff",
+    "hud_bg": "#0a0a0a80",
+    "tool_color_1": "#68bc3c",
+    "tool_color_2": "#0075d6",
+    "tool_color_3": "#c75121",
+    "tool_color_4": "#bd3cb3",
+    "tool_color_5": "#00c19a",
+    "tool_color_6": "#d20b0b",
+    "tool_color_7": "#e4b700",
+    "tool_color_8": "#2193e0",
+    "tool_color_9": "#6e44d6",
+    "tool_color_10": "#3fc667",
+    "tool_flute": "#d9a62673",
+    "tool_shank": "#8080854d",
+    "tool_outline": "#2d2d2d",
+    "stock_fill": "#b8ad7a47",
+    "stock_edge": "#f2e68ce6",
+    "stock_default": "#bfb88c",
+    "sim_bar": "#40d159f2",
+    "sim_marker": "#4d8cf2"
   },
   "speed_colormap": {
     "1": "#3366e6",
@@ -193,11 +191,11 @@
     "radius_s": 6,
     "radius_m": 8,
     "radius_l": 22,
-    "radius_pad": 22,
+    "pad_radius": 22,
     "top_bar_radius": 8,
     "top_bar_height": 56,
     "bottom_bar_height": 56,
-    "bar_pad": 4,
+    "bar_padding": 4,
     "spacing": 6,
     "control_page_min": 360,
     "pad_row_height": 260

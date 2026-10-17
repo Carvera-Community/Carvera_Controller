@@ -1,5 +1,6 @@
 """Theme tokens stay the single source of chrome colors."""
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -28,10 +29,14 @@ def test_apply_updates_tokens_and_snapshot_round_trips():
     assert restored.name == "custom"
 
 
-def test_apply_rejects_unknown_tokens():
+def test_apply_ignores_unknown_tokens(caplog):
     theme = Theme()
-    with pytest.raises(ValueError, match="not_a_token"):
-        theme.apply({"not_a_token": 1})
+    accent = list(theme.accent)
+    with caplog.at_level(logging.WARNING):
+        theme.apply({"not_a_token": 1, "radius_m": 12})
+    assert theme.radius_m == 12
+    assert list(theme.accent) == pytest.approx(accent)
+    assert "not_a_token" in caplog.text
 
 
 def test_apply_palette_rejects_unknown_name():
@@ -56,6 +61,31 @@ def test_button_fill_follows_role_and_revision_is_explicit():
     theme.accent = [0, 1, 0, 1]
     assert theme.revision == before + 1
     assert theme.button_fill("normal", "down", False, True, theme.revision) == pytest.approx([0, 1, 0, 1])
+
+
+def test_jog_axis_background_colors_the_face_and_keeps_the_caption_readable():
+    theme = Theme()
+    theme.text = [0.93, 0.93, 0.94, 1]
+    theme.text_inverse = [0.12, 0.12, 0.12, 1]
+    theme.text_on_fill = [0.98, 0.98, 0.2, 1]
+    theme.axis_x = [0.8, 0.1, 0.1, 1]
+    theme.axis_a = [0.97, 0.86, 0.44, 1]
+    assert theme.jog_axis_fill("X+", "normal", False, True) == pytest.approx(list(theme.control))
+    assert theme.jog_axis_text("X+", "down", False, True) == pytest.approx(list(theme.text_on_fill))
+
+    theme.jog_pad_axis_background = True
+    assert theme.jog_axis_fill("X+", "normal", False, True) == pytest.approx(list(theme.axis_x))
+    assert theme.jog_axis_fill("A-", "normal", False, True) == pytest.approx(list(theme.axis_a))
+    assert theme.jog_axis_fill("X+", "down", False, True) == pytest.approx(
+        [channel * 0.75 if index < 3 else channel for index, channel in enumerate(theme.axis_x)]
+    )
+    assert theme.jog_axis_fill("X+", "normal", True, True) == pytest.approx(list(theme.control_disabled))
+    assert theme.jog_axis_fill("X+", "normal", False, False) == [0, 0, 0, 0]
+    assert theme.jog_axis_fill("Home", "normal", False, True) == pytest.approx(list(theme.control))
+    assert theme.jog_axis_text("X+", "normal", False, True) == pytest.approx(list(theme.text))
+    assert theme.jog_axis_text("A+", "normal", False, True) == pytest.approx(list(theme.text_inverse))
+    assert theme.jog_axis_text("X+", "normal", True, True) == pytest.approx(list(theme.text_disabled))
+    assert theme.jog_axis_text("Home", "down", False, True) == pytest.approx(list(theme.text_on_fill))
 
 
 def test_selection_fill_uses_accent_and_alpha():
@@ -262,7 +292,7 @@ def test_main_menu_buttons_share_one_square_size():
             Builder.load_string(menu_rule, filename="menu-button-test.kv")
         opener = Factory.MenuButton()
         item = Factory.MenuButton()
-        side = dp(app.theme.top_bar_height - app.theme.bar_pad * 2)
+        side = dp(app.theme.top_bar_height - app.theme.bar_padding * 2)
         assert opener.width == pytest.approx(side)
         assert opener.height == pytest.approx(opener.width)
         assert tuple(item.size) == pytest.approx(tuple(opener.size))

@@ -79,6 +79,8 @@ REVERT_ICON = "data/history.png"
 
 _BEHAVIOR_CAPTIONS = {
     "jog_pad_axis_colors": "Jog pad axis colors",
+    "jog_pad_sign_colors": "Jog pad sign colors",
+    "jog_pad_axis_background": "Jog pad axis background",
     "group_main_menu": "Group main menu buttons",
 }
 
@@ -88,15 +90,12 @@ _SECTION_TITLES = {
     "fonts": "Fonts",
     "behaviors": "Behaviors",
     "axis": "Axes",
-    "sim": "Simulation",
-    "map": "Map",
+    "map": "Preview Map",
     "gcode": "G-code",
     "sketch": "Sketch",
     "cmm": "CMM",
     "facing": "Facing",
     "viewer": "Viewer",
-    "tool": "Tools",
-    "stock": "Stock",
     "speed_colormap": "Speed colors",
     "tooltip": "Tooltip",
     "scroll": "Scroll bar",
@@ -385,7 +384,11 @@ class _TokenField(_DescribedRow, BoxLayout):
         _open_color_picker(rgba, self._picked)
 
     def _picked(self, rgba) -> None:
-        self._on_change(self.key, format_hex_color(rgba))
+        text = format_hex_color(rgba)
+        if self.field.text != text:
+            self.field.text = text
+        else:
+            self._on_change(self.key, text)
 
 
 class _FontFieldRow(_DescribedRow, BoxLayout):
@@ -794,8 +797,7 @@ class SettingThemeEditor(SettingItem):
             font_top_bar=self._on_draft_changed,
             font_jog_pad=self._on_draft_changed,
             font_code_list=self._on_draft_changed,
-            jog_pad_axis_colors=self._on_draft_changed,
-            group_main_menu=self._on_draft_changed,
+            **dict.fromkeys(BEHAVIOR_KEYS, self._on_draft_changed),
         )
         self._opened_name = self._initial_name()
         self._load_form(self._opened_name)
@@ -1204,6 +1206,17 @@ class SettingThemeEditor(SettingItem):
             return
         pending = bool(root.controller_setting_change_list or root.setting_change_list)
         button.disabled = not pending
+
+    def on_value(self, instance, value):
+        """Keep the name on the widget. The settings file waits until the window exists.
+
+        Startup can retarget a theme that failed to load while ``App.build()``
+        is still running. Writing the setting then asks ``on_config_change``
+        for a window Kivy has not assigned yet.
+        """
+        if self._settings_root() is None:
+            return
+        super().on_value(instance, value)
 
     def _assign_value(self, name: str) -> None:
         """Store ``name`` without treating the write as a Cancel restore."""

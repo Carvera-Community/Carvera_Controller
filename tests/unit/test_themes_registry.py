@@ -99,10 +99,44 @@ def test_theme_without_extends_must_be_complete(scratch_themes):
         load_palette("partial")
 
 
-def test_unknown_tokens_and_kind_changes_are_rejected(scratch_themes):
-    _write(scratch_themes, "extra", {"extends": BASE_THEME, "not_a_token": "#112233"})
-    with pytest.raises(ThemeError, match="unknown tokens"):
-        load_palette("extra")
+def test_unknown_tokens_are_dropped_and_the_theme_still_loads(scratch_themes, caplog):
+    _write(
+        scratch_themes,
+        "extra",
+        {"extends": BASE_THEME, "bg": "#112233", "layout": {"bar_pad": 9, "radius_pad": 3}},
+    )
+    with caplog.at_level("WARNING"):
+        palette = load_palette("extra")
+        listed = dict(list_themes())
+    assert "extra" in listed
+    assert palette["bg"] == pytest.approx(parse_hex_color("#112233"))
+    assert "bar_pad" not in palette
+    assert "radius_pad" not in palette
+    base = load_palette(BASE_THEME)
+    assert palette["bar_padding"] == base["bar_padding"]
+    assert palette["pad_radius"] == base["pad_radius"]
+    assert "bar_pad" in caplog.text
+    assert "radius_pad" in caplog.text
+
+
+def test_obsolete_object_token_is_ignored_and_the_theme_still_loads(scratch_themes, caplog):
+    _write(
+        scratch_themes,
+        "old",
+        {"extends": BASE_THEME, "bg": "#abcdef", "sim": {"bar": "#112233", "marker": "#445566"}},
+    )
+    with caplog.at_level("WARNING", logger="carveracontroller.ui.themes"):
+        palette = load_palette("old")
+        listed = dict(list_themes())
+    assert "old" in listed
+    assert "sim" not in palette
+    assert palette["bg"] == pytest.approx(parse_hex_color("#abcdef"))
+    assert palette["surface"] == pytest.approx(load_palette(BASE_THEME)["surface"])
+    assert "Ignoring invalid tokens in theme old: sim" in caplog.text
+    assert "Ignoring theme" not in caplog.text
+
+
+def test_kind_changes_are_rejected(scratch_themes):
     _write(scratch_themes, "kind", {"extends": BASE_THEME, "bg": 4})
     with pytest.raises(ThemeError, match="changes kind"):
         load_palette("kind")
@@ -219,10 +253,19 @@ def test_behaviors_inherit_and_unknown_or_non_bool_values_are_rejected(scratch_t
     _write(scratch_themes, "off", {"extends": BASE_THEME, "behaviors": {"jog_pad_axis_colors": False}})
     _write(scratch_themes, "child", {"extends": "off"})
     _write(scratch_themes, "colored", {"extends": "off", "behaviors": {"jog_pad_axis_colors": True}})
+    _write(
+        scratch_themes,
+        "face",
+        {"extends": BASE_THEME, "behaviors": {"jog_pad_sign_colors": True, "jog_pad_axis_background": True}},
+    )
     assert "jog_pad_axis_colors" not in load_palette("off")
     assert themes.load_behaviors("child")["jog_pad_axis_colors"] is False
     assert themes.load_behaviors("colored")["jog_pad_axis_colors"] is True
     assert "jog_pad_axis_colors" not in load_palette("colored")
+    face = themes.load_behaviors("face")
+    assert face["jog_pad_sign_colors"] is True
+    assert face["jog_pad_axis_background"] is True
+    assert face["jog_pad_axis_colors"] is False
 
     _write(scratch_themes, "unknown", {"extends": BASE_THEME, "behaviors": {"nope": True}})
     with pytest.raises(ThemeError, match="unknown behaviors"):
@@ -239,10 +282,24 @@ def test_jog_axis_markup_colors_only_the_letter():
     import re
     from types import SimpleNamespace
 
-    theme = SimpleNamespace(jog_pad_axis_colors=False, axis_x=[1, 0, 0, 1], axis_y=[0, 1, 0, 1], axis_z=[0, 0, 1, 1])
+    theme = SimpleNamespace(
+        jog_pad_axis_colors=False,
+        jog_pad_sign_colors=False,
+        jog_pad_axis_background=False,
+        axis_x=[1, 0, 0, 1],
+        axis_y=[0, 1, 0, 1],
+        axis_z=[0, 0, 1, 1],
+        axis_a=[1, 1, 0, 1],
+    )
     assert themes.jog_axis_markup("X+", theme) == ("X+", False)
     theme.jog_pad_axis_colors = True
-    for caption, color in (("X+", theme.axis_x), ("X-", theme.axis_x), ("Y+", theme.axis_y), ("Z-", theme.axis_z)):
+    for caption, color in (
+        ("X+", theme.axis_x),
+        ("X-", theme.axis_x),
+        ("Y+", theme.axis_y),
+        ("Z-", theme.axis_z),
+        ("A+", theme.axis_a),
+    ):
         text, markup = themes.jog_axis_markup(caption, theme)
         match = re.fullmatch(r"\[color=(#[0-9a-fA-F]+)\](.)\[/color\](.*)", text)
         assert markup is True
@@ -255,6 +312,27 @@ def test_jog_axis_markup_colors_only_the_letter():
     assert themes.jog_axis_markup("Home", theme) == ("Home", False)
 
 
+def test_jog_axis_markup_can_color_the_sign_and_yields_to_the_background():
+    from types import SimpleNamespace
+
+    theme = SimpleNamespace(
+        jog_pad_axis_colors=False,
+        jog_pad_sign_colors=True,
+        jog_pad_axis_background=False,
+        axis_x=[1, 0, 0, 1],
+        axis_y=[0, 1, 0, 1],
+    )
+    painted = format_hex_color(theme.axis_x)
+    assert themes.jog_axis_markup("X+", theme) == (f"X[color={painted}]+[/color]", True)
+    assert themes.jog_axis_markup("X-", theme) == (f"X[color={painted}]-[/color]", True)
+    assert themes.jog_axis_markup("X", theme) == ("X", False)
+    theme.jog_pad_axis_colors = True
+    assert themes.jog_axis_markup("X+", theme) == (f"[color={painted}]X+[/color]", True)
+    assert themes.jog_axis_markup("Y-", theme) == (f"[color={format_hex_color(theme.axis_y)}]Y-[/color]", True)
+    theme.jog_pad_axis_background = True
+    assert themes.jog_axis_markup("X+", theme) == ("X+", False)
+
+
 def test_behavior_follows_the_palette_and_color_edits_leave_it(scratch_themes):
     from carveracontroller.ui.theme import Theme
 
@@ -263,6 +341,8 @@ def test_behavior_follows_the_palette_and_color_edits_leave_it(scratch_themes):
     theme = Theme()
     theme.apply_palette("colored")
     assert theme.jog_pad_axis_colors is True
+    assert theme.jog_pad_sign_colors is False
+    assert theme.jog_pad_axis_background is False
     assert theme.group_main_menu is False
     theme.apply({"radius_m": 9})
     assert theme.jog_pad_axis_colors is True
@@ -294,10 +374,13 @@ def test_flat_token_that_belongs_in_a_group_is_rejected(scratch_themes):
         load_palette("flat_size")
 
 
-def test_unknown_group_key_is_an_unknown_token(scratch_themes):
+def test_unknown_group_key_is_dropped(scratch_themes, caplog):
     _write(scratch_themes, "inner", {"extends": BASE_THEME, "gcode": {"nope": "#112233"}})
-    with pytest.raises(ThemeError, match="unknown tokens: gcode_nope"):
-        load_palette("inner")
+    with caplog.at_level("WARNING"):
+        palette = load_palette("inner")
+    assert "gcode_nope" not in palette
+    assert "gcode_nope" in caplog.text
+    assert palette["gcode_comment"] == pytest.approx(load_palette(BASE_THEME)["gcode_comment"])
 
 
 def test_group_must_be_an_object(scratch_themes):
@@ -337,6 +420,8 @@ def test_custom_theme_is_listed_and_loads(user_themes):
     assert document["fonts"]["jog_pad"] is None
     assert document["fonts"]["code_list"] is None
     assert document["behaviors"]["jog_pad_axis_colors"] is False
+    assert document["behaviors"]["jog_pad_sign_colors"] is False
+    assert document["behaviors"]["jog_pad_axis_background"] is False
     (user_themes / "custom.json").write_text(json.dumps(document))
     themes.clear_theme_cache()
 
@@ -354,7 +439,7 @@ def test_custom_theme_uses_the_base_value_for_tokens_it_does_not_have(user_theme
     document["title"] = CUSTOM_TITLE
     document.pop("extends", None)
     document["bg"] = "#112233"
-    for key in ("jog_pad", "jog_page", "overlay", "hud_bg"):
+    for key in ("jog_pad", "jog_page", "overlay", "menu"):
         del document[key]
     (user_themes / "custom.json").write_text(json.dumps(document))
     themes.clear_theme_cache()
@@ -364,7 +449,7 @@ def test_custom_theme_uses_the_base_value_for_tokens_it_does_not_have(user_theme
         assert CUSTOM_THEME in dict(list_themes())
     assert "Ignoring theme" not in caplog.text
     base = load_palette(BASE_THEME)
-    for key in ("jog_pad", "jog_page", "overlay", "hud_bg"):
+    for key in ("jog_pad", "jog_page", "overlay", "menu"):
         assert loaded[key] == pytest.approx(base[key]), key
     assert loaded["bg"] == pytest.approx(parse_hex_color("#112233"))
     loaded["jog_pad"][0] = 0.25

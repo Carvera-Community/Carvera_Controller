@@ -9,12 +9,12 @@ from carveracontroller.ui.theme import get_theme
 
 def stock_fill_color():
     """Stock body color from the current theme."""
-    return tuple(get_theme().stock_fill)
+    return tuple(get_theme().viewer_stock_fill)
 
 
 def stock_edge_color():
     """Stock edge color from the current theme."""
-    return tuple(get_theme().stock_edge)
+    return tuple(get_theme().viewer_stock_edge)
 
 
 STOCK_VERTEX_FORMAT = [

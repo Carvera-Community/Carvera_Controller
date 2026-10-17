@@ -248,7 +248,7 @@ TOOL_PALETTE_SIZE = 10
 
 
 def _theme_tool_palette_entry(theme, index: int) -> tuple[float, float, float, float]:
-    return tuple(getattr(theme, f"tool_color_{index + 1}"))
+    return tuple(getattr(theme, f"viewer_tool_color_{index + 1}"))
 
 
 def _theme_speed_colormap_stops(theme) -> tuple[tuple[float, float, float], ...]:

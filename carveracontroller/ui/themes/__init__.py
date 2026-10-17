@@ -46,7 +46,12 @@ _FONT_EXTENSIONS = (".ttf", ".otf", ".ttc")
 
 # Boolean options under ``"behaviors"``. A key left out stays at the parent's
 # value, and a key nobody sets stays off.
-BEHAVIOR_KEYS = ("jog_pad_axis_colors", "group_main_menu")
+BEHAVIOR_KEYS = (
+    "jog_pad_axis_colors",
+    "jog_pad_sign_colors",
+    "jog_pad_axis_background",
+    "group_main_menu",
+)
 _AXIS_LETTERS = "XYZA"
 
 _RESERVED_KEYS = {"name", "title", "extends", "fonts", "behaviors"}
@@ -55,15 +60,12 @@ _RESERVED_KEYS = {"name", "title", "extends", "fonts", "behaviors"}
 _GROUP_PREFIXES = {
     "machine": "machine_",
     "axis": "axis_",
-    "sim": "sim_",
     "map": "map_",
     "gcode": "gcode_",
     "sketch": "sketch_",
     "cmm": "cmm_",
     "facing": "facing_",
     "viewer": "viewer_",
-    "tool": "tool_",
-    "stock": "stock_",
     "speed_colormap": "speed_colormap_",
     "tooltip": "tooltip_",
     "scroll": "scroll_",
@@ -80,11 +82,11 @@ _LAYOUT_KEYS = frozenset(
         "radius_s",
         "radius_m",
         "radius_l",
-        "radius_pad",
+        "pad_radius",
         "top_bar_radius",
         "top_bar_height",
         "bottom_bar_height",
-        "bar_pad",
+        "bar_padding",
         "spacing",
         "control_page_min",
         "pad_row_height",
@@ -259,22 +261,54 @@ def _locate_font_file(value: str) -> str:
     return value
 
 
+def jog_axis_color(theme, caption: str):
+    """Axis color for a jog caption such as ``X+``, or ``None`` when it is not one.
+
+    The first character selects ``axis_x`` through ``axis_a``.
+    """
+    if not isinstance(caption, str) or not caption:
+        return None
+    letter = caption[0]
+    if letter.upper() not in _AXIS_LETTERS:
+        return None
+    color = getattr(theme, f"axis_{letter.lower()}", None)
+    if not isinstance(color, (list, tuple)):
+        return None
+    return color
+
+
 def jog_axis_markup(caption: str, theme) -> tuple[str, bool]:
     """``(text, markup)`` for a jog key such as ``X+`` or ``X-``.
 
-    When ``jog_pad_axis_colors`` is on and the caption starts with an axis
-    letter, only that letter is wrapped in a color tag. The sign stays plain
-    so it keeps the button text color.
+    ``jog_pad_axis_colors`` wraps the axis letter. ``jog_pad_sign_colors`` wraps
+    the following ``+`` or ``-``. With both on, the letter and the sign share
+    one color tag. ``jog_pad_axis_background`` leaves the caption plain: the
+    key face already carries the axis color, and a matching glyph would vanish.
     """
-    if not isinstance(caption, str) or not caption or not getattr(theme, "jog_pad_axis_colors", False):
-        return caption if isinstance(caption, str) else "", False
+    if not isinstance(caption, str):
+        return "", False
+    color = jog_axis_color(theme, caption)
+    if color is None:
+        return caption, False
+    if getattr(theme, "jog_pad_axis_background", False):
+        return caption, False
+    color_letter = bool(getattr(theme, "jog_pad_axis_colors", False))
+    color_sign = bool(getattr(theme, "jog_pad_sign_colors", False))
+    if not color_letter and not color_sign:
+        return caption, False
     letter = caption[0]
-    if letter.upper() not in _AXIS_LETTERS:
-        return caption, False
-    color = getattr(theme, f"axis_{letter.lower()}", None)
-    if not isinstance(color, (list, tuple)):
-        return caption, False
-    return f"[color={format_hex_color(color)}]{letter}[/color]{caption[1:]}", True
+    rest = caption[1:]
+    sign = rest[:1]
+    tail = rest[1:]
+    has_sign = sign in ("+", "-")
+    painted = format_hex_color(color)
+    if color_letter and color_sign and has_sign:
+        return f"[color={painted}]{letter}{sign}[/color]{tail}", True
+    if color_letter:
+        return f"[color={painted}]{letter}[/color]{rest}", True
+    if has_sign:
+        return f"{letter}[color={painted}]{sign}[/color]{tail}", True
+    return caption, False
 
 
 def _merge_behaviors(name: str, chain: tuple = ()) -> dict:
@@ -379,20 +413,52 @@ def load_fonts(name: str) -> dict:
     return _resolve_fonts(name)
 
 
+def _palette_value(value):
+    """A color or a number, or ``None`` when ``value`` cannot be a token."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        try:
+            return parse_hex_color(value)
+        except ThemeError:
+            return None
+    if isinstance(value, (int, float)):
+        return value
+    return None
+
+
+def _reject_token(name: str, key: str, value) -> None:
+    if isinstance(value, str):
+        try:
+            parse_hex_color(value)
+        except ThemeError as error:
+            raise ThemeError(f"Theme {name!r}: token {key!r}: {error}") from None
+    raise ThemeError(f"Theme {name!r}: token {key!r} must be a color or a number")
+
+
 def _convert(name: str, tokens: dict) -> dict:
+    """Colors and numbers. A token this build no longer has is dropped with a warning.
+
+    A bad value for a token the base theme still defines fails the file. The
+    base theme itself must be entirely valid: it is the schema.
+    """
     palette: dict[str, list | int | float] = {}
+    invalid: list[tuple[str, object]] = []
     for key, value in tokens.items():
-        if isinstance(value, bool):
-            raise ThemeError(f"Theme {name!r}: token {key!r} must be a color or a number")
-        if isinstance(value, str):
-            try:
-                palette[key] = parse_hex_color(value)
-            except ThemeError as error:
-                raise ThemeError(f"Theme {name!r}: token {key!r}: {error}") from None
-        elif isinstance(value, (int, float)):
-            palette[key] = value
-        else:
-            raise ThemeError(f"Theme {name!r}: token {key!r} must be a color or a number")
+        converted = _palette_value(value)
+        if converted is None:
+            invalid.append((key, value))
+            continue
+        palette[key] = converted
+    if not invalid:
+        return palette
+    known = set() if name == BASE_THEME else set(load_palette(BASE_THEME))
+    stale = sorted(key for key, _value in invalid if name != BASE_THEME and key not in known)
+    if stale:
+        logger.warning("Ignoring invalid tokens in theme %s: %s", name, ", ".join(stale))
+    for key, value in invalid:
+        if name == BASE_THEME or key in known:
+            _reject_token(name, key, value)
     return palette
 
 
@@ -406,7 +472,11 @@ def _load_cached(name: str) -> dict:
         unknown = sorted(set(palette) - set(base))
         missing = sorted(set(base) - set(palette))
         if unknown:
-            raise ThemeError(f"Theme {name!r} has unknown tokens: {', '.join(unknown)}")
+            # A saved theme can name tokens this build no longer has. Drop those
+            # and keep the rest, instead of discarding the theme.
+            logger.warning("Ignoring unknown tokens in theme %s: %s", name, ", ".join(unknown))
+            for key in unknown:
+                del palette[key]
         if missing and name != CUSTOM_THEME:
             raise ThemeError(f"Theme {name!r} is missing tokens: {', '.join(missing)}")
         # A custom palette may leave a token out. Fill the gap from the base theme.

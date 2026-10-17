@@ -37,16 +37,16 @@ def test_default_settings_include_beige_material():
 
 def test_beige_follows_the_current_theme(monkeypatch):
     theme = type("Theme", (), {})()
-    theme.stock_default = (0.2, 0.3, 0.4, 1.0)
-    theme.stock_fill = (0.5, 0.6, 0.7, 0.25)
-    theme.stock_edge = (0.1, 0.2, 0.3, 0.8)
+    theme.viewer_stock_default = (0.2, 0.3, 0.4, 1.0)
+    theme.viewer_stock_fill = (0.5, 0.6, 0.7, 0.25)
+    theme.viewer_stock_edge = (0.1, 0.2, 0.3, 0.8)
     monkeypatch.setattr("carveracontroller.addons.stock.simulator.mesh_format.get_theme", lambda: theme)
     monkeypatch.setattr("carveracontroller.addons.stock.stock_aabb_mesh.get_theme", lambda: theme)
     style = style_for_material(MATERIAL_BEIGE)
-    assert style.surface_rgb == theme.stock_default[:3]
+    assert style.surface_rgb == theme.viewer_stock_default[:3]
     top, _other, edge = preview_fill_rgba(style)
-    assert top == theme.stock_fill
-    assert edge == theme.stock_edge
+    assert top == theme.viewer_stock_fill
+    assert edge == theme.viewer_stock_edge
 
 
 def test_beige_keeps_current_preview():

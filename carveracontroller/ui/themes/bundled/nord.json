@@ -14,7 +14,7 @@
   "menu": "#2e3440",
   "text": "#eceff4",
   "icon": "#eceff4",
-  "text_muted": "#d8dee9",
+  "text_muted": "#a6abb3",
   "text_disabled": "#6f7d98",
   "text_secondary": "#e5e9f0",
   "text_inverse": "#2e3440",
@@ -41,7 +41,6 @@
   "border": "#4c566a",
   "overlay": "#2e344080",
   "overlay_strong": "#2e3440cc",
-  "hud_bg": "#2e3440c0",
   "hint_text": "#d8dee980",
   "success": "#546d3e",
   "success_fill": "#1e2a18",
@@ -73,10 +72,6 @@
     "z": "#9ccbd8",
     "a": "#ebcb8b"
   },
-  "sim": {
-    "bar": "#a3be8cf2",
-    "marker": "#88c0d0"
-  },
   "map": {
     "bg": "#3b4252",
     "anchor": "#434c5e",
@@ -96,6 +91,8 @@
     "spindle": "#e4baac",
     "tool": "#b4caa1",
     "line_number": "#d8dee9",
+    "list_element": "#434c5e",
+    "list_element_selected": "#464f62",
     "parameter": "#d3bccf",
     "o_label": "#a6cac9",
     "o_keyword": "#9ccbd8",
@@ -143,27 +140,23 @@
     "grid_major": "#4c566a",
     "axis_x": "#bf616a",
     "axis_y": "#a3be8c",
-    "axis_z": "#88c0d0"
-  },
-  "tool": {
-    "color_1": "#a3be8c",
-    "color_2": "#88c0d0",
-    "color_3": "#d08770",
-    "color_4": "#b48ead",
-    "color_5": "#8fbcbb",
-    "color_6": "#bf616a",
-    "color_7": "#ebcb8b",
-    "color_8": "#81a1c1",
-    "color_9": "#5e81ac",
-    "color_10": "#b2c5d9",
-    "flute": "#d0877073",
-    "shank": "#4c566a4d",
-    "outline": "#2e3440"
-  },
-  "stock": {
-    "fill": "#ebcb8b33",
-    "edge": "#ebcb8be6",
-    "default": "#c4b48a"
+    "axis_z": "#88c0d0",
+    "hud_bg": "#2e3440c0",
+    "tool_color_1": "#a3be8c",
+    "tool_color_2": "#88c0d0",
+    "tool_color_3": "#d08770",
+    "tool_color_4": "#b48ead",
+    "tool_color_5": "#8fbcbb",
+    "tool_color_6": "#bf616a",
+    "tool_color_7": "#ebcb8b",
+    "tool_color_8": "#81a1c1",
+    "tool_color_9": "#5e81ac",
+    "tool_color_10": "#b2c5d9",
+    "stock_fill": "#ebcb8b33",
+    "stock_edge": "#ebcb8be6",
+    "stock_default": "#c4b48a",
+    "sim_bar": "#a3be8cf2",
+    "sim_marker": "#88c0d0"
   },
   "speed_colormap": {
     "1": "#5e81ac",

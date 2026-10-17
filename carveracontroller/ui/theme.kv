@@ -85,11 +85,13 @@
 # stays in dp so a large key is a rounded square and a small one stays tappable.
 <JogAxisButton,JogAxisTipButton>:
     font_name: app.theme.font_jog_pad
-    radius_dp: app.theme.radius_pad
+    radius_dp: app.theme.pad_radius
     font_size: min(sp(24), max(sp(16), self.height * 0.28))
     text_size: self.size
     halign: 'center'
     valign: 'middle'
+    theme_fill: app.theme.jog_axis_fill(self.axis_label, self.state, self.disabled, self.chrome, app.theme.revision)
+    theme_text: app.theme.jog_axis_text(self.axis_label, self.state, self.disabled, self.chrome, app.theme.revision)
 
 # Kivy fills the settings area with solid black. Painting over it keeps the
 # rows, which come later in the canvas order, untouched.

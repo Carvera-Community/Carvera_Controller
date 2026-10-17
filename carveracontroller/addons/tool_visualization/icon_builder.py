@@ -39,7 +39,7 @@ def icon_shank_color():
 
 def icon_outline_color():
     """Silhouette stroke from the current theme."""
-    return tuple(get_theme().tool_outline)
+    return tuple(get_theme().viewer_tool_outline)
 
 
 # Silhouette outline stroke width in dp (scaled with density / supersampling).

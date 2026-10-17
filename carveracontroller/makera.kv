@@ -117,7 +117,7 @@
 # gray, and this is only enough to keep that overlap readable.
 <MenuButton@IconButton>:
     size_hint: None, None
-    width: dp(app.theme.top_bar_height - app.theme.bar_pad * 2)
+    width: dp(app.theme.top_bar_height - app.theme.bar_padding * 2)
     height: self.width
     radius_dp: app.theme.top_bar_radius
     canvas.after:
@@ -280,7 +280,7 @@
     text: root.highlighted_text or root.plain_text
     canvas.before:
         Color:
-            rgba: app.theme.control if self.selected else app.theme.surface_raised
+            rgba: app.theme.gcode_list_element_selected if self.selected else app.theme.gcode_list_element
         Rectangle:
             pos: self.pos
             size: self.size
@@ -295,7 +295,7 @@
     padding: dp(2), 0
     canvas.before:
         Color:
-            rgba: app.theme.control if self.selected else app.theme.surface_raised
+            rgba: app.theme.gcode_list_element_selected if self.selected else app.theme.gcode_list_element
         Rectangle:
             pos: self.pos
             size: self.size
@@ -329,7 +329,7 @@
     padding: '5dp'
 
 <RoundButton@Button>:
-    radius_dp: app.theme.radius_pad
+    radius_dp: app.theme.pad_radius
 
 <SmallRoundButton@Button>:
     height: '35dp'
@@ -2656,7 +2656,7 @@
                 size: self.size
 
         TopBar:
-            padding: dp(app.theme.bar_pad)
+            padding: dp(app.theme.bar_padding)
             spacing: dp(app.theme.spacing)
             height: dp(app.theme.top_bar_height)
             size_hint_y: None
@@ -3363,7 +3363,7 @@
                                 y: float_layout.top - self.height - dp(8)
                                 canvas.before:
                                     Color:
-                                        rgba: app.theme.hud_bg
+                                        rgba: app.theme.viewer_hud_bg
                                     RoundedRectangle:
                                         pos: self.pos
                                         size: self.size
@@ -3446,7 +3446,7 @@
                                         spacing: dp(2)
                                         canvas.before:
                                             Color:
-                                                rgba: app.theme.hud_bg
+                                                rgba: app.theme.viewer_hud_bg
                                             RoundedRectangle:
                                                 pos: self.pos
                                                 size: self.size
@@ -3525,7 +3525,7 @@
             height: dp(app.theme.bottom_bar_height)
             size_hint_y: None
             orientation: 'horizontal'
-            padding: dp(app.theme.bar_pad)
+            padding: dp(app.theme.bar_padding)
             spacing: dp(app.theme.spacing)
             IconButton:
                 id: select_file_btn

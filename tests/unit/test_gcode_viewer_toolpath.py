@@ -45,8 +45,8 @@ def test_toolpath_color_uniforms_follow_the_theme():
     assert set(values) == {f"tool_color{index}" for index in range(TOOL_PALETTE_SIZE)} | {
         f"speed_color{index}" for index in range(4)
     }
-    assert values["tool_color0"] == pytest.approx(list(theme.tool_color_1[:3]))
-    assert values[f"tool_color{TOOL_PALETTE_SIZE - 1}"] == pytest.approx(list(theme.tool_color_10[:3]))
+    assert values["tool_color0"] == pytest.approx(list(theme.viewer_tool_color_1[:3]))
+    assert values[f"tool_color{TOOL_PALETTE_SIZE - 1}"] == pytest.approx(list(theme.viewer_tool_color_10[:3]))
     assert values["speed_color0"] == pytest.approx(list(theme.speed_colormap_1[:3]))
     assert values["speed_color3"] == pytest.approx(list(theme.speed_colormap_4[:3]))
 

@@ -10,12 +10,12 @@ from carveracontroller.ui.theme import get_theme
 
 def flute_color():
     """Cutting color from the current theme."""
-    return tuple(get_theme().tool_flute)
+    return tuple(get_theme().viewer_tool_flute)
 
 
 def shank_color():
     """Shank color from the current theme."""
-    return tuple(get_theme().tool_shank)
+    return tuple(get_theme().viewer_tool_shank)
 
 
 VERTEX_FORMAT = [

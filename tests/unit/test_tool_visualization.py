@@ -2197,8 +2197,8 @@ class TestMeshBuilder:
 
     def test_mesh_uses_the_current_theme_colors(self, monkeypatch):
         theme = type("Theme", (), {})()
-        theme.tool_flute = (0.2, 0.4, 0.6, 0.8)
-        theme.tool_shank = (0.9, 0.1, 0.1, 0.5)
+        theme.viewer_tool_flute = (0.2, 0.4, 0.6, 0.8)
+        theme.viewer_tool_shank = (0.9, 0.1, 0.1, 0.5)
         monkeypatch.setattr(
             "carveracontroller.addons.tool_visualization.mesh_builder.get_theme",
             lambda: theme,
@@ -2206,8 +2206,8 @@ class TestMeshBuilder:
         tool_def = ToolDefinition(number=1, tool_type=ToolType.FLAT_END_MILL, diameter=6.0, length=40.0)
         vertices, _indices, _fmt = build_tool_mesh(tool_def)
         colors = {_vertex_color(vertices, index) for index in range(len(vertices) // FLOATS_PER_VERTEX)}
-        assert theme.tool_flute in colors
-        assert theme.tool_shank in colors
+        assert theme.viewer_tool_flute in colors
+        assert theme.viewer_tool_shank in colors
 
     def test_mesh_uses_flute_color_without_flute_length(self):
         # Stick-out under the 4×D fallback flute cap → entire mesh is flute-colored.

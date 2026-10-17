@@ -15,4 +15,4 @@ VERTEX_FORMAT = [
 
 def default_stock_color() -> tuple:
     """Default carved-stock color from the current theme."""
-    return tuple(get_theme().stock_default)
+    return tuple(get_theme().viewer_stock_default)

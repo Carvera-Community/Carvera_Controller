@@ -196,6 +196,8 @@ def test_save_writes_grouped_custom_theme_and_leaves_the_builtin(user_themes, ed
     assert saved["fonts"]["jog_pad"] is None
     assert saved["fonts"]["code_list"] is None
     assert saved["behaviors"]["jog_pad_axis_colors"] is False
+    assert saved["behaviors"]["jog_pad_sign_colors"] is False
+    assert saved["behaviors"]["jog_pad_axis_background"] is False
     assert saved["primary"] == "#112233"
 
     loaded = load_palette(CUSTOM_THEME)
@@ -278,6 +280,50 @@ class _PendingRoot:
         self.config_popup = type("Popup", (), {"btn_apply": _ApplyButton()})()
 
 
+def test_theme_value_is_not_written_before_the_window_exists(editor):
+    original = editor.panel.set_value
+    calls = []
+    editor.panel.set_value = lambda *args: calls.append(args)
+    try:
+        editor._assign_value("light")
+        assert editor.value == "light"
+        assert calls == []
+    finally:
+        editor.panel.set_value = original
+
+
+def test_theme_value_is_written_once_the_window_exists(editor, monkeypatch):
+    original = editor.panel.set_value
+    calls = []
+    editor.panel.set_value = lambda *args: calls.append(args)
+    monkeypatch.setattr(editor, "_settings_root", lambda: _PendingRoot())
+    try:
+        editor._assign_value("light")
+        assert editor.value == "light"
+        assert calls == [("carvera", "theme", "light")]
+    finally:
+        editor.panel.set_value = original
+
+
+def test_config_change_before_the_window_exists_is_ignored():
+    from kivy.app import App
+
+    from carveracontroller.main import MakeraConfigPanel
+
+    app = App.get_running_app()
+    created = app is None
+    if created:
+        app = App()
+    previous = app.root
+    app.root = None
+    try:
+        MakeraConfigPanel.on_config_change(None, None, "carvera", "theme", "dark")
+    finally:
+        app.root = previous
+        if created:
+            App._running_app = None
+
+
 def test_dirty_edit_of_the_open_theme_stays_pending(user_themes, monkeypatch, editor):
     assert editor.set_token("primary", "#112233") is True
     editor.commit_for_apply()
@@ -349,6 +395,7 @@ def test_color_picker_updates_draft_like_set_token(editor):
 
     row._picked(chosen)
 
+    assert row.field.text == format_hex_color(chosen)
     assert editor.draft.bg == pytest.approx(chosen)
     assert list(editor.preview.bg_color.rgba) == pytest.approx(chosen)
     assert list(editor._preview_backdrop.rgba) == pytest.approx(chosen)
@@ -413,6 +460,53 @@ def test_jog_pad_axis_colors_color_only_the_letter_in_the_preview(user_themes, e
     assert editor._draft_is_dirty() is True
     editor.revert_token("axis_x")
     assert editor._draft_is_dirty() is False
+
+
+def test_jog_pad_sign_colors_color_the_sign_in_the_preview(user_themes, editor):
+    row = editor._behavior_fields["jog_pad_sign_colors"]
+    row.switch.active = True
+
+    painted_x = format_hex_color(editor.draft.axis_x)
+    painted_y = format_hex_color(editor.draft.axis_y)
+    assert editor.draft.jog_pad_sign_colors is True
+    assert editor.preview.jog_x.label.text == f"X[color={painted_x}]+[/color]"
+    assert editor.preview.jog_y.label.text == f"Y[color={painted_y}]+[/color]"
+
+    editor._behavior_fields["jog_pad_axis_colors"].switch.active = True
+
+    assert editor.preview.jog_x.label.text == f"[color={painted_x}]X+[/color]"
+    assert editor.preview.jog_y.label.text == f"[color={painted_y}]Y+[/color]"
+
+    row.revert.dispatch("on_release")
+
+    assert editor.draft.jog_pad_sign_colors is False
+    assert editor.preview.jog_x.label.text == f"[color={painted_x}]X[/color]+"
+
+
+def test_jog_pad_axis_background_colors_the_key_in_the_preview(user_themes, editor):
+    editor._behavior_fields["jog_pad_axis_colors"].switch.active = True
+    editor._behavior_fields["jog_pad_sign_colors"].switch.active = True
+    row = editor._behavior_fields["jog_pad_axis_background"]
+    row.switch.active = True
+
+    assert editor.draft.jog_pad_axis_background is True
+    assert editor.preview.jog_x.label.text == "X+"
+    assert editor.preview.jog_x.label.markup is False
+    assert editor.preview.jog_y.label.text == "Y+"
+    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(list(editor.draft.axis_x))
+    assert list(editor.preview.jog_y.fill_color.rgba) == pytest.approx(list(editor.draft.axis_y))
+    assert list(editor.preview.jog_x.label.color) == pytest.approx(
+        editor.draft.jog_axis_text("X+", "normal", False, True)
+    )
+
+    row.revert.dispatch("on_release")
+
+    assert editor.draft.jog_pad_axis_background is False
+    assert editor.preview.jog_x.label.markup is True
+    assert editor.preview.jog_x.label.text == f"[color={format_hex_color(editor.draft.axis_x)}]X+[/color]"
+    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(
+        editor.draft.button_fill("normal", "normal", False, True)
+    )
 
 
 def test_saving_jog_pad_axis_colors_reloads_the_behavior(user_themes, editor):

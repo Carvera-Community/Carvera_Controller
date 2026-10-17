@@ -523,10 +523,10 @@ class GcodePlaySlider(Slider):
         self._pending_line_update = None  # Track pending scheduled line update
         with self.canvas.after:
             theme = get_theme()
-            self._sim_color = Color(*theme.sim_bar)
+            self._sim_color = Color(*theme.viewer_sim_bar)
             self._sim_rect = Rectangle(pos=(0, 0), size=(0, 0))
             self._sim_marker_group = InstructionGroup()
-        self._sim_marker_rgba = list(theme.sim_marker)
+        self._sim_marker_rgba = list(theme.viewer_sim_marker)
         self._stop_theme_watch = watch_theme(self._apply_sim_theme)
         self.bind(
             pos=self._update_sim_bar,
@@ -539,8 +539,8 @@ class GcodePlaySlider(Slider):
         )
 
     def _apply_sim_theme(self, theme) -> None:
-        self._sim_color.rgba = list(theme.sim_bar)
-        self._sim_marker_rgba = list(theme.sim_marker)
+        self._sim_color.rgba = list(theme.viewer_sim_bar)
+        self._sim_marker_rgba = list(theme.viewer_sim_marker)
         self._update_sim_bar()
 
     def _update_sim_bar(self, *_args):
@@ -1806,31 +1806,34 @@ class MakeraConfigPanel(SettingsWithSidebar):
 
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
-        if not app.root.config_loading:
-            config_popup = app.root.config_popup
-            original = config_popup.get_original(section, key)
-            if section in ["carvera", "graphics", "kivy"]:
-                if str(value) == str(original):
-                    app.root.controller_setting_change_list.pop(key, None)
-                else:
-                    app.root.controller_setting_change_list[key] = value
-                has_changes = bool(app.root.controller_setting_change_list or app.root.setting_change_list)
-                config_popup.btn_apply.disabled = not has_changes
-            elif section == "Backup":
-                app.root.start_back_up_config()
-                app.root.config_popup.btn_apply.disabled = True
-            elif section != "Restore":
-                if str(value) == str(original):
-                    app.root.setting_change_list.pop(key, None)
-                else:
-                    new_value = Utils.to_config(app.root.setting_type_list[key], value).strip()
-                    app.root.setting_change_list[key] = new_value
-                has_changes = bool(app.root.controller_setting_change_list or app.root.setting_change_list)
-                config_popup.btn_apply.disabled = not has_changes
-            elif key == "restore" and value == "RESTORE":
-                app.root.open_setting_restore_confirm_popup()
-            elif key == "default" and value == "DEFAULT":
-                app.root.open_setting_default_confirm_popup()
+        root = getattr(app, "root", None) if app is not None else None
+        # The theme page is built inside App.build(), before Kivy assigns the root.
+        if root is None or root.config_loading:
+            return
+        config_popup = root.config_popup
+        original = config_popup.get_original(section, key)
+        if section in ["carvera", "graphics", "kivy"]:
+            if str(value) == str(original):
+                root.controller_setting_change_list.pop(key, None)
+            else:
+                root.controller_setting_change_list[key] = value
+            has_changes = bool(root.controller_setting_change_list or root.setting_change_list)
+            config_popup.btn_apply.disabled = not has_changes
+        elif section == "Backup":
+            root.start_back_up_config()
+            root.config_popup.btn_apply.disabled = True
+        elif section != "Restore":
+            if str(value) == str(original):
+                root.setting_change_list.pop(key, None)
+            else:
+                new_value = Utils.to_config(root.setting_type_list[key], value).strip()
+                root.setting_change_list[key] = new_value
+            has_changes = bool(root.controller_setting_change_list or root.setting_change_list)
+            config_popup.btn_apply.disabled = not has_changes
+        elif key == "restore" and value == "RESTORE":
+            root.open_setting_restore_confirm_popup()
+        elif key == "default" and value == "DEFAULT":
+            root.open_setting_default_confirm_popup()
 
 
 class JogSpeedDropDown(ToolTipDropDown):

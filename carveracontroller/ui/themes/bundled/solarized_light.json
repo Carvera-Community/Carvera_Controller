@@ -41,7 +41,6 @@
   "border": "#c9c3b0",
   "overlay": "#00000040",
   "overlay_strong": "#00000080",
-  "hud_bg": "#fdf6e3c8",
   "hint_text": "#525e5e80",
   "success": "#c0c76f",
   "success_fill": "#eef3d4",
@@ -73,10 +72,6 @@
     "z": "#1a6092",
     "a": "#745800"
   },
-  "sim": {
-    "bar": "#859900f2",
-    "marker": "#268bd2"
-  },
   "map": {
     "bg": "#eee8d5",
     "anchor": "#e4ddc8",
@@ -96,6 +91,8 @@
     "spindle": "#a03b11",
     "tool": "#a92565",
     "line_number": "#525e5e",
+    "list_element": "#fdf6e3",
+    "list_element_selected": "#c9c3b0",
     "parameter": "#4a51b7",
     "o_label": "#1b6661",
     "o_keyword": "#556200",
@@ -143,27 +140,23 @@
     "grid_major": "#c9c0a6",
     "axis_x": "#dc322f",
     "axis_y": "#859900",
-    "axis_z": "#268bd2"
-  },
-  "tool": {
-    "color_1": "#859900",
-    "color_2": "#268bd2",
-    "color_3": "#cb4b16",
-    "color_4": "#d33682",
-    "color_5": "#2aa198",
-    "color_6": "#dc322f",
-    "color_7": "#b58900",
-    "color_8": "#6c71c4",
-    "color_9": "#586e75",
-    "color_10": "#93a1a1",
-    "flute": "#cb4b1673",
-    "shank": "#93a1a14d",
-    "outline": "#374549"
-  },
-  "stock": {
-    "fill": "#b5890033",
-    "edge": "#b58900e6",
-    "default": "#c4b48a"
+    "axis_z": "#268bd2",
+    "hud_bg": "#fdf6e3c8",
+    "tool_color_1": "#859900",
+    "tool_color_2": "#268bd2",
+    "tool_color_3": "#cb4b16",
+    "tool_color_4": "#d33682",
+    "tool_color_5": "#2aa198",
+    "tool_color_6": "#dc322f",
+    "tool_color_7": "#b58900",
+    "tool_color_8": "#6c71c4",
+    "tool_color_9": "#586e75",
+    "tool_color_10": "#93a1a1",
+    "stock_fill": "#b5890033",
+    "stock_edge": "#b58900e6",
+    "stock_default": "#c4b48a",
+    "sim_bar": "#859900f2",
+    "sim_marker": "#268bd2"
   },
   "speed_colormap": {
     "1": "#268bd2",

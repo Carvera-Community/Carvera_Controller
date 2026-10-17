@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 
 from kivy.event import EventDispatcher
@@ -18,9 +19,13 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.togglebutton import ToggleButton
 
 from carveracontroller.ui.fonts import ARIALUNI, resolve_theme_fonts
+
+logger = logging.getLogger(__name__)
 from carveracontroller.ui.themes import (
     BASE_THEME,
+    BEHAVIOR_KEYS,
     ThemeError,
+    jog_axis_color,
     load_behaviors,
     load_fonts,
     load_palette,
@@ -84,6 +89,8 @@ class Theme(EventDispatcher):
     font_code_list = StringProperty(ARIALUNI)
     # Theme behaviors are not palette tokens. ``apply()`` leaves them alone.
     jog_pad_axis_colors = BooleanProperty(False)
+    jog_pad_sign_colors = BooleanProperty(False)
+    jog_pad_axis_background = BooleanProperty(False)
     group_main_menu = BooleanProperty(False)
 
     def __init__(self, palette: str = BASE_THEME, **kwargs):
@@ -96,7 +103,7 @@ class Theme(EventDispatcher):
         else:
             self.apply_fonts(BASE_THEME)
             self.apply_behaviors(BASE_THEME)
-        for key in (*DARK, "jog_pad_axis_colors", "group_main_menu"):
+        for key in (*DARK, *BEHAVIOR_KEYS):
             self.bind(**{key: self._on_token})
 
     def _on_token(self, *_args):
@@ -105,13 +112,11 @@ class Theme(EventDispatcher):
         self.revision += 1
 
     def apply(self, values: dict, name: str | None = None) -> None:
-        """Set any known tokens. Unknown keys raise ``ValueError``.
-
-        Colors accept 0-1 channels or 0-255 channels.
-        """
+        """Set any known tokens. Unknown keys are skipped."""
         unknown = sorted(key for key in values if key not in DARK and key != "name")
         if unknown:
-            raise ValueError(f"Unknown theme tokens: {', '.join(unknown)}")
+            logger.warning("Ignoring unknown theme tokens: %s", ", ".join(unknown))
+            values = {key: value for key, value in values.items() if key not in unknown}
         self._prepare_remap(values)
         self._applying = True
         try:
@@ -141,9 +146,52 @@ class Theme(EventDispatcher):
                 remap.setdefault(old, new)
         self._remap = remap
 
+    # Pressed jog keys stay the axis hue, a step darker than the resting face.
+    _AXIS_PRESS_SCALE = 0.75
+
     @staticmethod
     def _color_key(color) -> tuple:
         return tuple(round(float(channel), 3) for channel in color)
+
+    @staticmethod
+    def _pressed_axis_color(color) -> list:
+        channels = [float(channel) for channel in color]
+        if len(channels) == 3:
+            channels.append(1.0)
+        scale = Theme._AXIS_PRESS_SCALE
+        return [channel * scale for channel in channels[:3]] + [channels[3]]
+
+    @staticmethod
+    def _srgb_luminance(value: float) -> float:
+        value = float(value)
+        if value <= 0.04045:
+            return value / 12.92
+        return ((value + 0.055) / 1.055) ** 2.4
+
+    @staticmethod
+    def _relative_luminance(color) -> float:
+        red, green, blue = color[:3]
+        return (
+            0.2126 * Theme._srgb_luminance(red)
+            + 0.7152 * Theme._srgb_luminance(green)
+            + 0.0722 * Theme._srgb_luminance(blue)
+        )
+
+    @staticmethod
+    def _contrast_ratio(left, right) -> float:
+        lighter = Theme._relative_luminance(left)
+        darker = Theme._relative_luminance(right)
+        if lighter < darker:
+            lighter, darker = darker, lighter
+        return (lighter + 0.05) / (darker + 0.05)
+
+    def _label_on_fill(self, fill) -> list:
+        """``text`` or ``text_inverse``, whichever reads on ``fill``."""
+        text = list(self.text)
+        inverse = list(self.text_inverse)
+        if self._contrast_ratio(text, fill) >= self._contrast_ratio(inverse, fill):
+            return text
+        return inverse
 
     def remap_color(self, color):
         """The new-palette color for ``color`` if it was a token of the old palette, else ``None``."""
@@ -181,8 +229,8 @@ class Theme(EventDispatcher):
     def apply_behaviors(self, palette_name: str) -> None:
         """Set each behavior flag from the ``behaviors`` of ``palette_name``."""
         flags = load_behaviors(palette_name)
-        self.jog_pad_axis_colors = flags["jog_pad_axis_colors"]
-        self.group_main_menu = flags["group_main_menu"]
+        for key in BEHAVIOR_KEYS:
+            setattr(self, key, flags[key])
 
     def to_dict(self) -> dict:
         """JSON-friendly snapshot of the current tokens."""
@@ -213,6 +261,24 @@ class Theme(EventDispatcher):
         if down:
             return list(self.accent)
         return list(self.control)
+
+    def jog_axis_fill(self, caption, state, disabled, chrome, _revision=0):
+        """Jog-key fill. The axis color when that background behavior is on."""
+        base = self.button_fill("normal", state, disabled, chrome, _revision)
+        if not chrome or disabled or not self.jog_pad_axis_background:
+            return base
+        color = jog_axis_color(self, caption)
+        if color is None:
+            return base
+        if state == "down":
+            return self._pressed_axis_color(color)
+        return list(color)
+
+    def jog_axis_text(self, caption, state, disabled, chrome, _revision=0):
+        """Label color on :meth:`jog_axis_fill`. An axis face picks the readable text token."""
+        if chrome and not disabled and self.jog_pad_axis_background and jog_axis_color(self, caption) is not None:
+            return self._label_on_fill(self.jog_axis_fill(caption, state, False, True, _revision))
+        return self.button_text("normal", state, disabled, chrome, _revision)
 
     def button_text(self, role, state, disabled, chrome, _revision=0):
         """Label color on :meth:`button_fill`. Saturated faces use ``text_on_fill``."""

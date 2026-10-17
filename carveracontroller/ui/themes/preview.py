@@ -206,7 +206,7 @@ class _GcodePreviewSample(BoxLayout):
         colors = gcode_syntax_colors(theme)
         self.fill_color.rgba = theme.panel_inset
         for row, line in zip(self.rows, _GCODE_PREVIEW_LINES):
-            row.fill_color.rgba = theme.control if row.selected else theme.surface_raised
+            row.fill_color.rgba = theme.gcode_list_element_selected if row.selected else theme.gcode_list_element
             row.number.color = list(theme.text_secondary)
             row.number.font_name = theme.font_code_list
             row.code.font_name = theme.font_code_list
@@ -413,13 +413,11 @@ class ThemePreview(BoxLayout):
         for letter, chip in zip(_AXIS_LETTERS, self.axis_chips):
             axis_color = getattr(theme, f"axis_{letter.lower()}")
             chip.paint(top_fill, axis_color, top_text, theme.text_muted, theme.font_top_bar, theme.top_bar_radius)
-        jog_fill = theme.button_fill("normal", "normal", False, True)
-        jog_text = theme.button_text("normal", "normal", False, True)
         for key in (self.jog_x, self.jog_y):
-            key.fill_color.rgba = jog_fill
-            key.label.color = list(jog_text)
+            key.fill_color.rgba = theme.jog_axis_fill(key.plain, "normal", False, True)
+            key.label.color = list(theme.jog_axis_text(key.plain, "normal", False, True))
             key.label.font_name = theme.font_jog_pad
-            key.fill_rect.radius = [dp(theme.radius_pad)]
+            key.fill_rect.radius = [dp(theme.pad_radius)]
             text, markup = jog_axis_markup(key.plain, theme)
             if markup:
                 key.label.markup = True
