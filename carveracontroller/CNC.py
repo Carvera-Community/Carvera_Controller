@@ -4,6 +4,8 @@ import os
 import re
 import types
 
+from carveracontroller.ui.themes import BASE_THEME, gcode_syntax_colors, load_palette
+
 logger = logging.getLogger(__name__)
 
 PARENPAT = re.compile(r"(\(.*?\))")
@@ -45,22 +47,8 @@ GCODE_TOKEN_RE = re.compile(
 
 M118_HIGHLIGHT_STOP = re.compile(r"[Mm]118(?!\.\d)\b")
 
-GCODE_DEFAULT_COLORS = {
-    "comment": "#6A9955",
-    "g_command": "#569CD6",
-    "m_command": "#C586C0",
-    "coordinate": "#CE9178",
-    "feedrate": "#4EC9B0",
-    "spindle": "#D16969",
-    "tool": "#B5CEA8",
-    "line_number": "#858585",
-    "parameter": "#9CDCFE",
-    "o_label": "#569CD6",
-    "o_keyword": "#DCDCAA",
-    "param_ref": "#B5CEA8",
-    "math_keyword": "#D7BA7D",
-    "shell_command": "#2F75B5",
-}
+# Dark-theme syntax colors. Callers that have a live theme pass their own map.
+GCODE_DEFAULT_COLORS = gcode_syntax_colors(load_palette(BASE_THEME))
 
 
 def escape_gcode_markup(text):

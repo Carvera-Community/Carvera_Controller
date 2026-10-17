@@ -1,0 +1,264 @@
+#:kivy 1.11.1
+#:import retheme_label carveracontroller.ui.theme.retheme_label
+#:import follow_theme carveracontroller.ui.theme.follow_theme
+#:import follow_theme_popup carveracontroller.ui.theme.follow_theme_popup
+#:import rgba_to_hex carveracontroller.ui.theme.rgba_to_hex
+# Pass app.theme.revision into button_fill so Kv rebinds on token changes.
+
+<Button>:
+    background_normal: ''
+    background_down: ''
+    background_disabled_normal: ''
+    background_disabled_down: ''
+    background_color: 0, 0, 0, 0
+    disabled_color: app.theme.text_disabled
+    theme_text: app.theme.button_text(self.role, self.state, self.disabled, self.chrome, app.theme.revision)
+    theme_fill: app.theme.button_fill(self.role, self.state, self.disabled, self.chrome, app.theme.revision)
+    theme_text_sync: self.sync_theme_text(self.theme_text, self.use_theme_text)
+    canvas.before:
+        Color:
+            rgba: self.theme_fill
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            # corner_radii is clockwise: top-left, top-right, bottom-right, bottom-left.
+            # Empty keeps every corner on the theme radius.
+            radius: self.corner_radii or [dp(self.radius_dp if self.radius_dp >= 0 else app.theme.radius_m)]
+
+# retheme_label keeps custom colors. disabled_color replaces Kivy's faint white.
+<Label>:
+    theme_label_color: app.theme.text
+    on_theme_label_color: retheme_label(self, args[1])
+    disabled_color: app.theme.text_disabled
+
+# Dialogs get a flat themed panel instead of Kivy's dark atlas image. Dialogs
+# that draw their own panel set background_color themselves and are left alone.
+<ModalView>:
+    background: ''
+    theme_popup_fill: app.theme.surface
+    on_theme_popup_fill: follow_theme_popup(self, args[1])
+
+# The title rule matches the 1px section dividers in the settings panel.
+<Popup>:
+    title_color: app.theme.text
+    separator_color: app.theme.border
+    separator_height: 1
+
+# Atlas shade hidden; flat fill is drawn in Python. follow_theme keeps a cleared background clear.
+# theme_field_sync is an expression, not an on_ handler: Kv binds on_ handlers
+# after the first assignment, so a handler would leave the Kivy white background
+# in place until the next palette change.
+<TextInput>:
+    background_normal: ''
+    background_active: ''
+    background_disabled_normal: ''
+    theme_field_fill: app.theme.control_disabled if self.disabled else app.theme.field_bg
+    theme_field_sync: follow_theme(self, "background_color", self.theme_field_fill, (1, 1, 1, 1))
+    foreground_color: app.theme.text
+    disabled_foreground_color: app.theme.text_disabled
+    cursor_color: app.theme.text
+    hint_text_color: app.theme.hint_text
+    field_radius: app.theme.radius_m
+    field_edge: [0, 0, 0, 0] if not self.show_field_edge else (app.theme.border if self.disabled or not self.focus else app.theme.accent)
+
+<DropDown>:
+    canvas.before:
+        Color:
+            rgba: app.theme.menu if self.menu_fill else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(app.theme.radius_m),]
+
+# Kivy paints the tab content with a dark atlas image. A flat fill follows the
+# theme, and no TabbedPanel in the app sets its own background.
+<TabbedPanel>:
+    background_image: ''
+    background_disabled_image: ''
+    background_color: app.theme.panel
+
+# Tab headers are themed buttons. The strip otherwise packs them flush.
+<TabbedPanelStrip>:
+    spacing: dp(app.theme.spacing)
+
+# Jog keys share one face. SquareGrid gives them a square box; the radius
+# stays in dp so a large key is a rounded square and a small one stays tappable.
+<JogAxisButton,JogAxisTipButton>:
+    font_name: app.theme.font_jog_pad
+    radius_dp: app.theme.pad_radius
+    font_size: min(sp(24), max(sp(16), self.height * 0.28))
+    text_size: self.size
+    halign: 'center'
+    valign: 'middle'
+    theme_fill: app.theme.jog_axis_fill(self.axis_label, self.state, self.disabled, self.chrome, app.theme.revision)
+    theme_text: app.theme.jog_axis_text(self.axis_label, self.state, self.disabled, self.chrome, app.theme.revision)
+
+# Kivy fills the settings area with solid black. Painting over it keeps the
+# rows, which come later in the canvas order, untouched.
+<Settings>:
+    canvas.before:
+        Color:
+            rgba: app.theme.surface
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+# Kivy draws these dividers in near-black. On the light theme that reads as a
+# black rule between the sidebar and the page, and under each section title.
+<-SettingSpacer>:
+    size_hint_y: None
+    height: 5
+    canvas:
+        Color:
+            rgba: app.theme.border
+        Rectangle:
+            pos: self.x, self.center_y
+            size: self.width, 1
+
+<-SettingTitle>:
+    text: self.title
+    text_size: self.width - 32, None
+    size_hint_y: None
+    height: max(dp(20), self.texture_size[1] + dp(20))
+    color: app.theme.text
+    font_size: '15sp'
+    canvas:
+        Color:
+            rgba: app.theme.row_heading
+        Rectangle:
+            pos: self.x, self.y + 2
+            size: self.width, self.height - 2
+        Color:
+            rgba: app.theme.border
+        Rectangle:
+            pos: self.x, self.y - 2
+            size: self.width, 1
+
+<-SettingsPanel>:
+    spacing: 5
+    padding: 5
+    size_hint_y: None
+    height: self.minimum_height
+
+    Label:
+        size_hint_y: None
+        text: root.title
+        text_size: self.width - 32, None
+        height: max(50, self.texture_size[1] + 20)
+        color: app.theme.text
+        font_size: '15sp'
+
+        canvas.after:
+            Color:
+                rgba: app.theme.border
+            Rectangle:
+                pos: self.x, self.y - 2
+                size: self.width, 1
+
+<-MenuSidebar>:
+    size_hint_x: None
+    width: '200dp'
+    buttons_layout: menu
+    close_button: button
+    GridLayout:
+        pos: root.pos
+        cols: 1
+        id: menu
+        padding: 5
+
+        canvas.after:
+            Color:
+                rgba: app.theme.border
+            Rectangle:
+                pos: self.right - 1, self.y
+                size: 1, self.height
+
+    Button:
+        text: 'Close'
+        id: button
+        size_hint: None, None
+        width: root.width - dp(20)
+        height: max(50, self.texture_size[1] + dp(20))
+        pos: root.x + dp(10), root.y + dp(10)
+        font_size: '15sp'
+
+# Leading "-" skips style.kv's tab fill and redraws the Label texture on the accent fill.
+<-SettingSidebarLabel>:
+    size_hint: 1, None
+    text_size: self.width - 32, None
+    height: self.texture_size[1] + dp(20)
+    font_size: '15sp'
+    color: app.theme.text_on_fill if self.selected else app.theme.text
+    canvas.before:
+        Color:
+            rgba: app.theme.selection_fill(int(self.selected), app.theme.revision)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            texture: self.texture
+            size: self.texture_size
+            pos: int(self.center_x - self.texture_size[0] / 2.), int(self.center_y - self.texture_size[1] / 2.)
+
+<-SettingItem>:
+    size_hint: .25, None
+    height: labellayout.texture_size[1] + dp(10)
+    content: content
+    canvas:
+        Color:
+            rgba: app.theme.selection_fill(self.selected_alpha, app.theme.revision)
+        Rectangle:
+            pos: self.x, self.y + 1
+            size: self.size
+        Color:
+            rgba: app.theme.row_alt
+        Rectangle:
+            pos: self.x, self.y - 2
+            size: self.width, 1
+
+    BoxLayout:
+        pos: root.pos
+
+        Label:
+            size_hint_x: .66
+            id: labellayout
+            markup: True
+            text: u'{0}\n[size=13sp][color={2}]{1}[/color][/size]'.format(root.title or '', root.desc or '', rgba_to_hex(app.theme.text_muted))
+            font_size: '15sp'
+            text_size: self.width - 32, None
+
+        BoxLayout:
+            id: content
+            size_hint_x: .33
+
+# Re-declare per-type value widgets after the row rule clear.
+<SettingBoolean>:
+    Switch:
+        text: 'Boolean'
+        pos: root.pos
+        active: bool(root.values.index(root.value)) if root.value in root.values else False
+        on_active: root.value = root.values[int(args[1])]
+
+<SettingString>:
+    Label:
+        text: root.value or ''
+        pos: root.pos
+        font_size: '15sp'
+        color: app.theme.text
+
+<SettingPath>:
+    Label:
+        text: root.value or ''
+        pos: root.pos
+        font_size: '15sp'
+        color: app.theme.text
+
+<SettingOptions>:
+    Label:
+        text: root.shown_value(root.value)
+        pos: root.pos
+        font_size: '15sp'
+        color: app.theme.text

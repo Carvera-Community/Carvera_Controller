@@ -7,8 +7,6 @@ import pytest
 from carveracontroller.addons.stock.stock_aabb_mesh import (
     DEFAULT_CYLINDER_SEGMENTS,
     FLOATS_PER_VERTEX,
-    STOCK_EDGE_COLOR,
-    STOCK_FILL_COLOR,
     STOCK_VERTEX_FORMAT,
     build_box_edges,
     build_box_triangles,
@@ -16,6 +14,8 @@ from carveracontroller.addons.stock.stock_aabb_mesh import (
     build_cylinder_triangles,
     build_x_cylinder_edges,
     build_x_cylinder_triangles,
+    stock_edge_color,
+    stock_fill_color,
 )
 
 
@@ -24,7 +24,7 @@ def test_vertex_format_matches_stride():
 
 
 def test_build_box_triangles_counts_and_color():
-    color = STOCK_FILL_COLOR
+    color = stock_fill_color()
     vertices, indices = build_box_triangles(0, 0, 0, 10, 20, 5, color)
     # 6 faces × 4 verts × 10 floats
     assert len(vertices) == 6 * 4 * FLOATS_PER_VERTEX
@@ -57,7 +57,7 @@ def test_build_box_triangles_top_color_only_on_plus_z():
 
 
 def test_build_box_edges_counts_and_color():
-    color = STOCK_EDGE_COLOR
+    color = stock_edge_color()
     vertices, indices = build_box_edges(-1, -2, -3, 1, 2, 3, color)
     # 8 corners × 10 floats
     assert len(vertices) == 8 * FLOATS_PER_VERTEX
@@ -69,7 +69,7 @@ def test_build_box_edges_counts_and_color():
 
 
 def test_build_cylinder_triangles_counts_and_extent():
-    color = STOCK_FILL_COLOR
+    color = stock_fill_color()
     segs = DEFAULT_CYLINDER_SEGMENTS
     vertices, indices = build_cylinder_triangles(0, 0, -5, 5, 10, color, segments=segs)
     # side (2*segs) + bottom (1+segs) + top (1+segs)
@@ -104,7 +104,7 @@ def test_build_cylinder_triangles_top_color_on_plus_z_cap():
 
 
 def test_build_cylinder_edges_counts_and_color():
-    color = STOCK_EDGE_COLOR
+    color = stock_edge_color()
     segs = 12
     verticals = 4
     vertices, indices = build_cylinder_edges(1, 2, 0, 8, 5, color, segments=segs, verticals=verticals)
@@ -117,7 +117,7 @@ def test_build_cylinder_edges_counts_and_color():
 
 
 def test_build_x_cylinder_triangles_counts_and_extent():
-    color = STOCK_FILL_COLOR
+    color = stock_fill_color()
     segs = DEFAULT_CYLINDER_SEGMENTS
     vertices, indices = build_x_cylinder_triangles(0, 0, -5, 5, 10, color, segments=segs)
     assert len(vertices) == (2 * segs + 2 * (1 + segs)) * FLOATS_PER_VERTEX
@@ -147,7 +147,7 @@ def test_build_x_cylinder_triangles_top_color_on_barrel():
 
 
 def test_build_x_cylinder_edges_counts_and_color():
-    color = STOCK_EDGE_COLOR
+    color = stock_edge_color()
     segs = 12
     verticals = 4
     vertices, indices = build_x_cylinder_edges(1, 2, 0, 8, 5, color, segments=segs, verticals=verticals)

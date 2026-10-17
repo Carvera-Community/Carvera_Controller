@@ -1,3 +1,4 @@
+from kivy.app import App
 from kivy.core.text import Label as CoreLabel
 from kivy.factory import Factory
 from kivy.graphics import Color, Line, Rectangle
@@ -8,9 +9,8 @@ from kivy.uix.boxlayout import BoxLayout
 from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
 from carveracontroller.CNC import LASER_TOOL_NUMBER, PROBE_3D_TOOL_NUMBER, ZPROBE_TOOL_NUMBER
 from carveracontroller.GcodeViewer import tool_marker_palette_rgb
+from carveracontroller.ui.theme import DARK, get_theme
 
-DEFAULT_MARKER_LABEL_BG_COLOR = (210 / 255, 210 / 255, 210 / 255, 1)
-MARKER_LABEL_TEXT_COLOR = (30 / 255, 30 / 255, 30 / 255, 1)
 MARKER_HIT_PAD = dp(6)
 
 
@@ -93,7 +93,7 @@ def _marker_label_bg_color(label):
     elif label.startswith("T") and label[1:].isdigit():
         tool_num = int(label[1:])
     else:
-        return DEFAULT_MARKER_LABEL_BG_COLOR
+        return list(get_theme().text_secondary)
     rgb = tool_marker_palette_rgb(tool_num)
     return (rgb[0], rgb[1], rgb[2], 1.0)
 
@@ -222,7 +222,7 @@ class _MarkerHoverToolTip(ToolTipButton):
 
 class PlayProgressBar(BoxLayout):
     value = NumericProperty(0)
-    color = ListProperty([52 / 255, 166 / 255, 208 / 255, 1])
+    color = ListProperty(list(DARK["accent_text"]))
     tool_markers = ListProperty([])
     marker_tooltip_provider = ObjectProperty(None, allownone=True)
 
@@ -231,13 +231,15 @@ class PlayProgressBar(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._marker_hitboxes = []
+        self._watched_theme = None
         self._hover_tip = _MarkerHoverToolTip()
         self.add_widget(self._hover_tip)
         with self.canvas.before:
-            Color(50 / 255, 50 / 255, 50 / 255, 1)
+            self._bg_color = Color(*DARK["track"])
             self._bg_rect = Rectangle(pos=self.pos, size=(0, 0))
             self._fill_color = Color(*self.color)
             self._fill_rect = Rectangle(pos=self.pos, size=(0, 0))
+        self._bind_theme()
         self.bind(
             pos=self._update_canvas,
             size=self._update_canvas,
@@ -245,6 +247,28 @@ class PlayProgressBar(BoxLayout):
             color=self._update_fill_color,
             tool_markers=self._update_markers,
         )
+
+    def _bind_theme(self):
+        app = App.get_running_app()
+        if app is None:
+            return
+        app.fbind("theme", self._on_app_theme)
+        self._on_app_theme(app, getattr(app, "theme", None))
+
+    def _on_app_theme(self, _app, theme):
+        if self._watched_theme is not None:
+            self._watched_theme.unbind(revision=self._apply_track)
+        self._watched_theme = theme
+        if theme is not None:
+            theme.bind(revision=self._apply_track)
+        self._apply_track()
+
+    def _apply_track(self, *_args):
+        theme = self._watched_theme
+        if theme is None:
+            return
+        self._bg_color.rgba = list(theme.track)
+        self._update_markers(None, self.tool_markers)
 
     def _track_width(self):
         return max(0, self.width - dp(5)) if self.width > 0 else 0
@@ -278,8 +302,8 @@ class PlayProgressBar(BoxLayout):
             core = CoreLabel(
                 text=label,
                 font_size=dp(9),
-                color=MARKER_LABEL_TEXT_COLOR,
-                font_name="ARIALUNI",
+                color=get_theme().text_inverse,
+                font_name=get_theme().font_default,
             )
             core.refresh()
             label_w, label_h = core.texture.size
@@ -318,7 +342,8 @@ class PlayProgressBar(BoxLayout):
         with self.canvas.after:
             for item in draw_items:
                 x = ox + item["local_x"]
-                Color(200 / 255, 200 / 255, 200 / 255, 0.6)
+                tick = get_theme().text_secondary
+                Color(tick[0], tick[1], tick[2], 0.6)
                 Line(points=[x, oy, x, oy + bar_h], width=1)
             for item in draw_items:
                 if not item.get("show_label", True):

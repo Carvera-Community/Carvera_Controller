@@ -9,6 +9,10 @@ version = "0.0.0"
 license = "GPL-2.0"
 readme = "README.md"
 authors = [ "Carvera-Community",]
+include = [
+    { path = "assets/fonts/ARIALUNI.ttf", format = [ "sdist", "wheel",] },
+]
+
 [[tool.poetry.packages]]
 include = "carveracontroller"
 

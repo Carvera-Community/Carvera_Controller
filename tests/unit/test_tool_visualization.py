@@ -50,14 +50,14 @@ from carveracontroller.addons.tool_visualization.mesh_builder import (
     FALLBACK_TOOL_DISPLAY_HEIGHT,
     FALLBACK_TOOL_DISPLAY_RADIUS,
     FLOATS_PER_VERTEX,
-    FLUTE_COLOR,
     INFERRED_SHOULDER_DIAMETER_FACTOR,
     LENGTH_DIAMETER_FACTOR,
     MIN_VISIBLE_RADIUS,
-    SHANK_COLOR,
     VERTEX_FORMAT,
     build_tool_mesh,
     build_tool_meshes,
+    flute_color,
+    shank_color,
     tool_profile,
 )
 from carveracontroller.addons.tool_visualization.tool_definition import resolve_tool_type
@@ -1437,8 +1437,8 @@ class TestIconGeometry:
         buf, width, height = ib._rasterize_icon(build_icon_geometry(tool_def), 34, 34)
         assert (width, height) == (68, 68)
 
-        flute_rgba = ib._to_bytes_rgba(ib.ICON_FLUTE_COLOR)
-        outline_rgba = ib._to_bytes_rgba(ib.ICON_OUTLINE_COLOR)
+        flute_rgba = ib._to_bytes_rgba(ib.icon_flute_color())
+        outline_rgba = ib._to_bytes_rgba(ib.icon_outline_color())
 
         def _count(rgba):
             n = 0
@@ -2195,6 +2195,20 @@ class TestMeshBuilder:
         assert all(r <= flute_r + 1e-9 for _z, r in profile)
         assert not any(math.isclose(r, shank_r) for _z, r in profile)
 
+    def test_mesh_uses_the_current_theme_colors(self, monkeypatch):
+        theme = type("Theme", (), {})()
+        theme.viewer_tool_flute = (0.2, 0.4, 0.6, 0.8)
+        theme.viewer_tool_shank = (0.9, 0.1, 0.1, 0.5)
+        monkeypatch.setattr(
+            "carveracontroller.addons.tool_visualization.mesh_builder.get_theme",
+            lambda: theme,
+        )
+        tool_def = ToolDefinition(number=1, tool_type=ToolType.FLAT_END_MILL, diameter=6.0, length=40.0)
+        vertices, _indices, _fmt = build_tool_mesh(tool_def)
+        colors = {_vertex_color(vertices, index) for index in range(len(vertices) // FLOATS_PER_VERTEX)}
+        assert theme.viewer_tool_flute in colors
+        assert theme.viewer_tool_shank in colors
+
     def test_mesh_uses_flute_color_without_flute_length(self):
         # Stick-out under the 4×D fallback flute cap → entire mesh is flute-colored.
         tool_def = ToolDefinition(number=1, tool_type=ToolType.FLAT_END_MILL, diameter=6.0, length=18.0)
@@ -2202,7 +2216,7 @@ class TestMeshBuilder:
         vertex_count = len(vertices) // FLOATS_PER_VERTEX
 
         for index in range(vertex_count):
-            assert _vertex_color(vertices, index) == pytest.approx(FLUTE_COLOR)
+            assert _vertex_color(vertices, index) == pytest.approx(flute_color())
 
     def test_missing_flute_capped_to_diameter_factor(self):
         diameter = 6.0
@@ -2218,15 +2232,15 @@ class TestMeshBuilder:
         vertex_count = len(vertices) // FLOATS_PER_VERTEX
 
         colors = {_vertex_color(vertices, index) for index in range(vertex_count)}
-        assert FLUTE_COLOR in colors
-        assert SHANK_COLOR in colors
+        assert flute_color() in colors
+        assert shank_color() in colors
         for index in range(vertex_count):
             z = _vertex_z(vertices, index)
             color = _vertex_color(vertices, index)
             if z < flute_z - 1e-6:
-                assert color == pytest.approx(FLUTE_COLOR)
+                assert color == pytest.approx(flute_color())
             elif z > flute_z + 1e-6:
-                assert color == pytest.approx(SHANK_COLOR)
+                assert color == pytest.approx(shank_color())
 
         profile = tool_profile(tool_def)
         assert profile[-1][0] == pytest.approx(length)
@@ -2244,16 +2258,16 @@ class TestMeshBuilder:
         vertex_count = len(vertices) // FLOATS_PER_VERTEX
 
         colors = {_vertex_color(vertices, index) for index in range(vertex_count)}
-        assert FLUTE_COLOR in colors
-        assert SHANK_COLOR in colors
+        assert flute_color() in colors
+        assert shank_color() in colors
 
         for index in range(vertex_count):
             z = _vertex_z(vertices, index)
             color = _vertex_color(vertices, index)
             if z < 12.0 - 1e-6:
-                assert color == pytest.approx(FLUTE_COLOR)
+                assert color == pytest.approx(flute_color())
             elif z > 12.0 + 1e-6:
-                assert color == pytest.approx(SHANK_COLOR)
+                assert color == pytest.approx(shank_color())
 
     def test_mesh_colors_flute_and_shoulder_when_no_handle_section(self):
         tool_def = ToolDefinition(
@@ -2269,16 +2283,16 @@ class TestMeshBuilder:
         vertex_count = len(vertices) // FLOATS_PER_VERTEX
 
         colors = {_vertex_color(vertices, index) for index in range(vertex_count)}
-        assert FLUTE_COLOR in colors
-        assert SHANK_COLOR in colors
+        assert flute_color() in colors
+        assert shank_color() in colors
 
         for index in range(vertex_count):
             z = _vertex_z(vertices, index)
             color = _vertex_color(vertices, index)
             if z < 6.0 - 1e-6:
-                assert color == pytest.approx(FLUTE_COLOR)
+                assert color == pytest.approx(flute_color())
             elif z > 6.0 + 1e-6:
-                assert color == pytest.approx(SHANK_COLOR)
+                assert color == pytest.approx(shank_color())
 
     def test_infers_chamfer_flute_from_cone_when_metadata_missing(self):
         tool_def = ToolDefinition(
@@ -2292,15 +2306,15 @@ class TestMeshBuilder:
         vertex_count = len(vertices) // FLOATS_PER_VERTEX
 
         colors = {_vertex_color(vertices, index) for index in range(vertex_count)}
-        assert FLUTE_COLOR in colors
-        assert SHANK_COLOR in colors
+        assert flute_color() in colors
+        assert shank_color() in colors
         for index in range(vertex_count):
             z = _vertex_z(vertices, index)
             color = _vertex_color(vertices, index)
             if z < 3.0 - 1e-6:
-                assert color == pytest.approx(FLUTE_COLOR)
+                assert color == pytest.approx(flute_color())
             elif z > 3.0 + 1e-6:
-                assert color == pytest.approx(SHANK_COLOR)
+                assert color == pytest.approx(shank_color())
 
     def test_inferred_flute_adds_short_shoulder_before_shank(self):
         """Fusion-like tip cue only: short body at D before the handle blend."""
@@ -2339,15 +2353,15 @@ class TestMeshBuilder:
         vertex_count = len(vertices) // FLOATS_PER_VERTEX
 
         colors = {_vertex_color(vertices, index) for index in range(vertex_count)}
-        assert FLUTE_COLOR in colors
-        assert SHANK_COLOR in colors
+        assert flute_color() in colors
+        assert shank_color() in colors
         for index in range(vertex_count):
             z = _vertex_z(vertices, index)
             color = _vertex_color(vertices, index)
             if z < ball_join - 1e-6:
-                assert color == pytest.approx(FLUTE_COLOR)
+                assert color == pytest.approx(flute_color())
             elif z > ball_join + 1e-6:
-                assert color == pytest.approx(SHANK_COLOR)
+                assert color == pytest.approx(shank_color())
 
     def test_explicit_flute_length_not_overridden_by_inference(self):
         tool_def = ToolDefinition(
@@ -2365,9 +2379,9 @@ class TestMeshBuilder:
             z = _vertex_z(vertices, index)
             color = _vertex_color(vertices, index)
             if z < 12.0 - 1e-6:
-                assert color == pytest.approx(FLUTE_COLOR)
+                assert color == pytest.approx(flute_color())
             elif z > 12.0 + 1e-6:
-                assert color == pytest.approx(SHANK_COLOR)
+                assert color == pytest.approx(shank_color())
 
     def test_missing_lengths_still_use_diameter_factor(self):
         profile = tool_profile(

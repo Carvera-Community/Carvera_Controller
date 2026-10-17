@@ -4,15 +4,17 @@ from functools import partial
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.text import Label as CoreLabel
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
 from kivy.properties import BooleanProperty, ListProperty, ObjectProperty, StringProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.dropdown import DropDown
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.spinner import Spinner
 from kivy.uix.widget import Widget
 
 from carveracontroller.addons.tool_visualization.icon_builder import build_tool_legend_icon, build_tool_tooltip_icon
@@ -30,10 +32,36 @@ from carveracontroller.GcodeViewer import (
     tool_palette_rgb,
 )
 from carveracontroller.translation import tr
+from carveracontroller.ui.theme import get_theme, watch_theme
 from carveracontroller.Utils import second2hour
 
 LEGEND_PANEL_MAX_HEIGHT = dp(280)
 HEADER_HEIGHT = dp(36)
+
+
+class SchemeSpinner(Spinner):
+    """Closed control stays as wide as its label. The open list fits the longest entry."""
+
+    def _update_dropdown(self, *largs):
+        super()._update_dropdown(*largs)
+        dropdown = self._dropdown
+        if dropdown is None:
+            return
+        # auto_width would copy this widget, which is only as wide as "Tool".
+        dropdown.auto_width = False
+        dropdown.width = self._menu_width()
+
+    def _menu_width(self):
+        widest = 0
+        for value in self.values:
+            core = CoreLabel(text=str(value), font_size=sp(15))
+            core.refresh()
+            if core.texture is not None:
+                widest = max(widest, core.texture.width)
+        # Dropdown inset plus space so a label is not flush with the rounded ends.
+        return max(widest + dp(56), dp(148))
+
+
 PANEL_BOTTOM_PADDING = dp(6)
 LEGEND_ROW_HEIGHT = dp(24)
 LEGEND_TOOL_ROW_HEIGHT = dp(42)
@@ -42,12 +70,8 @@ LEGEND_ROW_SPACING = dp(2)
 LEGEND_GRID_PAD_Y = dp(4) + dp(2)
 DURATION_LABEL_WIDTH = dp(52)
 
-LABEL_VISIBLE = (250 / 255, 250 / 255, 250 / 255, 1.0)
-LABEL_HIDDEN = (110 / 255, 110 / 255, 110 / 255, 1.0)
 TIME_UNAVAILABLE_TEXT = tr._("n/a")
 SWATCH_HIDDEN_ALPHA = 0.35
-EYE_VISIBLE_COLOR = (250 / 255, 250 / 255, 250 / 255, 1.0)
-EYE_HIDDEN_COLOR = (60 / 255, 60 / 255, 60 / 255, 1.0)
 EYE_ICON_SIZE = dp(14)
 EYE_ICON_SOURCE = "data/eye.png"
 
@@ -87,22 +111,34 @@ def _entry_has_legend_icon(entry):
     return False
 
 
+def _legend_text_visible():
+    return list(get_theme().text)
+
+
+def _legend_text_hidden():
+    return list(get_theme().text_disabled)
+
+
 def _mix_towards_grey(rgba, amount=0.55):
     """Grey an active color so hidden+active stays distinct from plain hidden."""
-    grey = LABEL_HIDDEN
+    grey = _legend_text_hidden()
     return tuple(c * (1.0 - amount) + grey[i] * amount for i, c in enumerate(rgba[:3])) + (
         rgba[3] if len(rgba) > 3 else 1.0,
     )
 
 
+def _current_active_color():
+    return list(get_theme().active_color)
+
+
 def legend_label_color(visible, is_active=False, active_color=None):
-    """White / active_color, or greyed variants when paths are hidden."""
+    """Theme text, or the theme active color for the tool in the spindle."""
     if is_active and active_color is not None:
         base = tuple(float(c) for c in active_color[:4])
         if len(base) < 4:
             base = (*base[:3], 1.0)
         return base if visible else _mix_towards_grey(base)
-    return LABEL_VISIBLE if visible else LABEL_HIDDEN
+    return _legend_text_visible() if visible else _legend_text_hidden()
 
 
 def build_legend_entries(color_scheme, gcode_viewer, used_tools):
@@ -387,6 +423,9 @@ class LegendRow(BoxLayout):
         self.add_widget(swatch_holder)
 
         self._icon = None
+        # Generated previews already carry flute and shank colors. Static
+        # glyphs (probe, laser) are monochrome and follow the label color.
+        self._icon_monochrome = False
         if show_icon_column or tool_def is not None or static_icon is not None:
             icon_holder = AnchorLayout(
                 size_hint=(None, None),
@@ -409,12 +448,14 @@ class LegendRow(BoxLayout):
                 except Exception:
                     self._icon = None
             elif static_icon is not None:
+                self._icon_monochrome = True
                 self._icon = Image(
                     source=static_icon,
                     size_hint=(None, None),
                     size=(LEGEND_TOOL_ICON_SIZE, LEGEND_TOOL_ICON_SIZE),
                     allow_stretch=True,
                     keep_ratio=True,
+                    color=get_theme().text,
                 )
                 icon_holder.add_widget(self._icon)
             # else: empty spacer so labels stay aligned with icon-bearing rows
@@ -449,7 +490,7 @@ class LegendRow(BoxLayout):
                 size_hint_y=1,
                 shorten=True,
                 shorten_from="right",
-                color=LABEL_HIDDEN,
+                color=_legend_text_hidden(),
             )
             self._name_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))
             label_box.add_widget(self._name_label)
@@ -464,7 +505,7 @@ class LegendRow(BoxLayout):
             font_size="11sp",
             size_hint=(None, None),
             size=(DURATION_LABEL_WIDTH, row_height),
-            color=LABEL_HIDDEN,
+            color=_legend_text_hidden(),
         )
         self._duration.bind(size=lambda inst, val: setattr(inst, "text_size", val))
         self.add_widget(self._duration)
@@ -481,7 +522,7 @@ class LegendRow(BoxLayout):
             size=(EYE_ICON_SIZE, EYE_ICON_SIZE),
             allow_stretch=True,
             keep_ratio=True,
-            color=EYE_VISIBLE_COLOR,
+            color=get_theme().text,
         )
         eye_holder.add_widget(self._eye)
         self.add_widget(eye_holder)
@@ -538,21 +579,26 @@ class LegendRow(BoxLayout):
                 if self.is_active_tool and self._active_color is not None:
                     self._name_label.color = _mix_towards_grey(color, amount=0.35)
                 else:
-                    self._name_label.color = LABEL_HIDDEN
+                    self._name_label.color = _legend_text_hidden()
             else:
-                self._name_label.color = LABEL_HIDDEN
+                self._name_label.color = _legend_text_hidden()
         # Unavailable times stay grey; available times follow row visibility coloring.
-        self._duration.color = LABEL_HIDDEN if not self._duration_available else color
+        self._duration.color = _legend_text_hidden() if not self._duration_available else color
         swatch = list(self._base_swatch)
         if not self.visible:
             swatch[3] = SWATCH_HIDDEN_ALPHA
         self._swatch.color = swatch
+        theme = get_theme()
         if self._icon is not None:
-            if self.visible:
-                self._icon.color = (1, 1, 1, 1)
+            if self._icon_monochrome:
+                self._icon.color = list(theme.text if self.visible else theme.text_disabled)
+                self._icon.opacity = 1
             else:
-                self._icon.color = (0.55, 0.55, 0.55, 1)
-        self._eye.color = EYE_VISIBLE_COLOR if self.visible else EYE_HIDDEN_COLOR
+                # Keep the baked preview colors. Multiplying by theme.text
+                # turns the gold tip into a black silhouette on a light theme.
+                self._icon.color = [1, 1, 1, 1]
+                self._icon.opacity = 1 if self.visible else 0.45
+        self._eye.color = theme.text if self.visible else theme.row_strip
 
 
 class GcodeColorSchemePanel(BoxLayout):
@@ -566,7 +612,11 @@ class GcodeColorSchemePanel(BoxLayout):
         self._entry_count = 0
         app = App.get_running_app()
         if app is not None:
-            app.bind(tool=self._on_active_tool_changed, active_color=self._on_active_color_changed)
+            app.bind(tool=self._on_active_tool_changed)
+            theme = getattr(app, "theme", None)
+            if theme is not None:
+                theme.bind(active_color=self._on_active_color_changed)
+        self._stop_theme = watch_theme(self._on_theme_changed)
 
     def _is_hidden(self):
         return not self.opacity
@@ -595,6 +645,10 @@ class GcodeColorSchemePanel(BoxLayout):
         if self._makera_root is not None:
             self._refresh_active_tool_highlight()
 
+    def _on_theme_changed(self, _theme) -> None:
+        if self._makera_root is not None and self.ids.get("legend_box") is not None:
+            self.refresh(self._makera_root)
+
     def _on_active_color_changed(self, *_args):
         if self._makera_root is not None:
             self._refresh_active_tool_highlight()
@@ -602,7 +656,7 @@ class GcodeColorSchemePanel(BoxLayout):
     def _refresh_active_tool_highlight(self):
         app = App.get_running_app()
         active_tool = int(getattr(app, "tool", -1) or -1) if app else -1
-        active_color = list(getattr(app, "active_color", LABEL_VISIBLE)) if app else list(LABEL_VISIBLE)
+        active_color = _current_active_color()
         legend_box = self.ids.get("legend_box")
         if legend_box is None:
             return
@@ -647,7 +701,7 @@ class GcodeColorSchemePanel(BoxLayout):
         document_unit = getattr(makera_root, "document_unit", "mm")
         app = App.get_running_app()
         active_tool = int(getattr(app, "tool", -1) or -1) if app else -1
-        active_color = list(getattr(app, "active_color", LABEL_VISIBLE)) if app else list(LABEL_VISIBLE)
+        active_color = _current_active_color()
 
         for entry in entries:
             if entry["kind"] == "tool":

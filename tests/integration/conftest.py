@@ -197,7 +197,7 @@ def kivy_app():
     main_module.HALT_REASON = load_halt_translations(tr)
 
     base_path = app_base_path()
-    register_fonts(base_path)
+    register_fonts()
     register_images(base_path)
 
     # Create the app and build its widget tree without entering the event loop

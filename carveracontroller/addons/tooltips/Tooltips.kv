@@ -3,14 +3,6 @@
     show_tooltips: app.show_tooltips
     tooltip_delay: app.tooltip_delay
     background_color: 0,0,0,0
-    canvas.before:
-        Color:
-            rgba: (88/255,88/255,88/255,1) if self.state=='normal' else (50/255,164/255,206/255,1)
-        RoundedRectangle:
-
-            pos: self.pos
-            size: self.size
-            radius: [dp(self.tooltip_radius if self.tooltip_radius else 0),]
 
 <ToolTipDropDown>:
     show_tooltips: app.show_tooltips
@@ -36,14 +28,14 @@
     spacing: 15
     canvas.before:
         Color:
-            rgba: 0.1, 0.1, 0.1, 0.9
+            rgba: app.theme.tooltip_bg
         Rectangle:
             size: self.size[0]+10,self.size[1]
             pos: self.pos
         Color:
-            rgba: 0.8, 0.8, 0.8, 1  # Light grey border
+            rgba: app.theme.tooltip_border
         Line:
-            width: 1.5
+            width: app.theme.tooltip_border_width
             rectangle: (self.pos[0],self.pos[1], self.size[0] + 10 ,self.size [1]) 
 
     BoxLayout:
@@ -75,32 +67,25 @@
 
     canvas.before:
         Color:
-            rgba: 0.2, 0.2, 0.2 , 0
+            rgba: 0, 0, 0, 0
         Rectangle:
             size: self.size
             pos: self.pos
 
 <HelpButton>
     id: help_button
-    orientation: 'vertical'
-    halign: 'center'
-    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-    size_hint: None, None
-    height: self.parent.height
-    width: self.parent.height * 2
-    state_image: self.background_normal if self.state == 'normal' else self.background_down
-    disabled_image: self.background_disabled_normal if self.state == 'normal' else self.background_disabled_down
-    canvas:
+    size_hint: 1, 1
+    canvas.before:
         Color:
-            rgba: 0, 1, 0, 1
-        BorderImage:
-            border: self.border
+            rgba: app.theme.button_fill('help', self.state, self.disabled, True, app.theme.revision)
+        RoundedRectangle:
             pos: self.pos
             size: self.size
-            source: self.disabled_image if self.disabled else self.state_image
+            radius: [dp(app.theme.radius_m),]
     Image:
         id: image
         source: root.image_source
-        fit_mode: 'scale-down'
-        size_hint: 0.3,0.3
+        fit_mode: 'contain'
+        size_hint: None, None
+        size: min(dp(28), root.width * 0.7, root.height * 0.7), min(dp(28), root.width * 0.7, root.height * 0.7)
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}

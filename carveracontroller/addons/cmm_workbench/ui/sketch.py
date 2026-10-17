@@ -10,6 +10,8 @@ from kivy.graphics import Color, Line, PopMatrix, PushMatrix, Rectangle, Transla
 from kivy.metrics import dp
 from kivy.uix.widget import Widget
 
+from carveracontroller.ui.theme import get_theme, watch_theme
+
 from ..core.features import (
     CircleGeom,
     CMMWorkbenchFeature,
@@ -23,14 +25,16 @@ from ..core.features import (
     resolve_geometry,
 )
 
-# Construction checkbox order: 1st, 2nd, 3rd, … in the XY preview.
-_SEL_ORDER_PALETTE: tuple[tuple[float, float, float, float], ...] = (
-    (0.98, 0.72, 0.15, 1.0),
-    (0.25, 0.78, 1.0, 1.0),
-    (0.45, 0.95, 0.35, 1.0),
-    (1.0, 0.35, 0.85, 1.0),
-    (0.75, 0.55, 0.95, 1.0),
-)
+
+def _cmm_selection_palette(theme) -> tuple[list, ...]:
+    """Construction checkbox order: 1st, 2nd, 3rd, … in the XY preview."""
+    return (
+        list(theme.cmm_feature_1),
+        list(theme.cmm_feature_2),
+        list(theme.cmm_feature_3),
+        list(theme.cmm_feature_4),
+        list(theme.cmm_feature_5),
+    )
 
 
 def _ellipse_polyline_px(
@@ -70,6 +74,7 @@ class CMMWorkbenchPreviewSketch(Widget):
         # Callback: called with the feature id (str) when user taps a feature.
         self.on_feature_tap: Callable[[str], None] | None = None
         self.bind(pos=self._redraw, size=self._redraw)
+        self._stop_theme = watch_theme(lambda _theme: self._redraw())
 
     def set_features(
         self,
@@ -99,6 +104,8 @@ class CMMWorkbenchPreviewSketch(Widget):
         y_offset: float = 0.0,
     ) -> None:
         """Draw a centered Kivy text texture at widget-local pixel coords."""
+        theme = get_theme()
+        text_outline = list(theme.sketch_text_outline)
         try:
             label = CoreLabel(
                 text=text,
@@ -106,7 +113,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                 bold=True,
                 color=color[:4],
                 outline_width=1,
-                outline_color=(0.0, 0.0, 0.0, 0.85),
+                outline_color=text_outline,
             )
         except TypeError:
             label = CoreLabel(
@@ -379,6 +386,9 @@ class CMMWorkbenchPreviewSketch(Widget):
         iw: float,
         ih: float,
     ) -> None:
+        theme = get_theme()
+        palette = _cmm_selection_palette(theme)
+        sketch_outline = list(theme.sketch_outline)
         font_size = max(dp(11), min(dp(16), abs(scale) * 0.38))
         for ord_idx, fid in enumerate(self._selection_ids):
             sf = by_id.get(fid)
@@ -390,7 +400,7 @@ class CMMWorkbenchPreviewSketch(Widget):
             au, av = anchor
             tu, tv = self._selection_badge_layout_px(sf, by_id, px, scale, iw, ih, ord_idx, au, av)
 
-            col = _SEL_ORDER_PALETTE[ord_idx % len(_SEL_ORDER_PALETTE)]
+            col = palette[ord_idx % len(palette)]
             try:
                 label = CoreLabel(
                     text=str(ord_idx + 1),
@@ -398,7 +408,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                     bold=True,
                     color=col[:4],
                     outline_width=1,
-                    outline_color=(0.0, 0.0, 0.0, 1.0),
+                    outline_color=sketch_outline,
                 )
             except TypeError:
                 label = CoreLabel(
@@ -450,13 +460,15 @@ class CMMWorkbenchPreviewSketch(Widget):
 
     def _redraw(self, *args):
         self.canvas.clear()
+        theme = get_theme()
+        palette = _cmm_selection_palette(theme)
         iw = max(self.width, 1.0)
         ih = max(self.height, 1.0)
 
         with self.canvas:
             PushMatrix()
             Translate(self.x, self.y)
-            Color(0.12, 0.12, 0.13, 1)
+            Color(*theme.sketch_bg)
             Rectangle(pos=(0, 0), size=(iw, ih))
 
             bb = self._bbox()
@@ -501,7 +513,7 @@ class CMMWorkbenchPreviewSketch(Widget):
             inside_y = edge_m <= ly <= ih - edge_m
             half_h = min(arm, max(lx - edge_m, 0), max(iw - lx - edge_m, 0))
             half_v = min(arm, max(ly - edge_m, 0), max(ih - ly - edge_m, 0))
-            Color(0.28, 0.29, 0.32, 1)
+            Color(*theme.sketch_axes)
             if inside_y and half_h >= 2.0:
                 Line(points=[lx - half_h, ly, lx + half_h, ly], width=1.0)
             if inside_x and half_v >= 2.0:
@@ -518,7 +530,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                 if isinstance(geom, SegmentGeom):
                     u1, v1 = px(geom.x1, geom.y1)
                     u2, v2 = px(geom.x2, geom.y2)
-                    Color(0.75, 0.55, 0.95, 1)
+                    Color(*theme.cmm_feature_5)
                     Line(points=[u1, v1, u2, v2], width=1.4)
 
                 elif isinstance(geom, PolylineGeom):
@@ -527,12 +539,12 @@ class CMMWorkbenchPreviewSketch(Widget):
                         a, b = px(vx, vy)
                         pts_px.extend([a, b])
                     if len(pts_px) >= 4:
-                        Color(0.45, 0.72, 0.55, 1)
+                        Color(*theme.cmm_polyline)
                         line_pts = pts_px + pts_px[:2] if geom.closed and len(pts_px) >= 6 else pts_px
                         Line(points=line_pts, width=1.3)
 
                 elif isinstance(geom, CircleGeom) and geom.kind == FeatureKind.DERIVED_CIRCLE:
-                    Color(0.9, 0.55, 0.35, 1)
+                    Color(*theme.cmm_derived_circle)
                     Line(
                         points=_ellipse_polyline_px(geom.cx, geom.cy, geom.rx, geom.ry, px),
                         width=1.2,
@@ -541,7 +553,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                 elif isinstance(geom, PointGeom) and geom.kind == FeatureKind.DERIVED_POINT:
                     u, v = px(geom.x, geom.y)
                     s = max(3.0, abs(scale) * 0.45)
-                    Color(0.95, 0.92, 0.4, 1)
+                    Color(*theme.cmm_derived_point)
                     Line(points=[u - s, v, u + s, v], width=1.5)
                     Line(points=[u, v - s, u, v + s], width=1.5)
 
@@ -550,12 +562,12 @@ class CMMWorkbenchPreviewSketch(Widget):
                 if isinstance(geom, PointGeom) and geom.kind == FeatureKind.POINT:
                     u, v = px(geom.x, geom.y)
                     s = max(3.0, abs(scale) * 0.4)
-                    Color(0.35, 0.85, 0.95, 1)
+                    Color(*theme.cmm_probed_point)
                     Line(points=[u - s, v, u + s, v], width=1.4)
                     Line(points=[u, v - s, u, v + s], width=1.4)
 
                 elif isinstance(geom, CircleGeom) and geom.kind in (FeatureKind.CIRCLE, FeatureKind.ELLIPSE):
-                    Color(0.55, 0.8, 0.45, 1)
+                    Color(*theme.cmm_circle)
                     Line(
                         points=_ellipse_polyline_px(geom.cx, geom.cy, geom.rx, geom.ry, px),
                         width=1.2,
@@ -564,7 +576,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                 elif isinstance(geom, PointGeom) and geom.kind == FeatureKind.CORNER:
                     u, v = px(geom.x, geom.y)
                     s = max(4.0, abs(scale) * 0.45)
-                    Color(0.95, 0.75, 0.35, 1)
+                    Color(*theme.cmm_corner)
                     Line(
                         points=[u - s, v - s, u + s, v - s, u + s, v + s, u - s, v + s, u - s, v - s],
                         width=1.2,
@@ -573,7 +585,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                 elif isinstance(geom, LabelGeom) and geom.kind == FeatureKind.ANGLE:
                     u, v = px(geom.x, geom.y)
                     s = max(3.0, abs(scale) * 0.4)
-                    Color(0.95, 0.82, 0.4, 1)
+                    Color(*theme.cmm_angle_mark)
                     Line(points=[u - s, v, u + s, v], width=1.3)
                     Line(points=[u, v - s, u, v + s], width=1.3)
                     font_size = max(dp(10), min(dp(15), abs(scale) * 0.42))
@@ -582,7 +594,7 @@ class CMMWorkbenchPreviewSketch(Widget):
                         u,
                         v,
                         font_size=font_size,
-                        color=(0.95, 0.88, 0.55, 1.0),
+                        color=list(theme.cmm_angle_label),
                         y_offset=dp(6),
                     )
 
@@ -591,13 +603,13 @@ class CMMWorkbenchPreviewSketch(Widget):
                 sf = by_id.get(fid)
                 if sf is None or not self._is_visible(sf):
                     continue
-                col = _SEL_ORDER_PALETTE[ord_idx % len(_SEL_ORDER_PALETTE)]
+                col = palette[ord_idx % len(palette)]
                 self._draw_feature_highlight(sf, by_id, px, scale, col, 2.2)
 
             if self._focus_id:
                 ff = by_id.get(self._focus_id)
                 if ff is not None and self._is_visible(ff):
-                    self._draw_feature_highlight(ff, by_id, px, scale, (1.0, 1.0, 1.0, 0.93), 3.0)
+                    self._draw_feature_highlight(ff, by_id, px, scale, list(theme.sketch_focus), 3.0)
 
             if self._selection_ids:
                 self._draw_selection_order_badges(by_id, px, scale, iw, ih)
