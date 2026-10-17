@@ -280,10 +280,13 @@ class _PendingRoot:
         self.config_popup = type("Popup", (), {"btn_apply": _ApplyButton()})()
 
 
-def test_theme_value_is_not_written_before_the_window_exists(editor):
+def test_theme_value_is_not_written_before_the_window_exists(editor, monkeypatch):
     original = editor.panel.set_value
     calls = []
     editor.panel.set_value = lambda *args: calls.append(args)
+    # The full suite may already have built the interface. This case is the
+    # startup path, where Kivy has not assigned that window yet.
+    monkeypatch.setattr(editor, "_settings_root", lambda: None)
     try:
         editor._assign_value("light")
         assert editor.value == "light"
