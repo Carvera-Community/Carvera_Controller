@@ -1,4 +1,5 @@
 from carveracontroller.protocols.framing import (
+    PTYPE_CTRL_MULTI,
     PTYPE_FILE_MD5,
     PTYPE_LOAD_ERROR,
     PTYPE_LOAD_FINISH,
@@ -6,10 +7,26 @@ from carveracontroller.protocols.framing import (
     PTYPE_NORMAL_INFO,
     PTYPE_STATUS_RES,
     build_frame,
+    validate_packet_data,
 )
 from carveracontroller.protocols.makera import MakeraProtocol
 from carveracontroller.protocols.messages import MessageKind
 from carveracontroller.protocols.session import ProtocolSession
+
+
+def _ctrl_payloads(encoded: bytes) -> list[bytes]:
+    payloads = []
+    offset = 0
+    while offset < len(encoded):
+        assert encoded[offset : offset + 2] == b"\x86\x68"
+        length = int.from_bytes(encoded[offset + 2 : offset + 4], "big")
+        frame_end = offset + 4 + length + 2
+        parsed = validate_packet_data(encoded[offset + 2 : frame_end - 2])
+        assert parsed is not None
+        assert parsed.ptype == PTYPE_CTRL_MULTI
+        payloads.append(parsed.payload)
+        offset = frame_end
+    return payloads
 
 
 def test_encode_realtime_and_command():
@@ -32,6 +49,16 @@ def test_encode_realtime_and_command():
     assert file_cmd[:2] == b"\x86\x68"
     # File-start frames keep the trailing newline.
     assert b"upload /sd/a.nc\n" in file_cmd
+
+
+def test_encode_command_sends_each_line_as_its_own_frame():
+    proto = MakeraProtocol()
+    payloads = _ctrl_payloads(proto.encode_command(b"help\nhelp\n"))
+    assert payloads == [b"help", b"help"]
+
+    payloads = _ctrl_payloads(proto.encode_command(b"config-set sd foo bar\r\nversion"))
+    assert payloads == [b"config-set sd foo bar", b"version"]
+    assert all(b"\n" not in payload and b"\r" not in payload for payload in payloads)
 
 
 def test_feed_status_frame():
