@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .simulator.mesh_format import DEFAULT_COLOR
-from .stock_aabb_mesh import STOCK_EDGE_COLOR, STOCK_FILL_COLOR
+from .simulator.mesh_format import default_stock_color
+from .stock_aabb_mesh import stock_edge_color, stock_fill_color
 
 MATERIAL_BEIGE = "beige"
 MATERIAL_PCB = "pcb"
@@ -72,16 +72,21 @@ def normalize_stock_material(value: Any) -> str:
     return DEFAULT_MATERIAL
 
 
-_STYLES: dict[str, StockMaterialStyle] = {
-    MATERIAL_BEIGE: StockMaterialStyle(
+def _beige_style() -> StockMaterialStyle:
+    """Default stock. Its colors come from the current theme."""
+    fill = stock_fill_color()
+    return StockMaterialStyle(
         material_id=MATERIAL_BEIGE,
-        surface_rgb=(DEFAULT_COLOR[0], DEFAULT_COLOR[1], DEFAULT_COLOR[2]),
-        fill_alpha=STOCK_FILL_COLOR[3],
-        edge_rgba=STOCK_EDGE_COLOR,
-        preview_rgb=(STOCK_FILL_COLOR[0], STOCK_FILL_COLOR[1], STOCK_FILL_COLOR[2]),
+        surface_rgb=default_stock_color()[:3],
+        fill_alpha=fill[3],
+        edge_rgba=stock_edge_color(),
+        preview_rgb=fill[:3],
         surface_thickness_mm=0.0,
         roughness=0.92,
-    ),
+    )
+
+
+_STYLES: dict[str, StockMaterialStyle] = {
     MATERIAL_PCB: StockMaterialStyle(
         material_id=MATERIAL_PCB,
         surface_rgb=(0.85, 0.55, 0.22),
@@ -139,7 +144,10 @@ _STYLES: dict[str, StockMaterialStyle] = {
 
 def style_for_material(value: Any) -> StockMaterialStyle:
     """Style record for *value*, falling back to Default."""
-    return _STYLES[normalize_stock_material(value)]
+    material = normalize_stock_material(value)
+    if material == MATERIAL_BEIGE:
+        return _beige_style()
+    return _STYLES[material]
 
 
 def preview_fill_rgba(style: StockMaterialStyle) -> tuple[Rgba, Rgba, Rgba]:

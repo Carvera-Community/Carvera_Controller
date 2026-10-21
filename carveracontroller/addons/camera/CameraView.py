@@ -10,6 +10,8 @@ from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty, ObjectProperty
 from kivy.uix.widget import Widget
 
+from carveracontroller.ui.theme import get_theme
+
 ADJUST_MIN = 0.2
 ADJUST_MAX = 3.0
 ADJUST_DEFAULT = 1.0
@@ -47,11 +49,11 @@ class CameraReconnectSpinner(Widget):
             self._dim = Color(0, 0, 0, 0)
             self._shade = Rectangle(pos=self.pos, size=self.size)
         with self.canvas:
-            self._track_color = Color(1, 1, 1, 0)
+            self._track_color = Color(*get_theme().text[:3], 0)
             self._track = Line(width=_SPINNER_WIDTH)
             PushMatrix()
             self._rotate = Rotate(angle=0, origin=self.center)
-            self._arc_color = Color(1, 1, 1, 0)
+            self._arc_color = Color(*get_theme().text[:3], 0)
             self._arc = Line(width=_SPINNER_WIDTH, cap="round")
             PopMatrix()
         self._animation = None
@@ -74,7 +76,8 @@ class CameraReconnectSpinner(Widget):
 
     def _redraw(self, *_args):
         shown = bool(self.active)
-        self._dim.a = 0.45 if shown else 0
+        dim = get_theme().overlay
+        self._dim.rgba = [dim[0], dim[1], dim[2], 0.45 if shown else 0.0]
         self._shade.pos = self.pos
         self._shade.size = self.size
         self._track_color.a = 0.35 if shown else 0

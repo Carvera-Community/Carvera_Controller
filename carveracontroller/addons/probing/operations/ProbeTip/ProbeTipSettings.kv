@@ -3,7 +3,7 @@
         do_scroll_x: False
         size_hint: 1,1
         bar_width: 4
-        bar_inactive_color: [.7,.7,.7,.9]
+        bar_inactive_color: app.theme.scroll_bar_inactive
         GridLayout:
             cols: 2
             size_hint_y: None
@@ -24,7 +24,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("required")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance from center along X to move before probing back toward part')
                     tooltip_image: ''
                     multiline: False
@@ -43,7 +42,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("required")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance from center along Y to move before probing back toward part')
                     tooltip_image: ''
                     multiline: False
@@ -61,7 +59,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("4")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('When Probing a boss, this is added to the X and Y values when moving outside the bore or boss. Defaults to 4mm')
                     tooltip_image: ''
                     multiline: False
@@ -80,7 +77,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("required")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('How far below the start height to move down for probing the sides of the ProbeTip/block. Required for bosses')
                     tooltip_image: ''
                     multiline: False
@@ -99,7 +95,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance to probe straight down before performing remainder of probing operations')
                     tooltip_image: ''
                     multiline: False
@@ -118,7 +113,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("300")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Optional probing feed rate override')
                     tooltip_image: ''
                     multiline: False
@@ -137,7 +131,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("800")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Optional rapid feed rate override')
                     tooltip_image: ''
                     multiline: False
@@ -156,7 +149,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("1")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Number of times to repeat the probing operation')
                     tooltip_image: ''
                     multiline: False
@@ -175,7 +167,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("1.5")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance away from surface to retract before double tapping the probe')
                     tooltip_image: ''
                     multiline: False
@@ -194,7 +185,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("2")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('If Pocket Depth is enabled, how far above the surface to raise before continuing the operation')
                     tooltip_image: ''
                     multiline: False
@@ -213,7 +203,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_image: 'addons/probing/data/icons_1024x768/angle/probe_angle_arbitrary_negative.png'
                     tooltip_image_size: 200,200
                     multiline: False
@@ -235,7 +224,7 @@
                     tooltip_txt: tr._('Enable this switch if you have a normally closed probe instead of a normally open one')
                     canvas.before:
                         Color:
-                            rgba: 50/255, 50/255, 50/255, 1
+                            rgba: app.theme.row_alt
                         Rectangle:
                             pos: self.pos
                             size: self.size
@@ -258,7 +247,7 @@
                     tooltip_txt: tr._('You must manually save the value to the config file for now')
                     canvas.before:
                         Color:
-                            rgba: 50/255, 50/255, 50/255, 1
+                            rgba: app.theme.row_alt
                         Rectangle:
                             pos: self.pos
                             size: self.size

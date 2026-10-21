@@ -7,10 +7,11 @@ from kivy.app import App
 from kivy.base import EventLoop
 from kivy.core.window import Window
 from kivy.lang import Builder
-from kivy.properties import BooleanProperty, ListProperty, NumericProperty
+from kivy.properties import BooleanProperty, NumericProperty, ObjectProperty
 from kivy.uix.widget import Widget
 
 from carveracontroller.ui.SimStatsHud import SimStatsHud, SimStatsHudIcon
+from carveracontroller.ui.theme import Theme
 
 SHORT = "Heightmap: 40x30\nResolution: 0.5mm/cell\nCheckpoints: 0% - 1/8 slots"
 LONG = "Cylindrical: 400x180\nResolution: 0.25 mm along X and at Ø40\nCheckpoints: 12% - 3/8 slots"
@@ -20,9 +21,9 @@ _ROOT = Path(__file__).resolve().parents[2] / "carveracontroller"
 
 class _HudTestApp(App):
     show_gcode_ctl_bar = BooleanProperty(True)
-    active_color = ListProperty([0.2, 0.6, 0.9, 1])
     show_tooltips = BooleanProperty(True)
     tooltip_delay = NumericProperty(0)
+    theme = ObjectProperty(None, rebind=True)
 
     def load_kv(self, filename=None):
         return False
@@ -44,9 +45,11 @@ def sim_hud_kv():
     if app is None:
         app = _HudTestApp()
     _ensure_app_attr(app, "show_gcode_ctl_bar", BooleanProperty(True), True)
-    _ensure_app_attr(app, "active_color", ListProperty([0.2, 0.6, 0.9, 1]), [0.2, 0.6, 0.9, 1])
     _ensure_app_attr(app, "show_tooltips", BooleanProperty(True), True)
     _ensure_app_attr(app, "tooltip_delay", NumericProperty(0), 0)
+    _ensure_app_attr(app, "theme", ObjectProperty(None, rebind=True), Theme())
+    if app.theme is None:
+        app.theme = Theme()
     for rel in ("addons/tooltips/Tooltips.kv", "ui/SimStatsHud.kv"):
         path = str(_ROOT / rel)
         if path not in Builder.files:

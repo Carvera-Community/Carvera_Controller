@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from carveracontroller.ui.theme import get_theme
+
 # Same layout as tool meshes: pos(3) + normal(3) + color(4) + tc(2)
 VERTEX_FORMAT = [
     (b"v_pos", 3, "float"),
@@ -10,4 +12,7 @@ VERTEX_FORMAT = [
     (b"v_tc0", 2, "float"),
 ]
 
-DEFAULT_COLOR = (0.75, 0.72, 0.55, 1.0)
+
+def default_stock_color() -> tuple:
+    """Default carved-stock color from the current theme."""
+    return tuple(get_theme().viewer_stock_default)

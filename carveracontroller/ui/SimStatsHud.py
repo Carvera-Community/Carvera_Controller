@@ -11,10 +11,9 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.widget import Widget
 
 from carveracontroller.addons.tooltips.Tooltips import ToolTipButton
+from carveracontroller.ui.theme import DARK, get_theme, watch_theme
 
 EYE_ICON_SOURCE = "data/eye.png"
-ICON_VISIBLE_RGBA = (0.93, 0.93, 0.93, 1.0)
-ICON_HIDDEN_RGBA = (0.42, 0.42, 0.42, 0.9)
 
 
 class _HudIconToolTip(ToolTipButton):
@@ -54,11 +53,13 @@ class SimStatsHudIcon(ButtonBehavior, Widget):
         with self.canvas:
             PushMatrix()
             self._translate = Translate(0, 0)
-            self._color = Color(*ICON_VISIBLE_RGBA)
+            theme = get_theme()
+            self._color = Color(*theme.icon)
             self._icon = Rectangle(source=self.icon_source, size=(icon, icon))
             PopMatrix()
         self._tip = _HudIconToolTip()
         self.add_widget(self._tip)
+        self._stop_theme = watch_theme(self._apply_theme)
         self.bind(
             pos=self._layout,
             size=self._layout,
@@ -80,8 +81,18 @@ class SimStatsHudIcon(ButtonBehavior, Widget):
         self._tip.pos = self.pos
         self._tip.size = self.size
 
-    def _sync_icon(self, *_args) -> None:
-        self._color.rgba = ICON_VISIBLE_RGBA if self.icon_active else ICON_HIDDEN_RGBA
+    def _apply_theme(self, theme) -> None:
+        self._sync_icon(theme=theme)
+
+    def _sync_icon(self, *_args, theme=None) -> None:
+        if theme is None:
+            theme = get_theme()
+        if self.icon_active:
+            self._color.rgba = list(theme.icon)
+        else:
+            hidden = list(theme.text_muted)
+            hidden[3] = 0.9
+            self._color.rgba = hidden
 
     def _sync_source(self, *_args) -> None:
         self._icon.source = self.icon_source
@@ -95,10 +106,12 @@ class CarveSpinner(Widget):
 
     angle = NumericProperty(0.0)
     spinning = BooleanProperty(False)
-    line_rgba = ListProperty([0.35, 0.82, 0.92, 0.95])
+    line_rgba = ListProperty(list(DARK["active_color"]))
 
     def __init__(self, **kwargs):
         kwargs.setdefault("size_hint", (None, None))
+        if "line_rgba" not in kwargs:
+            kwargs["line_rgba"] = list(get_theme().active_color)
         super().__init__(**kwargs)
         with self.canvas:
             self._color = Color(*self.line_rgba)
@@ -116,6 +129,10 @@ class CarveSpinner(Widget):
         )
         self._layout()
         self.opacity = 1.0 if self.spinning else 0.0
+        self._stop_theme = watch_theme(self._apply_theme_spinner)
+
+    def _apply_theme_spinner(self, theme) -> None:
+        self.line_rgba = list(theme.active_color)
 
     def _apply_color(self, *_args) -> None:
         self._color.rgba = self.line_rgba

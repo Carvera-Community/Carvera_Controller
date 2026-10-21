@@ -1,7 +1,7 @@
 """Stock material presets for preview and carved-mesh coloring."""
 
-from carveracontroller.addons.stock.simulator.mesh_format import DEFAULT_COLOR
-from carveracontroller.addons.stock.stock_aabb_mesh import STOCK_EDGE_COLOR, STOCK_FILL_COLOR
+from carveracontroller.addons.stock.simulator.mesh_format import default_stock_color
+from carveracontroller.addons.stock.stock_aabb_mesh import stock_edge_color, stock_fill_color
 from carveracontroller.addons.stock.stock_defaults import default_settings, material_from_settings
 from carveracontroller.addons.stock.stock_material import (
     DEFAULT_MATERIAL,
@@ -35,10 +35,24 @@ def test_default_settings_include_beige_material():
     assert material_from_settings({"material": "PCB"}) == MATERIAL_PCB
 
 
+def test_beige_follows_the_current_theme(monkeypatch):
+    theme = type("Theme", (), {})()
+    theme.viewer_stock_default = (0.2, 0.3, 0.4, 1.0)
+    theme.viewer_stock_fill = (0.5, 0.6, 0.7, 0.25)
+    theme.viewer_stock_edge = (0.1, 0.2, 0.3, 0.8)
+    monkeypatch.setattr("carveracontroller.addons.stock.simulator.mesh_format.get_theme", lambda: theme)
+    monkeypatch.setattr("carveracontroller.addons.stock.stock_aabb_mesh.get_theme", lambda: theme)
+    style = style_for_material(MATERIAL_BEIGE)
+    assert style.surface_rgb == theme.viewer_stock_default[:3]
+    top, _other, edge = preview_fill_rgba(style)
+    assert top == theme.viewer_stock_fill
+    assert edge == theme.viewer_stock_edge
+
+
 def test_beige_keeps_current_preview():
     style = style_for_material(MATERIAL_BEIGE)
     assert style.two_tone is False
-    assert style.surface_rgb == DEFAULT_COLOR[:3]
+    assert style.surface_rgb == default_stock_color()[:3]
     assert style.interior_rgb is None
     assert style.metallic == 0.0
     assert style.interior_metallic is None
@@ -48,9 +62,9 @@ def test_beige_keeps_current_preview():
     assert style.resolved_interior_metallic() == style.metallic
     assert style.resolved_interior_roughness() == style.roughness
     top, other, edge = preview_fill_rgba(style)
-    assert top == STOCK_FILL_COLOR
-    assert other == STOCK_FILL_COLOR
-    assert edge == STOCK_EDGE_COLOR
+    assert top == stock_fill_color()
+    assert other == stock_fill_color()
+    assert edge == stock_edge_color()
 
 
 def test_pcb_is_copper_over_fr4():
