@@ -2,6 +2,7 @@
 - Fixed: Android builds were incorrectly detecting the default language
 - Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
 - Fixed: File picker for Config Backups on Windows didn't have a drive selector
+- Fixed: Colors of the rows in the MDI were sometimes not matching their content
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

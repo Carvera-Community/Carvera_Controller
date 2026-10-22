@@ -2291,9 +2291,17 @@ class Row(IntellisenseExplainRowMixin, SelectableLabel):
     def refresh_view_attrs(self, rv, index, data):
         self.intellisense_on_recycle()
         result = super().refresh_view_attrs(rv, index, data)
-        self.plain_text = data.get("text", "") or ""
-        self.highlighted_text = data.get("highlighted_text") or ""
+        plain = data.get("text") or ""
+        highlighted = data.get("highlighted_text") or ""
+        color = data.get("color")
+        self.plain_text = plain
+        self.highlighted_text = highlighted
         self.highlight = bool(data.get("highlight", False))
+        if color is not None:
+            self.color = list(color)
+        display = highlighted or plain
+        if self.text != display:
+            self.text = display
         return result
 
     def apply_selection(self, rv, index, is_selected):
