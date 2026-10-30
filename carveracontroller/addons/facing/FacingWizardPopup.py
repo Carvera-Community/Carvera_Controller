@@ -600,7 +600,7 @@ class FacingWizardPopup(ModalView):
     def _build_probe_to_facing_transition(self) -> str:
         """
         Tool change after Z probe, before facing.
-        Default: M6 … C1 with optional collet S and optional repeat count R.
+        Default: M6 … C1 with optional collet K and optional repeat count R.
         If any setter offset (X/Y/Z) is given: M6 followed by M491
         """
         self._ensure_wizard_lists()
@@ -612,10 +612,10 @@ class FacingWizardPopup(ModalView):
         except ValueError:
             raise ValueError(tr._("Facing tool T must be a number (e.g. 1, 2, ...)."))
 
-        s_val = None
+        collet = None
         for label, code in self._m6_collet_pairs_list:
             if self.ids.spn_m6_collet.text == label:
-                s_val = code
+                collet = code
                 break
 
         ox = self._opt_float_field(self.ids.txt_m491_x)
@@ -634,8 +634,8 @@ class FacingWizardPopup(ModalView):
                 raise ValueError(tr._("TLO repeats must be at least 1."))
 
         parts = ["M6", "T%d" % t_int]
-        if s_val is not None:
-            parts.append("S%d" % s_val)
+        if collet is not None:
+            parts.append("K%d" % collet)
 
         if has_setter_offsets:
             parts.append("C0")

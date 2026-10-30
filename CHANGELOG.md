@@ -3,6 +3,7 @@
 - Enhancement: UI is now themed. You can select one of multiple visual styles in the Settings. Themes can be further customised in the theme editer.
 - Change: Previous G-Code highlighting settings page collapsed into theme settings
 - Change: Store probing presets, facing presets, bed settings, calibration settings, and custom bed meshes in the app user-data directory, and move existing copies out of ~/.kivy on first launch
+- Change: The facing wizard passes the collet to M6 as K instead of S to be in sync with the recent firmware changes
 - Fixed: Gamepad hotplug would not detect a reconnected controller
 - Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
 - Fixed: File picker for Config Backups on Windows didn't have a drive selector

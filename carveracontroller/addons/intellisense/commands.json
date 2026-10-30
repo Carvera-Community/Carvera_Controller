@@ -844,7 +844,7 @@
           "description": "Tool number to change to. Special numbers are 0 probe, -1 none, 999990 3D Probe",
           "default": null
         },
-        "S": {
+        "K": {
           "required": false,
           "description": "Collet type 1–6. On an ATC machine, move to the manual tool-change position first so the collet can be swapped.",
           "default": null
