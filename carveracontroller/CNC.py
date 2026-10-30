@@ -419,6 +419,11 @@ class CNC:
         # start motion
         self.motionStart(cmds)
 
+        if 460 <= self.mval <= 469:
+            # probing macros and M468: their X, Y, Z words are parameters, not a move
+            self.probingCommand(cmds)
+            return
+
         # calculate path
         xyzs = self.motionPath()
 
@@ -471,6 +476,12 @@ class CNC:
                 self.pathMargins(xyzs)
             self._count_feed_y_axis(xyzs)
 
+        # a move without path, to where the tool already is, also counts for its WCS
+        if not self.machine_coordinates and (
+            xyzs or (self.gcode in (0, 1, 2, 3) and any(cmd[0].upper() in "XYZA" for cmd in cmds))
+        ):
+            self.wcsExtents(xyzs, self.gcode != 0)
+
         # end motion
         self.motionEnd()
 
@@ -481,6 +492,7 @@ class CNC:
         self.mval = 0  # reset m command
         self.tool_cmd = False
         self.z_command = False
+        self.machine_coordinates = False  # G53 on this line
         for cmd in cmds:
             c = cmd[0].upper()
             try:
@@ -528,7 +540,13 @@ class CNC:
 
                 # Execute immediately
                 if gcode in (4, 10, 53, 54, 55, 56, 57, 58, 59):
-                    pass  # do nothing but don't record to motion
+                    # do nothing but don't record to motion
+                    if gcode == 53:
+                        self.machine_coordinates = True
+                    elif gcode >= 54:
+                        name = "G59.%d" % decimal if gcode == 59 and decimal else "G%d" % gcode
+                        if name in self.wcs_names:
+                            self.wcs = name
                 elif gcode == 17:
                     self.plane = XY
                 elif gcode == 18:
@@ -920,10 +938,57 @@ class CNC:
             CNC.vars["zmax"] = max(CNC.vars["zmax"], xyz[2])
 
     # ----------------------------------------------------------------------
+    def probingCommand(self, cmds):
+        """
+        A probing macro (M460 to M467) or M468 with its parameters: undo the target motionStart
+        took from them. For an M468 S1 that writes a WCS without feed moves yet, note (wcs, written
+        wcs): the origin of the written WCS is only known once the job ran up to there.
+        """
+        self.xval, self.yval, self.zval, self.aval = self.x, self.y, self.z, self.a
+        self.dx = self.dy = self.dz = self.da = 0
+        self.wcs_extents.setdefault(self.wcs, None)
+        if self.mval != 468:
+            return
+        try:
+            words = {cmd[0].upper(): int(float(cmd[1:])) for cmd in cmds if cmd[0].upper() in "PS"}
+        except ValueError:
+            return
+        # the firmware writes only with S1 and one of X, Y, Z or R; D and E are only checked
+        if words.get("S") != 1 or not any(cmd[0].upper() in "XYZR" for cmd in cmds):
+            return
+        # P0 or no P writes the active WCS
+        p = words.get("P", 0)
+        if 1 <= p <= len(self.wcs_names):
+            write = (self.wcs, self.wcs_names[p - 1])
+            if not self.wcs_extents.get(write[1]) and write not in self.wcs_writes:
+                self.wcs_writes.append(write)
+
+    # ----------------------------------------------------------------------
+    def wcsExtents(self, xyzs, feed):
+        """
+        The work coordinate systems the program moves in, in the order it first moves in them, with
+        the XY extents of their feed moves: {name: [xmin, xmax, ymin, ymax] or None}. The name None
+        is the WCS active when the program starts, before it selects one.
+        """
+        extents = self.wcs_extents.setdefault(self.wcs, None)
+        if not feed:
+            return
+        for xyz in xyzs:
+            if extents is None:
+                extents = self.wcs_extents[self.wcs] = [xyz[0], xyz[0], xyz[1], xyz[1]]
+            extents[0] = min(extents[0], xyz[0])
+            extents[1] = max(extents[1], xyz[0])
+            extents[2] = min(extents[2], xyz[1])
+            extents[3] = max(extents[3], xyz[1])
+
+    # ----------------------------------------------------------------------
     # init CNC
     # ----------------------------------------------------------------------
     def init(self, filename=None):
         self.has_4axis = False
+        self.wcs = None
+        self.wcs_extents = {}
+        self.wcs_writes = []
         self.initPath()
         self.resetMargins()
 

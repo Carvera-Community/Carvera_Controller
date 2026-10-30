@@ -342,8 +342,16 @@ class Controller:
         buffer=False,
         auto_level_offsets=None,
         upcoming_tool=0,
+        plan=None,
     ):
+        """
+        plan: the M495 moves per WCS from auto_probe_plan(). Without it, M495 works from the
+        program extents in the active WCS.
+        """
         if not (margin or zprobe or leveling or goto_origin):
+            return
+        if plan is not None:
+            self._autoCommandPlan(margin, zprobe, leveling, goto_origin, i, j, h, buffer, upcoming_tool, plan)
             return
         if auto_level_offsets is None:
             auto_level_offsets = [0, 0, 0, 0]
@@ -384,6 +392,31 @@ class Controller:
         if buffer:
             cmd = "buffer " + cmd
         self.executeCommand(cmd)
+
+    def _autoCommandPlan(self, margin, zprobe, leveling, goto_origin, i, j, h, buffer, upcoming_tool, plan):
+        prefix = "buffer " if buffer else ""
+        if margin:
+            # one scan per WCS in its own coordinates, M495 runs in the active WCS
+            for name, (xmin, xmax, ymin, ymax) in plan["margins"]:
+                self.executeCommand(prefix + name)
+                self.executeCommand(prefix + "M495 X%gY%gC%gD%g" % (xmin, ymin, xmax, ymax))
+            self.executeCommand(prefix + plan["start"])
+        if not (zprobe or leveling or goto_origin):
+            return
+        # rounded, so that %g never writes an exponent from a rotation, its e would be read as a word
+        path_x, path_y = round(plan["path"][0], 4), round(plan["path"][1], 4)
+        cmd = "M495 X%gY%g" % (path_x, path_y)
+        if zprobe:
+            # M495 probes at X + O, Y + F
+            cmd = cmd + "O%gF%g" % (round(plan["zprobe"][0] - path_x, 4), round(plan["zprobe"][1] - path_y, 4))
+        if leveling:
+            cmd = cmd + "A%gB%gI%dJ%dH%d" % (round(plan["leveling"][2], 4), round(plan["leveling"][3], 4), i, j, h)
+        if goto_origin:
+            cmd = cmd + "P1"
+            # Include the first tool number so firmware can do tool change/TLO before going to origin
+            if upcoming_tool > 0:
+                cmd = cmd + "T%d" % upcoming_tool
+        self.executeCommand(prefix + cmd + "\n")
 
     def xyzProbe(self, height=9.0, diameter=3.175, buffer=False):
         cmd = "M495.3 H%g D%g" % (height, diameter)
@@ -1118,29 +1151,6 @@ class Controller:
             logger.warning(f"Error finding command {gcode_command} before line {start_line}: {e}")
 
         return (None, None)
-
-    def program_start_wcs(self, lines):
-        """
-        Return the work coordinate system a program selects before its first move (e.g. "G55"),
-        or None when it moves before selecting one. Moves in machine coordinates (G53) do not
-        count as the first move.
-        """
-        start_wcs = None
-        for line in lines:
-            tokens = self._gcode_line_to_cmd_tokens(line)
-            # a WCS word applies before a move on the same line
-            names = [
-                name for token in tokens for name in CNC.wcs_names if self._command_token_matches_base(token, name)
-            ]
-            if names:
-                start_wcs = names[-1]
-            if not any(self._command_token_matches_base(token, "G53") for token in tokens) and any(
-                self._command_token_matches_base(token, motion)
-                for token in tokens
-                for motion in ("G0", "G1", "G2", "G3")
-            ):
-                break
-        return start_wcs
 
     def _has_movement_after_line(self, lines, after_line, before_start_line):
         """
@@ -2085,8 +2095,9 @@ class Controller:
 
         self.sendGCode(cmd)
 
-    def wcsClearRotation(self):
-        cmd = "G10L2R0P0"
+    def wcsClearRotation(self, wcs=0):
+        # wcs: 1 = G54 to 9 = G59.3, 0 = the active one
+        cmd = "G10L2R0P%d" % wcs
         self.sendGCode(cmd)
 
     def setRotation(self, rotation):

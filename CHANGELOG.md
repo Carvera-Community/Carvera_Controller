@@ -1,7 +1,11 @@
 [unreleased]
 - Fixed: Android builds were incorrectly detecting the default language
+- Fixed: The X, Y and Z words of probing macros (M460 to M469) no longer show as moves in the path extents.
 - Enhancement: Every file playback will start by going the configured clearance_z
 - Enhancement: The controller finds the first wcs being used in the file (either active wcs or another one) and buffers it prior to playing the file.
+- Enhancement: The start job popup shows the origin and the path area of every WCS the program uses, each in its own color, and marks the WCS the job starts in
+- Changed: Scan margin goes around the feed moves of each WCS in program order. Z probe and auto leveling run in the WCS the job starts in. A start WCS that only probes the part and writes another WCS with M468 S1 uses the feed moves of that WCS with its own origin. A WCS that M468 S1 writes before it cuts gets no scan margin and shows faint, since its origin comes from the probing in the job. A start WCS without feed moves otherwise takes the area of the first WCS that cuts.
+- Changed: Rotary jobs no longer clear the WCS rotation when they start. The start job popup warns when the start WCS is rotated and can clear it
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

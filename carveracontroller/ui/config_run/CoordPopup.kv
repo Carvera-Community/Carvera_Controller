@@ -195,11 +195,47 @@
                         pos: self.pos
                         size: self.size
                         radius: [dp(6)]
-                AnchorLayout:
-                    anchor_x: 'center'
-                    anchor_y: 'center'
-                    CNCWorkspace:
-                        id: cnc_workspace
+                FloatLayout:
+                    AnchorLayout:
+                        anchor_x: 'center'
+                        anchor_y: 'center'
+                        pos_hint: {'x': 0, 'y': 0}
+                        CNCWorkspace:
+                            id: cnc_workspace
+                    HoverBox:
+                        id: hide_other_wcs_row
+                        size_hint: None, None
+                        # a fixed size, the picture of the effect widget cannot be empty
+                        size: dp(200), dp(36)
+                        pos_hint: {'right': 1, 'top': 1}
+                        disabled: not root.multiple_wcs
+                        EffectWidget:
+                            # half transparent over the preview until the mouse comes over it; drawn as
+                            # one picture, so the switch knob does not show what is under it. Hidden
+                            # here, as its own render context ignores the opacity of the box.
+                            opacity: (1 if hide_other_wcs_row.hovered else 0.5) if root.multiple_wcs else 0
+                            BoxLayout:
+                                padding: dp(8), 0
+                                canvas.before:
+                                    Color:
+                                        rgba: 0, 0, 0, 0.6
+                                    RoundedRectangle:
+                                        pos: self.pos
+                                        size: self.size
+                                        radius: [dp(6)]
+                                Label:
+                                    text: tr._("Hide other WCS")
+                                    halign: 'left'
+                                    valign: 'middle'
+                                    font_size: dp(13)
+                                    color: 220/255, 220/255, 220/255, 1
+                                    text_size: self.size
+                                ToolTipSwitch:
+                                    size_hint_x: None
+                                    width: dp(80)
+                                    tooltip_txt: tr._("Show only the WCS the job starts in.")
+                                    active: root.hide_other_wcs
+                                    on_active: root.hide_other_wcs = self.active
             ScrollView:
                 do_scroll_x: False
                 do_scroll_y: True
@@ -408,6 +444,37 @@
                         checkbox_locked: True
                         show_summary: True
                         show_config: True
+                    BoxLayout:
+                        id: rotation_warning_row
+                        orientation: 'vertical'
+                        size_hint_y: None
+                        height: (rotation_warning_label.texture_size[1] + dp(44)) if root.rotation_warning else 0
+                        opacity: 1 if root.rotation_warning else 0
+                        disabled: not root.rotation_warning
+                        padding: dp(8), dp(4)
+                        spacing: dp(4)
+                        Label:
+                            id: rotation_warning_label
+                            text: root.rotation_warning
+                            text_size: self.width, None
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: 'left'
+                            font_size: dp(13)
+                            color: 243/255, 156/255, 18/255, 1
+                        BoxLayout:
+                            size_hint_y: None
+                            height: dp(28)
+                            Widget:
+                            Button:
+                                text: tr._("Clear rotation")
+                                font_size: dp(13)
+                                size_hint_x: None
+                                width: dp(120)
+                                background_normal: ''
+                                background_down: ''
+                                background_color: (64/255, 64/255, 64/255, 1) if self.state == 'down' else (88/255, 88/255, 88/255, 1)
+                                on_release: root.clear_start_wcs_rotation()
                     CoordSetupCard:
                         id: margin_card
                         title_text: tr._(' Scan Margin')
