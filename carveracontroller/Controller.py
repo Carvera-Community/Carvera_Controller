@@ -327,6 +327,134 @@ class Controller:
                 self.log.put((Controller.MSG_ERROR, str(sys.exc_info()[1])))
 
     # ----------------------------------------------------------------------
+    def wcsOrigin(self, name):
+        """
+        Origin (machine X, Y) and rotation of a WCS: the active one from the machine status, another
+        one from the table read with "get wcs". None while the table does not have it yet.
+        """
+        if name == CNC.wcs_names[CNC.vars["active_coord_system"]]:
+            return CNC.vars["wcox"], CNC.vars["wcoy"], CNC.vars["rotation_angle"]
+        if name in self.wcs_table:
+            x, y, _z, _a, _b, rotation = self.wcs_table[name]
+            return x, y, rotation
+        return None
+
+    def programStartWCS(self):
+        """The WCS the loaded program selects before its first move, None when it moves before."""
+        return next(iter(self.cnc.wcs_extents), None)
+
+    def startWCSOrigin(self):
+        """
+        Name, origin (machine X, Y) and rotation of the WCS a job starts in: the one the loaded
+        program selects before its first move, else the active one. While "get wcs" has not read
+        another one yet, the active WCS is returned.
+        """
+        active = CNC.wcs_names[CNC.vars["active_coord_system"]]
+        name = self.programStartWCS() or active
+        origin = self.wcsOrigin(name)
+        if origin is None:
+            return active, *self.wcsOrigin(active)
+        return name, *origin
+
+    def programWCS(self):
+        """The WCS of the loaded program with the extents of their feed moves, see CNC.programWCS."""
+        return self.cnc.programWCS(self.startWCSOrigin()[0])
+
+    def autoProbePlan(self, config):
+        """
+        What M495 does before the loaded program, not for rotary jobs. Z probe and leveling run in
+        the start WCS, the first one of the program, the scan margin goes around the feed moves of
+        each WCS:
+
+        - "start": the start WCS, M495 X and Y below are in it
+        - "start_extents": [xmin, xmax, ymin, ymax] of the feed moves the start WCS stands for, None
+          when there are none
+        - "follower": the WCS the start WCS only probes for, see below, else None
+        - "set_in_job": the WCS that get their origin from probing in the job, see below
+        - "margins": [(name, [xmin, xmax, ymin, ymax])], the scan margin of each WCS with feed moves
+          in its own coordinates, in program order
+        - "path": (x, y), M495 X and Y: the leveling start corner, else the path origin of that area
+        - "zprobe": (x, y), the Z probe point, the path origin of that area or the origin of the
+          start WCS plus the configured offset
+        - "leveling": (machine x, machine y, size x, size y). G32 probes along the machine axes, so
+          the grid covers the machine XY box around that area, less the leveling offsets.
+
+        A WCS that an M468 in another WCS writes before it has feed moves has no scan margin, its
+        origin now is not the one it cuts with. A start WCS without feed moves that writes the WCS
+        following it only probes the part for it: it stands for the feed moves of that follower,
+        with its own current origin. Any other start WCS without feed moves takes the area of the
+        first WCS with feed moves and a known origin, placed with that origin.
+
+        None for programs without feed moves: M495 then works from the program extents in the
+        active WCS as before.
+        """
+        start, start_x, start_y, start_rotation = self.startWCSOrigin()
+        program_wcs = self.cnc.programWCS(start)
+        if not any(extents for _name, extents in program_wcs):
+            return None
+        start_origin = (start_x, start_y, start_rotation)
+        names = [name for name, _extents in program_wcs]
+        extents_of = dict(program_wcs)
+        writes = self.cnc.programWCSWrites(start)
+        set_in_job = {name for _writer, name in writes}
+
+        # the start WCS is the active one while "get wcs" has not read the one of the program yet
+        start_extents = extents_of.get(start)
+        following = names[names.index(start) + 1] if start in names[:-1] else None
+        follower = None
+        if start_extents is None and (start, following) in writes:
+            follower = following
+            start_extents = extents_of[start] = extents_of[follower]
+
+        # no scan margin where the origin comes from the job, the start WCS scans the area of the follower
+        margins = [
+            (name, extents_of[name])
+            for name in names
+            if extents_of[name] is not None and (name == start or name not in set_in_job)
+        ]
+
+        # the area Z probe and leveling cover and the origin it is placed with
+        area, area_origin = start_extents, start_origin
+        if area is None:
+            for name, extents in program_wcs:
+                origin = self.wcsOrigin(name)
+                if extents and name not in set_in_job and origin is not None:
+                    area, area_origin = extents, origin
+                    break
+        if area is None:
+            # nothing better known: the program extents as before
+            area = [CNC.vars["xmin"], CNC.vars["xmax"], CNC.vars["ymin"], CNC.vars["ymax"]]
+        corners = [CNC.wcsToMachine(area_origin, x, y) for x in area[:2] for y in area[2:]]
+        leveling = config["leveling"]
+        level_x = min(x for x, _y in corners) + leveling["xn_offset"]
+        level_y = min(y for _x, y in corners) + leveling["yn_offset"]
+        level_size_x = max(x for x, _y in corners) - leveling["xp_offset"] - level_x
+        level_size_y = max(y for _x, y in corners) - leveling["yp_offset"] - level_y
+
+        # path origin of the area in the start WCS
+        path_origin = CNC.machineToWCS(start_origin, *CNC.wcsToMachine(area_origin, area[0], area[2]))
+        zprobe = config["zprobe"]
+        if zprobe["origin"] == 1:
+            zprobe_xy = (zprobe["x_offset"], zprobe["y_offset"])
+        else:
+            zprobe_xy = (path_origin[0] + zprobe["x_offset"], path_origin[1] + zprobe["y_offset"])
+
+        if leveling["active"]:
+            path = CNC.machineToWCS(start_origin, level_x, level_y)
+        else:
+            path = path_origin
+
+        return {
+            "start": start,
+            "start_extents": start_extents,
+            "follower": follower,
+            "set_in_job": set_in_job,
+            "margins": margins,
+            "path": path,
+            "zprobe": zprobe_xy,
+            "leveling": (level_x, level_y, level_size_x, level_size_y),
+        }
+
     def autoCommand(
         self,
         margin=False,
@@ -345,7 +473,7 @@ class Controller:
         plan=None,
     ):
         """
-        plan: the M495 moves per WCS from auto_probe_plan(). Without it, M495 works from the
+        plan: the M495 moves per WCS from autoProbePlan(). Without it, M495 works from the
         program extents in the active WCS.
         """
         if not (margin or zprobe or leveling or goto_origin):

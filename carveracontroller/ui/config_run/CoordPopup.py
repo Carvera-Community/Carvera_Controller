@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import math
 import os
 import platform
 import subprocess
@@ -36,214 +35,6 @@ logger = logging.getLogger(__name__)
 
 _PACKAGE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _BUILTIN_BACKGROUND_DIR = os.path.join(_PACKAGE_ROOT, "data", "play_file_image_backgrounds")
-
-
-def _root():
-    app = App.get_running_app()
-    return app.root if app is not None else None
-
-
-def _program():
-    """The parser of the loaded program, None before the app is built."""
-    return getattr(_root(), "cnc", None)
-
-
-def wcs_origin(name):
-    """
-    Origin (machine X, Y) and rotation of a WCS: the active one from the machine status, another one
-    from the table read with "get wcs". None while the table does not have it yet.
-    """
-    if name == CNC.wcs_names[CNC.vars["active_coord_system"]]:
-        return CNC.vars["wcox"], CNC.vars["wcoy"], CNC.vars["rotation_angle"]
-    table = getattr(getattr(_root(), "controller", None), "wcs_table", {})
-    if name in table:
-        x, y, _z, _a, _b, rotation = table[name]
-        return x, y, rotation
-    return None
-
-
-def program_start_wcs():
-    """The WCS the loaded program selects before its first move, None when it moves before."""
-    cnc = _program()
-    return next(iter(cnc.wcs_extents), None) if cnc is not None else None
-
-
-def start_wcs_origin():
-    """
-    Name, origin (machine X, Y) and rotation of the WCS a job starts in: the one the loaded program
-    selects before its first move, else the active one. While "get wcs" has not read another one
-    yet, the active WCS is returned.
-    """
-    active = CNC.wcs_names[CNC.vars["active_coord_system"]]
-    name = program_start_wcs() or active
-    origin = wcs_origin(name)
-    if origin is None:
-        return active, *wcs_origin(active)
-    return name, *origin
-
-
-# colors of the work coordinate systems in the start job preview
-WCS_COLORS = {
-    "G54": (52 / 255, 152 / 255, 219 / 255),
-    "G55": (155 / 255, 89 / 255, 182 / 255),
-    "G56": (230 / 255, 126 / 255, 34 / 255),
-    "G57": (26 / 255, 188 / 255, 156 / 255),
-    "G58": (236 / 255, 64 / 255, 122 / 255),
-    "G59": (149 / 255, 165 / 255, 166 / 255),
-    "G59.1": (160 / 255, 120 / 255, 90 / 255),
-    "G59.2": (0, 206 / 255, 209 / 255),
-    "G59.3": (1, 1, 1),
-}
-
-
-def program_wcs_extents():
-    """
-    The WCS the loaded program moves in, in program order, with the XY extents of their feed moves:
-    [(name, [xmin, xmax, ymin, ymax] or None)]. Moves before the program selects a WCS run in the
-    start WCS.
-    """
-    cnc = _program()
-    if cnc is None:
-        return []
-    start = start_wcs_origin()[0]
-    merged = {}
-    for name, extents in list(cnc.wcs_extents.items()):
-        name = name or start
-        known = merged.get(name)
-        if known is None:
-            merged[name] = list(extents) if extents else None
-        elif extents:
-            merged[name] = [
-                min(known[0], extents[0]),
-                max(known[1], extents[1]),
-                min(known[2], extents[2]),
-                max(known[3], extents[3]),
-            ]
-    return list(merged.items())
-
-
-def program_wcs_writes():
-    """
-    (wcs, written wcs) for each WCS an M468 of the loaded program writes from another WCS before
-    the written one has feed moves: its origin now is not the one it cuts with.
-    """
-    cnc = _program()
-    if cnc is None:
-        return []
-    start = start_wcs_origin()[0]
-    return [(writer or start, name) for writer, name in cnc.wcs_writes if (writer or start) != name]
-
-
-def wcs_to_machine(origin, x, y):
-    """Machine X, Y of the point x, y of the WCS with origin (machine X, Y, rotation)."""
-    ox, oy, rotation = origin
-    c, s = math.cos(math.radians(rotation)), math.sin(math.radians(rotation))
-    return ox + c * x - s * y, oy + s * x + c * y
-
-
-def machine_to_wcs(origin, x, y):
-    """Point of the WCS with origin (machine X, Y, rotation) at machine X, Y."""
-    ox, oy, rotation = origin
-    c, s = math.cos(math.radians(rotation)), math.sin(math.radians(rotation))
-    return c * (x - ox) + s * (y - oy), c * (y - oy) - s * (x - ox)
-
-
-def auto_probe_plan(config):
-    """
-    What M495 does before the loaded program. Z probe and leveling run in the start WCS, the first
-    one of the program, the scan margin goes around the feed moves of each WCS:
-
-    - "start": the start WCS, M495 X and Y below are in it
-    - "start_extents": [xmin, xmax, ymin, ymax] of the feed moves the start WCS stands for, None
-      when there are none
-    - "follower": the WCS the start WCS only probes for, see below, else None
-    - "set_in_job": the WCS that get their origin from probing in the job, see below
-    - "margins": [(name, [xmin, xmax, ymin, ymax])], the scan margin of each WCS with feed moves in
-      its own coordinates, in program order
-    - "path": (x, y), M495 X and Y: the leveling start corner, else the path origin of that area
-    - "zprobe": (x, y), the Z probe point, the path origin of that area or the origin of the start
-      WCS plus the configured offset
-    - "leveling": (machine x, machine y, size x, size y). G32 probes along the machine axes, so the
-      grid covers the machine XY box around that area, less the leveling offsets.
-
-    A WCS that an M468 in another WCS writes before it has feed moves has no scan margin, its origin
-    now is not the one it cuts with. A start WCS without feed moves that writes the WCS following
-    it only probes the part for it: it stands for the feed moves of that follower, with its own
-    current origin. Any other start WCS without feed moves takes the area of the first WCS with
-    feed moves and a known origin, placed with that origin.
-
-    None for rotary jobs and programs without feed moves: M495 then works from the program extents
-    in the active WCS as before.
-    """
-    app = App.get_running_app()
-    if app is None or app.has_4axis:
-        return None
-    program_wcs = program_wcs_extents()
-    if not any(extents for _name, extents in program_wcs):
-        return None
-    start, start_x, start_y, start_rotation = start_wcs_origin()
-    start_origin = (start_x, start_y, start_rotation)
-    names = [name for name, _extents in program_wcs]
-    extents_of = dict(program_wcs)
-    writes = program_wcs_writes()
-    set_in_job = {name for _writer, name in writes}
-
-    # the start WCS is the active one while "get wcs" has not read the one of the program yet
-    start_extents = extents_of.get(start)
-    following = names[names.index(start) + 1] if start in names[:-1] else None
-    follower = None
-    if start_extents is None and (start, following) in writes:
-        follower = following
-        start_extents = extents_of[start] = extents_of[follower]
-
-    # no scan margin where the origin comes from the job, the start WCS scans the area of the follower
-    margins = [
-        (name, extents_of[name])
-        for name in names
-        if extents_of[name] is not None and (name == start or name not in set_in_job)
-    ]
-
-    # the area Z probe and leveling cover and the origin it is placed with
-    area, area_origin = start_extents, start_origin
-    if area is None:
-        for name, extents in program_wcs:
-            origin = wcs_origin(name)
-            if extents and name not in set_in_job and origin is not None:
-                area, area_origin = extents, origin
-                break
-    if area is None:
-        # nothing better known: the program extents as before
-        area = [CNC.vars["xmin"], CNC.vars["xmax"], CNC.vars["ymin"], CNC.vars["ymax"]]
-    corners = [wcs_to_machine(area_origin, x, y) for x in area[:2] for y in area[2:]]
-    leveling = config["leveling"]
-    level_x = min(x for x, _y in corners) + leveling["xn_offset"]
-    level_y = min(y for _x, y in corners) + leveling["yn_offset"]
-    level_size_x = max(x for x, _y in corners) - leveling["xp_offset"] - level_x
-    level_size_y = max(y for _x, y in corners) - leveling["yp_offset"] - level_y
-
-    # path origin of the area in the start WCS
-    path_origin = machine_to_wcs(start_origin, *wcs_to_machine(area_origin, area[0], area[2]))
-    zprobe = config["zprobe"]
-    if zprobe["origin"] == 1:
-        zprobe_xy = (zprobe["x_offset"], zprobe["y_offset"])
-    else:
-        zprobe_xy = (path_origin[0] + zprobe["x_offset"], path_origin[1] + zprobe["y_offset"])
-
-    if leveling["active"]:
-        path = machine_to_wcs(start_origin, level_x, level_y)
-    else:
-        path = path_origin
-
-    return {
-        "start": start,
-        "start_extents": start_extents,
-        "follower": follower,
-        "set_in_job": set_in_job,
-        "margins": margins,
-        "path": path,
-        "zprobe": zprobe_xy,
-        "leveling": (level_x, level_y, level_size_x, level_size_y),
-    }
 
 
 def background_image_model(name):
@@ -481,7 +272,7 @@ class CoordPopup(ModalView):
         # every popup starts with all WCS shown
         self.hide_other_wcs = False
         app = App.get_running_app()
-        self.multiple_wcs = not app.has_4axis and len(program_wcs_extents()) > 1
+        self.multiple_wcs = not app.has_4axis and len(app.root.controller.programWCS()) > 1
 
     def on_hide_other_wcs(self, _instance, hide):
         self.cnc_workspace.hide_other_wcs = hide
@@ -676,8 +467,8 @@ class CoordPopup(ModalView):
         self.load_leveling_label()
 
     def load_origin_label(self):
-        name, wcox, wcoy, rotation = start_wcs_origin()
         app = App.get_running_app()
+        name, wcox, wcoy, rotation = app.root.controller.startWCSOrigin()
         if app.has_4axis:
             self.lb_origin.text = "(%g, %g) " % (
                 round(wcox - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4),
@@ -706,10 +497,9 @@ class CoordPopup(ModalView):
 
     def clear_start_wcs_rotation(self):
         """Set the rotation of the WCS the job starts in to 0."""
-        name = start_wcs_origin()[0]
-        app = App.get_running_app()
-        app.root.controller.wcsClearRotation(CNC.wcs_names.index(name) + 1)
-        app.root.controller.viewWCS()  # the shown rotation of another WCS comes from "get wcs"
+        controller = App.get_running_app().root.controller
+        controller.wcsClearRotation(CNC.wcs_names.index(controller.startWCSOrigin()[0]) + 1)
+        controller.viewWCS()  # the shown rotation of another WCS comes from "get wcs"
         Clock.schedule_once(lambda *_: self.load_origin_label(), 1)
 
     def load_zprobe_label(self):

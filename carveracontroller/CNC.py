@@ -982,6 +982,52 @@ class CNC:
             extents[3] = max(extents[3], xyz[1])
 
     # ----------------------------------------------------------------------
+    def programWCS(self, start):
+        """
+        The WCS the program moves in, in program order, with the XY extents of their feed moves:
+        [(name, [xmin, xmax, ymin, ymax] or None)]. Moves before the program selects a WCS run in
+        the start WCS.
+        """
+        merged = {}
+        for name, extents in list(self.wcs_extents.items()):
+            name = name or start
+            known = merged.get(name)
+            if known is None:
+                merged[name] = list(extents) if extents else None
+            elif extents:
+                merged[name] = [
+                    min(known[0], extents[0]),
+                    max(known[1], extents[1]),
+                    min(known[2], extents[2]),
+                    max(known[3], extents[3]),
+                ]
+        return list(merged.items())
+
+    # ----------------------------------------------------------------------
+    def programWCSWrites(self, start):
+        """
+        (wcs, written wcs) for each WCS an M468 of the program writes from another WCS before the
+        written one has feed moves: its origin now is not the one it cuts with.
+        """
+        return [(writer or start, name) for writer, name in self.wcs_writes if (writer or start) != name]
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def wcsToMachine(origin, x, y):
+        """Machine X, Y of the point x, y of the WCS with origin (machine X, Y, rotation)."""
+        ox, oy, rotation = origin
+        c, s = math.cos(math.radians(rotation)), math.sin(math.radians(rotation))
+        return ox + c * x - s * y, oy + s * x + c * y
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def machineToWCS(origin, x, y):
+        """Point of the WCS with origin (machine X, Y, rotation) at machine X, Y."""
+        ox, oy, rotation = origin
+        c, s = math.cos(math.radians(rotation)), math.sin(math.radians(rotation))
+        return c * (x - ox) + s * (y - oy), c * (y - oy) - s * (x - ox)
+
+    # ----------------------------------------------------------------------
     # init CNC
     # ----------------------------------------------------------------------
     def init(self, filename=None):
