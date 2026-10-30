@@ -66,6 +66,7 @@ _GROUP_PREFIXES = {
     "cmm": "cmm_",
     "facing": "facing_",
     "viewer": "viewer_",
+    "graph": "graph_",
     "speed_colormap": "speed_colormap_",
     "tooltip": "tooltip_",
     "scroll": "scroll_",

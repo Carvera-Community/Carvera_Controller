@@ -128,6 +128,15 @@
     "axis_z": "#0000e0",
     "hud_bg": "#ffffffc8"
   },
+  "graph": {
+    "bg": "#c5c8cd",
+    "line_1": "#c2410c",
+    "line_2": "#0f766e",
+    "axis": "#60646e",
+    "spine": "#5c6168",
+    "panel": "#e4e7ee",
+    "cursor": "#1a5fb4"
+  },
   "tooltip": {
     "bg": "#ffffffeb",
     "border": "#8a8d96",

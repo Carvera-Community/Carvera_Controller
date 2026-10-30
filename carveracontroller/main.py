@@ -55,6 +55,7 @@ if is_ios() and os.environ.get("CARVERA_UI_IDIOM") == "phone":
     except (KeyError, ValueError) as e:
         print(f"iOS density setup skipped: {e}")
 
+import csv
 import datetime
 import logging
 import sys
@@ -76,6 +77,7 @@ import platform
 import re
 import subprocess
 import tempfile
+from collections import deque
 
 import kivy.lang.builder as _kivy_builder
 import kivy.uix.widget as _kivy_widget
@@ -370,6 +372,36 @@ from .ui.popups.set_position import (
 
 HALT_REASON_ESTOP = 13
 
+os.environ.setdefault("MPLBACKEND", "Agg")
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from kivy_matplotlib_widget.uix.hover_widget import add_hover
+
+from .ui.graph_controls import (  # noqa: F401  – GraphControls registers with Kivy Factory
+    GRAPH_DEFAULT_GRANULARITY,
+    GRAPH_DEFAULT_TIME_RANGE,
+    GRAPH_GRANULARITIES,
+    GRAPH_METRIC_DEFAULT_LINE1,
+    GRAPH_METRIC_DEFAULT_LINE2,
+    GRAPH_METRIC_NONE,
+    GRAPH_METRICS_BY_KEY,
+    GRAPH_TIME_RANGES,
+    GraphControls,
+    graph_metric_key_from_label,
+    graph_metric_label,
+    graph_metric_ylim,
+    graph_number_from_label,
+)
+from .ui.graph_series import format_graph_value, rpm_deviation_percent
+from .ui.graph_widget_twinx import StaticMatplotFigureTwinx  # noqa: F401  – registers widget with Kivy Factory
+
+matplotlib.rcParams["path.simplify"] = True
+matplotlib.rcParams["path.simplify_threshold"] = 1.0
+matplotlib.rcParams["agg.path.chunksize"] = 1000
+
 
 def load_halt_translations(tr: translation.Lang):
     """Loads the appropriate language translation"""
@@ -640,11 +672,27 @@ class FloatBox(FloatLayout):
     camera_controls = ObjectProperty(None)
     camera_view = ObjectProperty(None)
     tool_bar = ObjectProperty(None)
+    bottom_dock = ObjectProperty(None)
+    camera_toggle_btn = ObjectProperty(None)
+    graph_toggle_btn = ObjectProperty(None)
+    collapsed_peer_strip = ObjectProperty(None)
 
     def _viewer_chrome_hit(self, touch):
         if self.gcode_ctl_bar.collide_point(*touch.pos):
             return True
         if self.tool_bar is not None and self.tool_bar.collide_point(*touch.pos):
+            return True
+        if self.camera_toggle_btn is not None and self.camera_toggle_btn.collide_point(*touch.pos):
+            return True
+        if self.graph_toggle_btn is not None and self.graph_toggle_btn.collide_point(*touch.pos):
+            return True
+        if (
+            self.collapsed_peer_strip is not None
+            and self.collapsed_peer_strip.height
+            and self.collapsed_peer_strip.collide_point(*touch.pos)
+        ):
+            return True
+        if self.bottom_dock is not None and self.bottom_dock.collide_point(*touch.pos):
             return True
         if self.camera_view is not None and self.camera_view.collide_point(*touch.pos):
             return True
@@ -2748,6 +2796,15 @@ class Makera(RelativeLayout):
     gcode_playing = BooleanProperty(False)
     gcode_cannot_visualise = BooleanProperty(False)
 
+    graph_chart = ObjectProperty()
+    camera_pane_open = BooleanProperty(False)
+    graph_pane_open = BooleanProperty(False)
+    graph_updates_paused = BooleanProperty(False)
+    graph_line1_metric = StringProperty(GRAPH_METRIC_DEFAULT_LINE1)
+    graph_line2_metric = StringProperty(GRAPH_METRIC_DEFAULT_LINE2)
+    graph_time_range = NumericProperty(GRAPH_DEFAULT_TIME_RANGE)
+    graph_granularity = NumericProperty(GRAPH_DEFAULT_GRANULARITY)
+
     probing_popup = ObjectProperty()
     coord_config = {}
 
@@ -3025,8 +3082,25 @@ class Makera(RelativeLayout):
             on_streaming=self._set_camera_streaming,
             on_reconnecting=self._set_camera_reconnecting,
         )
-        self.ids.camera_splitter.bind(collapsed=self._on_camera_splitter_collapsed)
-        self.ids.camera_splitter.collapse()
+        self._dock_restore_camera = False
+        self._dock_restore_graph = False
+        self._dock_layout_updating = False
+        self.ids.bottom_dock.bind(collapsed=self._on_bottom_dock_collapsed)
+        self.ids.bottom_dock.bind(pos=self._update_dock_toggle_buttons, size=self._update_dock_toggle_buttons)
+        self.ids.float_layout.bind(pos=self._update_dock_toggle_buttons, size=self._update_dock_toggle_buttons)
+        self.ids.bottom_dock_body.bind(width=self._update_graph_pane_max_size)
+        self.bind(camera_pane_open=self._update_dock_toggle_buttons, graph_pane_open=self._update_dock_toggle_buttons)
+        App.get_running_app().bind(supports_camera=self._update_dock_toggle_buttons)
+        self.ids.bottom_dock.collapse()
+        Clock.schedule_once(lambda dt: self._update_dock_toggle_buttons(), 0)
+
+        # init graph chart
+        self._restore_graph_options()
+        self._graph_samples = self._make_graph_samples()
+        self._init_graph_chart()
+        self._stop_graph_theme = watch_theme(self._apply_graph_theme)
+        self._graph_clock = Clock.schedule_interval(self._update_graph_chart, self.graph_granularity)
+        Clock.schedule_once(lambda dt: self._render_graph_chart(), 0)
 
         # init settings
         self.config = ConfigParser()
@@ -7316,6 +7390,381 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: callback(), 0.1)
 
     # -----------------------------------------------------------------------
+    class _GraphValueFormatter(mticker.Formatter):
+        """Tick and hover text without scientific notation."""
+
+        def __call__(self, value, pos=None):
+            return format_graph_value(value)
+
+        def format_data(self, value):
+            return format_graph_value(value)
+
+        def format_data_short(self, value):
+            return format_graph_value(value)
+
+    def _init_graph_chart(self):
+        fs = dp(8) * 1.2
+        fig, ax1 = plt.subplots(1, 1)
+        fig.set_tight_layout({"pad": 0.4})
+        ax2 = ax1.twinx()
+
+        (self._graph_line1,) = ax1.plot([], [], linewidth=1.5)
+        (self._graph_line2,) = ax2.plot([], [], linewidth=1.5)
+
+        ax1.set_xlabel("Time (s)", fontsize=fs)
+        for ax in (ax1, ax2):
+            ax.tick_params(labelsize=fs)
+            ax.spines["top"].set_visible(False)
+        self._sync_graph_hover_labels()
+        # Plain decimals. The default short formatter writes low RPM as 5e+02.
+        number_format = self._GraphValueFormatter()
+        ax1.xaxis.set_major_formatter(number_format)
+        ax1.yaxis.set_major_formatter(number_format)
+        ax2.yaxis.set_major_formatter(number_format)
+        self.graph_chart.cursor_xaxis_formatter = number_format
+        self.graph_chart.cursor_yaxis_formatter = number_format
+        self.graph_chart.cursor_yaxis2_formatter = number_format
+
+        # Register the series before the figure is assigned so the hover can see
+        # them. The hover chip is moved onto the overlay; leaving it in the plot's
+        # BoxLayout would steal width from the chart.
+        self.graph_chart.auto_cursor = True
+        self.graph_chart.figure = fig
+        self.graph_chart.xmin = -self.graph_time_range
+        self.graph_chart.xmax = 0
+        self._attach_graph_hover()
+        self._apply_graph_theme(get_theme())
+
+    def _attach_graph_hover(self):
+        chart = self.graph_chart
+        if chart is None or chart.hover_instance is not None:
+            return
+        add_hover(chart, mode="desktop", hover_type="compare", label_x="Time (s)", label_y="Value")
+        hover = chart.hover_instance
+        box = chart.parent
+        overlay = None if box is None else box.parent
+        if hover is None or box is None or overlay is None or hover.parent is not box:
+            return
+        box.remove_widget(hover)
+        overlay.add_widget(hover)
+
+    def _apply_graph_theme(self, theme):
+        """Repaint the monitoring chart from the live theme."""
+        fig = None if getattr(self, "graph_chart", None) is None else self.graph_chart.figure
+        if fig is None or len(fig.axes) < 2 or getattr(self, "_graph_line1", None) is None:
+            return
+        background = tuple(theme.graph_bg)
+        axis = tuple(theme.graph_axis)
+        spine = tuple(theme.graph_spine)
+        fig.patch.set_facecolor(background)
+        for item in fig.axes:
+            item.set_facecolor(background)
+            item.tick_params(colors=axis)
+            item.xaxis.label.set_color(axis)
+            for name in ("bottom", "left", "right"):
+                item.spines[name].set_color(spine)
+        self._graph_line1.set_color(tuple(theme.graph_line_1))
+        self._graph_line2.set_color(tuple(theme.graph_line_2))
+        hover = getattr(self.graph_chart, "hover_instance", None)
+        if hover is not None:
+            text = tuple(theme.text)
+            hover.text_color = text
+            hover.background_color = tuple(theme.graph_panel)
+            for child in getattr(hover, "children_list", []):
+                child.text_color = text
+            self._apply_graph_hover_line_color(hover, tuple(theme.graph_cursor))
+        self._style_graph_axes()
+        self._render_graph_chart()
+
+    def _style_graph_axes(self):
+        fig = None if self.graph_chart is None else self.graph_chart.figure
+        if fig is None or len(fig.axes) < 2:
+            return
+        theme = get_theme()
+        fs = dp(8) * 1.2
+        self._style_graph_axis(fig.axes[0], self.graph_line1_metric, tuple(theme.graph_line_1), "left", fs)
+        self._style_graph_axis(fig.axes[1], self.graph_line2_metric, tuple(theme.graph_line_2), "right", fs)
+
+    # -----------------------------------------------------------------------
+    def _style_graph_axis(self, ax, metric_key, color, side, fs):
+        metric = GRAPH_METRICS_BY_KEY.get(metric_key)
+        visible = metric is not None and metric.visible
+        ax.set_ylabel(tr._(metric.ylabel) if visible and metric.ylabel else "", fontsize=fs)
+        ax.yaxis.label.set_color(color)
+        hidden = tuple(get_theme().graph_spine)
+        ax.tick_params(
+            axis="y",
+            colors=color if visible else hidden,
+            labelsize=fs,
+            labelleft=(side == "left" and visible),
+            labelright=(side == "right" and visible),
+        )
+
+    def _graph_sample_count(self):
+        gran = float(self.graph_granularity) or 1.0
+        return max(1, round(float(self.graph_time_range) / gran))
+
+    def _make_graph_samples(self, previous=None):
+        maxlen = self._graph_sample_count()
+        samples = {}
+        for key, metric in GRAPH_METRICS_BY_KEY.items():
+            if not metric.visible:
+                continue
+            old = list(previous[key]) if previous and key in previous else []
+            samples[key] = deque(old[-maxlen:], maxlen=maxlen)
+        return samples
+
+    def _apply_graph_window(self, keep_samples=True):
+        self._graph_samples = self._make_graph_samples(self._graph_samples if keep_samples else None)
+        if self.graph_chart is not None:
+            self.graph_chart.xmin = -self.graph_time_range
+        clock = getattr(self, "_graph_clock", None)
+        if clock is not None:
+            clock.cancel()
+        self._graph_clock = Clock.schedule_interval(self._update_graph_chart, self.graph_granularity)
+        self._render_graph_chart()
+
+    # -----------------------------------------------------------------------
+    def set_graph_line_metric(self, line, label):
+        key = graph_metric_key_from_label(label)
+        attr = "graph_line1_metric" if line == 1 else "graph_line2_metric"
+        if getattr(self, attr) == key:
+            return
+        setattr(self, attr, key)
+        self._persist_graph_options()
+        self._sync_graph_hover_labels()
+        self._style_graph_axes()
+        self._render_graph_chart()
+
+    def _sync_graph_hover_labels(self):
+        """Name each series on the compare hover so both values are labeled."""
+        line1 = getattr(self, "_graph_line1", None)
+        line2 = getattr(self, "_graph_line2", None)
+        if line1 is None or line2 is None:
+            return
+        line1.set_label(graph_metric_label(self.graph_line1_metric))
+        line2.set_label(graph_metric_label(self.graph_line2_metric))
+        if line1.get_label() == line2.get_label():
+            line2.set_label(f"{line2.get_label()} (2)")
+        chart = getattr(self, "graph_chart", None)
+        hover = None if chart is None else getattr(chart, "hover_instance", None)
+        if hover is None or not hasattr(hover, "create_child") or not chart.lines:
+            return
+        hover.create_child(chart.lines)
+        text = tuple(get_theme().text)
+        hover.text_color = text
+        for child in hover.children_list:
+            child.text_color = text
+        self._apply_graph_hover_line_color(hover, tuple(get_theme().graph_cursor))
+
+    def _apply_graph_hover_line_color(self, hover, color):
+        """The compare-hover guide is a fixed blue in the library rule."""
+        for instruction in hover.canvas.after.children:
+            if isinstance(instruction, Color):
+                instruction.rgba = color
+                return
+
+    def set_graph_setting(self, setting, label):
+        if setting in ("line1", "line2"):
+            self.set_graph_line_metric(1 if setting == "line1" else 2, label)
+            return
+        if setting == "time_range":
+            value = graph_number_from_label(label, GRAPH_TIME_RANGES)
+            if value is None or abs(value - self.graph_time_range) < 1e-9:
+                return
+            self.graph_time_range = value
+            self._persist_graph_options()
+            self._apply_graph_window()
+            return
+        if setting == "granularity":
+            value = graph_number_from_label(label, GRAPH_GRANULARITIES)
+            if value is None or abs(value - self.graph_granularity) < 1e-9:
+                return
+            self.graph_granularity = value
+            self._persist_graph_options()
+            self._apply_graph_window(keep_samples=False)
+
+    def _stored_graph_metric(self, option, default):
+        if not Config.has_option("carvera", option):
+            return default
+        key = Config.get("carvera", option)
+        if key in GRAPH_METRICS_BY_KEY:
+            return key
+        return default
+
+    def _stored_graph_number(self, option, allowed, default):
+        if not Config.has_option("carvera", option):
+            return default
+        try:
+            parsed = float(Config.get("carvera", option))
+        except (TypeError, ValueError):
+            return default
+        for value in allowed:
+            if abs(float(value) - parsed) < 1e-9:
+                return value
+        return default
+
+    def _restore_graph_options(self):
+        self.graph_line1_metric = self._stored_graph_metric("graph_line1", GRAPH_METRIC_DEFAULT_LINE1)
+        self.graph_line2_metric = self._stored_graph_metric("graph_line2", GRAPH_METRIC_DEFAULT_LINE2)
+        self.graph_time_range = self._stored_graph_number(
+            "graph_time_range", GRAPH_TIME_RANGES, GRAPH_DEFAULT_TIME_RANGE
+        )
+        self.graph_granularity = self._stored_graph_number(
+            "graph_granularity", GRAPH_GRANULARITIES, GRAPH_DEFAULT_GRANULARITY
+        )
+        self._graph_options_ready = True
+
+    def _persist_graph_options(self):
+        if not getattr(self, "_graph_options_ready", False):
+            return
+        Config.set("carvera", "graph_line1", self.graph_line1_metric)
+        Config.set("carvera", "graph_line2", self.graph_line2_metric)
+        Config.set("carvera", "graph_time_range", str(self.graph_time_range))
+        Config.set("carvera", "graph_granularity", str(self.graph_granularity))
+        Config.write()
+
+    # -----------------------------------------------------------------------
+    def _close_graph_controls(self):
+        controls = self.ids.get("graph_controls")
+        if controls is not None:
+            controls.adjust_open = False
+
+    # -----------------------------------------------------------------------
+    def _cnc_float(self, name):
+        try:
+            value = CNC.vars.get(name, 0)
+            if value is None:
+                return 0.0
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _graph_metric_sample(self, metric):
+        if metric.key == "rpm_deviation":
+            return rpm_deviation_percent(self._cnc_float("curspindle"), self._cnc_float("tarspindle"))
+        return self._cnc_float(metric.cnc_var)
+
+    # -----------------------------------------------------------------------
+    def _update_graph_chart(self, *_args):
+        for key, metric in GRAPH_METRICS_BY_KEY.items():
+            if not metric.visible or key not in self._graph_samples:
+                continue
+            self._graph_samples[key].append(self._graph_metric_sample(metric))
+        if self.graph_pane_open and not self.graph_updates_paused:
+            self._render_graph_chart()
+
+    # -----------------------------------------------------------------------
+    def _render_graph_chart(self):
+        if self.graph_updates_paused:
+            return
+        if self.graph_chart is None or getattr(self, "_graph_line1", None) is None:
+            return
+        n = max((len(samples) for samples in self._graph_samples.values()), default=0)
+        gran = float(self.graph_granularity)
+        times = [-(n - 1 - i) * gran for i in range(n)] if n else []
+        self.graph_chart.xmin = -self.graph_time_range
+        self._render_graph_line(self._graph_line1, self.graph_line1_metric, times, "ymin", "ymax")
+        self._render_graph_line(self._graph_line2, self.graph_line2_metric, times, "ymin2", "ymax2")
+        self.graph_chart.home()
+        self.graph_chart.refresh_hover()
+
+    def save_monitoring_graph(self):
+        """Ask for a folder, then write the current chart image and a CSV of samples."""
+
+        def on_confirm(popup, dest):
+            popup.dismiss()
+            folder = dest if os.path.isdir(dest) else os.path.dirname(dest)
+            self._write_monitoring_graph(folder)
+
+        open_local_file_picker(
+            title=tr._("Choose where to save the monitoring graph"),
+            on_confirm=on_confirm,
+            confirm_label=tr._("Select"),
+            size_hint=(0.82, 0.85),
+            folder_only=True,
+        )
+
+    def _write_monitoring_graph(self, folder):
+        """Write the graph as it is now, including a paused trace. Does not take a new sample."""
+        fig = None if self.graph_chart is None else self.graph_chart.figure
+        if fig is None:
+            self.show_message_popup(tr._("The monitoring graph is not ready to save."), False)
+            return
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        base = os.path.join(folder, f"monitoring-graph-{stamp}")
+        image_path = base + ".png"
+        csv_path = base + ".csv"
+        try:
+            fig.savefig(image_path, facecolor=fig.get_facecolor(), bbox_inches="tight")
+            self._write_monitoring_graph_csv(csv_path)
+        except Exception as error:
+            logger.exception("failed to save monitoring graph")
+            self.show_message_popup(tr._("Could not save the monitoring graph.") + f"\n{error}", False)
+            return
+        self.show_message_popup(
+            tr._("Saved the monitoring graph.") + f"\n{os.path.basename(image_path)}\n{os.path.basename(csv_path)}",
+            False,
+        )
+
+    def _write_monitoring_graph_csv(self, path):
+        samples = (
+            self._graph_paused_samples
+            if self.graph_updates_paused and getattr(self, "_graph_paused_samples", None) is not None
+            else getattr(self, "_graph_samples", None) or {}
+        )
+        keys = [
+            key
+            for key, metric in GRAPH_METRICS_BY_KEY.items()
+            if metric.visible and key in samples and len(samples[key])
+        ]
+        count = max((len(samples[key]) for key in keys), default=0)
+        step = float(self.graph_granularity) or 1.0
+
+        def csv_number(value):
+            try:
+                number = float(value)
+            except (TypeError, ValueError):
+                return ""
+            if number != number or number in (float("inf"), float("-inf")):
+                return ""
+            text = f"{number:.6f}".rstrip("0").rstrip(".")
+            return "0" if text in ("", "-") else text
+
+        with open(path, "w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["Time (s)", *[graph_metric_label(key) for key in keys]])
+            for index in range(count):
+                row = [f"{-(count - 1 - index) * step:.3f}"]
+                for key in keys:
+                    series = samples[key]
+                    sample_index = index - (count - len(series))
+                    if sample_index < 0:
+                        row.append("")
+                    else:
+                        row.append(csv_number(series[sample_index]))
+                writer.writerow(row)
+
+    # -----------------------------------------------------------------------
+    def _render_graph_line(self, line, metric_key, times, ymin_attr, ymax_attr):
+        metric = GRAPH_METRICS_BY_KEY.get(metric_key)
+        if metric is None or not metric.visible:
+            line.set_visible(False)
+            line.set_data([], [])
+            return
+        samples = list(self._graph_samples[metric.key])
+        finite = [sample for sample in samples if sample == sample]
+        ymin, ymax = graph_metric_ylim(metric.key, finite or None)
+        setattr(self.graph_chart, ymin_attr, ymin)
+        setattr(self.graph_chart, ymax_attr, ymax)
+        if not finite:
+            line.set_visible(False)
+            line.set_data([], [])
+            return
+        line.set_visible(True)
+        line.set_data(times, samples)
+
+    # -----------------------------------------------------------------------
     def updateStatus(self, *args):
         try:
             now = time.time()
@@ -8021,6 +8470,7 @@ class Makera(RelativeLayout):
             self.diagnose_popup.st_atc_home.state = CNC.vars["st_atc_home"]
             self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
             self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
+
         except:
             logger.error(sys.exc_info()[1])
 
@@ -9098,25 +9548,199 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def toggle_camera_stream(self):
-        splitter = self.ids.get("camera_splitter")
-        if splitter is not None:
-            splitter.toggle_collapsed()
+        self.toggle_camera_pane()
+
+    # -----------------------------------------------------------------------
+    def toggle_camera_pane(self):
+        if not App.get_running_app().supports_camera:
+            return
+        self.camera_pane_open = not self.camera_pane_open
+        self._dock_restore_camera = self.camera_pane_open
+        if self.graph_pane_open:
+            self._dock_restore_graph = True
+        self._sync_camera_stream()
+        self._apply_bottom_dock_layout()
+
+    # -----------------------------------------------------------------------
+    def toggle_graph_updates(self):
+        """Freeze the display, or show the samples recorded while it was frozen."""
+        self.graph_updates_paused = not self.graph_updates_paused
+        if self.graph_updates_paused:
+            self._graph_paused_samples = {key: list(series) for key, series in self._graph_samples.items()}
+            return
+        self._graph_paused_samples = None
+        if self.graph_pane_open:
+            self._render_graph_chart()
+
+    def toggle_graph_pane(self):
+        self.graph_pane_open = not self.graph_pane_open
+        self._dock_restore_graph = self.graph_pane_open
+        if self.camera_pane_open:
+            self._dock_restore_camera = True
+        self._apply_bottom_dock_layout()
+        if self.graph_pane_open:
+            Clock.schedule_once(lambda dt: self._render_graph_chart(), 0)
+        else:
+            self._close_graph_controls()
+
+    # -----------------------------------------------------------------------
+    def _sync_camera_stream(self):
+        app = App.get_running_app()
+        if self.camera_pane_open and app.supports_camera:
+            if not self.camera_stream.is_streaming():
+                self.camera_stream.start(self.controller.connection_address.split(":")[0])
             return
         if self.camera_stream.is_streaming():
             self.camera_stream.stop()
-        elif App.get_running_app().supports_camera:
-            self.camera_stream.start(self.controller.connection_address.split(":")[0])
+        controls = self.ids.get("camera_controls")
+        if controls is not None:
+            controls.adjust_open = False
 
     # -----------------------------------------------------------------------
-    def _on_camera_splitter_collapsed(self, _splitter, collapsed):
+    def _on_bottom_dock_collapsed(self, _dock, collapsed):
+        if self._dock_layout_updating:
+            return
         if collapsed:
-            if self.camera_stream.is_streaming():
-                self.camera_stream.stop()
-            controls = self.ids.get("camera_controls")
-            if controls is not None:
-                controls.adjust_open = False
-        elif App.get_running_app().supports_camera and not self.camera_stream.is_streaming():
-            self.camera_stream.start(self.controller.connection_address.split(":")[0])
+            self._dock_restore_camera = self.camera_pane_open
+            self._dock_restore_graph = self.graph_pane_open
+            self.camera_pane_open = False
+            self.graph_pane_open = False
+            self._sync_camera_stream()
+            self._close_graph_controls()
+            self._apply_bottom_dock_layout()
+            return
+        if not self.camera_pane_open and not self.graph_pane_open:
+            app = App.get_running_app()
+            self.camera_pane_open = bool(self._dock_restore_camera and app.supports_camera)
+            self.graph_pane_open = bool(self._dock_restore_graph)
+            if not self.camera_pane_open and not self.graph_pane_open:
+                self.graph_pane_open = True
+        self._sync_camera_stream()
+        self._apply_bottom_dock_layout()
+
+    # -----------------------------------------------------------------------
+    def _apply_bottom_dock_layout(self):
+        if self._dock_layout_updating:
+            return
+        dock = self.ids.get("bottom_dock")
+        camera_pane = self.ids.get("camera_pane")
+        graph_pane = self.ids.get("graph_pane")
+        if dock is None or camera_pane is None or graph_pane is None:
+            return
+
+        self._dock_layout_updating = True
+        try:
+            app = App.get_running_app()
+            camera_open = bool(self.camera_pane_open and app.supports_camera)
+            if self.camera_pane_open and not camera_open:
+                self.camera_pane_open = False
+            graph_open = bool(self.graph_pane_open)
+
+            if camera_open:
+                camera_pane.opacity = 1
+                camera_pane.disabled = False
+                camera_pane.size_hint_x = 1
+            else:
+                camera_pane.opacity = 0
+                camera_pane.disabled = True
+                camera_pane.size_hint_x = None
+                camera_pane.width = 0
+
+            if graph_open and camera_open:
+                graph_pane.opacity = 1
+                graph_pane.disabled = False
+                graph_pane.size_hint_x = None
+                graph_pane.strip_size = dp(5)
+                Clock.schedule_once(lambda dt: self._size_both_dock_panes(), 0)
+            elif graph_open:
+                graph_pane.opacity = 1
+                graph_pane.disabled = False
+                graph_pane.size_hint_x = 1
+                graph_pane.strip_size = 0
+                graph_pane.min_size = 0
+            else:
+                graph_pane.opacity = 0
+                graph_pane.disabled = True
+                graph_pane.size_hint_x = None
+                graph_pane.width = 0
+                graph_pane.strip_size = 0
+                graph_pane.min_size = 0
+
+            if camera_open or graph_open:
+                if dock.collapsed:
+                    dock.expand()
+            elif not dock.collapsed:
+                dock.collapse()
+
+            peer = self.ids.get("collapsed_peer_strip")
+            if peer is not None:
+                closed_needs_strip = (not camera_open and app.supports_camera) or (not graph_open and camera_open)
+                peer.height = dp(5) if camera_open != graph_open and closed_needs_strip else 0
+        finally:
+            self._dock_layout_updating = False
+        self._update_dock_toggle_buttons()
+
+    # -----------------------------------------------------------------------
+    def _size_both_dock_panes(self):
+        if not (self.camera_pane_open and self.graph_pane_open):
+            return
+        graph_pane = self.ids.get("graph_pane")
+        body = self.ids.get("bottom_dock_body")
+        if graph_pane is None or body is None:
+            return
+        self._update_graph_pane_max_size()
+        graph_pane.size_hint_x = None
+        graph_pane.width = max(graph_pane.min_size, body.width / 2)
+
+    def _update_graph_pane_max_size(self, *_args):
+        graph_pane = self.ids.get("graph_pane")
+        body = self.ids.get("bottom_dock_body")
+        if graph_pane is None or body is None:
+            return
+        min_size = dp(80)
+        if self.camera_pane_open and self.graph_pane_open:
+            graph_pane.min_size = min_size
+            graph_pane.max_size = max(min_size, body.width - min_size)
+
+    # -----------------------------------------------------------------------
+    def _update_dock_toggle_buttons(self, *_args):
+        float_layout = self.ids.get("float_layout")
+        dock = self.ids.get("bottom_dock")
+        cam_btn = self.ids.get("camera_toggle_btn")
+        graph_btn = self.ids.get("graph_toggle_btn")
+        if float_layout is None or dock is None or cam_btn is None or graph_btn is None:
+            return
+
+        app = App.get_running_app()
+        camera_open = bool(self.camera_pane_open and app.supports_camera)
+        graph_open = bool(self.graph_pane_open)
+        show_camera_btn = bool(app.supports_camera)
+        btn_w = dp(70)
+        btn_h = dp(28)
+
+        cam_btn.size = (btn_w if show_camera_btn else 0, btn_h)
+        graph_btn.size = (btn_w, btn_h)
+
+        # Open-pane buttons sit on the dock strip; collapsed buttons sit with
+        # their bottom edge on the parent bottom (original camera-button y).
+        strip_y = dock.top - dock.strip_size / 2 - btn_h / 2
+        bottom_y = float_layout.y
+
+        def row_x(index, count):
+            if count <= 1:
+                return float_layout.center_x - btn_w / 2
+            gap = (float_layout.width - 2 * btn_w) / 3
+            if index == 0:
+                return float_layout.x + gap
+            return float_layout.x + 2 * gap + btn_w
+
+        if not show_camera_btn:
+            graph_btn.pos = (row_x(0, 1), strip_y if graph_open else bottom_y)
+            cam_btn.pos = (float_layout.x, bottom_y)
+            return
+
+        cam_btn.pos = (row_x(0, 2), strip_y if camera_open else bottom_y)
+        graph_btn.pos = (row_x(1, 2), strip_y if graph_open else bottom_y)
 
     # -----------------------------------------------------------------------
     def _detect_camera(self, host, probe):
@@ -9129,13 +9753,10 @@ class Makera(RelativeLayout):
         if probe != self.camera_probe:
             return
         App.get_running_app().supports_camera = found
-        splitter = self.ids.get("camera_splitter")
-        if splitter is None:
-            return
-        if found and splitter.collapsed:
-            splitter.height = splitter.strip_size
-        elif not found:
-            splitter.collapse()
+        if not found and self.camera_pane_open:
+            self.camera_pane_open = False
+            self._sync_camera_stream()
+            self._apply_bottom_dock_layout()
 
     # -----------------------------------------------------------------------
     def set_camera_resolution(self, label):
@@ -9172,9 +9793,9 @@ class Makera(RelativeLayout):
         blip does not come through here.
         """
         App.get_running_app().camera_streaming = streaming
-        splitter = self.ids.get("camera_splitter")
-        if splitter is not None and not streaming and not splitter.collapsed:
-            splitter.collapse()
+        if not streaming and self.camera_pane_open:
+            self.camera_pane_open = False
+            self._apply_bottom_dock_layout()
 
     # -----------------------------------------------------------------------
     def _set_camera_reconnecting(self, reconnecting):

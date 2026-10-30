@@ -158,6 +158,15 @@
     "sim_bar": "#a3be8cf2",
     "sim_marker": "#88c0d0"
   },
+  "graph": {
+    "bg": "#2e3440",
+    "line_1": "#d08770",
+    "line_2": "#8fbcbb",
+    "axis": "#a6abb3",
+    "spine": "#4c566a",
+    "panel": "#3b4252",
+    "cursor": "#88c0d0"
+  },
   "speed_colormap": {
     "1": "#5e81ac",
     "2": "#88c0d0",

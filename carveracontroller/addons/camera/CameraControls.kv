@@ -9,8 +9,9 @@
     visible: False
     anchor_x: 'left'
     anchor_y: 'top'
+    padding: 0, 0, 0, (dp(4) if self.visible else 0)
     size_hint_y: None
-    height: '50dp' if self.visible else 0
+    height: (dp(25) + dp(4)) if self.visible else 0
     opacity: 1 if self.visible else 0
 
 <CameraAdjustPanel@BoxLayout>:
@@ -45,26 +46,30 @@
     adjust_open: False
     orientation: 'vertical'
     size_hint: None, None
-    width: '250dp' if root.adjust_open and app.camera_streaming else '50dp'
+    width: '250dp' if root.adjust_open and app.camera_streaming else '25dp'
     height: self.minimum_height
     CameraButtonSlot:
         visible: app.camera_streaming
         TransparentButton:
             icon: 'data/configure.png'
+            icon_size: 16
             active: root.adjust_open
+            chrome: True
             size_hint: None, None
-            width: '50dp'
-            height: self.parent.height
+            width: '25dp'
+            height: '25dp' if self.parent and self.parent.visible else 0
             on_release:
                 root.adjust_open = not root.adjust_open
     CameraButtonSlot:
         visible: app.camera_streaming and app.sd_videos_available
         TransparentButton:
-            icon: 'data/file.png'
+            icon: 'data/file-outline.png'
+            icon_size: 16
+            chrome: True
             tooltip_txt: tr._('Browse videos')
             size_hint: None, None
-            width: '50dp'
-            height: self.parent.height
+            width: '25dp'
+            height: '25dp' if self.parent and self.parent.visible else 0
             on_release:
                 app.root.open_videos_browser()
     CameraAdjustPanel:

@@ -96,6 +96,7 @@ _SECTION_TITLES = {
     "cmm": "CMM",
     "facing": "Facing",
     "viewer": "Viewer",
+    "graph": "Monitoring graph",
     "speed_colormap": "Speed colors",
     "tooltip": "Tooltip",
     "scroll": "Scroll bar",

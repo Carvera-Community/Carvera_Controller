@@ -2,6 +2,7 @@
 #:import Factory kivy.factory.Factory
 #:import digitize_v carveracontroller.Utils.digitize_v
 #:import tr carveracontroller.__main__.tr
+#:import StaticMatplotFigureTwinx carveracontroller.ui.graph_widget_twinx
 #:import _ carveracontroller.ui.LocalFilePicker
 #:import _ carveracontroller.ui.common
 #:import _ carveracontroller.ui.config_run
@@ -42,6 +43,7 @@
 #:include addons/stock/ui/StockSettingsPopup.kv
 #:include addons/beds/ui/BedSettingsPopup.kv
 #:include addons/camera/CameraControls.kv
+#:include ui/GraphControls.kv
 
 <Label>:
     font_name: app.theme.font_default
@@ -2621,6 +2623,7 @@
     gcode_viewer_container: gcode_viewer_container
     gcode_play_slider: gcode_play_slider
     sim_stats_hud: sim_stats_hud
+    graph_chart: graph_chart
 
     BoxLayout:
         padding: [app.safe_area_padding[0] + dp(5), app.safe_area_padding[1] + dp(5), app.safe_area_padding[2] + dp(5), app.safe_area_padding[3] + dp(5)]
@@ -3278,6 +3281,10 @@
                             camera_view: camera_view
                             tool_bar: tool_bar
                             gcode_ctl_bar: gcode_ctl_bar
+                            bottom_dock: bottom_dock
+                            camera_toggle_btn: camera_toggle_btn
+                            graph_toggle_btn: graph_toggle_btn
+                            collapsed_peer_strip: collapsed_peer_strip
                             BoxLayout:
                                 orientation: 'vertical'
                                 pos: float_layout.pos
@@ -3287,42 +3294,105 @@
                                     size_hint_y: 1
                                     orientation: 'vertical'
                                 CollapsibleSplitter:
-                                    id: camera_splitter
+                                    id: bottom_dock
                                     sizable_from: 'top'
                                     collapsed: True
                                     size_hint_y: None
-                                    strip_size: '5dp' if app.supports_camera else 0
+                                    strip_size: '5dp'
                                     min_size: self.strip_size
                                     keep_within_parent: True
-                                    opacity: 1 if app.supports_camera else 0
-                                    disabled: not app.supports_camera
                                     canvas.before:
                                         Color:
                                             rgba: app.theme.surface
                                         Rectangle:
                                             pos: self.x, self.y + self.height - self.strip_size
                                             size: self.width, self.strip_size
-                                    FloatLayout:
-                                        canvas.before:
-                                            Color:
-                                                rgba: app.theme.bg
-                                            Rectangle:
-                                                pos: self.pos
-                                                size: self.size
-                                        CameraView:
-                                            id: camera_view
-                                            pos: self.parent.pos
-                                            size: self.parent.size
-                                            brightness: app.camera_brightness
-                                            contrast: app.camera_contrast
-                                            gamma: app.camera_gamma
-                                        CameraReconnectSpinner:
-                                            active: app.camera_reconnecting
-                                            pos: self.parent.pos
-                                            size: self.parent.size
-                                        CameraControls:
-                                            id: camera_controls
-                                            pos_hint: {'x': 0, 'top': 1}
+                                    BoxLayout:
+                                        id: bottom_dock_body
+                                        orientation: 'horizontal'
+                                        FloatLayout:
+                                            id: camera_pane
+                                            size_hint_x: None
+                                            width: 0
+                                            opacity: 0
+                                            disabled: True
+                                            canvas.before:
+                                                Color:
+                                                    rgba: app.theme.bg
+                                                Rectangle:
+                                                    pos: self.pos
+                                                    size: self.size
+                                            CameraView:
+                                                id: camera_view
+                                                pos: self.parent.pos
+                                                size: self.parent.size
+                                                brightness: app.camera_brightness
+                                                contrast: app.camera_contrast
+                                                gamma: app.camera_gamma
+                                            CameraReconnectSpinner:
+                                                active: app.camera_reconnecting
+                                                pos: self.parent.pos
+                                                size: self.parent.size
+                                            CameraControls:
+                                                id: camera_controls
+                                                x: self.parent.x + dp(4) if self.parent else 0
+                                                y: self.parent.top - self.height - dp(4) if self.parent else 0
+                                        Splitter:
+                                            id: graph_pane
+                                            sizable_from: 'left'
+                                            size_hint_x: None
+                                            width: 0
+                                            strip_size: 0
+                                            min_size: 0
+                                            keep_within_parent: True
+                                            canvas.before:
+                                                Color:
+                                                    rgba: app.theme.surface
+                                                Rectangle:
+                                                    pos: self.x, self.y
+                                                    size: self.strip_size, self.height
+                                            FloatLayout:
+                                                canvas.before:
+                                                    Color:
+                                                        rgba: app.theme.graph_bg
+                                                    Rectangle:
+                                                        pos: self.pos
+                                                        size: self.size
+                                                BoxLayout:
+                                                    # Right inset clears the 25dp buttons and their 4dp margin.
+                                                    padding: [dp(10), dp(10), dp(10) + dp(25) + dp(4), dp(10)]
+                                                    size_hint: None, None
+                                                    pos: self.parent.pos
+                                                    size: self.parent.size
+                                                    StaticMatplotFigureTwinx:
+                                                        id: graph_chart
+                                                GraphControls:
+                                                    id: graph_controls
+                                                    line1_metric: root.graph_line1_metric
+                                                    line2_metric: root.graph_line2_metric
+                                                    time_range: root.graph_time_range
+                                                    granularity: root.graph_granularity
+                                                TransparentButton:
+                                                    size_hint: None, None
+                                                    width: '25dp'
+                                                    height: '25dp'
+                                                    x: self.parent.right - self.width - dp(4) if self.parent else 0
+                                                    y: self.parent.y + dp(4) if self.parent else 0
+                                                    icon_size: 16
+                                                    chrome: True
+                                                    icon: 'data/start.png' if root.graph_updates_paused else 'data/suspend.png'
+                                                    tooltip_txt: tr._('Resume graph') if root.graph_updates_paused else tr._('Pause graph')
+                                                    on_release: root.toggle_graph_updates()
+                                Widget:
+                                    id: collapsed_peer_strip
+                                    size_hint_y: None
+                                    height: 0
+                                    canvas.before:
+                                        Color:
+                                            rgba: app.theme.surface
+                                        Rectangle:
+                                            pos: self.pos
+                                            size: self.size
                             SimStatsHud:
                                 id: sim_stats_hud
                                 x: float_layout.x + dp(8)
@@ -3477,16 +3547,16 @@
                                     value: 1000
                                     disabled: app.selected_remote_filename == '' and app.selected_local_filename == ''
                             TransparentButton:
+                                id: camera_toggle_btn
                                 size_hint: None, None
                                 size: '70dp', '28dp'
                                 icon: 'data/camera.png'
                                 icon_size: 17
-                                active: app.camera_streaming
+                                active: root.camera_pane_open
                                 recording: app.timelapse_recording
                                 opacity: 1 if app.supports_camera else 0
                                 disabled: not app.supports_camera
-                                tooltip_txt: tr._('Hide camera') if app.camera_streaming else tr._('Show camera')
-                                pos: camera_splitter.center_x - self.width / 2, float_layout.y if camera_splitter.collapsed else (camera_splitter.top - camera_splitter.strip_size / 2 - self.height / 2)
+                                tooltip_txt: tr._('Hide camera') if root.camera_pane_open else tr._('Show camera')
                                 canvas.before:
                                     Color:
                                         rgba: app.theme.surface
@@ -3494,7 +3564,23 @@
                                         pos: self.pos
                                         size: self.size
                                         radius: [dp(app.theme.radius_m),]
-                                on_release: camera_splitter.toggle_collapsed()
+                                on_release: root.toggle_camera_pane()
+                            TransparentButton:
+                                id: graph_toggle_btn
+                                size_hint: None, None
+                                size: '70dp', '28dp'
+                                icon: 'data/chart-bell-curve-cumulative.png'
+                                icon_size: 17
+                                active: root.graph_pane_open
+                                tooltip_txt: tr._('Hide monitoring graph') if root.graph_pane_open else tr._('Show monitoring graph')
+                                canvas.before:
+                                    Color:
+                                        rgba: app.theme.surface
+                                    RoundedRectangle:
+                                        pos: self.pos
+                                        size: self.size
+                                        radius: [dp(app.theme.radius_m),]
+                                on_release: root.toggle_graph_pane()
 
             SettingPage:
                 name: 'Setting'

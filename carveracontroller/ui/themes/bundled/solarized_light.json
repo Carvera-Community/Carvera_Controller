@@ -164,6 +164,15 @@
     "3": "#b58900",
     "4": "#dc322f"
   },
+  "graph": {
+    "bg": "#e4ddc8",
+    "line_1": "#cb4b16",
+    "line_2": "#2aa198",
+    "axis": "#525e5e",
+    "spine": "#657b83",
+    "panel": "#eee8d5",
+    "cursor": "#268bd2"
+  },
   "tooltip": {
     "bg": "#fffdf6eb",
     "border": "#c9c3b0",

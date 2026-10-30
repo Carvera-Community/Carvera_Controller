@@ -172,6 +172,15 @@
     "sim_bar": "#40d159f2",
     "sim_marker": "#4d8cf2"
   },
+  "graph": {
+    "bg": "#18181a",
+    "line_1": "#ff6b35",
+    "line_2": "#4ec9b0",
+    "axis": "#a0a4ac",
+    "spine": "#585858",
+    "panel": "#28292d",
+    "cursor": "#0000ff"
+  },
   "speed_colormap": {
     "1": "#3366e6",
     "2": "#1ab380",
