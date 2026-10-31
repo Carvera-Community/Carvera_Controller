@@ -362,9 +362,8 @@ class Controller:
 
     def autoProbePlan(self, config):
         """
-        What M495 does before the loaded program, not for rotary jobs. Z probe and leveling run in
-        the start WCS, the first one of the program, the scan margin goes around the feed moves of
-        each WCS:
+        What M495 does before the loaded program. Z probe and leveling run in the start WCS, the
+        first one of the program, the scan margin goes around the feed moves of each WCS:
 
         - "start": the start WCS, M495 X and Y below are in it
         - "start_extents": [xmin, xmax, ymin, ymax] of the feed moves the start WCS stands for, None
@@ -385,9 +384,11 @@ class Controller:
         with its own current origin. Any other start WCS without feed moves takes the area of the
         first WCS with feed moves and a known origin, placed with that origin.
 
-        None for programs without feed moves: M495 then works from the program extents in the
-        active WCS as before.
+        None for rotary jobs and programs without feed moves: M495 then works from the program
+        extents in the active WCS as before.
         """
+        if self.cnc.has_4axis:
+            return None
         start, start_x, start_y, start_rotation = self.startWCSOrigin()
         program_wcs = self.cnc.programWCS(start)
         if not any(extents for _name, extents in program_wcs):
@@ -528,7 +529,9 @@ class Controller:
             for name, (xmin, xmax, ymin, ymax) in plan["margins"]:
                 self.executeCommand(prefix + name)
                 self.executeCommand(prefix + "M495 X%gY%gC%gD%g" % (xmin, ymin, xmax, ymax))
-            self.executeCommand(prefix + plan["start"])
+        # the plan is in its start WCS, which may differ from the one apply() selected while "get wcs"
+        # had not read it yet
+        self.executeCommand(prefix + plan["start"])
         if not (zprobe or leveling or goto_origin):
             return
         # rounded, so that %g never writes an exponent from a rotation, its e would be read as a word
@@ -2206,9 +2209,9 @@ class Controller:
 
         self.sendGCode(cmd)
 
-    def wcsSetM(self, x=None, y=None, z=None, a=None, wcs=0):
-        # wcs: 1 = G54 to 9 = G59.3, 0 = the active one
-        cmd = "G10L2P%d" % wcs
+    def wcsSetM(self, x=None, y=None, z=None, a=None, wcs=None):
+        # wcs: the name of the WCS to set, None for the active one
+        cmd = "G10L2P%d" % (CNC.wcs_names.index(wcs) + 1 if wcs else 0)
 
         pos = ""
         if x is not None and abs(x) < 10000.0:
@@ -2223,9 +2226,9 @@ class Controller:
 
         self.sendGCode(cmd)
 
-    def wcsClearRotation(self, wcs=0):
-        # wcs: 1 = G54 to 9 = G59.3, 0 = the active one
-        cmd = "G10L2R0P%d" % wcs
+    def wcsClearRotation(self, wcs=None):
+        # wcs: the name of the WCS to clear, None for the active one
+        cmd = "G10L2R0P%d" % (CNC.wcs_names.index(wcs) + 1 if wcs else 0)
         self.sendGCode(cmd)
 
     def setRotation(self, rotation):

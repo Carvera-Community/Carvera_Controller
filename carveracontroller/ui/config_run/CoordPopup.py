@@ -498,7 +498,7 @@ class CoordPopup(ModalView):
     def clear_start_wcs_rotation(self):
         """Set the rotation of the WCS the job starts in to 0."""
         controller = App.get_running_app().root.controller
-        controller.wcsClearRotation(CNC.wcs_names.index(controller.startWCSOrigin()[0]) + 1)
+        controller.wcsClearRotation(controller.startWCSOrigin()[0])
         controller.viewWCS()  # the shown rotation of another WCS comes from "get wcs"
         Clock.schedule_once(lambda *_: self.load_origin_label(), 1)
 

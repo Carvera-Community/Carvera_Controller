@@ -53,6 +53,12 @@ def program(monkeypatch):
     return _controller(monkeypatch, {"G55": [2.0, 20.0, 1.0, 10.0], "G54": [0.0, 30.0, 0.0, 40.0]})
 
 
+def test_rotary_jobs_have_no_plan(program):
+    program.cnc.has_4axis = True
+
+    assert program.autoProbePlan(_config()) is None
+
+
 def test_margins_per_wcs_in_program_order(program):
     plan = program.autoProbePlan(_config())
 
@@ -121,20 +127,16 @@ def test_writing_a_wcs_that_does_not_follow_is_no_probing_start(monkeypatch):
 def test_commands_for_a_plan(program):
     plan = program.autoProbePlan(_config(zprobe_origin=0, offsets=(1, 2, 3, 4)))
 
-    program.autoCommand(margin=True, zprobe=True, leveling=True, i=4, j=3, h=5, buffer=True, plan=plan)
+    program.autoCommand(zprobe=True, leveling=True, i=4, j=3, h=5, buffer=True, plan=plan)
 
-    sent = _sent(program)
+    # M495 runs in the active WCS, so the plan selects its start WCS also without scan margin
     path_x, path_y = round(plan["path"][0], 4), round(plan["path"][1], 4)
-    assert "e" not in sent[5].removeprefix("buffer ")
-    assert sent[:5] == [
+    sent = _sent(program)
+    assert sent == [
         "buffer G55",
-        "buffer M495 X2Y1C20D10",
-        "buffer G54",
-        "buffer M495 X0Y0C30D40",
-        "buffer G55",
+        "buffer M495 X%gY%gO%gF%gA6B11I4J3H5\n" % (path_x, path_y, 7 - path_x, 6 - path_y),
     ]
-    assert sent[5] == "buffer M495 X%gY%gO%gF%gA6B11I4J3H5\n" % (path_x, path_y, 7 - path_x, 6 - path_y)
-    assert len(sent) == 6
+    assert "e" not in sent[1].removeprefix("buffer ")
 
 
 def test_margin_alone_sends_no_second_m495(program):

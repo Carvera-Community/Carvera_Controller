@@ -2113,7 +2113,7 @@ class CNCWorkspace(Widget):
             origin_y = wcoy - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y
             program_wcs = [] if app.has_4axis else controller.programWCS()
             # what M495 does per WCS, None when it works from the program extents in the start WCS
-            plan = controller.autoProbePlan(self.config) if program_wcs else None
+            plan = controller.autoProbePlan(self.config)
 
             # work area, with a plan each WCS shows its own
             if plan is None:
@@ -3413,11 +3413,9 @@ class Makera(RelativeLayout):
         Clock.schedule_once(self.refresh_start_wcs, 0)
 
     def refresh_start_wcs(self, *args):
-        popup = getattr(self, "coord_popup", None)
-        if popup is None:
-            return
-        popup.load_origin_label()
-        popup.cnc_workspace.draw()
+        if self.coord_popup:
+            self.coord_popup.load_origin_label()
+            self.coord_popup.cnc_workspace.draw()
 
     def open_start_job_popup(self):
         if not self.can_open_start_job_popup():
@@ -3841,7 +3839,7 @@ class Makera(RelativeLayout):
             ],
             self.upcoming_tool,
             # resuming from a line runs in the active WCS, so only a full start works per WCS
-            plan=self.controller.autoProbePlan(self.coord_config) if select_wcs and not app.has_4axis else None,
+            plan=self.controller.autoProbePlan(self.coord_config) if select_wcs else None,
         )
 
         # change back to last tool if needed
@@ -3868,9 +3866,7 @@ class Makera(RelativeLayout):
             origin_y += CNC.vars["anchor1_y"] + CNC.vars["rotation_offset_y"]
 
         # the WCS the job starts in, as shown in the start job popup; another one shows "get wcs" values
-        self.controller.wcsSetM(
-            origin_x, origin_y, None, None, CNC.wcs_names.index(self.controller.startWCSOrigin()[0]) + 1
-        )
+        self.controller.wcsSetM(origin_x, origin_y, None, None, self.controller.startWCSOrigin()[0])
         self.controller.viewWCS()
 
         # refresh after 1 seconds
