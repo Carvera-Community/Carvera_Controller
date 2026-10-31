@@ -377,6 +377,7 @@ class Controller:
           start WCS plus the configured offset
         - "leveling": (machine x, machine y, size x, size y). G32 probes along the machine axes, so
           the grid covers the machine XY box around that area, less the leveling offsets.
+        - "outside": the tool is not over that area, so M495 goes to its path origin first
 
         A WCS that an M468 in another WCS writes before it has feed moves has no scan margin, its
         origin now is not the one it cuts with. A start WCS without feed moves that writes the WCS
@@ -425,6 +426,9 @@ class Controller:
         if area is None:
             # nothing better known: the program extents as before
             area = [CNC.vars["xmin"], CNC.vars["xmax"], CNC.vars["ymin"], CNC.vars["ymax"]]
+        # the machine position, unlike the work position, does not depend on the active WCS
+        tool_x, tool_y = CNC.machineToWCS(area_origin, CNC.vars["mx"], CNC.vars["my"])
+        outside = not (area[0] <= tool_x <= area[1] and area[2] <= tool_y <= area[3])
         corners = [CNC.wcsToMachine(area_origin, x, y) for x in area[:2] for y in area[2:]]
         leveling = config["leveling"]
         level_x = min(x for x, _y in corners) + leveling["xn_offset"]
@@ -454,6 +458,7 @@ class Controller:
             "path": path,
             "zprobe": zprobe_xy,
             "leveling": (level_x, level_y, level_size_x, level_size_y),
+            "outside": outside,
         }
 
     def autoCommand(

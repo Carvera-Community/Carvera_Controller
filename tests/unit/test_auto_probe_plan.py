@@ -81,6 +81,17 @@ def test_z_probe_in_the_start_wcs(program):
     assert program.autoProbePlan(_config(zprobe_origin=0))["zprobe"] == (7.0, 6.0)
 
 
+def test_outside_is_checked_against_the_start_area_in_machine_coordinates(program, monkeypatch):
+    # over the G54 part at machine X 100 to 130, Y 50 to 90, which the program cuts later
+    monkeypatch.setitem(CNC.vars, "mx", 110.0)
+    monkeypatch.setitem(CNC.vars, "my", 60.0)
+    assert program.autoProbePlan(_config())["outside"] is True
+
+    # over the G55 area, rotated by 90° at machine X 190 to 199, Y 52 to 70
+    monkeypatch.setitem(CNC.vars, "mx", 195.0)
+    assert program.autoProbePlan(_config())["outside"] is False
+
+
 def test_without_leveling_m495_starts_at_the_start_path_origin(program):
     assert program.autoProbePlan(_config(leveling=False))["path"] == pytest.approx((2.0, 1.0))
 

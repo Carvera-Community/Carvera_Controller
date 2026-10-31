@@ -1,6 +1,7 @@
 [unreleased]
 - Fixed: Android builds were incorrectly detecting the default language
 - Fixed: The X, Y and Z words of probing macros (M460 to M469) no longer show as moves in the path extents.
+- Fixed: Without scan margin, Z probe and auto leveling, a job with several WCS only goes to the path origin first when the tool is outside the area of the start WCS. It compared the position in the active WCS with the extents of all WCS together before.
 - Enhancement: Every file playback will start by going the configured clearance_z
 - Enhancement: The controller finds the first wcs being used in the file (either active wcs or another one) and buffers it prior to playing the file.
 - Enhancement: The start job popup shows the origin and the path area of every WCS the program uses, each in its own color, and marks the WCS the job starts in

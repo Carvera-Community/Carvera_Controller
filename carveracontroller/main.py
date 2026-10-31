@@ -3792,11 +3792,15 @@ class Makera(RelativeLayout):
         apply_margin = self.coord_config["margin"]["active"]
         apply_zprobe = self.coord_config["zprobe"]["active"]
         apply_leveling = self.coord_config["leveling"]["active"]
+        # resuming from a line runs in the active WCS, so only a full start works per WCS
+        plan = self.controller.autoProbePlan(self.coord_config) if select_wcs else None
         # set goto path origin flag if no ATC and not in path area
         if app.has_4axis:
             goto_origin = True
         elif not apply_margin and not apply_zprobe and not apply_leveling:
-            if (
+            if plan is not None:
+                goto_origin = plan["outside"]
+            elif (
                 CNC.vars["wx"] < CNC.vars["xmin"]
                 or CNC.vars["wx"] > CNC.vars["xmax"]
                 or CNC.vars["wy"] < CNC.vars["ymin"]
@@ -3838,8 +3842,7 @@ class Makera(RelativeLayout):
                 self.coord_config["leveling"]["yp_offset"],
             ],
             self.upcoming_tool,
-            # resuming from a line runs in the active WCS, so only a full start works per WCS
-            plan=self.controller.autoProbePlan(self.coord_config) if select_wcs else None,
+            plan=plan,
         )
 
         # change back to last tool if needed
