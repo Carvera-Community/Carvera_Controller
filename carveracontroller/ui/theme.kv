@@ -81,11 +81,12 @@
 <TabbedPanelStrip>:
     spacing: dp(app.theme.spacing)
 
-# Jog keys share one face. SquareGrid gives them a square box; the radius
-# stays in dp so a large key is a rounded square and a small one stays tappable.
+# Jog keys share one look. SquareGrid makes each key square. The corner radius
+# is limited to a fraction of the key height, so small keys (probing, CMM)
+# keep rounded corners instead of turning into circles.
 <JogAxisButton,JogAxisTipButton>:
     font_name: app.theme.font_jog_pad
-    radius_dp: app.theme.pad_radius
+    radius_dp: min(app.theme.pad_radius, max(6.0, 0.28 * self.height / dp(1)))
     font_size: min(sp(24), max(sp(16), self.height * 0.28))
     text_size: self.size
     halign: 'center'

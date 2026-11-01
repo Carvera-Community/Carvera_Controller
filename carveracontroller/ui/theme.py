@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Mapping
 
+from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.graphics import BorderImage, Color, InstructionGroup, Line, RoundedRectangle
 from kivy.lang import Builder
@@ -25,7 +26,7 @@ from carveracontroller.ui.themes import (
     BASE_THEME,
     BEHAVIOR_KEYS,
     ThemeError,
-    jog_axis_color,
+    jogging_part_color,
     load_behaviors,
     load_fonts,
     load_palette,
@@ -88,9 +89,7 @@ class Theme(EventDispatcher):
     font_jog_pad = StringProperty(ARIALUNI)
     font_code_list = StringProperty(ARIALUNI)
     # Theme behaviors are not palette tokens. ``apply()`` leaves them alone.
-    jog_pad_axis_colors = BooleanProperty(False)
-    jog_pad_sign_colors = BooleanProperty(False)
-    jog_pad_axis_background = BooleanProperty(False)
+    jogging_custom_colors = BooleanProperty(False)
     group_main_menu = BooleanProperty(False)
 
     def __init__(self, palette: str = BASE_THEME, **kwargs):
@@ -146,52 +145,9 @@ class Theme(EventDispatcher):
                 remap.setdefault(old, new)
         self._remap = remap
 
-    # Pressed jog keys stay the axis hue, a step darker than the resting face.
-    _AXIS_PRESS_SCALE = 0.75
-
     @staticmethod
     def _color_key(color) -> tuple:
         return tuple(round(float(channel), 3) for channel in color)
-
-    @staticmethod
-    def _pressed_axis_color(color) -> list:
-        channels = [float(channel) for channel in color]
-        if len(channels) == 3:
-            channels.append(1.0)
-        scale = Theme._AXIS_PRESS_SCALE
-        return [channel * scale for channel in channels[:3]] + [channels[3]]
-
-    @staticmethod
-    def _srgb_luminance(value: float) -> float:
-        value = float(value)
-        if value <= 0.04045:
-            return value / 12.92
-        return ((value + 0.055) / 1.055) ** 2.4
-
-    @staticmethod
-    def _relative_luminance(color) -> float:
-        red, green, blue = color[:3]
-        return (
-            0.2126 * Theme._srgb_luminance(red)
-            + 0.7152 * Theme._srgb_luminance(green)
-            + 0.0722 * Theme._srgb_luminance(blue)
-        )
-
-    @staticmethod
-    def _contrast_ratio(left, right) -> float:
-        lighter = Theme._relative_luminance(left)
-        darker = Theme._relative_luminance(right)
-        if lighter < darker:
-            lighter, darker = darker, lighter
-        return (lighter + 0.05) / (darker + 0.05)
-
-    def _label_on_fill(self, fill) -> list:
-        """``text`` or ``text_inverse``, whichever reads on ``fill``."""
-        text = list(self.text)
-        inverse = list(self.text_inverse)
-        if self._contrast_ratio(text, fill) >= self._contrast_ratio(inverse, fill):
-            return text
-        return inverse
 
     def remap_color(self, color):
         """The new-palette color for ``color`` if it was a token of the old palette, else ``None``."""
@@ -263,21 +219,21 @@ class Theme(EventDispatcher):
         return list(self.control)
 
     def jog_axis_fill(self, caption, state, disabled, chrome, _revision=0):
-        """Jog-key fill. The axis color when that background behavior is on."""
+        """Background color of a jog key. With custom jogging colors on, axis keys use their own color."""
         base = self.button_fill("normal", state, disabled, chrome, _revision)
-        if not chrome or disabled or not self.jog_pad_axis_background:
+        if not chrome or disabled or not self.jogging_custom_colors:
             return base
-        color = jog_axis_color(self, caption)
+        color = jogging_part_color(self, caption, "background", state)
         if color is None:
             return base
-        if state == "down":
-            return self._pressed_axis_color(color)
         return list(color)
 
     def jog_axis_text(self, caption, state, disabled, chrome, _revision=0):
-        """Label color on :meth:`jog_axis_fill`. An axis face picks the readable text token."""
-        if chrome and not disabled and self.jog_pad_axis_background and jog_axis_color(self, caption) is not None:
-            return self._label_on_fill(self.jog_axis_fill(caption, state, False, True, _revision))
+        """Text color of a jog key. With custom jogging colors on, axis keys use their letter color."""
+        if chrome and not disabled and self.jogging_custom_colors:
+            color = jogging_part_color(self, caption, "letter", state)
+            if color is not None:
+                return list(color)
         return self.button_text("normal", state, disabled, chrome, _revision)
 
     def button_text(self, role, state, disabled, chrome, _revision=0):
@@ -429,10 +385,10 @@ def _install_flat_text_field(widget) -> None:
         return
     widget._flat_field = True
     canvas = widget.canvas.before
-    shade = _shaded_field_tint(canvas)
-    widget._field_shade = shade
-    if shade is not None:
-        shade.rgba = (0, 0, 0, 0)
+    # Fields created from kv files (such as the color picker inputs) don't have
+    # their background image yet at this point. It is looked up again once the
+    # kv rules have been applied.
+    widget._field_shade = _shaded_field_tint(canvas)
     # Keep each shape with the texture bind Canvas.add inserts in front of it.
     # Pulling the rounded rect out on its own makes it sample the texture that
     # was bound last, so the previous label is stretched across the field.
@@ -447,12 +403,23 @@ def _install_flat_text_field(widget) -> None:
     group.add(line)
     canvas.insert(0, group)
 
-    def sync(*_args):
-        # Kv paints the shaded image with background_color. Put that color on
-        # the flat shape and keep the image itself invisible.
+    def hide_atlas(*_args):
+        # The default field background image has square corners. It can't be
+        # removed without breaking drawing, so make it fully transparent and
+        # let the rounded shape below show instead.
         shade = widget._field_shade
+        if shade is None:
+            shade = _shaded_field_tint(canvas)
+            widget._field_shade = shade
         if shade is not None:
             shade.rgba = (0, 0, 0, 0)
+
+    # The kv rules set that image's color again after each change, so hiding it
+    # right away would be undone. Hide it just before the next draw instead.
+    hide_atlas_after_sync = Clock.create_trigger(hide_atlas, -1)
+
+    def sync(*_args):
+        hide_atlas()
         radii = _field_corner_radii(widget)
         fill.rgba = widget.background_color
         rect.pos = widget.pos
@@ -466,13 +433,14 @@ def _install_flat_text_field(widget) -> None:
         edge.rgba = edge_rgba
         if widget.width <= 0 or widget.height <= 0 or edge_rgba[3] <= 0:
             line.rounded_rectangle = (0, 0, 0, 0, 0)
-            return
-        if len(radii) >= 4:
+        elif len(radii) >= 4:
             line.rounded_rectangle = (widget.x, widget.y, widget.width, widget.height, *radii[:4])
         else:
             line.rounded_rectangle = (widget.x, widget.y, widget.width, widget.height, radii[0])
+        hide_atlas_after_sync()
 
     widget.bind(pos=sync, size=sync, background_color=sync, field_edge=sync, field_radius=sync, field_radii=sync)
+    widget.bind(on_kv_post=sync)
     sync()
 
 

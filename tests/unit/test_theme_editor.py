@@ -195,9 +195,9 @@ def test_save_writes_grouped_custom_theme_and_leaves_the_builtin(user_themes, ed
     assert saved["fonts"]["top_bar"] is None
     assert saved["fonts"]["jog_pad"] is None
     assert saved["fonts"]["code_list"] is None
-    assert saved["behaviors"]["jog_pad_axis_colors"] is False
-    assert saved["behaviors"]["jog_pad_sign_colors"] is False
-    assert saved["behaviors"]["jog_pad_axis_background"] is False
+    assert saved["behaviors"]["jogging_custom_colors"] is False
+    assert saved["behaviors"]["group_main_menu"] is False
+    assert "jog_pad_axis_colors" not in saved["behaviors"]
     assert saved["primary"] == "#112233"
 
     loaded = load_palette(CUSTOM_THEME)
@@ -428,100 +428,82 @@ def test_jog_pad_font_updates_the_preview(editor):
     editor._apply_font_fields()
 
     assert editor.draft.font_jog_pad == path
-    assert editor.preview.jog_x.label.text == "X+"
-    assert editor.preview.jog_y.label.text == "Y+"
+    assert [key.label.text for key in editor.preview.jog_keys] == ["X+", "Y+", "Z+", "A+"]
     assert editor.preview.jog_x.size == pytest.approx((JOG_PREVIEW_SIDE, JOG_PREVIEW_SIDE))
     assert editor.preview.jog_row.height == pytest.approx(JOG_PREVIEW_SIDE)
-    assert editor.preview.jog_x.label.font_name == path
-    assert editor.preview.jog_y.label.font_name == path
+    assert editor.preview.jog_row.width == pytest.approx(JOG_PREVIEW_SIDE * 4 + dp(8) * 3)
+    for key in editor.preview.jog_keys:
+        assert key.label.font_name == path
     assert editor.preview.body.font_name == editor.draft.font_default
 
 
-def test_jog_pad_axis_colors_color_only_the_letter_in_the_preview(user_themes, editor):
-    row = editor._behavior_fields["jog_pad_axis_colors"]
+def test_custom_jogging_colors_paint_the_preview(user_themes, editor):
+    row = editor._behavior_fields["jogging_custom_colors"]
     assert row.switch.active is False
     assert editor.preview.jog_x.label.text == "X+"
     assert editor.preview.jog_x.label.markup is False
+    names = list(editor._section_tabs)
+    assert names.index("jogging") == names.index("axis") + 1
+    assert row.parent is editor._sections["jogging"]
+    assert row not in editor._sections["behaviors"].children
 
     row.switch.active = True
 
-    assert editor.draft.jog_pad_axis_colors is True
+    draft = editor.draft
+    letter = format_hex_color(draft.jogging_x_letter)
+    sign = format_hex_color(draft.jogging_x_sign)
+    assert draft.jogging_custom_colors is True
     assert editor._draft_is_dirty() is True
     assert editor.preview.jog_x.label.markup is True
-    assert editor.preview.jog_x.label.text == f"[color={format_hex_color(editor.draft.axis_x)}]X[/color]+"
-    assert editor.preview.jog_y.label.text == f"[color={format_hex_color(editor.draft.axis_y)}]Y[/color]+"
-    assert editor.set_token("axis_x", "#112233") is True
-    assert editor.preview.jog_x.label.text == "[color=#112233]X[/color]+"
-    assert "#112233" not in editor.preview.jog_y.label.text
+    assert editor.preview.jog_x.label.text == f"[color={letter}]X[/color][color={sign}]+[/color]"
+    y_letter = format_hex_color(draft.jogging_y_letter)
+    y_sign = format_hex_color(draft.jogging_y_sign)
+    assert editor.preview.jog_y.label.text == f"[color={y_letter}]Y[/color][color={y_sign}]+[/color]"
+    for key, axis in ((editor.preview.jog_z, "z"), (editor.preview.jog_a, "a")):
+        painted_letter = format_hex_color(getattr(draft, f"jogging_{axis}_letter"))
+        painted_sign = format_hex_color(getattr(draft, f"jogging_{axis}_sign"))
+        assert key.label.text == f"[color={painted_letter}]{axis.upper()}[/color][color={painted_sign}]+[/color]"
+        assert list(key.fill_color.rgba) == pytest.approx(list(getattr(draft, f"jogging_{axis}_background")))
+    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(list(draft.jogging_x_background))
+    assert list(editor.preview.jog_x.label.color) == pytest.approx(list(draft.jogging_x_letter))
+
+    assert editor.set_token("jogging_x_letter", "#112233") is True
+    assert editor.preview.jog_x.label.text == f"[color=#112233]X[/color][color={sign}]+[/color]"
+    assert editor.set_token("jogging_x_sign", "#445566") is True
+    assert editor.preview.jog_x.label.text == "[color=#112233]X[/color][color=#445566]+[/color]"
+    assert editor.set_token("jogging_x_background", "#778899") is True
+    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(parse_hex_color("#778899"))
+    assert editor.set_token("axis_x", "#abcdef") is True
+    assert editor.preview.jog_x.label.text == "[color=#112233]X[/color][color=#445566]+[/color]"
 
     row.revert.dispatch("on_release")
 
     assert row.switch.active is False
-    assert editor.draft.jog_pad_axis_colors is False
+    assert draft.jogging_custom_colors is False
     assert editor.preview.jog_x.label.text == "X+"
     assert editor.preview.jog_x.label.markup is False
+    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(
+        draft.button_fill("normal", "normal", False, True)
+    )
     assert editor._draft_is_dirty() is True
+    editor.revert_token("jogging_x_letter")
+    editor.revert_token("jogging_x_sign")
+    editor.revert_token("jogging_x_background")
     editor.revert_token("axis_x")
     assert editor._draft_is_dirty() is False
 
 
-def test_jog_pad_sign_colors_color_the_sign_in_the_preview(user_themes, editor):
-    row = editor._behavior_fields["jog_pad_sign_colors"]
-    row.switch.active = True
-
-    painted_x = format_hex_color(editor.draft.axis_x)
-    painted_y = format_hex_color(editor.draft.axis_y)
-    assert editor.draft.jog_pad_sign_colors is True
-    assert editor.preview.jog_x.label.text == f"X[color={painted_x}]+[/color]"
-    assert editor.preview.jog_y.label.text == f"Y[color={painted_y}]+[/color]"
-
-    editor._behavior_fields["jog_pad_axis_colors"].switch.active = True
-
-    assert editor.preview.jog_x.label.text == f"[color={painted_x}]X+[/color]"
-    assert editor.preview.jog_y.label.text == f"[color={painted_y}]Y+[/color]"
-
-    row.revert.dispatch("on_release")
-
-    assert editor.draft.jog_pad_sign_colors is False
-    assert editor.preview.jog_x.label.text == f"[color={painted_x}]X[/color]+"
-
-
-def test_jog_pad_axis_background_colors_the_key_in_the_preview(user_themes, editor):
-    editor._behavior_fields["jog_pad_axis_colors"].switch.active = True
-    editor._behavior_fields["jog_pad_sign_colors"].switch.active = True
-    row = editor._behavior_fields["jog_pad_axis_background"]
-    row.switch.active = True
-
-    assert editor.draft.jog_pad_axis_background is True
-    assert editor.preview.jog_x.label.text == "X+"
-    assert editor.preview.jog_x.label.markup is False
-    assert editor.preview.jog_y.label.text == "Y+"
-    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(list(editor.draft.axis_x))
-    assert list(editor.preview.jog_y.fill_color.rgba) == pytest.approx(list(editor.draft.axis_y))
-    assert list(editor.preview.jog_x.label.color) == pytest.approx(
-        editor.draft.jog_axis_text("X+", "normal", False, True)
-    )
-
-    row.revert.dispatch("on_release")
-
-    assert editor.draft.jog_pad_axis_background is False
-    assert editor.preview.jog_x.label.markup is True
-    assert editor.preview.jog_x.label.text == f"[color={format_hex_color(editor.draft.axis_x)}]X+[/color]"
-    assert list(editor.preview.jog_x.fill_color.rgba) == pytest.approx(
-        editor.draft.button_fill("normal", "normal", False, True)
-    )
-
-
-def test_saving_jog_pad_axis_colors_reloads_the_behavior(user_themes, editor):
-    editor._behavior_fields["jog_pad_axis_colors"].switch.active = True
+def test_saving_custom_jogging_colors_reloads_the_behavior(user_themes, editor):
+    editor._behavior_fields["jogging_custom_colors"].switch.active = True
 
     editor.commit_for_apply()
 
     saved = json.loads((user_themes / "custom.json").read_text())
-    assert saved["behaviors"]["jog_pad_axis_colors"] is True
-    assert themes.load_behaviors(CUSTOM_THEME)["jog_pad_axis_colors"] is True
-    assert editor.draft.jog_pad_axis_colors is True
-    assert editor._behavior_fields["jog_pad_axis_colors"].switch.active is True
+    assert saved["behaviors"]["jogging_custom_colors"] is True
+    assert "jog_pad_axis_colors" not in saved["behaviors"]
+    assert themes.load_behaviors(CUSTOM_THEME)["jogging_custom_colors"] is True
+    assert editor.draft.jogging_custom_colors is True
+    assert editor._behavior_fields["jogging_custom_colors"].switch.active is True
     assert editor._draft_is_dirty() is False
 
 
@@ -679,13 +661,22 @@ def test_category_tabs_show_one_section_and_share_the_preview(editor):
     assert list(editor._fields_column.children) == [editor._sections["colors"]]
     preview = editor._preview_column
 
+    editor._section_tabs["jogging"].state = "down"
+
+    assert editor._active_section == "jogging"
+    assert editor._behavior_fields["jogging_custom_colors"] in editor._fields_column.walk()
+    assert editor._rows["jogging_x_background"] in editor._fields_column.walk()
+    assert editor._rows["jogging_x_letter_down"] in editor._fields_column.walk()
+
     editor._section_tabs["behaviors"].state = "down"
 
     assert editor._active_section == "behaviors"
     assert editor._sections["behaviors"].parent is editor._fields_column
     assert editor._sections["colors"].parent is None
+    assert editor._sections["jogging"].parent is None
     assert editor._section_tabs["colors"].state == "normal"
-    assert editor._behavior_fields["jog_pad_axis_colors"] in editor._fields_column.walk()
+    assert editor._behavior_fields["group_main_menu"] in editor._fields_column.walk()
+    assert editor._behavior_fields["jogging_custom_colors"] not in editor._fields_column.walk()
     assert preview.parent is editor._body_row
     assert editor._rows["bg"].parent is editor._sections["colors"]
 

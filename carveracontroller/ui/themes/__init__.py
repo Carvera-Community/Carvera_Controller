@@ -47,9 +47,7 @@ _FONT_EXTENSIONS = (".ttf", ".otf", ".ttc")
 # Boolean options under ``"behaviors"``. A key left out stays at the parent's
 # value, and a key nobody sets stays off.
 BEHAVIOR_KEYS = (
-    "jog_pad_axis_colors",
-    "jog_pad_sign_colors",
-    "jog_pad_axis_background",
+    "jogging_custom_colors",
     "group_main_menu",
 )
 _AXIS_LETTERS = "XYZA"
@@ -60,6 +58,7 @@ _RESERVED_KEYS = {"name", "title", "extends", "fonts", "behaviors"}
 _GROUP_PREFIXES = {
     "machine": "machine_",
     "axis": "axis_",
+    "jogging": "jogging_",
     "map": "map_",
     "gcode": "gcode_",
     "sketch": "sketch_",
@@ -261,54 +260,59 @@ def _locate_font_file(value: str) -> str:
     return value
 
 
-def jog_axis_color(theme, caption: str):
-    """Axis color for a jog caption such as ``X+``, or ``None`` when it is not one.
-
-    The first character selects ``axis_x`` through ``axis_a``.
-    """
+def jog_axis_letter(caption: str) -> str | None:
+    """Lowercase axis letter of a caption such as ``X+``, or ``None`` if the caption isn't an axis key."""
     if not isinstance(caption, str) or not caption:
         return None
-    letter = caption[0]
-    if letter.upper() not in _AXIS_LETTERS:
+    letter = caption[0].upper()
+    if letter not in _AXIS_LETTERS:
         return None
-    color = getattr(theme, f"axis_{letter.lower()}", None)
+    return letter.lower()
+
+
+def jogging_part_color(theme, caption: str, part: str, state: str):
+    """Color for one part of an axis jog key, or ``None`` if the caption isn't an axis key.
+
+    ``part`` is ``background``, ``letter`` or ``sign``. When ``state`` is
+    ``down`` (key pressed), the pressed color is returned. ``X+`` and ``X-``
+    use the same colors.
+    """
+    letter = jog_axis_letter(caption)
+    if letter is None:
+        return None
+    suffix = "_down" if state == "down" else ""
+    color = getattr(theme, f"jogging_{letter}_{part}{suffix}", None)
     if not isinstance(color, (list, tuple)):
         return None
     return color
 
 
-def jog_axis_markup(caption: str, theme) -> tuple[str, bool]:
+def jog_axis_markup(caption: str, theme, state: str = "normal") -> tuple[str, bool]:
     """``(text, markup)`` for a jog key such as ``X+`` or ``X-``.
 
-    ``jog_pad_axis_colors`` wraps the axis letter. ``jog_pad_sign_colors`` wraps
-    the following ``+`` or ``-``. With both on, the letter and the sign share
-    one color tag. ``jog_pad_axis_background`` leaves the caption plain: the
-    key face already carries the axis color, and a matching glyph would vanish.
+    When custom jogging colors are on, the axis letter and the ``+`` or ``-``
+    after it are each colored for the key's current ``state``. Otherwise the
+    caption stays plain.
     """
     if not isinstance(caption, str):
         return "", False
-    color = jog_axis_color(theme, caption)
-    if color is None:
+    if not getattr(theme, "jogging_custom_colors", False):
         return caption, False
-    if getattr(theme, "jog_pad_axis_background", False):
-        return caption, False
-    color_letter = bool(getattr(theme, "jog_pad_axis_colors", False))
-    color_sign = bool(getattr(theme, "jog_pad_sign_colors", False))
-    if not color_letter and not color_sign:
+    letter_color = jogging_part_color(theme, caption, "letter", state)
+    if letter_color is None:
         return caption, False
     letter = caption[0]
     rest = caption[1:]
     sign = rest[:1]
     tail = rest[1:]
-    has_sign = sign in ("+", "-")
-    painted = format_hex_color(color)
-    if color_letter and color_sign and has_sign:
-        return f"[color={painted}]{letter}{sign}[/color]{tail}", True
-    if color_letter:
-        return f"[color={painted}]{letter}[/color]{rest}", True
-    if has_sign:
-        return f"{letter}[color={painted}]{sign}[/color]{tail}", True
-    return caption, False
+    letter_hex = format_hex_color(letter_color)
+    if sign in ("+", "-"):
+        sign_color = jogging_part_color(theme, caption, "sign", state)
+        if sign_color is None:
+            return caption, False
+        sign_hex = format_hex_color(sign_color)
+        return f"[color={letter_hex}]{letter}[/color][color={sign_hex}]{sign}[/color]{tail}", True
+    return f"[color={letter_hex}]{letter}[/color]{rest}", True
 
 
 def _merge_behaviors(name: str, chain: tuple = ()) -> dict:
@@ -325,8 +329,10 @@ def _merge_behaviors(name: str, chain: tuple = ()) -> dict:
         raise ThemeError(f"Theme {name!r}: 'behaviors' must be an object")
     unknown = sorted(set(behaviors) - set(BEHAVIOR_KEYS))
     if unknown:
-        raise ThemeError(f"Theme {name!r} has unknown behaviors: {', '.join(unknown)}")
+        logger.warning("Ignoring unknown behaviors in theme %s: %s", name, ", ".join(unknown))
     for key, value in behaviors.items():
+        if key not in BEHAVIOR_KEYS:
+            continue
         if not isinstance(value, bool):
             raise ThemeError(f"Theme {name!r}: behavior {key!r} must be true or false")
         flags[key] = value
@@ -336,8 +342,9 @@ def _merge_behaviors(name: str, chain: tuple = ()) -> dict:
 def load_behaviors(name: str) -> dict:
     """``{behavior: bool}`` for every known behavior, inherited values included.
 
-    A behavior the theme never sets is false. Raises :class:`ThemeError` when
-    the theme is unknown or its ``behaviors`` are malformed.
+    A behavior the theme never sets is false. Behaviors this version of the app
+    doesn't recognize are skipped. Raises :class:`ThemeError` when the theme
+    doesn't exist or a recognized behavior is not true or false.
     """
     _check_name(name)
     flags = dict.fromkeys(BEHAVIOR_KEYS, False)

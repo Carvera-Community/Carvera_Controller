@@ -249,28 +249,36 @@ def test_unknown_font_roles_and_bad_values_are_rejected(scratch_themes):
         load_palette("weight")
 
 
-def test_behaviors_inherit_and_unknown_or_non_bool_values_are_rejected(scratch_themes):
-    _write(scratch_themes, "off", {"extends": BASE_THEME, "behaviors": {"jog_pad_axis_colors": False}})
+def test_behaviors_inherit_and_unknown_keys_are_ignored(scratch_themes, caplog):
+    _write(scratch_themes, "off", {"extends": BASE_THEME, "behaviors": {"jogging_custom_colors": False}})
     _write(scratch_themes, "child", {"extends": "off"})
-    _write(scratch_themes, "colored", {"extends": "off", "behaviors": {"jog_pad_axis_colors": True}})
+    _write(scratch_themes, "colored", {"extends": "off", "behaviors": {"jogging_custom_colors": True}})
     _write(
         scratch_themes,
-        "face",
-        {"extends": BASE_THEME, "behaviors": {"jog_pad_sign_colors": True, "jog_pad_axis_background": True}},
+        "unknown",
+        {
+            "extends": BASE_THEME,
+            "behaviors": {
+                "jog_pad_axis_colors": True,
+                "jog_pad_sign_colors": True,
+                "jog_pad_axis_background": "yes",
+                "nope": True,
+            },
+        },
     )
-    assert "jog_pad_axis_colors" not in load_palette("off")
-    assert themes.load_behaviors("child")["jog_pad_axis_colors"] is False
-    assert themes.load_behaviors("colored")["jog_pad_axis_colors"] is True
-    assert "jog_pad_axis_colors" not in load_palette("colored")
-    face = themes.load_behaviors("face")
-    assert face["jog_pad_sign_colors"] is True
-    assert face["jog_pad_axis_background"] is True
-    assert face["jog_pad_axis_colors"] is False
+    assert "jogging_custom_colors" not in load_palette("off")
+    assert themes.load_behaviors("child")["jogging_custom_colors"] is False
+    assert themes.load_behaviors("colored")["jogging_custom_colors"] is True
+    assert "jogging_custom_colors" not in load_palette("colored")
+    with caplog.at_level("WARNING", logger="carveracontroller.ui.themes"):
+        unknown = themes.load_behaviors("unknown")
+    assert unknown["jogging_custom_colors"] is False
+    assert "jog_pad_axis_colors" not in unknown
+    assert "nope" not in unknown
+    assert "Ignoring unknown behaviors in theme unknown" in caplog.text
+    load_palette("unknown")
 
-    _write(scratch_themes, "unknown", {"extends": BASE_THEME, "behaviors": {"nope": True}})
-    with pytest.raises(ThemeError, match="unknown behaviors"):
-        load_palette("unknown")
-    _write(scratch_themes, "text", {"extends": BASE_THEME, "behaviors": {"jog_pad_axis_colors": "yes"}})
+    _write(scratch_themes, "text", {"extends": BASE_THEME, "behaviors": {"jogging_custom_colors": "yes"}})
     with pytest.raises(ThemeError, match="must be true or false"):
         load_palette("text")
     _write(scratch_themes, "shape", {"extends": BASE_THEME, "behaviors": True})
@@ -278,76 +286,55 @@ def test_behaviors_inherit_and_unknown_or_non_bool_values_are_rejected(scratch_t
         load_palette("shape")
 
 
-def test_jog_axis_markup_colors_only_the_letter():
-    import re
+def test_jog_axis_markup_colors_the_letter_and_the_sign():
     from types import SimpleNamespace
 
     theme = SimpleNamespace(
-        jog_pad_axis_colors=False,
-        jog_pad_sign_colors=False,
-        jog_pad_axis_background=False,
-        axis_x=[1, 0, 0, 1],
-        axis_y=[0, 1, 0, 1],
-        axis_z=[0, 0, 1, 1],
-        axis_a=[1, 1, 0, 1],
+        jogging_custom_colors=False,
+        jogging_x_letter=[1, 0, 0, 1],
+        jogging_x_letter_down=[1, 0.4, 0.4, 1],
+        jogging_x_sign=[0, 1, 0, 1],
+        jogging_x_sign_down=[0.4, 1, 0.4, 1],
+        jogging_y_letter=[0, 0, 1, 1],
+        jogging_y_sign=[0, 0, 0.4, 1],
     )
     assert themes.jog_axis_markup("X+", theme) == ("X+", False)
-    theme.jog_pad_axis_colors = True
-    for caption, color in (
-        ("X+", theme.axis_x),
-        ("X-", theme.axis_x),
-        ("Y+", theme.axis_y),
-        ("Z-", theme.axis_z),
-        ("A+", theme.axis_a),
-    ):
-        text, markup = themes.jog_axis_markup(caption, theme)
-        match = re.fullmatch(r"\[color=(#[0-9a-fA-F]+)\](.)\[/color\](.*)", text)
-        assert markup is True
-        assert match is not None
-        hex_color, letter, rest = match.groups()
-        assert letter == caption[0]
-        assert rest == caption[1:]
-        assert parse_hex_color(hex_color) == pytest.approx(color)
+    theme.jogging_custom_colors = True
+    letter = format_hex_color(theme.jogging_x_letter)
+    sign = format_hex_color(theme.jogging_x_sign)
+    assert themes.jog_axis_markup("X+", theme) == (
+        f"[color={letter}]X[/color][color={sign}]+[/color]",
+        True,
+    )
+    assert themes.jog_axis_markup("X-", theme, "down") == (
+        f"[color={format_hex_color(theme.jogging_x_letter_down)}]X[/color]"
+        f"[color={format_hex_color(theme.jogging_x_sign_down)}]-[/color]",
+        True,
+    )
+    assert themes.jog_axis_markup("X", theme) == (f"[color={letter}]X[/color]", True)
+    y_letter = format_hex_color(theme.jogging_y_letter)
+    y_sign = format_hex_color(theme.jogging_y_sign)
+    assert themes.jog_axis_markup("Y-", theme) == (
+        f"[color={y_letter}]Y[/color][color={y_sign}]-[/color]",
+        True,
+    )
     assert themes.jog_axis_markup("", theme) == ("", False)
     assert themes.jog_axis_markup("Home", theme) == ("Home", False)
-
-
-def test_jog_axis_markup_can_color_the_sign_and_yields_to_the_background():
-    from types import SimpleNamespace
-
-    theme = SimpleNamespace(
-        jog_pad_axis_colors=False,
-        jog_pad_sign_colors=True,
-        jog_pad_axis_background=False,
-        axis_x=[1, 0, 0, 1],
-        axis_y=[0, 1, 0, 1],
-    )
-    painted = format_hex_color(theme.axis_x)
-    assert themes.jog_axis_markup("X+", theme) == (f"X[color={painted}]+[/color]", True)
-    assert themes.jog_axis_markup("X-", theme) == (f"X[color={painted}]-[/color]", True)
-    assert themes.jog_axis_markup("X", theme) == ("X", False)
-    theme.jog_pad_axis_colors = True
-    assert themes.jog_axis_markup("X+", theme) == (f"[color={painted}]X+[/color]", True)
-    assert themes.jog_axis_markup("Y-", theme) == (f"[color={format_hex_color(theme.axis_y)}]Y-[/color]", True)
-    theme.jog_pad_axis_background = True
-    assert themes.jog_axis_markup("X+", theme) == ("X+", False)
 
 
 def test_behavior_follows_the_palette_and_color_edits_leave_it(scratch_themes):
     from carveracontroller.ui.theme import Theme
 
-    _write(scratch_themes, "colored", {"extends": BASE_THEME, "behaviors": {"jog_pad_axis_colors": True}})
-    _write(scratch_themes, "plain", {"extends": BASE_THEME, "behaviors": {"jog_pad_axis_colors": False}})
+    _write(scratch_themes, "colored", {"extends": BASE_THEME, "behaviors": {"jogging_custom_colors": True}})
+    _write(scratch_themes, "plain", {"extends": BASE_THEME, "behaviors": {"jogging_custom_colors": False}})
     theme = Theme()
     theme.apply_palette("colored")
-    assert theme.jog_pad_axis_colors is True
-    assert theme.jog_pad_sign_colors is False
-    assert theme.jog_pad_axis_background is False
+    assert theme.jogging_custom_colors is True
     assert theme.group_main_menu is False
     theme.apply({"radius_m": 9})
-    assert theme.jog_pad_axis_colors is True
+    assert theme.jogging_custom_colors is True
     theme.apply_palette("plain")
-    assert theme.jog_pad_axis_colors is False
+    assert theme.jogging_custom_colors is False
 
 
 def test_list_themes_skips_themes_with_bad_fonts(scratch_themes):
@@ -419,9 +406,10 @@ def test_custom_theme_is_listed_and_loads(user_themes):
     assert document["fonts"]["top_bar"] is None
     assert document["fonts"]["jog_pad"] is None
     assert document["fonts"]["code_list"] is None
-    assert document["behaviors"]["jog_pad_axis_colors"] is False
-    assert document["behaviors"]["jog_pad_sign_colors"] is False
-    assert document["behaviors"]["jog_pad_axis_background"] is False
+    assert document["behaviors"]["jogging_custom_colors"] is False
+    assert document["behaviors"]["group_main_menu"] is False
+    assert "jog_pad_axis_colors" not in document["behaviors"]
+    assert document["jogging"]["x_background"]
     (user_themes / "custom.json").write_text(json.dumps(document))
     themes.clear_theme_cache()
 

@@ -1046,7 +1046,7 @@
     step_z: scan_jog_step_z
     step_a: scan_jog_step_a
 
-    canvas.before:
+    canvas:
         Color:
             rgba: app.theme.surface
         RoundedRectangle:
@@ -1077,131 +1077,84 @@
             orientation: 'horizontal'
             size_hint_y: None
             height: dp(210)
-            spacing: dp(12)
+            spacing: dp(2)
 
-            BoxLayout:
+            FloatLayout:
                 disabled: not app.jog_controls_enabled
-                size_hint_x: 1.45
-                padding: dp(8)
+                size_hint_x: 1
                 canvas.before:
                     Color:
-                        rgba: app.theme.surface_raised
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [dp(app.theme.radius_l),]
+                        rgba: app.theme.jog_pad
+                    Ellipse:
+                        pos: self.center_x - min(self.width, self.height) / 2, self.center_y - min(self.width, self.height) / 2
+                        size: min(self.width, self.height), min(self.width, self.height)
                 SquareGrid:
                     cols: 3
                     rows: 3
+                    size_hint: 1, 1
+                    pos_hint: {'x': 0, 'y': 0}
                     spacing: dp(8)
-                    padding: dp(4)
+                    padding: min(self.width, self.height) * 0.08
                     Widget:
-                    JogAxisButton:
+                    JogAxisTipButton:
                         axis_label: 'Y+' if app.invert_y_axis_jogging else 'Y-'
                         on_press: app.root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
+                        tooltip_image: 'data/AxisMotion/AxisMotion_YPos.png' if app.invert_y_axis_jogging else 'data/AxisMotion/AxisMotion_YNeg.png'
+                        tooltip_image_size: [300, 300]
+                        small_icon: True
                     Widget:
-                    JogAxisButton:
+                    JogAxisTipButton:
                         axis_label: 'X-'
                         on_press: app.root.controller.jog("X-{}".format(scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
+                        tooltip_image: 'data/AxisMotion/AxisMotion_XNeg.png'
+                        tooltip_image_size: [300, 300]
+                        small_icon: True
                     BoxLayout:
                         orientation: 'vertical'
                         Widget:
                         Spinner:
                             id: scan_jog_step_xy
                             size_hint_y: None
-                            height: '36dp'
+                            height: '40dp'
                             text: app.jog_step_xy
-                            radius_dp: app.theme.pad_radius
                             on_text: app.jog_step_xy = self.text
                             values: '10', '1', '0.1', '0.01', '0.005'
                         Widget:
-                    JogAxisButton:
+                    JogAxisTipButton:
                         axis_label: 'X+'
                         on_press: app.root.controller.jog("X{}".format(scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
+                        tooltip_image: 'data/AxisMotion/AxisMotion_XPos.png'
+                        tooltip_image_size: [300, 300]
+                        small_icon: True
                     Widget:
-                    JogAxisButton:
+                    JogAxisTipButton:
                         axis_label: 'Y-' if app.invert_y_axis_jogging else 'Y+'
                         on_press: app.root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', scan_jog_step_xy.text))
                         on_release: app.root.controller.stopContinuousJog()
+                        tooltip_image: 'data/AxisMotion/AxisMotion_YNeg.png' if app.invert_y_axis_jogging else 'data/AxisMotion/AxisMotion_YPos.png'
+                        tooltip_image_size: [300, 300]
+                        small_icon: True
                     Widget:
 
             BoxLayout:
                 disabled: not app.jog_controls_enabled
-                padding: dp(8)
-                canvas.before:
-                    Color:
-                        rgba: app.theme.surface_raised
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [dp(app.theme.radius_l),]
-                SquareGrid:
-                    cols: 2
-                    rows: 3
-                    spacing: dp(8)
-                    padding: dp(4)
-                    JogAxisButton:
-                        axis_label: 'A+'
-                        on_press: app.root.controller.jog("A{}".format(scan_jog_step_a.text))
-                        on_release: app.root.controller.stopContinuousJog()
-                    JogAxisButton:
-                        axis_label: 'Z+'
-                        on_press: app.root.controller.jog("Z{}".format(scan_jog_step_z.text))
-                        on_release: app.root.controller.stopContinuousJog()
-                    BoxLayout:
-                        orientation: 'vertical'
-                        Widget:
-                        Spinner:
-                            id: scan_jog_step_a
-                            size_hint_y: None
-                            height: '36dp'
-                            text: app.jog_step_a
-                            radius_dp: app.theme.pad_radius
-                            on_text: app.jog_step_a = self.text
-                            values: '90', '10', '1', '0.1'
-                        Widget:
-                    BoxLayout:
-                        orientation: 'vertical'
-                        Widget:
-                        Spinner:
-                            id: scan_jog_step_z
-                            size_hint_y: None
-                            height: '36dp'
-                            text: app.jog_step_z
-                            radius_dp: app.theme.pad_radius
-                            on_text: app.jog_step_z = self.text
-                            values: '10', '1', '0.1', '0.01', '0.005'
-                        Widget:
-                    JogAxisButton:
-                        axis_label: 'A-'
-                        on_press: app.root.controller.jog("A-{}".format(scan_jog_step_a.text))
-                        on_release: app.root.controller.stopContinuousJog()
-                    JogAxisButton:
-                        axis_label: 'Z-'
-                        on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
-                        on_release: app.root.controller.stopContinuousJog()
-
-            BoxLayout:
                 orientation: 'vertical'
-                size_hint_x: 1.15
-                padding: dp(8)
+                size_hint_x: 1.2
+                padding: [dp(12), dp(18)]
                 canvas.before:
                     Color:
-                        rgba: app.theme.surface_raised
+                        rgba: app.theme.jog_pad
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
-                        radius: [dp(app.theme.radius_l),]
-                Widget:
-                    size_hint_y: 0.16
+                        radius: [dp(app.theme.radius_m),]
                 GridLayout:
                     cols: 2
                     rows: 2
-                    size_hint_y: 0.68
-                    spacing: dp(app.theme.spacing)
+                    spacing: dp(8)
                     Button:
                         text: app.jog_speed_text
                         id: jog_speed_btn_scan
@@ -1238,8 +1191,67 @@
                         halign: 'center'
                         valign: 'middle'
                         on_release: app.root.toggle_pendant_jog_control()
-                Widget:
-                    size_hint_y: 0.16
+
+            FloatLayout:
+                disabled: not app.jog_controls_enabled
+                size_hint_x: 1
+                canvas.before:
+                    Color:
+                        rgba: app.theme.jog_pad
+                    Ellipse:
+                        pos: self.center_x - min(self.width, self.height) / 2, self.center_y - min(self.width, self.height) / 2
+                        size: min(self.width, self.height), min(self.width, self.height)
+                SquareGrid:
+                    cols: 2
+                    rows: 3
+                    size_hint: 1, 1
+                    pos_hint: {'x': 0, 'y': 0}
+                    spacing: dp(8)
+                    padding: min(self.width, self.height) * 0.08
+                    JogAxisTipButton:
+                        axis_label: 'A+'
+                        on_press: app.root.controller.jog("A{}".format(scan_jog_step_a.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                        tooltip_image: 'data/AxisMotion/AxisMotion_APos.png'
+                        tooltip_image_size: [300, 300]
+                        small_icon: True
+                    JogAxisButton:
+                        axis_label: 'Z+'
+                        on_press: app.root.controller.jog("Z{}".format(scan_jog_step_z.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    BoxLayout:
+                        orientation: 'vertical'
+                        Widget:
+                        Spinner:
+                            id: scan_jog_step_a
+                            size_hint_y: None
+                            height: '40dp'
+                            text: app.jog_step_a
+                            on_text: app.jog_step_a = self.text
+                            values: '90', '10', '1', '0.1'
+                        Widget:
+                    BoxLayout:
+                        orientation: 'vertical'
+                        Widget:
+                        Spinner:
+                            id: scan_jog_step_z
+                            size_hint_y: None
+                            height: '40dp'
+                            text: app.jog_step_z
+                            on_text: app.jog_step_z = self.text
+                            values: '10', '1', '0.1', '0.01', '0.005'
+                        Widget:
+                    JogAxisTipButton:
+                        axis_label: 'A-'
+                        on_press: app.root.controller.jog("A-{}".format(scan_jog_step_a.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                        tooltip_image: 'data/AxisMotion/AxisMotion_ANeg.png'
+                        tooltip_image_size: [300, 300]
+                        small_icon: True
+                    JogAxisButton:
+                        axis_label: 'Z-'
+                        on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
+                        on_release: app.root.controller.stopContinuousJog()
 
         BoxLayout:
             size_hint_y: None

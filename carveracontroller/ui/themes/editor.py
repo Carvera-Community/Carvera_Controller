@@ -77,10 +77,9 @@ FIELDS_BAR_WIDTH = dp(8)
 FIELDS_SCROLL_GUTTER = FIELDS_BAR_WIDTH + dp(4)
 REVERT_ICON = "data/history.png"
 
+_JOGGING_BEHAVIOR = "jogging_custom_colors"
 _BEHAVIOR_CAPTIONS = {
-    "jog_pad_axis_colors": "Jog pad axis colors",
-    "jog_pad_sign_colors": "Jog pad sign colors",
-    "jog_pad_axis_background": "Jog pad axis background",
+    _JOGGING_BEHAVIOR: "Use custom jogging colors",
     "group_main_menu": "Group main menu buttons",
 }
 
@@ -90,6 +89,7 @@ _SECTION_TITLES = {
     "fonts": "Fonts",
     "behaviors": "Behaviors",
     "axis": "Axes",
+    "jogging": "Jogging",
     "map": "Preview Map",
     "gcode": "G-code",
     "sketch": "Sketch",
@@ -733,9 +733,12 @@ class SettingThemeEditor(SettingItem):
         self._body_row.add_widget(self._fields_pane)
         self._body_row.add_widget(self._preview_column)
 
+        self._behavior_fields = {}
         sections = token_sections()
         for group, keys in sections:
             section = _CategorySection()
+            if group == "jogging":
+                self._add_behavior_field(section, _JOGGING_BEHAVIOR)
             for key in keys:
                 color = isinstance(getattr(self.draft, key), list)
                 row = _TokenField(
@@ -772,16 +775,10 @@ class SettingThemeEditor(SettingItem):
             field.style.bind(text=self._on_font_choice)
 
         behaviors_section = _CategorySection()
-        self._behavior_fields = {}
         for key in BEHAVIOR_KEYS:
-            row = _BehaviorFieldRow(
-                tr._(_BEHAVIOR_CAPTIONS.get(key, key)),
-                key,
-                self._on_behavior,
-                self.revert_behavior,
-            )
-            self._behavior_fields[key] = row
-            behaviors_section.add_widget(row)
+            if key == _JOGGING_BEHAVIOR:
+                continue
+            self._add_behavior_field(behaviors_section, key)
         self._register_section("behaviors", behaviors_section)
         first = next(iter(self._sections))
         self._section_tabs[first].state = "down"
@@ -807,6 +804,16 @@ class SettingThemeEditor(SettingItem):
         Clock.schedule_once(self._sync_viewport_height, 0)
         Clock.schedule_once(self._restore_editor_height, 0)
         Clock.schedule_once(lambda _dt: self._on_body_width(self._body_row, self._body_row.width), 0)
+
+    def _add_behavior_field(self, section, key: str) -> None:
+        row = _BehaviorFieldRow(
+            tr._(_BEHAVIOR_CAPTIONS.get(key, key)),
+            key,
+            self._on_behavior,
+            self.revert_behavior,
+        )
+        self._behavior_fields[key] = row
+        section.add_widget(row)
 
     def _register_section(self, group: str, section) -> None:
         """Keep ``section`` off the tree until its tab is selected."""

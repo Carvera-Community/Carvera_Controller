@@ -63,29 +63,29 @@ def test_button_fill_follows_role_and_revision_is_explicit():
     assert theme.button_fill("normal", "down", False, True, theme.revision) == pytest.approx([0, 1, 0, 1])
 
 
-def test_jog_axis_background_colors_the_face_and_keeps_the_caption_readable():
+def test_jog_axis_uses_custom_colors_or_the_button_colors():
     theme = Theme()
-    theme.text = [0.93, 0.93, 0.94, 1]
-    theme.text_inverse = [0.12, 0.12, 0.12, 1]
     theme.text_on_fill = [0.98, 0.98, 0.2, 1]
     theme.axis_x = [0.8, 0.1, 0.1, 1]
-    theme.axis_a = [0.97, 0.86, 0.44, 1]
+    assert theme.jogging_custom_colors is False
     assert theme.jog_axis_fill("X+", "normal", False, True) == pytest.approx(list(theme.control))
+    assert theme.jog_axis_fill("X+", "down", False, True) == pytest.approx(list(theme.accent))
+    assert theme.jog_axis_text("X+", "normal", False, True) == pytest.approx(list(theme.text))
     assert theme.jog_axis_text("X+", "down", False, True) == pytest.approx(list(theme.text_on_fill))
 
-    theme.jog_pad_axis_background = True
-    assert theme.jog_axis_fill("X+", "normal", False, True) == pytest.approx(list(theme.axis_x))
-    assert theme.jog_axis_fill("A-", "normal", False, True) == pytest.approx(list(theme.axis_a))
-    assert theme.jog_axis_fill("X+", "down", False, True) == pytest.approx(
-        [channel * 0.75 if index < 3 else channel for index, channel in enumerate(theme.axis_x)]
-    )
+    theme.jogging_custom_colors = True
+    assert theme.jog_axis_fill("X+", "normal", False, True) == pytest.approx(list(theme.jogging_x_background))
+    assert theme.jog_axis_fill("X+", "down", False, True) == pytest.approx(list(theme.jogging_x_background_down))
+    assert theme.jog_axis_fill("A-", "normal", False, True) == pytest.approx(list(theme.jogging_a_background))
+    assert theme.jog_axis_text("X+", "normal", False, True) == pytest.approx(list(theme.jogging_x_letter))
+    assert theme.jog_axis_text("X+", "down", False, True) == pytest.approx(list(theme.jogging_x_letter_down))
+    assert theme.jog_axis_text("A+", "down", False, True) == pytest.approx(list(theme.jogging_a_letter_down))
     assert theme.jog_axis_fill("X+", "normal", True, True) == pytest.approx(list(theme.control_disabled))
+    assert theme.jog_axis_text("X+", "normal", True, True) == pytest.approx(list(theme.text_disabled))
     assert theme.jog_axis_fill("X+", "normal", False, False) == [0, 0, 0, 0]
     assert theme.jog_axis_fill("Home", "normal", False, True) == pytest.approx(list(theme.control))
-    assert theme.jog_axis_text("X+", "normal", False, True) == pytest.approx(list(theme.text))
-    assert theme.jog_axis_text("A+", "normal", False, True) == pytest.approx(list(theme.text_inverse))
-    assert theme.jog_axis_text("X+", "normal", True, True) == pytest.approx(list(theme.text_disabled))
     assert theme.jog_axis_text("Home", "down", False, True) == pytest.approx(list(theme.text_on_fill))
+    assert theme.jog_axis_fill("X+", "normal", False, True) == pytest.approx(list(theme.jogging_x_background))
 
 
 def test_selection_fill_uses_accent_and_alpha():
@@ -853,8 +853,10 @@ def test_theme_setting_shows_titles_and_stores_names():
 
 
 def test_text_fields_use_a_flat_fill():
+    from kivy.clock import Clock
     from kivy.factory import Factory
     from kivy.graphics import BindTexture, BorderImage
+    from kivy.uix.colorpicker import ColorPicker
     from kivy.uix.textinput import TextInput
 
     created = App.get_running_app() is None
@@ -906,9 +908,25 @@ def test_text_fields_use_a_flat_fill():
 
         app.theme.apply_palette(other)
         Builder.sync()
+        # The kv rules make the square background image visible again. The
+        # field hides it before the next draw, which keeps the corners rounded.
+        Clock.tick_draw()
+        assert list(field._field_shade.rgba) == pytest.approx([0, 0, 0, 0])
         assert list(field.background_color) == pytest.approx(list(app.theme.field_bg))
         assert colors()[0] == pytest.approx(list(app.theme.field_bg))
         assert list(field.foreground_color) == pytest.approx(list(app.theme.text))
+
+        picker = ColorPicker(color=(0.2, 0.4, 0.8, 1))
+        picker_field = next(widget for widget in picker.walk() if isinstance(widget, TextInput))
+        Builder.sync()
+        Clock.tick_draw()
+        assert picker_field._field_shade is not None
+        assert list(picker_field._field_shade.rgba) == pytest.approx([0, 0, 0, 0])
+        app.theme.apply_palette(palette_name)
+        Builder.sync()
+        Clock.tick_draw()
+        assert list(picker_field._field_shade.rgba) == pytest.approx([0, 0, 0, 0])
+        app.theme.apply_palette(other)
 
         Builder.load_string(
             "<ClearField@TextInput>:\n    background_color: 0, 0, 0, 0\n",
@@ -925,11 +943,13 @@ def test_text_fields_use_a_flat_fill():
             # cleared its background must stay clear, or it grows a border.
             app.theme.apply_palette(palette_name)
             Builder.sync()
+            Clock.tick_draw()
             clear_colors = _colors(clear.canvas.before)
             assert list(clear.background_color) == pytest.approx([0, 0, 0, 0])
             assert clear_colors[0][3] == pytest.approx(0)
             assert clear_colors[1][3] == pytest.approx(0)
             assert list(field.background_color) == pytest.approx(list(app.theme.field_bg))
+            assert list(field._field_shade.rgba) == pytest.approx([0, 0, 0, 0])
             assert _colors(field.canvas.before)[1][3] == pytest.approx(1)
         finally:
             Builder.unload_file("themed-clear-field-test.kv")
