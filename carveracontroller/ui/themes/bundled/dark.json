@@ -91,7 +91,17 @@
     "origin": "#3498db",
     "work_area": "#00cc00",
     "zprobe": "#e74c3c",
-    "leveling": "#f4d03f"
+    "leveling": "#f4d03f",
+    "wcs_g54": "#3498db",
+    "wcs_g55": "#9b59b6",
+    "wcs_g56": "#e67e22",
+    "wcs_g57": "#1abc9c",
+    "wcs_g58": "#ec407a",
+    "wcs_g59": "#95a5a6",
+    "wcs_g59_1": "#a0785a",
+    "wcs_g59_2": "#00ced1",
+    "wcs_g59_3": "#ffffff",
+    "wcs_label_bg": "#000000cc"
   },
   "gcode": {
     "comment": "#6a9955",

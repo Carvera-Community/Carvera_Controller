@@ -244,6 +244,11 @@ class Theme(EventDispatcher):
         data["name"] = self.name
         return data
 
+    def wcs_color(self, name, _revision=0):
+        """Map color of a WCS: ``G59.1`` has the token ``map_wcs_g59_1``. ``_revision`` is a Kv dependency only."""
+        del _revision
+        return list(getattr(self, "map_wcs_" + name.lower().replace(".", "_"), self.map_origin))
+
     def button_fill(self, role, state, disabled, chrome, _revision=0):
         """Fill for a themed button. ``_revision`` is a Kv dependency only."""
         del _revision

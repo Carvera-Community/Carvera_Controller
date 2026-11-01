@@ -66,7 +66,8 @@
     "rotation_base": "#c8ccd4",
     "work_area": "#1ea01e",
     "zprobe": "#c0392b",
-    "leveling": "#c9a21a"
+    "leveling": "#c9a21a",
+    "wcs_g59_3": "#2c3e50"
   },
   "gcode": {
     "comment": "#1f6b24",

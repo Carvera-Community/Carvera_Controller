@@ -102,6 +102,19 @@ def _set_feature_row(row, visible):
     clear_disabled(row)
 
 
+class HoverBox(BoxLayout):
+    """A box that knows whether the mouse is over it."""
+
+    hovered = BooleanProperty(False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Window.bind(mouse_pos=self.on_mouse_pos)
+
+    def on_mouse_pos(self, _window, pos):
+        self.hovered = self.get_root_window() is not None and self.collide_point(*self.to_widget(*pos))
+
+
 class CoordSetupCard(BoxLayout):
     """One setup row in the Config and Run dialog."""
 
@@ -151,6 +164,12 @@ class CoordPopup(ModalView):
     config = {}
     mode = StringProperty()
     compact = BooleanProperty(False)
+    # set when a 4th axis job starts in a rotated WCS, empty otherwise
+    rotation_warning = StringProperty("")
+    start_wcs = StringProperty("G54")
+    # the program uses more than one WCS, the preview can hide all but the start WCS then
+    multiple_wcs = BooleanProperty(False)
+    hide_other_wcs = BooleanProperty(False)
     vacuummode = ObjectProperty()
     extoutmode = ObjectProperty()
     autoblowmode = ObjectProperty()
@@ -251,6 +270,17 @@ class CoordPopup(ModalView):
     def on_pre_open(self):
         super().on_pre_open()
         self.apply_feature_switch_visibility()
+        # every popup starts with all WCS shown
+        self.hide_other_wcs = False
+        app = App.get_running_app()
+        # the program may use other WCS than the active one, so read all WCS, also when opened from
+        # the Margin, ZProbe and AutoLevel buttons
+        app.root.controller.viewWCS()
+        self.multiple_wcs = not app.has_4axis and len(app.root.controller.programWCS()) > 1
+
+    def on_hide_other_wcs(self, _instance, hide):
+        self.cnc_workspace.hide_other_wcs = hide
+        self.cnc_workspace.draw()
 
     def on_open(self):
         super().on_open()
@@ -375,6 +405,8 @@ class CoordPopup(ModalView):
         self.cnc_workspace.draw()
 
     def load_config(self):
+        # the Margin button scans only the area of the probe WCS, a job start the area of each WCS
+        self.cnc_workspace.scan_probe_area_only = self.mode != "Run"
         self.cnc_workspace.load_config(self.config)
         Clock.schedule_once(self.cnc_workspace.draw, 0)
 
@@ -442,25 +474,40 @@ class CoordPopup(ModalView):
 
     def load_origin_label(self):
         app = App.get_running_app()
+        name, wcox, wcoy, rotation = app.root.controller.startWCSOrigin()
         if app.has_4axis:
             self.lb_origin.text = "(%g, %g) " % (
-                round(CNC.vars["wcox"] - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4),
-                round(CNC.vars["wcoy"] - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4),
+                round(wcox - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4),
+                round(wcoy - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4),
             ) + tr._("from Headstock")
         else:
             laser_x = CNC.vars["laser_module_offset_x"] if CNC.vars["lasermode"] else 0.0
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
             if self.config["origin"]["anchor"] == 2 and app.has_anchor2:
                 self.lb_origin.text = "(%g, %g) " % (
-                    round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4),
-                    round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4),
+                    round(wcox + laser_x - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"], 4),
+                    round(wcoy + laser_y - CNC.vars["anchor1_y"] - CNC.vars["anchor2_offset_y"], 4),
                 ) + tr._("from Anchor2")
             else:
                 self.lb_origin.text = "(%g, %g) " % (
-                    round(CNC.vars["wcox"] + laser_x - CNC.vars["anchor1_x"], 4),
-                    round(CNC.vars["wcoy"] + laser_y - CNC.vars["anchor1_y"], 4),
+                    round(wcox + laser_x - CNC.vars["anchor1_x"], 4),
+                    round(wcoy + laser_y - CNC.vars["anchor1_y"], 4),
                 ) + tr._("from Anchor1")
-        self.lb_origin.text = CNC.wcs_names[CNC.vars["active_coord_system"]] + ": " + self.lb_origin.text
+        self.lb_origin.text = name + ": " + self.lb_origin.text
+        self.start_wcs = name
+        if app.has_4axis and abs(rotation) >= 0.001:
+            self.rotation_warning = tr._(
+                "%s is rotated by %g°. Rotary jobs normally run unrotated; keep it only if the rotation was measured for the rotary axis."
+            ) % (name, round(rotation, 3))
+        else:
+            self.rotation_warning = ""
+
+    def clear_start_wcs_rotation(self):
+        """Set the rotation of the WCS the job starts in to 0."""
+        controller = App.get_running_app().root.controller
+        controller.wcsClearRotation(controller.startWCSOrigin()[0])
+        controller.viewWCS()  # the shown rotation of another WCS comes from "get wcs"
+        Clock.schedule_once(lambda *_: self.load_origin_label(), 1)
 
     def load_zprobe_label(self):
         app = App.get_running_app()
