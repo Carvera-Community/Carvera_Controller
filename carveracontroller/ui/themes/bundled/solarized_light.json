@@ -80,7 +80,8 @@
     "origin": "#268bd2",
     "work_area": "#859900",
     "zprobe": "#dc322f",
-    "leveling": "#b58900"
+    "leveling": "#b58900",
+    "wcs_g59_3": "#073642"
   },
   "gcode": {
     "comment": "#525e5e",

@@ -3,6 +3,8 @@
 - Enhancement: UI is now themed. You can select one of multiple visual styles in the Settings. Themes can be further customised in the theme editer.
 - Change: Previous G-Code highlighting settings page collapsed into theme settings
 - Change: Store probing presets, facing presets, bed settings, calibration settings, and custom bed meshes in the app user-data directory, and move existing copies out of ~/.kivy on first launch
+- Change: Rotary jobs no longer clear the WCS rotation when they start. The start job popup warns when the start WCS is rotated and can clear it
+- Change: Scan margin goes around the feed moves of each WCS in program order. Z probe and auto leveling run in the WCS the job starts in, or in the first WCS that cuts when the start WCS has no feed moves. A start WCS that only probes the part and writes the first WCS that cuts after it with M468 S1 uses the feed moves of that WCS with its own origin, and Z probe and auto leveling run in the written WCS. A WCS that M468 S1 writes before it cuts gets no scan margin and shows faint, since its origin comes from the probing in the job. The Margin, ZProbe and AutoLevel buttons run in the WCS that Z probe and leveling use, on its area, and leave it active, as the firmware takes a second M495 or WCS change at once while the first one runs.
 - Fixed: Gamepad hotplug would not detect a reconnected controller
 - Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
 - Fixed: File picker for Config Backups on Windows didn't have a drive selector
@@ -10,7 +12,11 @@
 - Fixed: Multi-line inputs were sent as a single frame instead of multiple ones
 - Fixed: Android builds were incorrectly detecting the default language
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
+- Fixed: The X, Y and Z words of probing macros (M460 to M469) no longer show as moves in the path extents.
+- Fixed: Without scan margin, Z probe and auto leveling, a job with several WCS only goes to the path origin first when the tool is outside the area of the start WCS.
+- Fixed: Goto Path Origin goes to the path origin the job starts at, in whichever WCS is active. It went to the lowest X and Y of all WCS together in the active WCS before.
 - Enhancement: The controller finds the first wcs being used in the file (either active wcs or another one) and buffers it prior to playing the file.
+- Enhancement: The start job popup shows the origin and the path area of every WCS the program uses, each in its own color from the theme, and marks the WCS the job starts in
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

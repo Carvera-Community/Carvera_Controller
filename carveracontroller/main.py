@@ -184,7 +184,7 @@ from carveracontroller.addons.stock.ui.StockSettingsPopup import StockSettingsPo
 from carveracontroller.documentation import resolve_documentation_url
 from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.timelapse import format_timelapse_status, timelapse_is_recording
-from carveracontroller.ui.config_run import CoordPopup, start_wcs_origin
+from carveracontroller.ui.config_run import CoordPopup
 from carveracontroller.ui.file_browser import FileBrowserPopup
 from carveracontroller.ui.file_browser.sources import (
     LOCATION_DEVICE,
@@ -254,6 +254,7 @@ class LightProperty(BooleanProperty):
 import webbrowser
 from functools import partial
 
+from kivy.core.text import Label as CoreLabel
 from kivy.core.window import Window
 from kivy.resources import resource_add_path
 
@@ -1055,9 +1056,9 @@ class OriginPopup(ModalView):
 
     def on_open(self):
         super().on_open()
-        _name, wcox, wcoy, _rotation = start_wcs_origin()
         # Use the same logic as CoordPopup.load_origin_label to set offsets
         app = App.get_running_app()
+        _name, wcox, wcoy, _rotation = app.root.controller.startWCSOrigin()
         if app.has_4axis:
             x = round(wcox - CNC.vars["anchor1_x"] - CNC.vars["rotation_offset_x"], 4)
             y = round(wcoy - CNC.vars["anchor1_y"] - CNC.vars["rotation_offset_y"], 4)
@@ -1089,9 +1090,9 @@ class OriginPopup(ModalView):
         return 1
 
     def update_offsets(self):
-        _name, wcox, wcoy, _rotation = start_wcs_origin()
         # Use the same logic as CoordPopup.load_origin_label to set offsets
         app = App.get_running_app()
+        _name, wcox, wcoy, _rotation = app.root.controller.startWCSOrigin()
         x = 0
         y = 0
         if app.has_4axis:
@@ -2090,6 +2091,10 @@ class CNCWorkspace(Widget):
     bg_image = ""
     # Height/width of the preview. C1 is ~0.7 (240/340); Z1 is square (200/200).
     workspace_aspect = NumericProperty(0.7)
+    # show only the start WCS of the program, set by the Config and Run popup
+    hide_other_wcs = False
+    # the scan margin goes only around the area of the probe WCS, set by the Config and Run popup
+    scan_probe_area_only = False
 
     # -----------------------------------------------------------------------
     def __init__(self, **kwargs):
@@ -2130,9 +2135,13 @@ class CNCWorkspace(Widget):
         # Screen x is not a signal: a centered dialog can sit near the left edge.
         if self.width < 2 or self.height < 2 or "origin" not in self.config:
             return
+        # the WCS come from the controller, which the root only has once the app is built
+        controller = getattr(App.get_running_app().root, "controller", None)
+        if controller is None:
+            return
         self.canvas.clear()
         zoom = self.width / CNC.vars["worksize_x"]
-        _name, wcox, wcoy, rotation = start_wcs_origin()
+        _name, wcox, wcoy, rotation = controller.startWCSOrigin()
         theme = get_theme()
         map_bg = theme.map_bg
         map_anchor = theme.map_anchor
@@ -2235,27 +2244,117 @@ class CNCWorkspace(Widget):
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
 
             # origin
-            Color(*theme.map_origin)
             origin_x = wcox - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x
             origin_y = wcoy - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y
-            Ellipse(pos=(self.x + origin_x * zoom - 10, self.y + origin_y * zoom - 10), size=(20, 20))
+            program_wcs = [] if app.has_4axis else controller.programWCS()
+            # what M495 does per WCS, None when it works from the program extents in the start WCS
+            plan = controller.autoProbePlan(self.config)
 
-            # work area
-            Color(*theme.map_work_area)
-            PushMatrix()
-            Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
-            if not app.has_4axis:
-                Rotate(angle=rotation)  # Use degrees directly
-            Line(
-                width=(2 if self.config["margin"]["active"] else 1),
-                rectangle=(
-                    CNC.vars["xmin"] * zoom,
-                    CNC.vars["ymin"] * zoom,
-                    (CNC.vars["xmax"] - CNC.vars["xmin"]) * zoom,
-                    (CNC.vars["ymax"] - CNC.vars["ymin"]) * zoom,
-                ),
-            )
-            PopMatrix()
+            # work area, with a plan each WCS shows its own
+            if plan is None:
+                Color(*theme.map_work_area)
+                PushMatrix()
+                Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
+                if not app.has_4axis:
+                    Rotate(angle=rotation)  # Use degrees directly
+                Line(
+                    width=(2 if self.config["margin"]["active"] else 1),
+                    rectangle=(
+                        CNC.vars["xmin"] * zoom,
+                        CNC.vars["ymin"] * zoom,
+                        (CNC.vars["xmax"] - CNC.vars["xmin"]) * zoom,
+                        (CNC.vars["ymax"] - CNC.vars["ymin"]) * zoom,
+                    ),
+                )
+                PopMatrix()
+
+            # left, bottom, width, height, WCS, alpha, texture and leader start of each WCS label
+            placed_labels = []
+
+            def wcs_color(name, alpha=1):
+                color = theme.wcs_color(name)
+                return (*color[:3], color[3] * alpha)
+
+            # the WCS that shows the area of the probe WCS: the start WCS for the WCS it probes for
+            probe_area_wcs = None
+            if plan is not None:
+                probe_area_wcs = _name if plan["follower"] is not None else plan["probe_wcs"]
+
+            # every WCS the program moves in: its origin and the area of its feed moves
+            def draw_wcs(name, extents, area_name=None, faint=False):
+                # area_name colors the area of another WCS, faint for an origin the program still sets
+                origin = controller.wcsOrigin(name)
+                if origin is None:
+                    return
+                is_start = name == _name
+                alpha = 0.35 if faint else 1
+                ox = (origin[0] - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x) * zoom
+                oy = (origin[1] - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y) * zoom
+                if extents is not None:
+                    Color(*wcs_color(area_name or name))
+                    PushMatrix()
+                    Translate(self.x + ox, self.y + oy)
+                    Rotate(angle=origin[2])
+                    # the scan margin goes around each area shown, from the Margin button only around
+                    # the one of the probe WCS
+                    scanned = (
+                        plan is not None
+                        and self.config["margin"]["active"]
+                        and (not self.scan_probe_area_only or name == probe_area_wcs)
+                    )
+                    Line(
+                        width=(2 if scanned else 1.5 if is_start else 1),
+                        rectangle=(
+                            extents[0] * zoom,
+                            extents[2] * zoom,
+                            (extents[1] - extents[0]) * zoom,
+                            (extents[3] - extents[2]) * zoom,
+                        ),
+                    )
+                    PopMatrix()
+                Color(*wcs_color(name, alpha))
+                radius = dp(9) if is_start else dp(6)
+                Ellipse(pos=(self.x + ox - radius, self.y + oy - radius), size=(2 * radius, 2 * radius))
+                label = CoreLabel(text=name + (" " + tr._("Start") if is_start else ""), font_size=dp(12))
+                label.refresh()
+                # the label with a dark backing, which keeps the name readable on the bed and on the
+                # areas, stacked above the labels it would cover
+                width, height = label.texture.size[0] + dp(4), label.texture.size[1] + dp(2)
+                left, bottom = self.x + ox + radius + dp(2), self.y + oy + dp(3)
+                moved = True
+                while moved:
+                    moved = False
+                    for other_left, other_bottom, other_width, other_height, *_rest in placed_labels:
+                        if (
+                            left < other_left + other_width
+                            and other_left < left + width
+                            and bottom < other_bottom + other_height
+                            and other_bottom < bottom + height
+                        ):
+                            bottom = other_bottom + other_height + dp(2)
+                            moved = True
+                # drawn after everything else, so no line covers it
+                stacked = bottom > self.y + oy + dp(3)
+                placed_labels.append(
+                    (
+                        left,
+                        bottom,
+                        width,
+                        height,
+                        name,
+                        alpha,
+                        label.texture,
+                        (self.x + ox, self.y + oy) if stacked else None,
+                    )
+                )
+
+            # a WCS that gets its origin in the job is shown faint, without its area
+            set_in_job = plan["set_in_job"] if plan is not None else set()
+            # hiding the others keeps the WCS Z probe and leveling run in
+            probe_wcs = plan["probe_wcs"] if plan is not None else _name
+            for name, extents in program_wcs:
+                if name != _name and (not self.hide_other_wcs or name == probe_wcs):
+                    draw_wcs(name, None if name in set_in_job else extents, faint=name in set_in_job)
 
             # z probe
             if self.config["zprobe"]["active"]:
@@ -2270,9 +2369,20 @@ class CNCWorkspace(Widget):
                     else:
                         zprobe_x = CNC.vars["rotation_offset_x"] + CNC.vars["anchor_width"] - 3.0
                         zprobe_y = CNC.vars["rotation_offset_y"] + CNC.vars["anchor_width"]
+                elif plan is not None:
+                    # the Z probe runs in the probe WCS of the plan
+                    probe_x, probe_y, probe_rotation = plan["probe_origin"]
+                    Translate(
+                        self.x + (probe_x - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x) * zoom,
+                        self.y + (probe_y - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y) * zoom,
+                    )
+                    Rotate(angle=probe_rotation)
                 else:
                     Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
                     Rotate(angle=rotation)
+                if plan is not None:
+                    zprobe_x, zprobe_y = plan["zprobe"]
+                elif not app.has_4axis:
                     zprobe_x = self.config["zprobe"]["x_offset"] + (
                         0 if self.config["zprobe"]["origin"] == 1 else CNC.vars["xmin"]
                     )
@@ -2283,7 +2393,16 @@ class CNCWorkspace(Widget):
                 PopMatrix()
 
             # auto leveling
-            if self.config["leveling"]["active"]:
+            if self.config["leveling"]["active"] and plan is not None:
+                # G32 probes along the machine axes, whatever the rotation of the WCS
+                Color(*theme.map_leveling)
+                level_x, level_y, level_size_x, level_size_y = plan["leveling"]
+                for x in Utils.xfrange(level_x, level_x + level_size_x, self.config["leveling"]["x_points"]):
+                    for y in Utils.xfrange(level_y, level_y + level_size_y, self.config["leveling"]["y_points"]):
+                        sx = (x - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x) * zoom
+                        sy = (y - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y) * zoom
+                        Ellipse(pos=(self.x + sx - 5, self.y + sy - 5), size=(10, 10))
+            elif self.config["leveling"]["active"]:
                 Color(*theme.map_leveling)
                 PushMatrix()
                 Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
@@ -2303,6 +2422,24 @@ class CNCWorkspace(Widget):
                             pos=((CNC.vars["xmin"] + x) * zoom - 5, (CNC.vars["ymin"] + y) * zoom - 5), size=(10, 10)
                         )
                 PopMatrix()
+
+            # the start WCS last, so nothing covers it; it may show the area of the WCS it probes for
+            if plan is not None:
+                draw_wcs(_name, plan["start_extents"], area_name=plan["follower"])
+            else:
+                # also for rotary jobs and without a program: the origin with its label
+                draw_wcs(_name, dict(program_wcs).get(_name))
+
+            # the WCS labels on top, with a leader from the origin to each stacked one
+            for left, bottom, _width, _height, name, alpha, _texture, leader_from in placed_labels:
+                if leader_from is not None:
+                    Color(*wcs_color(name, alpha))
+                    Line(points=[*leader_from, left, bottom], width=1)
+            for left, bottom, width, height, name, alpha, texture, _leader_from in placed_labels:
+                Color(*theme.map_wcs_label_bg[:3], theme.map_wcs_label_bg[3] * alpha)
+                Rectangle(pos=(left, bottom), size=(width, height))
+                Color(*wcs_color(name, alpha))
+                Rectangle(texture=texture, pos=(left + dp(2), bottom + dp(1)), size=texture.size)
             StencilUnUse()
             StencilPop()
 
@@ -2841,7 +2978,6 @@ class Makera(RelativeLayout):
     used_tools = ListProperty()
     upcoming_tool = 0
     file_has_ocodes = False
-    program_start_wcs = None  # WCS the loaded program selects before its first move
     tool_change_markers = []
     tool_table = {}
     cam_metadata = None
@@ -3516,18 +3652,14 @@ class Makera(RelativeLayout):
         Clock.schedule_once(self.refresh_start_wcs, 0)
 
     def refresh_start_wcs(self, *args):
-        popup = getattr(self, "coord_popup", None)
-        if popup is None:
-            return
-        popup.load_origin_label()
-        popup.cnc_workspace.draw()
+        if self.coord_popup:
+            self.coord_popup.load_origin_label()
+            self.coord_popup.cnc_workspace.draw()
 
     def open_start_job_popup(self):
         if not self.can_open_start_job_popup():
             return False
         self.coord_popup.mode = "Run"
-        # the start WCS of the program may not be the active one, so read all WCS
-        self.controller.viewWCS()
         self.coord_popup.load_config()
         self.coord_popup.open()
         return True
@@ -3893,18 +4025,19 @@ class Makera(RelativeLayout):
             return
         app = App.get_running_app()
 
-        if app.has_4axis:
-            self.controller.wcsClearRotation()
-
         goto_origin = False
         apply_margin = self.coord_config["margin"]["active"]
         apply_zprobe = self.coord_config["zprobe"]["active"]
         apply_leveling = self.coord_config["leveling"]["active"]
+        # resuming from a line runs in the active WCS, so only a full start works per WCS
+        plan = self.controller.autoProbePlan(self.coord_config) if select_wcs else None
         # set goto path origin flag if no ATC and not in path area
         if app.has_4axis:
             goto_origin = True
         elif not apply_margin and not apply_zprobe and not apply_leveling:
-            if (
+            if plan is not None:
+                goto_origin = plan["outside"]
+            elif (
                 CNC.vars["wx"] < CNC.vars["xmin"]
                 or CNC.vars["wx"] > CNC.vars["xmax"]
                 or CNC.vars["wy"] < CNC.vars["ymin"]
@@ -3912,9 +4045,11 @@ class Makera(RelativeLayout):
             ):
                 goto_origin = True
 
-        # M495 runs in the active WCS, so select the one the program starts in first
-        if select_wcs and self.program_start_wcs is not None:
-            self.controller.executeCommand(("buffer " if buffer else "") + self.program_start_wcs)
+        # M495 runs in the active WCS, so select the one the program starts in first; autoCommand does
+        # that with a plan
+        start_wcs = self.controller.programStartWCS()
+        if select_wcs and plan is None and start_wcs is not None:
+            self.controller.executeCommand(("buffer " if buffer else "") + start_wcs)
 
         zprobe_abs = False
         # calculate zprobe offset
@@ -3945,6 +4080,7 @@ class Makera(RelativeLayout):
                 self.coord_config["leveling"]["yp_offset"],
             ],
             self.upcoming_tool,
+            plan=plan,
         )
 
         # change back to last tool if needed
@@ -3970,14 +4106,9 @@ class Makera(RelativeLayout):
             origin_x += CNC.vars["anchor1_x"] + CNC.vars["rotation_offset_x"]
             origin_y += CNC.vars["anchor1_y"] + CNC.vars["rotation_offset_y"]
 
-        # the WCS the job starts in, as shown in the start job popup
-        name = start_wcs_origin()[0]
-        active = CNC.wcs_names[CNC.vars["active_coord_system"]]
-        if name == active:
-            self.controller.wcsSetM(origin_x, origin_y, None, None)
-        else:
-            self.controller.wcsSetM(origin_x, origin_y, None, None, CNC.wcs_names.index(name) + 1)
-            self.controller.viewWCS()  # the shown values of another WCS come from "get wcs"
+        # the WCS the job starts in, as shown in the start job popup; another one shows "get wcs" values
+        self.controller.wcsSetM(origin_x, origin_y, None, None, self.controller.startWCSOrigin()[0])
+        self.controller.viewWCS()
 
         # refresh after 1 seconds
         Clock.schedule_once(self.refresh_work_origin, 1)
@@ -10017,7 +10148,7 @@ class Makera(RelativeLayout):
             self.coord_popup.set_config("leveling", "active", False)
             self.coord_popup.set_config("origin", "anchor", 3)
         else:
-            _name, wcox, wcoy, _rotation = start_wcs_origin()
+            _name, wcox, wcoy, _rotation = self.controller.startWCSOrigin()
             if (
                 app.has_anchor2
                 and (wcox - CNC.vars["anchor1_x"] - CNC.vars["anchor2_offset_x"]) >= 0
@@ -10085,7 +10216,6 @@ class Makera(RelativeLayout):
         self.load_event.set()
         self.upcoming_tool = 0
         self.file_has_ocodes = False
-        self.program_start_wcs = None
         self.used_tools = []
         self.tool_change_markers = []
         self.tool_table = {}
@@ -10120,7 +10250,6 @@ class Makera(RelativeLayout):
             self.lines = f.readlines()
             self.selected_file_line_count = len(self.lines)
             f.close()
-            self.program_start_wcs = self.controller.program_start_wcs(self.lines)
 
             # Detect tools/stock metadata and set document unit if available
             self.document_unit = detect_document_unit(self.lines)
