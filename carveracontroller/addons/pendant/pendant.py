@@ -399,7 +399,6 @@ if WHB04_SUPPORTED:
 
 
 class GamepadPendant(Pendant):
-    DEFAULT_MAX_JOG_SPEED = 3000  # mm/min
     DEFAULT_Z_MAX_SPEED = 800  # mm/min cap for Z in continuous mode
     STEP_SIZES = [0.01, 0.1, 1.0, 10.0]  # step sizes in mm
     STEP_SIZE_SPEED_FRACTION = {  # speed fractions for continuous jog
@@ -422,11 +421,6 @@ class GamepadPendant(Pendant):
             pass
 
         self._step_index = 1  # Start at 0.1mm
-
-        try:
-            self._max_jog_speed = float(Config.get("carvera", "gamepad_max_jog_speed"))
-        except Exception:
-            self._max_jog_speed = self.DEFAULT_MAX_JOG_SPEED
 
         self._invert_x = Config.getboolean("carvera", "gamepad_invert_x", fallback=False)
         self._invert_y = Config.getboolean("carvera", "gamepad_invert_y", fallback=False)
@@ -461,12 +455,21 @@ class GamepadPendant(Pendant):
         if self._update_ui_on_button_press:
             self._update_ui_on_button_press("step_size_changed")
 
-    def _continuous_feed_for_axis(self, axis: str) -> float:
+    def _start_axis_continuous_jog(self, axis: str, direction: int) -> None:
+        """Start continuous jog using the UI jog speed scaled by the selected percentage."""
         frac = self.STEP_SIZE_SPEED_FRACTION[self.current_step_size]
-        cap = self._max_jog_speed
-        if axis == "Z":
-            cap = min(cap, self.DEFAULT_Z_MAX_SPEED)
-        return frac * cap
+        jog_speed = self._controller.jog_speed
+        feed = jog_speed * frac
+
+        if feed > 0 and jog_speed < 10000:
+            if axis == "Z":
+                feed = min(self.DEFAULT_Z_MAX_SPEED * frac, feed)
+            self._controller.startContinuousJog(f"{axis}{direction}", feed)
+        elif feed == 0 or jog_speed == 10000:
+            if axis == "Z":
+                self._controller.startContinuousJog(f"{axis}{direction}", self.DEFAULT_Z_MAX_SPEED * frac)
+            else:
+                self._controller.startContinuousJog(f"{axis}{direction}", None, f"S{frac}")
 
     # Callbacks
     def _handle_connect(self) -> None:
@@ -514,12 +517,10 @@ class GamepadPendant(Pendant):
         if self._controller.continuousJogBusy():
             return
 
-        feed = self._continuous_feed_for_axis(axis)
-
         if self._controller.jog_mode != Controller.JOG_MODE_CONTINUOUS:
             self._controller.setJogMode(Controller.JOG_MODE_CONTINUOUS)
 
-        self._controller.startContinuousJog(f"{axis}{direction}", feed)
+        self._start_axis_continuous_jog(axis, direction)
         self._active_continuous_jog_action = action
 
     def _handle_jog_stop(self, action: str) -> None:

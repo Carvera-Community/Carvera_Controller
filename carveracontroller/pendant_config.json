@@ -127,15 +127,6 @@
         "pendant_types": ["Gamepad"]
     },
     {
-        "type": "numeric",
-        "title": "Gamepad: Max Jog Speed (mm/min)",
-        "desc": "Maximum feed rate for continuous jog mode. The selected step size determines the speed fraction used.",
-        "section": "carvera",
-        "key": "gamepad_max_jog_speed",
-        "default": "3000",
-        "pendant_types": ["Gamepad"]
-    },
-    {
         "type": "bool",
         "title": "Gamepad: Invert X Axis",
         "desc": "Invert the X axis direction on the gamepad thumbstick.",
