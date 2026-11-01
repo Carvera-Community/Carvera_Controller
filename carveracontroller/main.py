@@ -129,6 +129,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
 import carveracontroller.ui.JogAxisButton  # noqa: F401  (registers jog axis buttons)
+import carveracontroller.ui.JogStepSpinner  # noqa: F401  (registers the jog step spinner)
 import carveracontroller.ui.SquareGrid  # noqa: F401  (registers the jog pad layout)
 from carveracontroller.ui.fonts import register_arialuni
 from carveracontroller.ui.theme import SettingTheme, Theme

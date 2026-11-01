@@ -19,6 +19,7 @@ from carveracontroller.ui.themes import (
     theme_title,
 )
 from carveracontroller.ui.themes.editor import (
+    CONTROL_HEIGHT,
     MIN_PANE_HEIGHT,
     PREVIEW_PANE_WIDTH,
     SettingThemeEditor,
@@ -717,6 +718,29 @@ def test_descriptions_fit_and_controls_stay_centered(editor):
     assert row.swatch.height == pytest.approx(row.revert.height)
     assert row.revert.width == pytest.approx(row.revert.height)
     assert row.revert.fill_color is not None
+
+
+def test_color_value_keeps_the_whole_glyph(editor):
+    """A layout pass before font metrics arrive must not slice the hex value."""
+    from kivy.clock import Clock
+
+    field = editor._rows["bg"].field
+    original = field.text
+    field.line_height = 1
+    field.height = float(field.height) + 1
+    field.height = float(CONTROL_HEIGHT)
+    field.text = "#002b36aa"
+    for _step in range(6):
+        Clock.tick()
+    field._update_graphics()
+    rect = field._lines_rects[0]
+    texture = field._lines_labels[0]
+    assert rect.size[0] == pytest.approx(texture.size[0], abs=1)
+    assert rect.size[1] == pytest.approx(texture.size[1], abs=1)
+    assert field.scroll_x == pytest.approx(0)
+    assert field.scroll_y == pytest.approx(0)
+    assert field.width >= texture.size[0] + field.padding[0] + field.padding[2] - 1
+    field.text = original
 
 
 def test_preview_samples_keep_a_realistic_size(editor):

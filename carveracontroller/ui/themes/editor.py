@@ -142,12 +142,28 @@ def preview_shown_for_width(width: float) -> bool:
 
 
 def _center_input_text(field, *_args) -> None:
-    """Keep a single-line field's text in the vertical middle of its box."""
-    line = field.line_height or field.font_size
-    pad_y = max((field.height - line) / 2, dp(2))
+    """Center one line, and keep the whole glyph inside the field."""
+    line = float(field.line_height or 0)
+    if line <= 1:
+        return
+    needed = line + dp(4)
+    if float(field.height) + 0.5 < needed:
+        field.height = needed
+        return
+    pad_y = max((float(field.height) - line) / 2, 0)
     padding = [dp(6), pad_y, dp(6), pad_y]
-    if [float(value) for value in field.padding] != padding:
+    current = [float(value) for value in field.padding]
+    if any(abs(left - right) > 0.1 for left, right in zip(current, padding)):
         field.padding = padding
+    # A viewport that used to be too short leaves the line scrolled out of view.
+    # Leave a value the user is still typing alone when it is wider than the box.
+    if field.scroll_x or field.scroll_y:
+        label = field._label_cached
+        visible = float(field.width) - padding[0] - padding[2]
+        text_width = field._get_text_width(field.text or " ", field.tab_width, label) if label is not None else 0
+        if text_width <= visible + 1:
+            field.scroll_x = 0
+            field.scroll_y = 0
 
 
 def _section_title(group: str) -> str:
@@ -352,8 +368,14 @@ class _TokenField(_DescribedRow, BoxLayout):
             pos_hint={"center_y": 0.5},
             padding=[dp(6), dp(6)],
         )
-        self.field.bind(text=self._changed, size=_center_input_text)
+        self.field.bind(
+            text=self._changed,
+            size=_center_input_text,
+            line_height=_center_input_text,
+            font_size=_center_input_text,
+        )
         self.add_widget(self.field)
+        _center_input_text(self.field)
         self.revert = _IconButton(REVERT_ICON, on_release=lambda *_args: self._on_revert(self.key))
         self.revert.pos_hint = {"center_y": 0.5}
         self.add_widget(self.revert)

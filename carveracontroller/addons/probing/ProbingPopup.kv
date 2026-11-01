@@ -511,10 +511,8 @@
                     BoxLayout:
                         orientation: 'vertical'
                         Widget:
-                        Spinner:
+                        JogStepSpinner:
                             id: step_xy
-                            size_hint_y: None
-                            height: '40dp'
                             text: app.jog_step_xy
                             on_text: app.jog_step_xy = self.text
                             values: '10', '1', '0.1', '0.01', '0.005'
@@ -619,10 +617,8 @@
                     BoxLayout:
                         orientation: 'vertical'
                         Widget:
-                        Spinner:
+                        JogStepSpinner:
                             id: step_a
-                            size_hint_y: None
-                            height: '40dp'
                             text: app.jog_step_a
                             on_text: app.jog_step_a = self.text
                             values: '90', '10', '1', '0.1'
@@ -630,10 +626,8 @@
                     BoxLayout:
                         orientation: 'vertical'
                         Widget:
-                        Spinner:
+                        JogStepSpinner:
                             id: step_z
-                            size_hint_y: None
-                            height: '40dp'
                             text: app.jog_step_z
                             on_text: app.jog_step_z = self.text
                             values: '10', '1', '0.1', '0.01', '0.005'
