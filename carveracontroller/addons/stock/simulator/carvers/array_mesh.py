@@ -9,7 +9,7 @@ from collections.abc import Iterable
 import numpy as np
 
 from carveracontroller.addons.stock.simulator.carvers.backend import TileKey
-from carveracontroller.addons.stock.simulator.mesh_format import DEFAULT_COLOR, VERTEX_FORMAT
+from carveracontroller.addons.stock.simulator.mesh_format import VERTEX_FORMAT, default_stock_color
 
 _FLOATS_PER_VERT = 12
 # GLES 2 Mesh: index values are uint16, and the index list itself cannot exceed 65535
@@ -151,9 +151,11 @@ def aabb_box_mesh(
     xmax: float,
     ymax: float,
     zmax: float,
-    color: tuple[float, float, float, float] = DEFAULT_COLOR,
+    color: tuple[float, float, float, float] | None = None,
 ) -> PackedMesh | None:
     """Six outward quads for one solid box. A uniform shell is this, not a tile grid."""
+    if color is None:
+        color = default_stock_color()
     if xmax <= xmin or ymax <= ymin or zmax <= zmin:
         return None
     corners = np.array(

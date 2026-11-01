@@ -410,6 +410,30 @@ def test_welcome_doc_link_opens_from_its_on_screen_position():
         Window.unbind(mouse_pos=overlay._on_mouse_pos)
 
 
+def test_step_icon_follows_the_theme_icon_color():
+    import pytest
+
+    from carveracontroller.ui.theme import get_theme
+    from carveracontroller.ui.themes import theme_names
+    from carveracontroller.ui.tutorial.overlay import TourOverlay
+
+    EventLoop.ensure_window()
+    overlay = TourOverlay()
+    theme = get_theme()
+    previous = theme.name
+    try:
+        assert list(overlay.step_icon.color) == pytest.approx(list(theme.icon))
+        theme.apply_palette("light")
+        overlay._apply_accent()
+        assert list(overlay.step_icon.color) == pytest.approx(list(theme.icon))
+        assert list(overlay.step_icon.color)[0] > list(theme.text)[0]
+    finally:
+        if previous in theme_names():
+            theme.apply_palette(previous)
+        overlay.close()
+        Window.unbind(mouse_pos=overlay._on_mouse_pos)
+
+
 def test_step_text_scrolls_back_to_the_top():
     from carveracontroller.ui.tutorial.overlay import TourOverlay
 

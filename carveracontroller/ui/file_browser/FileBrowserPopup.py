@@ -28,6 +28,7 @@ from carveracontroller import Utils
 from carveracontroller.translation import tr
 from carveracontroller.ui.common.action_button import PopupActionButton
 from carveracontroller.ui.common.compact import COMPACT_WIDTH_DP, is_compact_width
+from carveracontroller.ui.theme import get_theme
 
 from .sources import (
     CONFIG_LAST_LOCATION,
@@ -1067,14 +1068,14 @@ class FileBrowserPopup(ModalView):
                     text=" > ",
                     size_hint_x=None,
                     width=dp(16),
-                    color=(150 / 255, 150 / 255, 150 / 255, 1),
+                    color=get_theme().text_muted,
                 )
                 box.add_widget(sep)
             chip = FileBrowserPathChip(
                 text=label,
                 bold=True,
                 size_hint_x=None,
-                color=(225 / 255, 225 / 255, 225 / 255, 1),
+                color=get_theme().text,
             )
             chip.bind(texture_size=lambda inst, value: setattr(inst, "width", value[0] + dp(8)))
             chip.bind(on_release=lambda _btn, idx=i: self.goto_path(idx))

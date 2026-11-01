@@ -2,7 +2,7 @@
     size_hint: 0.5, 0.4
     pos_hint: {"right": 0.75, "top": 0.7}
     auto_dismiss: False
-    overlay_color: 0,0,0,0.3
+    overlay_color: app.theme.overlay
     GridLayout:
         cols:1
         rows:3
@@ -52,6 +52,7 @@
 
         BoxLayout:
             size_hint_y: 0.4
+            spacing: dp(app.theme.spacing)
             Button:
                 text: tr._('Halt') if app.state == 'Run' else tr._('Close')
                 on_release: app.root.controller.estopCommand() if app.state == 'Run' else root.dismiss()
@@ -68,10 +69,10 @@
 
 <ProbingRow@SelectableLabel>:
     text: ''
-    color: 1, 1, 1, 1  # Add default
+    color: app.theme.text
     canvas.before:
         Color:
-            rgba: (80/255, 80/255, 80/255, 1) if self.selected else (50/255, 50/255, 50/255, 1)
+            rgba: app.theme.row_selected if self.selected else app.theme.row_alt
         Rectangle:
             pos: self.pos
             size: self.size

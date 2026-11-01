@@ -1,6 +1,15 @@
 [unreleased]
+- Enhancement: Monitoring graph now on the G-code viewer screen, showing up to two metrics: spindle temperature, rpm, target rpm, rpm deviation %, and feed
+- Enhancement: UI is now themed. You can select one of multiple visual styles in the Settings. Themes can be further customised in the theme editer.
+- Change: Previous G-Code highlighting settings page collapsed into theme settings
+- Change: Store probing presets, facing presets, bed settings, calibration settings, and custom bed meshes in the app user-data directory, and move existing copies out of ~/.kivy on first launch
+- Fixed: Gamepad hotplug would not detect a reconnected controller
+- Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
+- Fixed: File picker for Config Backups on Windows didn't have a drive selector
+- Fixed: Colors of the rows in the MDI were sometimes not matching their content
+- Fixed: Multi-line inputs were sent as a single frame instead of multiple ones
 - Fixed: Android builds were incorrectly detecting the default language
-- Enhancement: Every file playback will start by going the configured clearance_z
+- Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Enhancement: The controller finds the first wcs being used in the file (either active wcs or another one) and buffers it prior to playing the file.
 
 [2.3.0-RC1]
@@ -66,6 +75,7 @@
 - Fixed: Consolidated the two different re-connection methods into one
 - Fixed: Checkboxes in the CMM Workbench and Facing wizard stay visible on the dark background
 - Fixed: Commands sent using the "Send" buttons are now added to the MDI history
+- Fixed: The probe button in the main menu is disabled unless community firmware is loaded, matching the Probing button on the control screen
 
 [2.2.0-RC3]
 - Enhancement: The step size is now synchronized between the main screen and the Probing screen

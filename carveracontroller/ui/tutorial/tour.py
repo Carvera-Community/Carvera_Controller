@@ -12,9 +12,10 @@ from kivy.config import Config
 from kivy.uix.screenmanager import NoTransition
 from kivy.uix.scrollview import ScrollView
 
-from carveracontroller.Controller import NOT_CONNECTED, STATECOLOR
+from carveracontroller.Controller import NOT_CONNECTED
 from carveracontroller.translation import tr
 from carveracontroller.ui.file_browser.sources import LOCATION_DEVICE
+from carveracontroller.ui.theme import machine_state_color
 from carveracontroller.ui.tutorial.overlay import TourOverlay
 from carveracontroller.ui.tutorial.placement import Rect
 from carveracontroller.ui.tutorial.policy import (
@@ -48,7 +49,7 @@ def apply_demo_readout(root) -> None:
     if status is not None:
         status.main_text = "Idle"
         status.minr_text = "practice"
-        status.color = STATECOLOR["Idle"]
+        status.color = machine_state_color("Idle")
     _pair(getattr(root, "x_data_view", None), "12.000", "48.000")
     _pair(getattr(root, "y_data_view", None), "8.000", "24.000")
     _pair(getattr(root, "z_data_view", None), "5.000", "-1.000")
@@ -74,7 +75,7 @@ def _pair(widget, main: str, minor: str) -> None:
 class Tutorial:
     """Welcome card, then the practice spotlight"""
 
-    def __init__(self, root):
+    def __init__(self, root) -> None:
         self.root = root
         self.phase: str | None = None
         self.index = 0
@@ -85,7 +86,7 @@ class Tutorial:
         self._open_dropdown_name: str | None = None
         self._loaded_demo = False
         self._demo_path = ""
-        self._load_thread = None
+        self._load_thread: threading.Thread | None = None
         self._saved_local = ""
         self._saved_remote = ""
         self._saved_show_bar = False

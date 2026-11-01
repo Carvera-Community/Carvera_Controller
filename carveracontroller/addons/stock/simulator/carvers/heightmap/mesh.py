@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from carveracontroller.addons.stock.simulator.mesh_format import DEFAULT_COLOR
+from carveracontroller.addons.stock.simulator.mesh_format import default_stock_color
 
 # Occupancy sentinel shared with HeightmapBackend (imported from this module).
 _OUTSIDE = np.float32(-1e30)
@@ -39,5 +39,5 @@ def mesh_heightmap_region(backend, x0: int, y0: int, x1: int, y1: int):
         origin_y=float(backend.bounds.min_y) + y0 * vs,
         min_z=float(backend.bounds.min_z),
         cell=vs,
-        color=DEFAULT_COLOR,
+        color=default_stock_color(),
     )

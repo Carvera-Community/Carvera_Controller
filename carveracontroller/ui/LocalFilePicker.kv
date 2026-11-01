@@ -6,7 +6,7 @@
     padding: dp(4), dp(6)
     canvas.before:
         Color:
-            rgba: 80/255, 80/255, 80/255, 1
+            rgba: app.theme.row_selected
         Rectangle:
             pos: self.pos
             size: self.size
@@ -15,7 +15,7 @@
         width: dp(16)
         canvas.before:
             Color:
-                rgba: 225/255, 225/255, 225/255, 1
+                rgba: app.theme.icon
             Rectangle:
                 source: 'data/connected.png'
                 pos: self.center_x - dp(8), self.center_y - dp(8)
@@ -27,6 +27,7 @@
         allow_stretch: True
         keep_ratio: True
         source: 'data/folder-32.png'
+        color: app.theme.icon
     Label:
         text: root.data_text
         shorten: True
@@ -34,20 +35,20 @@
         halign: 'left'
         valign: 'middle'
         text_size: self.width, None
-        color: 225/255, 225/255, 225/255, 1
+        color: app.theme.text
 
 <LocalFilePickerSheet>:
     orientation: 'vertical'
     padding: dp(8)
     spacing: dp(8)
     Label:
-        text: tr._('Choose folder and file name')
+        text: tr._('Choose folder and file name') if root.show_filename else tr._('Choose a folder')
         size_hint_y: None
         height: dp(28)
         font_size: dp(15)
         text_size: self.width, None
         halign: 'left'
-        color: 0.78, 0.79, 0.82, 1
+        color: app.theme.text_secondary
     BoxLayout:
         size_hint_y: None
         height: dp(40)
@@ -56,7 +57,7 @@
         spacing: dp(4)
         canvas.before:
             Color:
-                rgba: 56/255, 56/255, 56/255, 1
+                rgba: app.theme.row
             Rectangle:
                 pos: self.pos
                 size: self.size
@@ -128,7 +129,9 @@
     Label:
         text: tr._('File name')
         size_hint_y: None
-        height: dp(24)
+        height: dp(24) if root.show_filename else 0
+        opacity: 1 if root.show_filename else 0
+        disabled: not root.show_filename
         font_size: dp(15)
         halign: 'left'
         text_size: self.width, None
@@ -136,7 +139,9 @@
         id: ti_filename
         multiline: False
         size_hint_y: None
-        height: dp(36)
+        height: dp(36) if root.show_filename else 0
+        opacity: 1 if root.show_filename else 0
+        disabled: not root.show_filename
     BoxLayout:
         size_hint_y: None
         height: dp(44)

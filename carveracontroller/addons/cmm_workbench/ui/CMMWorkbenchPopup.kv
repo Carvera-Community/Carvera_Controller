@@ -1,18 +1,20 @@
 #:import tr carveracontroller.__main__.tr
 #:import digitize_v carveracontroller.Utils.digitize_v
 #:import Window kivy.core.window.Window
+#:import heading_markup carveracontroller.ui.theme.heading_markup
 
 
 <CMMWorkbenchSketchVisibilityToggle>:
+    chrome: False
     background_color: 0, 0, 0, 0
     group: None
     canvas.before:
         Color:
-            rgba: (88/255, 88/255, 88/255, 1) if self.state == 'normal' else (50/255, 164/255, 206/255, 1)
+            rgba: app.theme.accent if self.state == 'down' else app.theme.control
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(3),]
+            radius: [dp(app.theme.radius_s),]
     Image:
         source: root.image
         size: self.parent.size
@@ -21,15 +23,16 @@
 
 
 <CMMWorkbenchIconToggle>:
+    chrome: False
     background_color: 0, 0, 0, 0
     group: ''
     canvas.before:
         Color:
-            rgba: (88/255, 88/255, 88/255, 1) if self.state == 'normal' else (50/255, 164/255, 206/255, 1)
+            rgba: app.theme.accent if self.state == 'down' else app.theme.control
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(3),]
+            radius: [dp(app.theme.radius_s),]
     Image:
         source: root.image
         size: self.parent.size
@@ -39,7 +42,7 @@
 
 <CMMWorkbenchFieldLabel@Label>:
     font_size: dp(15)
-    color: 0.88, 0.88, 0.92, 1
+    color: app.theme.text
     halign: 'center'
     valign: 'middle'
     text_size: self.size
@@ -59,7 +62,7 @@
     size_hint: 0.9, 0.88
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     auto_dismiss: False
-    overlay_color: 0, 0, 0, 0.35
+    overlay_color: app.theme.overlay
 
     RelativeLayout:
         size_hint: 1, 1
@@ -81,7 +84,7 @@
                     do_default_tab: False
                     tab_width: dp(118)
                     bar_width: dp(8)
-                    bar_color: 0.52, 0.68, 0.85, 1
+                    bar_color: app.theme.scroll_bar
                     padding: dp(6), dp(8), dp(6), dp(10)
                     disabled: root.is_probing
 
@@ -104,8 +107,8 @@
                                     height: self.texture_size[1]
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
-                                    text: tr._("[b]Manual (no motion)[/b]\n[color=78797f]Live position is shown below. Load it into the fields or type your own, then add a point or circle.[/color]")
+                                    color: app.theme.text
+                                    text: heading_markup(tr._("Manual (no motion)"), tr._("Live position is shown below. Load it into the fields or type your own, then add a point or circle."), app.theme.text_muted)
                                 BoxLayout:
                                     orientation: 'horizontal'
                                     size_hint_y: None
@@ -123,7 +126,7 @@
                                         valign: 'middle'
                                         text_size: self.width, self.height
                                         markup: True
-                                        color: 0.65, 0.92, 0.98, 1
+                                        color: app.theme.info_text
                                         text: ''
                                     AnchorLayout:
                                         size_hint_x: None
@@ -193,8 +196,8 @@
                                     height: self.texture_size[1]
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
-                                    text: tr._("[b]Single-axis probe[/b]\n[color=78797f][b]M466[/b][/color]")
+                                    color: app.theme.text
+                                    text: heading_markup(tr._("Single-axis probe"), "[b]M466[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -302,10 +305,10 @@
                                     text_size: self.width, None
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
+                                    color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Circular pocket / bore center[/b]\n[color=78797f][b]M461[/b][/color]")
+                                    text: heading_markup(tr._("Circular pocket / bore center"), "[b]M461[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -423,10 +426,10 @@
                                     text_size: self.width, None
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
+                                    color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Outside boss / block center[/b]\n[color=78797f][b]M462[/b][/color]")
+                                    text: heading_markup(tr._("Outside boss / block center"), "[b]M462[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -549,10 +552,10 @@
                                     text_size: self.width, None
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
+                                    color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Inside corner[/b]\n[color=78797f][b]M463[/b][/color]")
+                                    text: heading_markup(tr._("Inside corner"), "[b]M463[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -665,10 +668,10 @@
                                     text_size: self.width, None
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
+                                    color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Outside corner[/b]\n[color=78797f][b]M464[/b][/color]")
+                                    text: heading_markup(tr._("Outside corner"), "[b]M464[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -781,10 +784,10 @@
                                     text_size: self.width, None
                                     markup: True
                                     halign: 'left'
-                                    color: 0.88, 0.88, 0.92, 1
+                                    color: app.theme.text
                                     size_hint_y: None
                                     height: self.texture_size[1]
-                                    text: tr._("[b]Axis angle[/b]\n[color=78797f][b]M465[/b][/color]")
+                                    text: heading_markup(tr._("Axis angle"), "[b]M465[/b]", app.theme.text_muted)
 
                                 GridLayout:
                                     cols: 2
@@ -900,8 +903,8 @@
                             pos_hint: {'center_x': 0.5, 'center_y': 0.5}
                             size_hint: 0.86, None
                             text: tr._('No features captured yet.\nUse the left-hand tabs to probe or add coordinates from Manual.')
-                            color: 0.45, 0.46, 0.52, 0.95
-                            disabled_color: 0.45, 0.46, 0.52, 0.95
+                            color: app.theme.text_disabled
+                            disabled_color: app.theme.text_disabled
                             disabled: True
                             font_size: dp(13)
                             halign: 'center'
@@ -1015,15 +1018,15 @@
             spacing: dp(8)
             canvas.before:
                 Color:
-                    rgba: 0.12, 0.38, 0.18, 1
+                    rgba: app.theme.success_fill
                 RoundedRectangle:
                     pos: self.pos
                     size: self.size
                     radius: [dp(4), dp(4), dp(4), dp(4)]
             Label:
                 text: root.probing_status_text
-                color: 0.62, 0.98, 0.68, 1
-                disabled_color: 0.62, 0.98, 0.68, 1
+                color: app.theme.success_text
+                disabled_color: app.theme.success_text
                 font_size: dp(14)
                 bold: True
                 halign: 'left'
@@ -1035,7 +1038,7 @@
     size_hint: None, None
     width: min(dp(1000), Window.width - dp(48))
     auto_dismiss: True
-    overlay_color: 0, 0, 0, 0.4
+    overlay_color: app.theme.overlay
     background: ''
     background_color: 0, 0, 0, 0
     border: [0, 0, 0, 0]
@@ -1045,243 +1048,205 @@
 
     canvas.before:
         Color:
-            rgba: (38 / 255, 39 / 255, 42 / 255, 1)
+            rgba: app.theme.surface
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(10), dp(10), dp(10), dp(10)]
+            radius: [dp(app.theme.radius_l),]
 
     BoxLayout:
         id: jog_modal_inner
         orientation: 'vertical'
-        spacing: dp(0)
-        padding: [dp(14), dp(6), dp(14), dp(18)]
+        spacing: dp(10)
+        padding: dp(14)
         size_hint: 1, None
         height: self.minimum_height
 
-        BoxLayout:
-            orientation: 'vertical'
+        Label:
+            text: tr._('Jog')
             size_hint_y: None
-            height: dp(29)
-            spacing: dp(2)
-            Label:
-                text: tr._('Jog')
-                size_hint_y: None
-                height: dp(24)
-                font_size: dp(17)
-                color: 0.95, 0.96, 0.97, 1
-                bold: True
-                halign: 'left'
-                valign: 'middle'
-                text_size: self.width, None
+            height: dp(28)
+            font_size: dp(16)
+            color: app.theme.text
+            bold: True
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.size
 
-            Widget:
-                size_hint_y: None
-                height: dp(3)
-                canvas:
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(210)
+            spacing: dp(12)
+
+            BoxLayout:
+                disabled: not app.jog_controls_enabled
+                size_hint_x: 1.45
+                padding: dp(8)
+                canvas.before:
                     Color:
-                        rgba: (50 / 255, 167 / 255, 212 / 255, 0.92)
-                    Rectangle:
+                        rgba: app.theme.surface_raised
+                    RoundedRectangle:
                         pos: self.pos
                         size: self.size
-
-        BoxLayout:
-            spacing: dp(8)
-            size_hint_y: None
-            height: dp(226)
-            orientation: 'horizontal'
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint_x: 1
-                spacing: dp(12)
-                BoxLayout:
-                    orientation: 'horizontal'
-                    padding: dp(0)
-                    size_hint_x: 1
-                    canvas.before:
-                        Color:
-                            rgba: (40 / 255, 40 / 255, 40 / 255, 1)
-                        RoundedRectangle:
-                            pos: self.pos
-                            size: self.size
-                            radius: [self.height / 2, self.height / 2]
+                        radius: [dp(app.theme.radius_l),]
+                SquareGrid:
+                    cols: 3
+                    rows: 3
+                    spacing: dp(8)
+                    padding: dp(4)
+                    Widget:
+                    JogAxisButton:
+                        axis_label: 'Y+' if app.invert_y_axis_jogging else 'Y-'
+                        on_press: app.root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', scan_jog_step_xy.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    Widget:
+                    JogAxisButton:
+                        axis_label: 'X-'
+                        on_press: app.root.controller.jog("X-{}".format(scan_jog_step_xy.text))
+                        on_release: app.root.controller.stopContinuousJog()
                     BoxLayout:
-                        disabled: not app.jog_controls_enabled
-                        padding: dp(0)
-                        canvas.before:
-                            Color:
-                                rgba: (50 / 255, 50 / 255, 50 / 255, 1)
-                            Ellipse:
-                                pos: self.pos
-                                size: self.size
-                        GridLayout:
-                            cols: 3
-                            rows: 3
-                            GridBoxLayout:
-                            GridBoxLayout:
-                                SmallRoundButton:
-                                    text: 'Y+' if app.invert_y_axis_jogging else 'Y-'
-                                    height: 46
-                                    on_press: app.root.controller.jog("Y{}{}".format('' if app.invert_y_axis_jogging else '-', scan_jog_step_xy.text))
-                                    on_release: app.root.controller.stopContinuousJog()
-                            GridBoxLayout:
-                            GridBoxLayout:
-                                SmallRoundButton:
-                                    text: 'X-'
-                                    height: 46
-                                    on_press: app.root.controller.jog("X-{}".format(scan_jog_step_xy.text))
-                                    on_release: app.root.controller.stopContinuousJog()
-                            GridBoxLayout:
-                                Label:
-                                Spinner:
-                                    id: scan_jog_step_xy
-                                    center: 0.5, 0.5
-                                    size_hint_y: None
-                                    height: dp(39)
-                                    text: app.jog_step_xy
-                                    on_text: app.jog_step_xy = self.text
-                                    values: '10', '1', '0.1', '0.01', '0.005'
-                                Label:
-                            GridBoxLayout:
-                                SmallRoundButton:
-                                    text: 'X+'
-                                    height: 46
-                                    on_press: app.root.controller.jog("X{}".format(scan_jog_step_xy.text))
-                                    on_release: app.root.controller.stopContinuousJog()
-                            GridBoxLayout:
-                            GridBoxLayout:
-                                SmallRoundButton:
-                                    text: 'Y-' if app.invert_y_axis_jogging else 'Y+'
-                                    height: 46
-                                    on_press: app.root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', scan_jog_step_xy.text))
-                                    on_release: app.root.controller.stopContinuousJog()
-                            GridBoxLayout:
-                BoxLayout:
-                    disabled: not app.jog_controls_enabled
-                    padding: dp(0)
-                    orientation: 'horizontal'
-                    size_hint_x: 1
-                    canvas.before:
-                        Color:
-                            rgba: (50 / 255, 50 / 255, 50 / 255, 1)
-                        RoundedRectangle:
-                            pos: self.pos
-                            size: self.size
-                            radius: [5, 5]
-                    GridLayout:
-                        size_hint_y: 0.9
-                        cols: 2
-                        rows: 3
-                        GridBoxLayout:
-                            SmallRoundButton:
-                                text: 'A+'
-                                height: 46
-                                on_press: app.root.controller.jog("A{}".format(scan_jog_step_a.text))
-                                on_release: app.root.controller.stopContinuousJog()
-                        GridBoxLayout:
-                            SmallRoundButton:
-                                text: 'Z+'
-                                height: 46
-                                on_press: app.root.controller.jog("Z{}".format(scan_jog_step_z.text))
-                                on_release: app.root.controller.stopContinuousJog()
-                        GridBoxLayout:
-                            Label:
-                            Spinner:
-                                id: scan_jog_step_a
-                                center: 0.5, 0.5
-                                size_hint_y: None
-                                height: dp(48)
-                                text: app.jog_step_a
-                                on_text: app.jog_step_a = self.text
-                                values: '90', '10', '1', '0.1'
-                            Label:
-                        GridBoxLayout:
-                            Label:
-                            Spinner:
-                                id: scan_jog_step_z
-                                center: 0.5, 0.5
-                                size_hint_y: None
-                                height: dp(48)
-                                text: app.jog_step_z
-                                on_text: app.jog_step_z = self.text
-                                values: '10', '1', '0.1', '0.01', '0.005'
-                            Label:
-                        GridBoxLayout:
-                            SmallRoundButton:
-                                text: 'A-'
-                                height: 46
-                                on_press: app.root.controller.jog("A-{}".format(scan_jog_step_a.text))
-                                on_release: app.root.controller.stopContinuousJog()
-                        GridBoxLayout:
-                            SmallRoundButton:
-                                text: 'Z-'
-                                height: 46
-                                on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
-                                on_release: app.root.controller.stopContinuousJog()
+                        orientation: 'vertical'
+                        Widget:
+                        Spinner:
+                            id: scan_jog_step_xy
+                            size_hint_y: None
+                            height: '36dp'
+                            text: app.jog_step_xy
+                            radius_dp: app.theme.pad_radius
+                            on_text: app.jog_step_xy = self.text
+                            values: '10', '1', '0.1', '0.01', '0.005'
+                        Widget:
+                    JogAxisButton:
+                        axis_label: 'X+'
+                        on_press: app.root.controller.jog("X{}".format(scan_jog_step_xy.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    Widget:
+                    JogAxisButton:
+                        axis_label: 'Y-' if app.invert_y_axis_jogging else 'Y+'
+                        on_press: app.root.controller.jog("Y{}{}".format('-' if app.invert_y_axis_jogging else '', scan_jog_step_xy.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    Widget:
+
+            BoxLayout:
+                disabled: not app.jog_controls_enabled
+                padding: dp(8)
+                canvas.before:
+                    Color:
+                        rgba: app.theme.surface_raised
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(app.theme.radius_l),]
+                SquareGrid:
+                    cols: 2
+                    rows: 3
+                    spacing: dp(8)
+                    padding: dp(4)
+                    JogAxisButton:
+                        axis_label: 'A+'
+                        on_press: app.root.controller.jog("A{}".format(scan_jog_step_a.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    JogAxisButton:
+                        axis_label: 'Z+'
+                        on_press: app.root.controller.jog("Z{}".format(scan_jog_step_z.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    BoxLayout:
+                        orientation: 'vertical'
+                        Widget:
+                        Spinner:
+                            id: scan_jog_step_a
+                            size_hint_y: None
+                            height: '36dp'
+                            text: app.jog_step_a
+                            radius_dp: app.theme.pad_radius
+                            on_text: app.jog_step_a = self.text
+                            values: '90', '10', '1', '0.1'
+                        Widget:
+                    BoxLayout:
+                        orientation: 'vertical'
+                        Widget:
+                        Spinner:
+                            id: scan_jog_step_z
+                            size_hint_y: None
+                            height: '36dp'
+                            text: app.jog_step_z
+                            radius_dp: app.theme.pad_radius
+                            on_text: app.jog_step_z = self.text
+                            values: '10', '1', '0.1', '0.01', '0.005'
+                        Widget:
+                    JogAxisButton:
+                        axis_label: 'A-'
+                        on_press: app.root.controller.jog("A-{}".format(scan_jog_step_a.text))
+                        on_release: app.root.controller.stopContinuousJog()
+                    JogAxisButton:
+                        axis_label: 'Z-'
+                        on_press: app.root.controller.jog("Z-{}".format(scan_jog_step_z.text))
+                        on_release: app.root.controller.stopContinuousJog()
+
             BoxLayout:
                 orientation: 'vertical'
+                size_hint_x: 1.15
+                padding: dp(8)
+                canvas.before:
+                    Color:
+                        rgba: app.theme.surface_raised
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(app.theme.radius_l),]
+                Widget:
+                    size_hint_y: 0.16
+                GridLayout:
+                    cols: 2
+                    rows: 2
+                    size_hint_y: 0.68
+                    spacing: dp(app.theme.spacing)
+                    Button:
+                        text: app.jog_speed_text
+                        id: jog_speed_btn_scan
+                        font_size: '13sp'
+                        text_size: self.width - dp(8), self.height
+                        halign: 'center'
+                        valign: 'middle'
+                        on_release: app.root.jog_speed_drop_down.open(self)
+                    Button:
+                        id: jog_mode_btn_scan
+                        disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
+                        text: app.jog_mode_text
+                        font_size: '13sp'
+                        text_size: self.width - dp(8), self.height
+                        halign: 'center'
+                        valign: 'middle'
+                        on_release: app.root.toggle_jog_mode()
+                    ToggleButton:
+                        id: kb_jog_btn_scan
+                        text: tr._('Keyboard Jogging')
+                        font_size: '13sp'
+                        text_size: self.width - dp(8), self.height
+                        halign: 'center'
+                        valign: 'middle'
+                        state: app.jog_keyboard_enable
+                        on_release: app.root.toggle_keyboard_jog_control()
+                    ToggleButton:
+                        id: pendant_jog_btn_scan
+                        text: app.jog_pendant_text
+                        state: app.jog_pendant_enable
+                        disabled: app.jog_pendant_text == tr._('No Pendant')
+                        font_size: '13sp'
+                        text_size: self.width - dp(8), self.height
+                        halign: 'center'
+                        valign: 'middle'
+                        on_release: app.root.toggle_pendant_jog_control()
+                Widget:
+                    size_hint_y: 0.16
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(40)
+            Widget:
+            Button:
+                text: tr._('Close')
                 size_hint_x: None
-                width: dp(292)
-                padding: dp(4)
-                BoxLayout:
-                    padding: dp(4)
-                    canvas.before:
-                        Color:
-                            rgba: (50 / 255, 50 / 255, 50 / 255, 1)
-                        RoundedRectangle:
-                            pos: self.pos
-                            size: self.size
-                            radius: [dp(12),]
-                    GridLayout:
-                        cols: 2
-                        rows: 2
-                        spacing: dp(4)
-                        GridBoxLayout:
-                            Button:
-                                text: app.jog_speed_text
-                                id: jog_speed_btn_scan
-                                center: 0.5, 0.5
-                                height: dp(52)
-                                text_size: self.width - dp(8), None
-                                valign: 'middle'
-                                halign: 'center'
-                                on_release: app.root.jog_speed_drop_down.open(self)
-                        GridBoxLayout:
-                            Button:
-                                id: jog_mode_btn_scan
-                                disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.0.0"))
-                                text: app.jog_mode_text
-                                height: dp(52)
-                                text_size: self.width - dp(8), None
-                                valign: 'middle'
-                                halign: 'center'
-                                on_release: app.root.toggle_jog_mode()
-                        GridBoxLayout:
-                            ToggleButton:
-                                id: kb_jog_btn_scan
-                                text: tr._('Keyboard Jogging')
-                                height: dp(52)
-                                text_size: self.width - dp(8), None
-                                valign: 'middle'
-                                halign: 'center'
-                                state: app.jog_keyboard_enable
-                                on_release: app.root.toggle_keyboard_jog_control()
-                        GridBoxLayout:
-                            ToggleButton:
-                                id: pendant_jog_btn_scan
-                                text: app.jog_pendant_text
-                                state: app.jog_pendant_enable
-                                disabled: app.jog_pendant_text == tr._('No Pendant')
-                                height: dp(52)
-                                text_size: self.width - dp(8), None
-                                valign: 'middle'
-                                halign: 'center'
-                                on_release: app.root.toggle_pendant_jog_control()
-        Widget:
-            size_hint_y: None
-            height: dp(12)
-        Button:
-            text: tr._('Close')
-            size_hint_y: None
-            height: dp(58)
-            on_release: root.dismiss()
+                width: dp(148)
+                on_release: root.dismiss()

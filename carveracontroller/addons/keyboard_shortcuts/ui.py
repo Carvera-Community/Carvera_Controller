@@ -16,6 +16,7 @@ from kivy.uix.modalview import ModalView
 from kivy.uix.settings import SettingItem
 
 from carveracontroller.translation import tr
+from carveracontroller.ui.theme import get_theme, watch_theme
 
 from .bindings import (
     ACTION_BY_ID,
@@ -39,15 +40,20 @@ class _CategoryHeader(Label):
         kwargs.setdefault("halign", "left")
         kwargs.setdefault("valign", "middle")
         kwargs.setdefault("font_size", sp(15))
-        kwargs.setdefault("color", (0.94, 0.94, 0.96, 1))
+        kwargs.setdefault("color", list(get_theme().text))
         kwargs.setdefault("padding", (dp(4), dp(3)))
         super().__init__(**kwargs)
         with self.canvas.after:
-            Color(52 / 255, 166 / 255, 208 / 255, 1)
+            self._underline_color = Color(*get_theme().accent_text)
             self._underline = Rectangle(pos=self.pos, size=(self.width, dp(1)))
         self.bind(pos=self._sync_canvas, size=self._sync_canvas)
         self.bind(size=self._sync_text_size)
         self._sync_text_size()
+        self._stop_theme = watch_theme(self._apply_theme)
+
+    def _apply_theme(self, theme) -> None:
+        self.color = theme.text
+        self._underline_color.rgba = list(theme.accent_text)
 
     def _sync_canvas(self, *_args) -> None:
         self._underline.pos = self.pos
@@ -76,19 +82,26 @@ class _KeyCap(Label):
         kwargs.setdefault("size_hint", (None, None))
         kwargs.setdefault("height", dp(27))
         kwargs.setdefault("font_size", sp(13))
-        kwargs.setdefault("color", (0.96, 0.96, 0.98, 1))
+        kwargs.setdefault("color", list(get_theme().text))
         kwargs.setdefault("halign", "center")
         kwargs.setdefault("valign", "middle")
         kwargs.setdefault("padding", (dp(8), dp(2)))
         super().__init__(**kwargs)
+        theme = get_theme()
         with self.canvas.before:
-            Color(0.28, 0.29, 0.31, 1)
+            self._bg_color = Color(*theme.panel_inset)
             self._background = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(5)])
         with self.canvas.after:
-            Color(0.47, 0.49, 0.52, 1)
+            self._outline_color = Color(*theme.border)
             self._outline = Line(rounded_rectangle=(*self.pos, *self.size, dp(5)), width=1)
         self.bind(texture_size=self._sync_width, pos=self._sync_canvas, size=self._sync_canvas)
         self._sync_width()
+        self._stop_theme = watch_theme(self._apply_theme)
+
+    def _apply_theme(self, theme) -> None:
+        self.color = theme.text
+        self._bg_color.rgba = list(theme.panel_inset)
+        self._outline_color.rgba = list(theme.border)
 
     def _sync_width(self, *_args) -> None:
         self.width = max(dp(30), self.texture_size[0] + dp(16))
@@ -126,7 +139,7 @@ class _ShortcutChordDisplay(AnchorLayout):
                 text=tr._("Unbound"),
                 size_hint=(None, None),
                 size=(dp(72), dp(27)),
-                color=(0.62, 0.62, 0.65, 1),
+                color=get_theme().text_muted,
                 font_size=sp(13),
             )
             self._content.add_widget(unbound)
@@ -140,7 +153,7 @@ class _ShortcutChordDisplay(AnchorLayout):
                         text="+",
                         size_hint=(None, None),
                         size=(dp(10), dp(27)),
-                        color=(0.68, 0.68, 0.7, 1),
+                        color=get_theme().text_secondary,
                         font_size=sp(12),
                     )
                 )

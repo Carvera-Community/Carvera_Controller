@@ -6,16 +6,17 @@
     full_path: ''
     spacing: dp(6)
     padding: dp(4), 0
+    chrome: False
     canvas.before:
         Color:
-            rgba: 80/255, 80/255, 80/255, 1
+            rgba: app.theme.control if root.selected else app.theme.surface
         Rectangle:
             pos: self.pos
             size: self.size
     Label:
         canvas.before:
             Color:
-                rgba: 225/255, 225/255, 225/255, 1
+                rgba: app.theme.icon
             Rectangle:
                 source: 'data/connected.png'
                 pos: self.center_x - dp(8), self.center_y - dp(8)
@@ -26,7 +27,7 @@
     Label:
         canvas.before:
             Color:
-                rgba: root.color
+                rgba: app.theme.icon
             Rectangle:
                 source: 'data/folder-32.png' if root.data_icon == '' else root.data_icon
                 pos: self.center_x - dp(10), self.center_y - dp(10)
@@ -36,7 +37,7 @@
         width: dp(22)
     Label:
         text: root.data_text
-        color: 225/255, 225/255, 225/255, 1
+        color: app.theme.text
         text_size: self.size
         valign: 'middle'
         halign: 'left'

@@ -1,0 +1,101 @@
+#:import tr carveracontroller.__main__.tr
+#:import graph_metric_label carveracontroller.ui.graph_controls.graph_metric_label
+#:import graph_number_choices carveracontroller.ui.graph_controls.graph_number_choices
+#:import graph_number_label carveracontroller.ui.graph_controls.graph_number_label
+#:import GRAPH_TIME_RANGES carveracontroller.ui.graph_controls.GRAPH_TIME_RANGES
+#:import GRAPH_GRANULARITIES carveracontroller.ui.graph_controls.GRAPH_GRANULARITIES
+
+<GraphButtonSlot@AnchorLayout>:
+    anchor_x: 'right'
+    anchor_y: 'top'
+    padding: 0, 0, 0, dp(4)
+    size_hint_y: None
+    height: dp(25) + dp(4)
+
+<GraphAdjustPanel@BoxLayout>:
+    visible: False
+    disabled: not self.visible
+    orientation: 'vertical'
+    size_hint_y: None
+    height: '172dp' if self.visible else 0
+    opacity: 1 if self.visible else 0
+    padding: '8dp'
+    spacing: '4dp'
+    canvas.before:
+        Color:
+            rgba: app.theme.graph_panel
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<GraphSettingRow@BoxLayout>:
+    label_text: ''
+    spinner_text: ''
+    spinner_values: []
+    setting: ''
+    size_hint_y: None
+    height: '36dp'
+    Label:
+        text: root.label_text
+        color: app.theme.text
+        size_hint_x: 0.42
+        font_size: '13sp'
+        text_size: self.size
+        halign: 'left'
+        valign: 'middle'
+    Spinner:
+        text: root.spinner_text
+        values: root.spinner_values
+        font_size: '13sp'
+        on_text: app.root.set_graph_setting(root.setting, self.text) if app.root else None
+
+<GraphControls>:
+    orientation: 'vertical'
+    size_hint: None, None
+    width: '250dp'
+    height: self.minimum_height
+    GraphButtonSlot:
+        TransparentButton:
+            icon: 'data/configure.png'
+            icon_size: 16
+            active: root.adjust_open
+            chrome: True
+            size_hint: None, None
+            width: '25dp'
+            height: '25dp'
+            tooltip_txt: tr._('Graph settings')
+            on_release:
+                root.adjust_open = not root.adjust_open
+    GraphButtonSlot:
+        TransparentButton:
+            icon: 'data/floppy.png'
+            icon_size: 16
+            chrome: True
+            size_hint: None, None
+            width: '25dp'
+            height: '25dp'
+            tooltip_txt: tr._('Save graph and values')
+            on_release:
+                app.root.save_monitoring_graph()
+    GraphAdjustPanel:
+        visible: root.adjust_open
+        GraphSettingRow:
+            label_text: tr._('Line 1')
+            spinner_text: graph_metric_label(root.line1_metric)
+            spinner_values: root.metric_choices
+            setting: 'line1'
+        GraphSettingRow:
+            label_text: tr._('Line 2')
+            spinner_text: graph_metric_label(root.line2_metric)
+            spinner_values: root.metric_choices
+            setting: 'line2'
+        GraphSettingRow:
+            label_text: tr._('Time range (seconds)')
+            spinner_text: graph_number_label(root.time_range)
+            spinner_values: graph_number_choices(GRAPH_TIME_RANGES)
+            setting: 'time_range'
+        GraphSettingRow:
+            label_text: tr._('Granularity (seconds)')
+            spinner_text: graph_number_label(root.granularity)
+            spinner_values: graph_number_choices(GRAPH_GRANULARITIES)
+            setting: 'granularity'

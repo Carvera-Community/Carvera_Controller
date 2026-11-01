@@ -4,8 +4,19 @@ from __future__ import annotations
 
 import math
 
-STOCK_FILL_COLOR = (0.72, 0.68, 0.48, 0.28)
-STOCK_EDGE_COLOR = (0.95, 0.90, 0.55, 0.90)
+from carveracontroller.ui.theme import get_theme
+
+
+def stock_fill_color():
+    """Stock body color from the current theme."""
+    return tuple(get_theme().viewer_stock_fill)
+
+
+def stock_edge_color():
+    """Stock edge color from the current theme."""
+    return tuple(get_theme().viewer_stock_edge)
+
+
 STOCK_VERTEX_FORMAT = [
     (b"v_pos", 3, "float"),
     (b"v_normal", 3, "float"),

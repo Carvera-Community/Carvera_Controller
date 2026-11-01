@@ -29,8 +29,9 @@ from carveracontroller.addons.keyboard_shortcuts import SettingKeyboardShortcuts
 from carveracontroller.addons.keyboard_shortcuts.bindings import KeyChord
 from carveracontroller.addons.keyboard_shortcuts.ui import _CategoryHeader, _CategorySection
 from carveracontroller.addons.pendant.pendant import SettingPendantSelector
-from carveracontroller.custom_widgets import SettingColorPicker, SettingGCodeSnippet
+from carveracontroller.custom_widgets import SettingGCodeSnippet
 from carveracontroller.main import DeferredSettingsPanel, MakeraConfigPanel
+from carveracontroller.ui.theme import SettingTheme
 
 # (test_id, registered_type, type_class_or_None, initial, new_value, panel_def_extras)
 # type_class_or_None is None for built-in Kivy types that Settings registers
@@ -40,8 +41,8 @@ CASES = [
     ("numeric", "numeric", None, "0", "42", {}),
     ("string", "string", None, "old", "new", {}),
     ("options", "options", None, "a", "b", {"options": ["a", "b"]}),
+    ("theme", "theme", SettingTheme, "dark", "light", {"options": ["dark", "light"]}),
     ("pendant", "pendant", SettingPendantSelector, "None", "WHB04", {}),
-    ("colorpicker", "colorpicker", SettingColorPicker, "0,255,255,255", "255,0,0,255", {}),
     (
         "keyboard_shortcuts",
         "keyboard_shortcuts",

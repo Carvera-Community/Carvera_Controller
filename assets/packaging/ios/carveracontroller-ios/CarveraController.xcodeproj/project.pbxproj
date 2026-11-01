@@ -20,6 +20,7 @@
 		31D64A1F9418CA4719DF905E /* libssl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A4B440CA87E67B49D875F29 /* libssl.xcframework */; };
 		3317407194A5AA0AD871FE9B /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EBA441B7898864FA55FA614D /* CoreGraphics.framework */; };
 		3CD04BDD9A248442EC2A360E /* libpyobjus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69034840BB27C9E3CDF095C5 /* libpyobjus.xcframework */; };
+		4A17486DB249CFDA29834213 /* libstock_carve.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 633742DA982FB53794622241 /* libstock_carve.xcframework */; };
 		4BA9401E95D3FA522F4E9937 /* libnpymath.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 522B42809F414F852C795FD1 /* libnpymath.xcframework */; };
 		57BE4D24A86523C7B637473B /* libfreetype.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A89846A1B3150D9DC56E7FF7 /* libfreetype.xcframework */; };
 		59738AB51A8BB5D8001B2C0C /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 59738AB41A8BB5D8001B2C0C /* lib */; };
@@ -90,6 +91,7 @@
 		59994E3A148E85C800863906 /* carveracontrollerpkg */ = {isa = PBXFileReference; lastKnownFileType = folder; path = carveracontrollerpkg; sourceTree = "<group>"; };
 		59FDEA8A21E7D34E004E6ECE /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../../dist/root/python3/include; sourceTree = "<group>"; };
 		5A7641749B9D44C54E1BBDFE /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Photos.framework; sourceTree = DEVELOPER_DIR; };
+		633742DA982FB53794622241 /* libstock_carve.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libstock_carve.xcframework; path = ../../../../dist/xcframework/libstock_carve.xcframework; sourceTree = SOURCE_ROOT; };
 		64F7416AB075A0994023F21B /* libkivy.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libkivy.xcframework; path = ../../../../dist/xcframework/libkivy.xcframework; sourceTree = SOURCE_ROOT; };
 		650D4733935B336C699C93ED /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Accelerate.framework; sourceTree = DEVELOPER_DIR; };
 		69034840BB27C9E3CDF095C5 /* libpyobjus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpyobjus.xcframework; path = ../../../../dist/xcframework/libpyobjus.xcframework; sourceTree = SOURCE_ROOT; };
@@ -165,6 +167,7 @@
 				CA3C4C9194B733177306166B /* libnumpy.xcframework in Frameworks */,
 				4BA9401E95D3FA522F4E9937 /* libnpymath.xcframework in Frameworks */,
 				57BE4D24A86523C7B637473B /* libfreetype.xcframework in Frameworks */,
+				4A17486DB249CFDA29834213 /* libstock_carve.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,6 +272,7 @@
 				7E6047BDBD7DE772824E6531 /* libnumpy.xcframework */,
 				522B42809F414F852C795FD1 /* libnpymath.xcframework */,
 				A89846A1B3150D9DC56E7FF7 /* libfreetype.xcframework */,
+				633742DA982FB53794622241 /* libstock_carve.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -295,6 +299,7 @@
 				1D60588D0D05DD3D006BFB54 /* Resources */,
 				1D60588E0D05DD3D006BFB54 /* Sources */,
 				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+				A1C0FFEE2E00000100000003 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -363,7 +368,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "rsync -av --delete \"$PROJECT_DIR/../../../../carveracontroller\"/ \"$PROJECT_DIR\"/carveracontrollerpkg\n";
+			shellScript = "rsync -av --delete --delete-excluded --exclude '*.so' --exclude '*.dylib' \"$PROJECT_DIR/../../../../carveracontroller\"/ \"$PROJECT_DIR\"/carveracontrollerpkg\n";
 		};
 		113D17E2153E3DB5001310A6 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -409,6 +414,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# Update __version__.py \n\nVERSION_FILE=\"$PROJECT_DIR/carveracontrollerpkg/__version__.py\"\n\n# Get the current version from Info.plist\nAPP_VERSION=$(/usr/libexec/PlistBuddy -c \"Print CFBundleShortVersionString\" \"$INFOPLIST_FILE\")\n\n# Replace the version line in the Python file\nsed -i '' -E \"s/^(__version__ = ')[^']+'/\\1$APP_VERSION'/\" \"$VERSION_FILE\"\n\necho \"Updated __version__.py to version $APP_VERSION\"\n";
+		};
+		A1C0FFEE2E00000100000003 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "set -e\nAPP=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\nmkdir -p \"$APP/assets/fonts\"\ncp \"$PROJECT_DIR/../../../../assets/fonts/ARIALUNI.ttf\" \"$APP/assets/fonts/ARIALUNI.ttf\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -470,6 +489,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "";
@@ -519,6 +539,7 @@
 				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "";

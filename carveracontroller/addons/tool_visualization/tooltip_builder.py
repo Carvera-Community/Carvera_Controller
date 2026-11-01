@@ -3,6 +3,7 @@
 from carveracontroller.addons.tool_visualization.tool_definition import ToolType
 from carveracontroller.CNC import escape_gcode_markup
 from carveracontroller.translation import tr
+from carveracontroller.ui.theme import get_theme, rgba_to_hex
 
 TOOL_TYPE_MSGIDS = {
     ToolType.FLAT_END_MILL: "Flat End Mill",
@@ -22,9 +23,11 @@ _TITLE_SIZE = "17sp"
 _DESCRIPTION_SIZE = "13sp"
 _CATALOG_SIZE = "12sp"
 
-# Dim grey for labels and separators
-# Values stay at the default color.
-_LABEL_COLOR = "8a8a8a"
+
+# Dim grey for labels and separators; values stay at the default colour.
+def _label_color_hex() -> str:
+    return rgba_to_hex(get_theme().text_label)
+
 
 _MAX_ITEMS_PER_LINE = 3
 _MAX_LINE_CHARS = 42
@@ -58,7 +61,7 @@ def _make_item(label, value_str, *, markup):
     """Return ``(plain_text, display_text)`` for one dimension item."""
     plain = f"{label} {value_str}"
     if markup:
-        display = f"[color=#{_LABEL_COLOR}]{escape_gcode_markup(label)}[/color] {escape_gcode_markup(value_str)}"
+        display = f"[color=#{_label_color_hex()}]{escape_gcode_markup(label)}[/color] {escape_gcode_markup(value_str)}"
     else:
         display = plain
     return plain, display
@@ -69,7 +72,7 @@ def _pack_group(items, *, markup):
     if not items:
         return []
 
-    sep_display = f" [color=#{_LABEL_COLOR}]·[/color] " if markup else _SEP_PLAIN
+    sep_display = f" [color=#{_label_color_hex()}]·[/color] " if markup else _SEP_PLAIN
     lines = []
     current_plain = []
     current_display = []
@@ -192,7 +195,9 @@ def format_tool_tooltip(tool_def, *, markup=True, unit="mm"):
         if description:
             description = f"[size={_DESCRIPTION_SIZE}]{escape_gcode_markup(description)}[/size]"
         if catalog:
-            catalog = f"[size={_CATALOG_SIZE}][color=#{_LABEL_COLOR}]{escape_gcode_markup(catalog)}[/color][/size]"
+            catalog = (
+                f"[size={_CATALOG_SIZE}][color=#{_label_color_hex()}]{escape_gcode_markup(catalog)}[/color][/size]"
+            )
     else:
         # Plain path: identity fields stay as-is (already plain).
         pass

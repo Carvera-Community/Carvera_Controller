@@ -70,8 +70,14 @@ class MakeraProtocol(CommunicationProtocol):
             raise TypeError("data must be bytes")
         # Match OEM Makera framing: CTRL_MULTI payloads are not newline-terminated.
         # A trailing \n breaks numeric parsers such as baud (strtol requires *end == '\0').
-        payload = bytes(data).rstrip(b"\r\n")
-        return build_frame(PTYPE_CTRL_MULTI, payload)
+        # We also need to split the payload into one command per frame to avoid new lines
+        # becoming part of the first command (for instance during a config-set).
+        text = bytes(data).replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        frames = bytearray()
+        for line in text.split(b"\n"):
+            if line:
+                frames += build_frame(PTYPE_CTRL_MULTI, line)
+        return bytes(frames)
 
     def encode_realtime(self, char: int) -> bytes:
         return build_frame(PTYPE_CTRL_SINGLE, bytes([char & 0xFF]))

@@ -55,6 +55,7 @@ if is_ios() and os.environ.get("CARVERA_UI_IDIOM") == "phone":
     except (KeyError, ValueError) as e:
         print(f"iOS density setup skipped: {e}")
 
+import csv
 import datetime
 import logging
 import sys
@@ -76,6 +77,7 @@ import platform
 import re
 import subprocess
 import tempfile
+from collections import deque
 
 import kivy.lang.builder as _kivy_builder
 import kivy.uix.widget as _kivy_widget
@@ -127,6 +129,13 @@ from kivy.uix.slider import Slider
 from kivy.uix.stencilview import StencilView
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
+
+import carveracontroller.ui.JogAxisButton  # noqa: F401  (registers jog axis buttons)
+import carveracontroller.ui.SquareGrid  # noqa: F401  (registers the jog pad layout)
+from carveracontroller.ui.fonts import register_arialuni
+from carveracontroller.ui.theme import SettingTheme, Theme
+from carveracontroller.ui.themes import DEFAULT_THEME, set_user_themes_dir, theme_names
+from carveracontroller.ui.themes.editor import SettingThemeEditor
 
 
 def _safe_widget_destructor(uid, _ref):
@@ -198,6 +207,7 @@ from carveracontroller.ui.file_browser.thumbnail import (
     machine_cache_key,
     thumbnail_cache_for_app,
 )
+from carveracontroller.ui.LocalFilePicker import open_local_file_picker
 from carveracontroller.ui.tutorial.session import demo_is_active, tutorial_blocks_motion
 from carveracontroller.ui.tutorial.tour import Tutorial, apply_demo_readout
 from carveracontroller.ui.updates import UpgradePopup
@@ -244,7 +254,6 @@ class LightProperty(BooleanProperty):
 import webbrowser
 from functools import partial
 
-from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.resources import resource_add_path
 
@@ -280,6 +289,9 @@ from pathlib import Path
 from kivy.config import ConfigParser
 from kivy.lang import Builder
 
+from carveracontroller.ui.theme import get_theme, machine_state_color, watch_theme
+from carveracontroller.ui.themes import gcode_syntax_colors
+
 from . import Utils, custom_widgets
 from .__version__ import __version__
 from .addons.camera.CameraView import ADJUST_DEFAULT
@@ -306,7 +318,6 @@ from .addons.tool_visualization import (
 from .addons.tooltips.Tooltips import Tooltip, ToolTipButton, ToolTipDropDown
 from .CNC import (
     CNC,
-    GCODE_DEFAULT_COLORS,
     LASER_TOOL_NUMBER,
     OCODE_PATTERN,
     PROBE_3D_TOOL_NUMBER,
@@ -329,8 +340,6 @@ from .Controller import (
     LOAD_WIFI,
     NOT_CONNECTED,
     SEND_FILE,
-    STATECOLOR,
-    STATECOLORDEF,
     Controller,
 )
 from .GcodeViewer import (
@@ -362,6 +371,36 @@ from .ui.popups.set_position import (
 )
 
 HALT_REASON_ESTOP = 13
+
+os.environ.setdefault("MPLBACKEND", "Agg")
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from kivy_matplotlib_widget.uix.hover_widget import add_hover
+
+from .ui.graph_controls import (  # noqa: F401  – GraphControls registers with Kivy Factory
+    GRAPH_DEFAULT_GRANULARITY,
+    GRAPH_DEFAULT_TIME_RANGE,
+    GRAPH_GRANULARITIES,
+    GRAPH_METRIC_DEFAULT_LINE1,
+    GRAPH_METRIC_DEFAULT_LINE2,
+    GRAPH_METRIC_NONE,
+    GRAPH_METRICS_BY_KEY,
+    GRAPH_TIME_RANGES,
+    GraphControls,
+    graph_metric_key_from_label,
+    graph_metric_label,
+    graph_metric_ylim,
+    graph_number_from_label,
+)
+from .ui.graph_series import format_graph_value, rpm_deviation_percent
+from .ui.graph_widget_twinx import StaticMatplotFigureTwinx  # noqa: F401  – registers widget with Kivy Factory
+
+matplotlib.rcParams["path.simplify"] = True
+matplotlib.rcParams["path.simplify_threshold"] = 1.0
+matplotlib.rcParams["agg.path.chunksize"] = 1000
 
 
 def load_halt_translations(tr: translation.Lang):
@@ -405,13 +444,9 @@ def app_base_path():
     return os.path.abspath(os.path.dirname(__file__))
 
 
-def register_fonts(base_path):
-    """
-    To support both frozen and normal execution of the application font locations
-    should be registered
-    """
-    arialuni_location = os.path.abspath(os.path.join(os.path.dirname(__file__), "ARIALUNI.ttf"))
-    LabelBase.register(name="ARIALUNI", fn_regular=arialuni_location)
+def register_fonts():
+    """Register the bundled font so labels can use it."""
+    register_arialuni()
 
 
 def register_images(base_path):
@@ -512,8 +547,6 @@ class GcodePlaySlider(Slider):
 
     sim_progress = NumericProperty(0.0)  # 0–100, path-distance percent carved by the voxel sim
     sim_checkpoints = ListProperty([])  # path-distance percents (0–100) of stored checkpoints
-    _SIM_BAR_COLOR = (0.25, 0.82, 0.35, 0.95)
-    _SIM_MARKER_COLOR = (0.3, 0.55, 0.95, 1.0)
     _SIM_BAR_HEIGHT = dp(3)
     _SIM_MARKER_WIDTH = dp(2)
     _SIM_MARKER_HEIGHT = dp(7)
@@ -522,9 +555,12 @@ class GcodePlaySlider(Slider):
         super().__init__(**kwargs)
         self._pending_line_update = None  # Track pending scheduled line update
         with self.canvas.after:
-            self._sim_color = Color(*self._SIM_BAR_COLOR)
+            theme = get_theme()
+            self._sim_color = Color(*theme.viewer_sim_bar)
             self._sim_rect = Rectangle(pos=(0, 0), size=(0, 0))
             self._sim_marker_group = InstructionGroup()
+        self._sim_marker_rgba = list(theme.viewer_sim_marker)
+        self._stop_theme_watch = watch_theme(self._apply_sim_theme)
         self.bind(
             pos=self._update_sim_bar,
             size=self._update_sim_bar,
@@ -534,6 +570,11 @@ class GcodePlaySlider(Slider):
             sim_progress=self._update_sim_bar,
             sim_checkpoints=self._update_sim_bar,
         )
+
+    def _apply_sim_theme(self, theme) -> None:
+        self._sim_color.rgba = list(theme.viewer_sim_bar)
+        self._sim_marker_rgba = list(theme.viewer_sim_marker)
+        self._update_sim_bar()
 
     def _update_sim_bar(self, *_args):
         if not hasattr(self, "_sim_rect"):
@@ -569,7 +610,7 @@ class GcodePlaySlider(Slider):
             if p < 0.0 or p > 100.0:
                 continue
             x = self.x + pad + track_w * (p / 100.0) - marker_w / 2.0
-            group.add(Color(*self._SIM_MARKER_COLOR))
+            group.add(Color(*self._sim_marker_rgba))
             group.add(Rectangle(pos=(x, marker_y), size=(marker_w, marker_h)))
 
     def on_touch_down(self, touch):
@@ -631,11 +672,27 @@ class FloatBox(FloatLayout):
     camera_controls = ObjectProperty(None)
     camera_view = ObjectProperty(None)
     tool_bar = ObjectProperty(None)
+    bottom_dock = ObjectProperty(None)
+    camera_toggle_btn = ObjectProperty(None)
+    graph_toggle_btn = ObjectProperty(None)
+    collapsed_peer_strip = ObjectProperty(None)
 
     def _viewer_chrome_hit(self, touch):
         if self.gcode_ctl_bar.collide_point(*touch.pos):
             return True
         if self.tool_bar is not None and self.tool_bar.collide_point(*touch.pos):
+            return True
+        if self.camera_toggle_btn is not None and self.camera_toggle_btn.collide_point(*touch.pos):
+            return True
+        if self.graph_toggle_btn is not None and self.graph_toggle_btn.collide_point(*touch.pos):
+            return True
+        if (
+            self.collapsed_peer_strip is not None
+            and self.collapsed_peer_strip.height
+            and self.collapsed_peer_strip.collide_point(*touch.pos)
+        ):
+            return True
+        if self.bottom_dock is not None and self.bottom_dock.collide_point(*touch.pos):
             return True
         if self.camera_view is not None and self.camera_view.collide_point(*touch.pos):
             return True
@@ -1226,24 +1283,6 @@ class PairingPopup(ModalView):
             self.countdown_event.cancel()
 
 
-class PickFilePopup(FloatLayout):
-    on_select = ObjectProperty(None)
-    on_cancel = ObjectProperty(None)
-
-    def __init__(self, on_select, on_cancel=None, **kwargs):
-        super().__init__(**kwargs)
-        self.on_select = on_select
-        self.on_cancel = on_cancel
-
-    def on_select_pressed(self, directory, filename):
-        if self.on_select:
-            self.on_select(directory, filename)
-
-    def on_cancel_pressed(self):
-        if self.on_cancel:
-            self.on_cancel()
-
-
 class AutoLevelPopup(ModalView):
     execute = False
 
@@ -1433,6 +1472,11 @@ class ConfigPopup(ModalView):
 
     def _apply_changes(self):
         app = App.get_running_app()
+        # Custom theme files must exist before the theme name is stored and applied.
+        for widget in self._all_setting_items():
+            commit = getattr(widget, "commit_for_apply", None)
+            if commit is not None:
+                commit()
         # Write pending widget values to their Config instances
         for widget in self._all_setting_items():
             original = self._widget_snapshot.get((widget.section, widget.key))
@@ -1441,6 +1485,10 @@ class ConfigPopup(ModalView):
                 config.set(widget.section, widget.key, widget.value)
         Config.write()
         app.root.apply_setting_changes()
+        for widget in self._all_setting_items():
+            finish = getattr(widget, "finish_apply", None)
+            if finish is not None:
+                finish()
         self._widget_snapshot = {}
         for widget in self._all_setting_items():
             self._widget_snapshot[(widget.section, widget.key)] = widget.value
@@ -1457,6 +1505,10 @@ class ConfigPopup(ModalView):
             original = self._widget_snapshot.get((widget.section, widget.key))
             if original is not None and str(widget.value) != str(original):
                 widget.value = original
+        for widget in self._all_setting_items():
+            revert = getattr(widget, "revert_pending", None)
+            if revert is not None:
+                revert()
         makera.config_loading = False
         makera.controller_setting_change_list.clear()
         makera.setting_change_list.clear()
@@ -1634,9 +1686,9 @@ class WCSSettingsPopup(ModalView):
             if hasattr(self.ids, button_id):
                 button = getattr(self.ids, button_id)
                 if wcs == active_wcs:
-                    button.color = (0 / 255, 255 / 255, 255 / 255, 1)  # Blue color
+                    button.color = get_theme().active_color
                 else:
-                    button.color = (1, 1, 1, 1)  # Default color
+                    button.color = get_theme().text
 
     def activate_wcs(self, wcs):
         """Activate the specified WCS and update the active coordinate system index"""
@@ -1768,9 +1820,10 @@ class MakeraConfigPanel(SettingsWithSidebar):
         super().__init__(*args, **kwargs)
         self.register_type("pendant", SettingPendantSelector)
         self.register_type("gcodesnippet", custom_widgets.SettingGCodeSnippet)
-        self.register_type("colorpicker", custom_widgets.SettingColorPicker)
         self.register_type("gamepad_bindings", SettingGamepadBindings)
         self.register_type("keyboard_shortcuts", SettingKeyboardShortcuts)
+        self.register_type("theme", SettingTheme)
+        self.register_type("theme_editor", SettingThemeEditor)
         self.interface.content.bind(current_uid=self._reset_panel_scroll)
 
     @staticmethod
@@ -1786,31 +1839,34 @@ class MakeraConfigPanel(SettingsWithSidebar):
 
     def on_config_change(self, config, section, key, value):
         app = App.get_running_app()
-        if not app.root.config_loading:
-            config_popup = app.root.config_popup
-            original = config_popup.get_original(section, key)
-            if section in ["carvera", "graphics", "kivy"]:
-                if str(value) == str(original):
-                    app.root.controller_setting_change_list.pop(key, None)
-                else:
-                    app.root.controller_setting_change_list[key] = value
-                has_changes = bool(app.root.controller_setting_change_list or app.root.setting_change_list)
-                config_popup.btn_apply.disabled = not has_changes
-            elif section == "Backup":
-                app.root.start_back_up_config()
-                app.root.config_popup.btn_apply.disabled = True
-            elif section != "Restore":
-                if str(value) == str(original):
-                    app.root.setting_change_list.pop(key, None)
-                else:
-                    new_value = Utils.to_config(app.root.setting_type_list[key], value).strip()
-                    app.root.setting_change_list[key] = new_value
-                has_changes = bool(app.root.controller_setting_change_list or app.root.setting_change_list)
-                config_popup.btn_apply.disabled = not has_changes
-            elif key == "restore" and value == "RESTORE":
-                app.root.open_setting_restore_confirm_popup()
-            elif key == "default" and value == "DEFAULT":
-                app.root.open_setting_default_confirm_popup()
+        root = getattr(app, "root", None) if app is not None else None
+        # The theme page is built inside App.build(), before Kivy assigns the root.
+        if root is None or root.config_loading:
+            return
+        config_popup = root.config_popup
+        original = config_popup.get_original(section, key)
+        if section in ["carvera", "graphics", "kivy"]:
+            if str(value) == str(original):
+                root.controller_setting_change_list.pop(key, None)
+            else:
+                root.controller_setting_change_list[key] = value
+            has_changes = bool(root.controller_setting_change_list or root.setting_change_list)
+            config_popup.btn_apply.disabled = not has_changes
+        elif section == "Backup":
+            root.start_back_up_config()
+            root.config_popup.btn_apply.disabled = True
+        elif section != "Restore":
+            if str(value) == str(original):
+                root.setting_change_list.pop(key, None)
+            else:
+                new_value = Utils.to_config(root.setting_type_list[key], value).strip()
+                root.setting_change_list[key] = new_value
+            has_changes = bool(root.controller_setting_change_list or root.setting_change_list)
+            config_popup.btn_apply.disabled = not has_changes
+        elif key == "restore" and value == "RESTORE":
+            root.open_setting_restore_confirm_popup()
+        elif key == "default" and value == "DEFAULT":
+            root.open_setting_default_confirm_popup()
 
 
 class JogSpeedDropDown(ToolTipDropDown):
@@ -1877,7 +1933,84 @@ class CoordinateSystemDropDown(ToolTipDropDown):
 
 
 class FuncDropDown(ToolTipDropDown):
-    pass
+    def on_kv_post(self, _base_widget):
+        app = App.get_running_app()
+        if app is not None:
+            app.bind(model=self._sync_pair_probe)
+        self._pair_probe = hold_menu_button(self.container, self.ids.get("pair_probe"))
+        self._stop_menu_group = watch_theme(self._apply_menu_grouping)
+        self._sync_pair_probe()
+
+    def _sync_pair_probe(self, *_args):
+        app = App.get_running_app()
+        show = app is not None and app.model == "C1"
+        sync_optional_menu_item(self.container, self._pair_probe, show)
+        self._apply_menu_grouping()
+
+    def _apply_menu_grouping(self, *_args):
+        theme = get_theme()
+        apply_main_menu_grouping(self.container, bool(theme.group_main_menu), dp(theme.top_bar_radius))
+
+
+def apply_main_menu_grouping(container, grouped, radius):
+    """Stack the main menu items, or restore the spaced rounded buttons.
+
+    The button that opens this menu is not in the container, so it keeps its
+    own corners. ``radius`` is in pixels. A hidden row is already removed, so
+    the first and last visible items are the ones that stay rounded.
+    """
+    if container is None:
+        return
+    buttons = [child for child in reversed(container.children) if hasattr(child, "corner_radii")]
+    if not grouped:
+        container.spacing = (dp(4), dp(4))
+        for button in buttons:
+            button.corner_radii = []
+        return
+    container.spacing = (0, 0)
+    last = len(buttons) - 1
+    for index, button in enumerate(buttons):
+        top = radius if index == 0 else 0
+        bottom = radius if index == last else 0
+        button.corner_radii = [top, top, bottom, bottom]
+
+
+def hold_menu_button(container, proxy):
+    """Return the real widget for a kv id.
+
+    ``ids`` stores a weak proxy. Removing the row drops the last strong
+    reference, and the next model change then crashes on that proxy.
+    """
+    if container is None or proxy is None:
+        return None
+    try:
+        target_uid = proxy.uid
+    except ReferenceError:
+        return None
+    for child in container.children:
+        if child.uid == target_uid:
+            return child
+    return None
+
+
+def sync_optional_menu_item(container, button, show):
+    """Include a menu row only while it is meant to be seen.
+
+    A row with height 0 still takes a grid gap, so the next button looks
+    farther away than the others.
+    """
+    if container is None or button is None:
+        return
+    try:
+        parent = button.parent
+    except ReferenceError:
+        return
+    if show:
+        if parent is None:
+            container.add_widget(button, index=getattr(button, "_menu_index", 0))
+    elif parent is container:
+        button._menu_index = container.children.index(button)
+        container.remove_widget(button)
 
 
 class StatusDropDown(ToolTipDropDown):
@@ -1928,6 +2061,9 @@ class MachineButton(ToolTipButton):
 
 class IconButton(BoxLayout, ToolTipButton):
     icon = StringProperty("fresk.png")
+    # Monochrome artwork is multiplied by the theme icon color. Colored artwork
+    # (the e-stop) keeps its own pixels.
+    colored = BooleanProperty(False)
 
 
 class TransparentButton(BoxLayout, ToolTipButton):
@@ -1960,6 +2096,7 @@ class CNCWorkspace(Widget):
         self.bind(size=self.on_resize, pos=self.on_resize)
         super().__init__(**kwargs)
         self.bg_rect = None
+        self._stop_theme_watch = watch_theme(lambda _theme: self.draw())
 
     def on_resize(self, *args):
         self.draw()
@@ -1996,6 +2133,11 @@ class CNCWorkspace(Widget):
         self.canvas.clear()
         zoom = self.width / CNC.vars["worksize_x"]
         _name, wcox, wcoy, rotation = start_wcs_origin()
+        theme = get_theme()
+        map_bg = theme.map_bg
+        map_anchor = theme.map_anchor
+        map_anchor_active = theme.map_anchor_active
+        map_rotation_base = theme.map_rotation_base
         with self.canvas:
             # The bed drawing uses absolute coordinates and can extend past the
             # preview. Keep the origin, work area, probe, and leveling marks inside it.
@@ -2004,22 +2146,22 @@ class CNCWorkspace(Widget):
             Rectangle(pos=self.pos, size=self.size)
             StencilUse()
             # background
-            Color(50 / 255, 50 / 255, 50 / 255, 1)
+            Color(*map_bg)
             if self.bg_image == "" or self.bg_image == "None":
-                Color(50 / 255, 50 / 255, 50 / 255, 1)
+                Color(*map_bg)
             else:
                 Color(1, 1, 1, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size, source=self.bg_image)
 
             app = App.get_running_app()
             if self.bg_image == "" or self.bg_image == "None":
-                Color(50 / 255, 50 / 255, 50 / 255, 1)
+                Color(*map_bg)
                 if not app.has_4axis:
                     # anchor1
                     if self.config["origin"]["anchor"] == 1:
-                        Color(75 / 255, 75 / 255, 75 / 255, 1)
+                        Color(*map_anchor_active)
                     else:
-                        Color(55 / 255, 55 / 255, 55 / 255, 1)
+                        Color(*map_anchor)
                     Rectangle(
                         pos=(self.x, self.y), size=(CNC.vars["anchor_length"] * zoom, CNC.vars["anchor_width"] * zoom)
                     )
@@ -2029,9 +2171,9 @@ class CNCWorkspace(Widget):
 
                     if app.has_anchor2:
                         if self.config["origin"]["anchor"] == 2:
-                            Color(75 / 255, 75 / 255, 75 / 255, 1)
+                            Color(*map_anchor_active)
                         else:
-                            Color(55 / 255, 55 / 255, 55 / 255, 1)
+                            Color(*map_anchor)
                         Rectangle(
                             pos=(
                                 self.x + CNC.vars["anchor2_offset_x"] * zoom,
@@ -2050,20 +2192,20 @@ class CNCWorkspace(Widget):
                 else:
                     rotation_base_y_center = (CNC.vars["anchor_width"] + CNC.vars["rotation_offset_y"]) * zoom
                     # draw rotation base
-                    Color(60 / 255, 60 / 255, 60 / 255, 1)
+                    Color(*map_rotation_base)
                     Rectangle(
                         pos=(self.x, self.y + rotation_base_y_center - CNC.vars["rotation_base_height"] * zoom / 2),
                         size=(CNC.vars["rotation_base_width"] * zoom, CNC.vars["rotation_base_height"] * zoom),
                     )
                     # draw rotation head
-                    Color(75 / 255, 75 / 255, 75 / 255, 1)
+                    Color(*map_anchor_active)
                     Rectangle(
                         pos=(self.x, self.y + rotation_base_y_center - CNC.vars["rotation_head_height"] * zoom / 2),
                         size=(CNC.vars["rotation_head_width"] * zoom, CNC.vars["rotation_head_height"] * zoom),
                     )
 
                     # draw rotation chuck
-                    Color(75 / 255, 75 / 255, 75 / 255, 1)
+                    Color(*map_anchor_active)
                     Rectangle(
                         pos=(
                             self.x + (CNC.vars["rotation_head_width"] + CNC.vars["rotation_chuck_interval"]) * zoom,
@@ -2073,7 +2215,7 @@ class CNCWorkspace(Widget):
                     )
 
                     # draw rotation tail
-                    Color(75 / 255, 75 / 255, 75 / 255, 1)
+                    Color(*map_anchor_active)
                     Rectangle(
                         pos=(
                             self.x + (CNC.vars["rotation_base_width"] - CNC.vars["rotation_tail_width"]) * zoom,
@@ -2093,13 +2235,13 @@ class CNCWorkspace(Widget):
             laser_y = CNC.vars["laser_module_offset_y"] if CNC.vars["lasermode"] else 0.0
 
             # origin
-            Color(52 / 255, 152 / 255, 219 / 255, 1)
+            Color(*theme.map_origin)
             origin_x = wcox - CNC.vars["anchor1_x"] + CNC.vars["anchor_width"] + laser_x
             origin_y = wcoy - CNC.vars["anchor1_y"] + CNC.vars["anchor_width"] + laser_y
             Ellipse(pos=(self.x + origin_x * zoom - 10, self.y + origin_y * zoom - 10), size=(20, 20))
 
             # work area
-            Color(0, 0.8, 0, 1)
+            Color(*theme.map_work_area)
             PushMatrix()
             Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
             if not app.has_4axis:
@@ -2117,7 +2259,7 @@ class CNCWorkspace(Widget):
 
             # z probe
             if self.config["zprobe"]["active"]:
-                Color(231 / 255, 76 / 255, 60 / 255, 1)
+                Color(*theme.map_zprobe)
                 PushMatrix()
                 if app.has_4axis:
                     Translate(self.x, self.y)
@@ -2142,7 +2284,7 @@ class CNCWorkspace(Widget):
 
             # auto leveling
             if self.config["leveling"]["active"]:
-                Color(244 / 255, 208 / 255, 63 / 255, 1)
+                Color(*theme.map_leveling)
                 PushMatrix()
                 Translate(self.x + origin_x * zoom, self.y + origin_y * zoom)
                 if not app.has_4axis:
@@ -2311,9 +2453,17 @@ class Row(IntellisenseExplainRowMixin, SelectableLabel):
     def refresh_view_attrs(self, rv, index, data):
         self.intellisense_on_recycle()
         result = super().refresh_view_attrs(rv, index, data)
-        self.plain_text = data.get("text", "") or ""
-        self.highlighted_text = data.get("highlighted_text") or ""
+        plain = data.get("text") or ""
+        highlighted = data.get("highlighted_text") or ""
+        color = data.get("color")
+        self.plain_text = plain
+        self.highlighted_text = highlighted
         self.highlight = bool(data.get("highlight", False))
+        if color is not None:
+            self.color = list(color)
+        display = highlighted or plain
+        if self.text != display:
+            self.text = display
         return result
 
     def apply_selection(self, rv, index, is_selected):
@@ -2591,6 +2741,19 @@ class ManualCMDPage(Screen):
     pass
 
 
+def remap_mdi_entry(entry, theme):
+    """Copy an MDI row, moving any stored theme color onto ``theme``'s current palette."""
+    updated = dict(entry)
+    for key in ("color", "original_color"):
+        value = updated.get(key)
+        if not value:
+            continue
+        mapped = theme.remap_color(value)
+        if mapped is not None:
+            updated[key] = list(mapped)
+    return updated
+
+
 class Makera(RelativeLayout):
     holding = 0
     pausing = 0
@@ -2635,6 +2798,15 @@ class Makera(RelativeLayout):
     gcode_viewer = ObjectProperty()
     gcode_playing = BooleanProperty(False)
     gcode_cannot_visualise = BooleanProperty(False)
+
+    graph_chart = ObjectProperty()
+    camera_pane_open = BooleanProperty(False)
+    graph_pane_open = BooleanProperty(False)
+    graph_updates_paused = BooleanProperty(False)
+    graph_line1_metric = StringProperty(GRAPH_METRIC_DEFAULT_LINE1)
+    graph_line2_metric = StringProperty(GRAPH_METRIC_DEFAULT_LINE2)
+    graph_time_range = NumericProperty(GRAPH_DEFAULT_TIME_RANGE)
+    graph_granularity = NumericProperty(GRAPH_DEFAULT_GRANULARITY)
 
     probing_popup = ObjectProperty()
     coord_config = {}
@@ -2756,6 +2928,8 @@ class Makera(RelativeLayout):
 
     def __init__(self, ctl_version):
         super().__init__()
+        Window.bind(size=self._sync_control_layout)
+        self._sync_control_layout()
 
         Window.bind(on_request_close=self.on_request_close)
 
@@ -2783,7 +2957,7 @@ class Makera(RelativeLayout):
         self.controller.wcs_table_callback = self.on_wcs_table
         # Fill basic global variables
         CNC.vars["state"] = NOT_CONNECTED
-        CNC.vars["color"] = STATECOLOR[NOT_CONNECTED]
+        CNC.vars["color"] = machine_state_color(NOT_CONNECTED)
 
         self.coord_config = {
             "origin": {"anchor": 1, "x_offset": 0.0, "y_offset": 0.0},
@@ -2913,8 +3087,25 @@ class Makera(RelativeLayout):
             on_streaming=self._set_camera_streaming,
             on_reconnecting=self._set_camera_reconnecting,
         )
-        self.ids.camera_splitter.bind(collapsed=self._on_camera_splitter_collapsed)
-        self.ids.camera_splitter.collapse()
+        self._dock_restore_camera = False
+        self._dock_restore_graph = False
+        self._dock_layout_updating = False
+        self.ids.bottom_dock.bind(collapsed=self._on_bottom_dock_collapsed)
+        self.ids.bottom_dock.bind(pos=self._update_dock_toggle_buttons, size=self._update_dock_toggle_buttons)
+        self.ids.float_layout.bind(pos=self._update_dock_toggle_buttons, size=self._update_dock_toggle_buttons)
+        self.ids.bottom_dock_body.bind(width=self._update_graph_pane_max_size)
+        self.bind(camera_pane_open=self._update_dock_toggle_buttons, graph_pane_open=self._update_dock_toggle_buttons)
+        App.get_running_app().bind(supports_camera=self._update_dock_toggle_buttons)
+        self.ids.bottom_dock.collapse()
+        Clock.schedule_once(lambda dt: self._update_dock_toggle_buttons(), 0)
+
+        # init graph chart
+        self._restore_graph_options()
+        self._graph_samples = self._make_graph_samples()
+        self._init_graph_chart()
+        self._stop_graph_theme = watch_theme(self._apply_graph_theme)
+        self._graph_clock = Clock.schedule_interval(self._update_graph_chart, self.graph_granularity)
+        Clock.schedule_once(lambda dt: self._render_graph_chart(), 0)
 
         # init settings
         self.config = ConfigParser()
@@ -2931,6 +3122,7 @@ class Makera(RelativeLayout):
         self.machine_settings_model = None
         self.controller_setting_change_list = {}
         self.load_controller_config()
+        self.load_theme_config()
         self.load_keyboard_shortcuts_config()
         self.load_gcode_viewer_config()
         self.load_pendant_config()
@@ -2989,10 +3181,8 @@ class Makera(RelativeLayout):
         if Config.has_option("carvera", "invert_y_axis_jogging"):
             App.get_running_app().invert_y_axis_jogging = Config.get("carvera", "invert_y_axis_jogging") == "1"
 
-        if Config.has_option("carvera", "active_color"):
-            App.get_running_app().active_color = self._parse_active_color(Config.get("carvera", "active_color"))
-
         self._load_gcode_highlight_settings()
+        self._stop_syntax_theme = watch_theme(self._refresh_syntax_highlighting)
         self._load_playbar_tool_change_marker_settings()
         if self.wpb_play:
             self.wpb_play.marker_tooltip_provider = self._playbar_tool_change_tooltip
@@ -3019,18 +3209,45 @@ class Makera(RelativeLayout):
         self.tutorial = Tutorial(self)
         self.tutorial.schedule_if_needed()
 
-    def _parse_active_color(self, value):
-        """Parse a color string like '0,255,255,255' into an RGBA list (0-1 range)."""
-        try:
-            if not value:
-                return [0, 1, 1, 1]  # Default cyan
-            parts = [float(x.strip()) for x in value.split(",")]
-            if len(parts) == 3:
-                parts.append(255.0)  # Add alpha if missing
-            # Assume 0-255 range, convert to 0-1
-            return [parts[0] / 255, parts[1] / 255, parts[2] / 255, parts[3] / 255 if parts[3] > 1 else parts[3]]
-        except Exception:
-            return [0, 1, 1, 1]  # Default cyan
+    def _sync_control_layout(self, *_args):
+        """Stack the jog pads above the actions when the window is narrow.
+
+        The control page scrolls when it is shorter than the buttons, so a
+        short window cannot push them outside the screen.
+        """
+        from carveracontroller.ui.common.compact import is_compact_width
+
+        if "jog_pad" not in self.ids:
+            return
+        compact = is_compact_width(Window.width)
+        app = App.get_running_app()
+        if app is not None:
+            app.control_compact = compact
+        self._place_control_widgets(compact)
+
+    def _place_control_widgets(self, compact):
+        jog = self.ids.jog_pad
+        actions = self.ids.action_column
+        az = self.ids.az_jog_pad
+        wide = self.ids.wide_row
+        pads = self.ids.pad_row
+        stack = self.ids.compact_stack
+        if compact:
+            self._move_widget(jog, pads)
+            self._move_widget(az, pads)
+            self._move_widget(actions, stack)
+            return
+        self._move_widget(jog, wide)
+        self._move_widget(actions, wide)
+        self._move_widget(az, wide)
+
+    @staticmethod
+    def _move_widget(widget, parent):
+        if widget.parent is parent:
+            return
+        if widget.parent is not None:
+            widget.parent.remove_widget(widget)
+        parent.add_widget(widget)
 
     def _load_playbar_tool_change_marker_settings(self):
         """Read playback bar tool-change marker visibility from config."""
@@ -3049,30 +3266,23 @@ class Makera(RelativeLayout):
             else "1"
         )
         self.gcode_highlight_enabled = raw_enabled not in ("0", "false", "False")
-        self.gcode_highlight_colors = {}
-        for cat in GCODE_DEFAULT_COLORS:
-            config_key = f"gcode_color_{cat}"
-            raw = Config.get("carvera", config_key) if Config.has_option("carvera", config_key) else None
-            if raw:
-                self.gcode_highlight_colors[cat] = self._config_color_to_hex(raw)
 
-    @staticmethod
-    def _config_color_to_hex(value):
-        """Convert a 'R,G,B,A' config string (0-255) to a Kivy markup hex color.
-
-        Returns '#RRGGBBAA' when alpha < 255, otherwise '#RRGGBB'.
-        """
-        try:
-            parts = [int(float(x.strip())) for x in value.split(",")]
-            r, g, b = parts[0], parts[1], parts[2]
-            a = parts[3] if len(parts) >= 4 else 255
-            if a < 255:
-                return f"#{r:02X}{g:02X}{b:02X}{a:02X}"
-            return f"#{r:02X}{g:02X}{b:02X}"
-        except Exception:
-            return "#C8C8C8"
+    def _refresh_syntax_highlighting(self, _theme=None):
+        """Reload g-code and MDI markup when theme syntax colors change."""
+        app = App.get_running_app()
+        if app is None:
+            return
+        if getattr(self, "lines", None) and hasattr(self, "gcode_rv") and self.gcode_rv.data:
+            self.load_page(app.curr_page)
+        manual = getattr(self, "manual_rv", None)
+        if manual is not None and manual.data:
+            manual.data = [self._format_mdi_entry(entry) for entry in manual.data]
 
     def on_request_close(self, *args):
+        stop_syntax = getattr(self, "_stop_syntax_theme", None)
+        if stop_syntax is not None:
+            stop_syntax()
+            self._stop_syntax_theme = None
         # Cleanup the temporary directory when the app is closed
         shortcut_manager = getattr(self, "shortcut_manager", None)
         if shortcut_manager is not None:
@@ -3124,6 +3334,18 @@ class Makera(RelativeLayout):
         self.config_popup.settings_panel.add_json_panel(tr._("Controller"), Config, data=json.dumps(controller_config))
 
         self._update_macro_button_text()
+
+    def load_theme_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), "ui", "themes", "config.json")
+        with open(config_def_file) as file:
+            theme_config_definition = json.load(file)
+        theme_config = []
+        for setting in theme_config_definition:
+            if "default" in setting:
+                Config.setdefault(setting["section"], setting["key"], setting["default"])
+                setting.pop("default", None)
+            theme_config.append(setting)
+        self.config_popup.settings_panel.add_json_panel(tr._("Theme"), Config, data=json.dumps(theme_config))
 
     def load_keyboard_shortcuts_config(self):
         config_def_file = os.path.join(
@@ -3770,38 +3992,38 @@ class Makera(RelativeLayout):
         if self.uploading or self.downloading:
             return
         if self.holding == 1:
-            self.status_data_view.color = STATECOLOR["Hold"]
+            self.status_data_view.color = machine_state_color("Hold")
             self.holding = 2
         elif self.holding == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.holding = 1
 
         if self.pausing == 1:
-            self.status_data_view.color = STATECOLOR["Pause"]
+            self.status_data_view.color = machine_state_color("Pause")
             self.pausing = 2
         elif self.pausing == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.pausing = 1
 
         if self.waiting == 1:
-            self.status_data_view.color = STATECOLOR["Wait"]
+            self.status_data_view.color = machine_state_color("Wait")
             self.waiting = 2
         elif self.waiting == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.waiting = 1
 
         if self.tooling == 1:
-            self.status_data_view.color = STATECOLOR["Tool"]
+            self.status_data_view.color = machine_state_color("Tool")
             self.tooling = 2
         elif self.tooling == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.tooling = 1
 
         if self.comms_waiting == 1:
-            self.status_data_view.color = STATECOLOR["Wait"]
+            self.status_data_view.color = machine_state_color("Wait")
             self.comms_waiting = 2
         elif self.comms_waiting == 2:
-            self.status_data_view.color = STATECOLOR["Disable"]
+            self.status_data_view.color = machine_state_color("Disable")
             self.comms_waiting = 1
 
         # check heartbeat
@@ -3877,7 +4099,7 @@ class Makera(RelativeLayout):
                 text=tr._("No USB devices found"),
                 size_hint_y=None,
                 height="35dp",
-                color=(180 / 255, 180 / 255, 180 / 255, 1),
+                color=get_theme().text_secondary,
             )
             self.comports_drop_down.add_widget(btn)
         else:
@@ -3891,7 +4113,7 @@ class Makera(RelativeLayout):
                 text=tr._("Manually Enter"),
                 size_hint_y=None,
                 height="35dp",
-                color=(225 / 255, 225 / 255, 225 / 255, 1),
+                color=get_theme().text,
             )
             btn.bind(on_release=lambda btn: self.manually_input_usb_device())
             self.comports_drop_down.add_widget(btn)
@@ -4206,7 +4428,7 @@ class Makera(RelativeLayout):
             text=tr._("Searching for nearby machines..."),
             size_hint_y=None,
             height="35dp",
-            color=(180 / 255, 180 / 255, 180 / 255, 1),
+            color=get_theme().text_secondary,
         )
         self.wifi_conn_drop_down.add_widget(btn)
         self.wifi_conn_drop_down.open(button)
@@ -4225,7 +4447,7 @@ class Makera(RelativeLayout):
                 text=tr._("None found, enter address manually..."),
                 size_hint_y=None,
                 height="35dp",
-                color=(225 / 255, 225 / 255, 225 / 255, 1),
+                color=get_theme().text,
             )
             btn.bind(on_release=lambda btn: self.manually_input_ip())
             self.wifi_conn_drop_down.add_widget(btn)
@@ -4368,7 +4590,7 @@ class Makera(RelativeLayout):
                         logger.info(f"MDI Received: {line}")
                         entry = {
                             "text": line,
-                            "color": (103 / 255, 150 / 255, 186 / 255, 1),
+                            "color": list(get_theme().info_text),
                             "entry_type": "output",
                         }
                         self._append_to_mdi([entry], log_to_mdi_data=line not in [" ", "ok", "Done ATC"])
@@ -4376,7 +4598,7 @@ class Makera(RelativeLayout):
                         logger.error(f"MDI Received: {line}")
                         entry = {
                             "text": line,
-                            "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                            "color": list(get_theme().danger_text),
                             "entry_type": "output",
                         }
                         self._append_to_mdi([entry], log_to_mdi_data=line not in [" ", "ok", "Done ATC"])
@@ -5104,15 +5326,21 @@ class Makera(RelativeLayout):
     # -----------------------------------------------------------------------
     def choose_back_up_config_destination(self, local_paths, *args):
         self.progressFinish()
-        content = PickFilePopup(partial(self.finish_backing_up_config, local_paths))
-        self.pick_file_popup = Popup(
+        self.pick_file_popup = None
+
+        def on_confirm(popup, dest):
+            popup.dismiss()
+            folder = dest if os.path.isdir(dest) else os.path.dirname(dest)
+            self.finish_backing_up_config(local_paths, folder, None)
+
+        open_local_file_picker(
             title=tr._("Choose where to back up your machine configuration"),
-            content=content,
-            size_hint=(0.75, 0.75),
-            auto_dismiss=True,
+            on_confirm=on_confirm,
+            on_cancel=self._cancel_config_backup_picker,
+            confirm_label=tr._("Select"),
+            size_hint=(0.82, 0.85),
+            folder_only=True,
         )
-        content.on_cancel = self._cancel_config_backup_picker
-        self.pick_file_popup.open()
 
     def _cancel_config_backup_picker(self):
         if self.pick_file_popup is not None:
@@ -5776,7 +6004,7 @@ class Makera(RelativeLayout):
             self.wifi_ap_status_bar.ssid = tr._("WiFi: Searching for network...")
         else:
             self.wifi_ap_status_bar = WiFiButton(
-                ssid=tr._("WiFi: Searching for network..."), color=(180 / 255, 180 / 255, 180 / 255, 1)
+                ssid=tr._("WiFi: Searching for network..."), color=get_theme().text_secondary
             )
             self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
 
@@ -5810,7 +6038,7 @@ class Makera(RelativeLayout):
         self.wifi_ap_status_bar = None
         self.wifi_ap_status_bar = WiFiButton(
             ssid=tr._("WiFi: Connected") if has_connected else tr._("WiFi: Not Connected"),
-            color=(180 / 255, 180 / 255, 180 / 255, 1),
+            color=get_theme().text_secondary,
         )
         self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
         if has_connected:
@@ -5836,7 +6064,7 @@ class Makera(RelativeLayout):
         if self.wifi_ap_status_bar != None:
             self.wifi_ap_status_bar.ssid = "WiFi: " + error_msg
         else:
-            self.wifi_ap_status_bar = WiFiButton(ssid="WiFi: " + error_msg, color=(200 / 255, 200 / 255, 200 / 255, 1))
+            self.wifi_ap_status_bar = WiFiButton(ssid="WiFi: " + error_msg, color=get_theme().text_secondary)
             self.wifi_ap_drop_down.add_widget(self.wifi_ap_status_bar)
 
     # -----------------------------------------------------------------------
@@ -6728,12 +6956,8 @@ class Makera(RelativeLayout):
             # If it is a compressed ''.lz' file, wait for the decompression to complete.
             if self.uploading_file.endswith(".lz") and getattr(self, "_batch_kind", None) != "upload":
                 self.log = logging.getLogger("File.Decompress")
-                self.decompstatus = True
                 os.remove(self.uploading_file)
-                self.decomptime = time.time()
-                Clock.schedule_once(
-                    partial(self.progressStart, tr._("Decompressing") + "\n%s" % displayname, False), 0.2
-                )
+                Clock.schedule_once(partial(self._start_decompress_wait, displayname), 0.2)
             elif self.uploading_file.endswith(".lz"):
                 self.log = logging.getLogger("File.Decompress")
                 self.decompstatus = True
@@ -6854,6 +7078,13 @@ class Makera(RelativeLayout):
         else:
             self.progress_popup.btn_cancel.disabled = True
         self.progress_popup.open()
+
+    def _start_decompress_wait(self, displayname, *args):
+        # The machine reports decompress progress before "upload success", so a small file can be
+        # finished already. Watch for it only once the popup is open, so the finish closes this popup.
+        self.progressStart(tr._("Decompressing") + "\n%s" % displayname, False)
+        self.decomptime = time.time()
+        self.decompstatus = True
 
     def _schedule_progress_finish(self, delay=0):
         """Close the progress popup later, unless a newer transfer has already taken it."""
@@ -7188,6 +7419,381 @@ class Makera(RelativeLayout):
                 Clock.schedule_once(lambda dt: callback(), 0.1)
 
     # -----------------------------------------------------------------------
+    class _GraphValueFormatter(mticker.Formatter):
+        """Tick and hover text without scientific notation."""
+
+        def __call__(self, value, pos=None):
+            return format_graph_value(value)
+
+        def format_data(self, value):
+            return format_graph_value(value)
+
+        def format_data_short(self, value):
+            return format_graph_value(value)
+
+    def _init_graph_chart(self):
+        fs = dp(8) * 1.2
+        fig, ax1 = plt.subplots(1, 1)
+        fig.set_tight_layout({"pad": 0.4})
+        ax2 = ax1.twinx()
+
+        (self._graph_line1,) = ax1.plot([], [], linewidth=1.5)
+        (self._graph_line2,) = ax2.plot([], [], linewidth=1.5)
+
+        ax1.set_xlabel("Time (s)", fontsize=fs)
+        for ax in (ax1, ax2):
+            ax.tick_params(labelsize=fs)
+            ax.spines["top"].set_visible(False)
+        self._sync_graph_hover_labels()
+        # Plain decimals. The default short formatter writes low RPM as 5e+02.
+        number_format = self._GraphValueFormatter()
+        ax1.xaxis.set_major_formatter(number_format)
+        ax1.yaxis.set_major_formatter(number_format)
+        ax2.yaxis.set_major_formatter(number_format)
+        self.graph_chart.cursor_xaxis_formatter = number_format
+        self.graph_chart.cursor_yaxis_formatter = number_format
+        self.graph_chart.cursor_yaxis2_formatter = number_format
+
+        # Register the series before the figure is assigned so the hover can see
+        # them. The hover chip is moved onto the overlay; leaving it in the plot's
+        # BoxLayout would steal width from the chart.
+        self.graph_chart.auto_cursor = True
+        self.graph_chart.figure = fig
+        self.graph_chart.xmin = -self.graph_time_range
+        self.graph_chart.xmax = 0
+        self._attach_graph_hover()
+        self._apply_graph_theme(get_theme())
+
+    def _attach_graph_hover(self):
+        chart = self.graph_chart
+        if chart is None or chart.hover_instance is not None:
+            return
+        add_hover(chart, mode="desktop", hover_type="compare", label_x="Time (s)", label_y="Value")
+        hover = chart.hover_instance
+        box = chart.parent
+        overlay = None if box is None else box.parent
+        if hover is None or box is None or overlay is None or hover.parent is not box:
+            return
+        box.remove_widget(hover)
+        overlay.add_widget(hover)
+
+    def _apply_graph_theme(self, theme):
+        """Repaint the monitoring chart from the live theme."""
+        fig = None if getattr(self, "graph_chart", None) is None else self.graph_chart.figure
+        if fig is None or len(fig.axes) < 2 or getattr(self, "_graph_line1", None) is None:
+            return
+        background = tuple(theme.graph_bg)
+        axis = tuple(theme.graph_axis)
+        spine = tuple(theme.graph_spine)
+        fig.patch.set_facecolor(background)
+        for item in fig.axes:
+            item.set_facecolor(background)
+            item.tick_params(colors=axis)
+            item.xaxis.label.set_color(axis)
+            for name in ("bottom", "left", "right"):
+                item.spines[name].set_color(spine)
+        self._graph_line1.set_color(tuple(theme.graph_line_1))
+        self._graph_line2.set_color(tuple(theme.graph_line_2))
+        hover = getattr(self.graph_chart, "hover_instance", None)
+        if hover is not None:
+            text = tuple(theme.text)
+            hover.text_color = text
+            hover.background_color = tuple(theme.graph_panel)
+            for child in getattr(hover, "children_list", []):
+                child.text_color = text
+            self._apply_graph_hover_line_color(hover, tuple(theme.graph_cursor))
+        self._style_graph_axes()
+        self._render_graph_chart()
+
+    def _style_graph_axes(self):
+        fig = None if self.graph_chart is None else self.graph_chart.figure
+        if fig is None or len(fig.axes) < 2:
+            return
+        theme = get_theme()
+        fs = dp(8) * 1.2
+        self._style_graph_axis(fig.axes[0], self.graph_line1_metric, tuple(theme.graph_line_1), "left", fs)
+        self._style_graph_axis(fig.axes[1], self.graph_line2_metric, tuple(theme.graph_line_2), "right", fs)
+
+    # -----------------------------------------------------------------------
+    def _style_graph_axis(self, ax, metric_key, color, side, fs):
+        metric = GRAPH_METRICS_BY_KEY.get(metric_key)
+        visible = metric is not None and metric.visible
+        ax.set_ylabel(tr._(metric.ylabel) if visible and metric.ylabel else "", fontsize=fs)
+        ax.yaxis.label.set_color(color)
+        hidden = tuple(get_theme().graph_spine)
+        ax.tick_params(
+            axis="y",
+            colors=color if visible else hidden,
+            labelsize=fs,
+            labelleft=(side == "left" and visible),
+            labelright=(side == "right" and visible),
+        )
+
+    def _graph_sample_count(self):
+        gran = float(self.graph_granularity) or 1.0
+        return max(1, round(float(self.graph_time_range) / gran))
+
+    def _make_graph_samples(self, previous=None):
+        maxlen = self._graph_sample_count()
+        samples = {}
+        for key, metric in GRAPH_METRICS_BY_KEY.items():
+            if not metric.visible:
+                continue
+            old = list(previous[key]) if previous and key in previous else []
+            samples[key] = deque(old[-maxlen:], maxlen=maxlen)
+        return samples
+
+    def _apply_graph_window(self, keep_samples=True):
+        self._graph_samples = self._make_graph_samples(self._graph_samples if keep_samples else None)
+        if self.graph_chart is not None:
+            self.graph_chart.xmin = -self.graph_time_range
+        clock = getattr(self, "_graph_clock", None)
+        if clock is not None:
+            clock.cancel()
+        self._graph_clock = Clock.schedule_interval(self._update_graph_chart, self.graph_granularity)
+        self._render_graph_chart()
+
+    # -----------------------------------------------------------------------
+    def set_graph_line_metric(self, line, label):
+        key = graph_metric_key_from_label(label)
+        attr = "graph_line1_metric" if line == 1 else "graph_line2_metric"
+        if getattr(self, attr) == key:
+            return
+        setattr(self, attr, key)
+        self._persist_graph_options()
+        self._sync_graph_hover_labels()
+        self._style_graph_axes()
+        self._render_graph_chart()
+
+    def _sync_graph_hover_labels(self):
+        """Name each series on the compare hover so both values are labeled."""
+        line1 = getattr(self, "_graph_line1", None)
+        line2 = getattr(self, "_graph_line2", None)
+        if line1 is None or line2 is None:
+            return
+        line1.set_label(graph_metric_label(self.graph_line1_metric))
+        line2.set_label(graph_metric_label(self.graph_line2_metric))
+        if line1.get_label() == line2.get_label():
+            line2.set_label(f"{line2.get_label()} (2)")
+        chart = getattr(self, "graph_chart", None)
+        hover = None if chart is None else getattr(chart, "hover_instance", None)
+        if hover is None or not hasattr(hover, "create_child") or not chart.lines:
+            return
+        hover.create_child(chart.lines)
+        text = tuple(get_theme().text)
+        hover.text_color = text
+        for child in hover.children_list:
+            child.text_color = text
+        self._apply_graph_hover_line_color(hover, tuple(get_theme().graph_cursor))
+
+    def _apply_graph_hover_line_color(self, hover, color):
+        """The compare-hover guide is a fixed blue in the library rule."""
+        for instruction in hover.canvas.after.children:
+            if isinstance(instruction, Color):
+                instruction.rgba = color
+                return
+
+    def set_graph_setting(self, setting, label):
+        if setting in ("line1", "line2"):
+            self.set_graph_line_metric(1 if setting == "line1" else 2, label)
+            return
+        if setting == "time_range":
+            value = graph_number_from_label(label, GRAPH_TIME_RANGES)
+            if value is None or abs(value - self.graph_time_range) < 1e-9:
+                return
+            self.graph_time_range = value
+            self._persist_graph_options()
+            self._apply_graph_window()
+            return
+        if setting == "granularity":
+            value = graph_number_from_label(label, GRAPH_GRANULARITIES)
+            if value is None or abs(value - self.graph_granularity) < 1e-9:
+                return
+            self.graph_granularity = value
+            self._persist_graph_options()
+            self._apply_graph_window(keep_samples=False)
+
+    def _stored_graph_metric(self, option, default):
+        if not Config.has_option("carvera", option):
+            return default
+        key = Config.get("carvera", option)
+        if key in GRAPH_METRICS_BY_KEY:
+            return key
+        return default
+
+    def _stored_graph_number(self, option, allowed, default):
+        if not Config.has_option("carvera", option):
+            return default
+        try:
+            parsed = float(Config.get("carvera", option))
+        except (TypeError, ValueError):
+            return default
+        for value in allowed:
+            if abs(float(value) - parsed) < 1e-9:
+                return value
+        return default
+
+    def _restore_graph_options(self):
+        self.graph_line1_metric = self._stored_graph_metric("graph_line1", GRAPH_METRIC_DEFAULT_LINE1)
+        self.graph_line2_metric = self._stored_graph_metric("graph_line2", GRAPH_METRIC_DEFAULT_LINE2)
+        self.graph_time_range = self._stored_graph_number(
+            "graph_time_range", GRAPH_TIME_RANGES, GRAPH_DEFAULT_TIME_RANGE
+        )
+        self.graph_granularity = self._stored_graph_number(
+            "graph_granularity", GRAPH_GRANULARITIES, GRAPH_DEFAULT_GRANULARITY
+        )
+        self._graph_options_ready = True
+
+    def _persist_graph_options(self):
+        if not getattr(self, "_graph_options_ready", False):
+            return
+        Config.set("carvera", "graph_line1", self.graph_line1_metric)
+        Config.set("carvera", "graph_line2", self.graph_line2_metric)
+        Config.set("carvera", "graph_time_range", str(self.graph_time_range))
+        Config.set("carvera", "graph_granularity", str(self.graph_granularity))
+        Config.write()
+
+    # -----------------------------------------------------------------------
+    def _close_graph_controls(self):
+        controls = self.ids.get("graph_controls")
+        if controls is not None:
+            controls.adjust_open = False
+
+    # -----------------------------------------------------------------------
+    def _cnc_float(self, name):
+        try:
+            value = CNC.vars.get(name, 0)
+            if value is None:
+                return 0.0
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _graph_metric_sample(self, metric):
+        if metric.key == "rpm_deviation":
+            return rpm_deviation_percent(self._cnc_float("curspindle"), self._cnc_float("tarspindle"))
+        return self._cnc_float(metric.cnc_var)
+
+    # -----------------------------------------------------------------------
+    def _update_graph_chart(self, *_args):
+        for key, metric in GRAPH_METRICS_BY_KEY.items():
+            if not metric.visible or key not in self._graph_samples:
+                continue
+            self._graph_samples[key].append(self._graph_metric_sample(metric))
+        if self.graph_pane_open and not self.graph_updates_paused:
+            self._render_graph_chart()
+
+    # -----------------------------------------------------------------------
+    def _render_graph_chart(self):
+        if self.graph_updates_paused:
+            return
+        if self.graph_chart is None or getattr(self, "_graph_line1", None) is None:
+            return
+        n = max((len(samples) for samples in self._graph_samples.values()), default=0)
+        gran = float(self.graph_granularity)
+        times = [-(n - 1 - i) * gran for i in range(n)] if n else []
+        self.graph_chart.xmin = -self.graph_time_range
+        self._render_graph_line(self._graph_line1, self.graph_line1_metric, times, "ymin", "ymax")
+        self._render_graph_line(self._graph_line2, self.graph_line2_metric, times, "ymin2", "ymax2")
+        self.graph_chart.home()
+        self.graph_chart.refresh_hover()
+
+    def save_monitoring_graph(self):
+        """Ask for a folder, then write the current chart image and a CSV of samples."""
+
+        def on_confirm(popup, dest):
+            popup.dismiss()
+            folder = dest if os.path.isdir(dest) else os.path.dirname(dest)
+            self._write_monitoring_graph(folder)
+
+        open_local_file_picker(
+            title=tr._("Choose where to save the monitoring graph"),
+            on_confirm=on_confirm,
+            confirm_label=tr._("Select"),
+            size_hint=(0.82, 0.85),
+            folder_only=True,
+        )
+
+    def _write_monitoring_graph(self, folder):
+        """Write the graph as it is now, including a paused trace. Does not take a new sample."""
+        fig = None if self.graph_chart is None else self.graph_chart.figure
+        if fig is None:
+            self.show_message_popup(tr._("The monitoring graph is not ready to save."), False)
+            return
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        base = os.path.join(folder, f"monitoring-graph-{stamp}")
+        image_path = base + ".png"
+        csv_path = base + ".csv"
+        try:
+            fig.savefig(image_path, facecolor=fig.get_facecolor(), bbox_inches="tight")
+            self._write_monitoring_graph_csv(csv_path)
+        except Exception as error:
+            logger.exception("failed to save monitoring graph")
+            self.show_message_popup(tr._("Could not save the monitoring graph.") + f"\n{error}", False)
+            return
+        self.show_message_popup(
+            tr._("Saved the monitoring graph.") + f"\n{os.path.basename(image_path)}\n{os.path.basename(csv_path)}",
+            False,
+        )
+
+    def _write_monitoring_graph_csv(self, path):
+        samples = (
+            self._graph_paused_samples
+            if self.graph_updates_paused and getattr(self, "_graph_paused_samples", None) is not None
+            else getattr(self, "_graph_samples", None) or {}
+        )
+        keys = [
+            key
+            for key, metric in GRAPH_METRICS_BY_KEY.items()
+            if metric.visible and key in samples and len(samples[key])
+        ]
+        count = max((len(samples[key]) for key in keys), default=0)
+        step = float(self.graph_granularity) or 1.0
+
+        def csv_number(value):
+            try:
+                number = float(value)
+            except (TypeError, ValueError):
+                return ""
+            if number != number or number in (float("inf"), float("-inf")):
+                return ""
+            text = f"{number:.6f}".rstrip("0").rstrip(".")
+            return "0" if text in ("", "-") else text
+
+        with open(path, "w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["Time (s)", *[graph_metric_label(key) for key in keys]])
+            for index in range(count):
+                row = [f"{-(count - 1 - index) * step:.3f}"]
+                for key in keys:
+                    series = samples[key]
+                    sample_index = index - (count - len(series))
+                    if sample_index < 0:
+                        row.append("")
+                    else:
+                        row.append(csv_number(series[sample_index]))
+                writer.writerow(row)
+
+    # -----------------------------------------------------------------------
+    def _render_graph_line(self, line, metric_key, times, ymin_attr, ymax_attr):
+        metric = GRAPH_METRICS_BY_KEY.get(metric_key)
+        if metric is None or not metric.visible:
+            line.set_visible(False)
+            line.set_data([], [])
+            return
+        samples = list(self._graph_samples[metric.key])
+        finite = [sample for sample in samples if sample == sample]
+        ymin, ymax = graph_metric_ylim(metric.key, finite or None)
+        setattr(self.graph_chart, ymin_attr, ymin)
+        setattr(self.graph_chart, ymax_attr, ymax)
+        if not finite:
+            line.set_visible(False)
+            line.set_data([], [])
+            return
+        line.set_visible(True)
+        line.set_data(times, samples)
+
+    # -----------------------------------------------------------------------
     def updateStatus(self, *args):
         try:
             now = time.time()
@@ -7209,7 +7815,7 @@ class Makera(RelativeLayout):
                     # Remaining was parked when the overlay appeared.
                     self._remaining_anchor_time = now
                 self.status_data_view.main_text = CNC.vars["state"]
-                CNC.vars["color"] = STATECOLOR.get(CNC.vars["state"], STATECOLORDEF)
+                CNC.vars["color"] = machine_state_color(CNC.vars["state"])
                 self.status_data_view.color = CNC.vars["color"]
                 if CNC.vars["state"] != NOT_CONNECTED:
                     logger.info("Machine status response received — comms restored")
@@ -7221,7 +7827,7 @@ class Makera(RelativeLayout):
             if app.state != CNC.vars["state"]:
                 prev_state = app.state
                 app.state = CNC.vars["state"]
-                CNC.vars["color"] = STATECOLOR[app.state]
+                CNC.vars["color"] = machine_state_color(app.state)
                 self.status_data_view.color = CNC.vars["color"]
                 self.holding = 1 if app.state == "Hold" else 0
                 self.pausing = 1 if app.state == "Pause" else 0
@@ -7893,6 +8499,7 @@ class Makera(RelativeLayout):
             self.diagnose_popup.st_atc_home.state = CNC.vars["st_atc_home"]
             self.diagnose_popup.st_tool_sensor.state = CNC.vars["st_tool_sensor"]
             self.diagnose_popup.st_e_stop.state = CNC.vars["st_e_stop"]
+
         except:
             logger.error(sys.exc_info()[1])
 
@@ -7921,7 +8528,7 @@ class Makera(RelativeLayout):
         entries = [
             {
                 "text": cmd,
-                "color": (200 / 255, 200 / 255, 200 / 255, 1),
+                "color": list(get_theme().text_secondary),
                 "entry_type": "command",
             }
             for cmd in line.strip().split("\n")
@@ -7931,9 +8538,10 @@ class Makera(RelativeLayout):
     def _format_mdi_entry(self, entry):
         """Syntax-highlight sent MDI commands; keep machine output in status colors."""
         text = str(entry.get("text") or "")
-        original_color = tuple(entry.get("original_color") or entry.get("color") or (1, 1, 1, 1))
+        original_color = tuple(entry.get("original_color") or entry.get("color") or get_theme().text)
         plain = text.strip()
         color = original_color
+        mdi_command_color = tuple(get_theme().text_secondary[:3])
         entry_type = entry.get("entry_type")
         if entry_type is not None:
             should_highlight = entry_type == "command"
@@ -7941,14 +8549,14 @@ class Makera(RelativeLayout):
             should_highlight = bool(entry.get("highlight"))
         else:
             # Compatibility with MDI history entries saved before entry_type existed.
-            should_highlight = tuple(original_color[:3]) == (200 / 255, 200 / 255, 200 / 255)
+            should_highlight = tuple(original_color[:3]) == mdi_command_color
         entry_type = "command" if should_highlight else "output"
         hl_enabled = getattr(self, "gcode_highlight_enabled", False)
-        hl_colors = getattr(self, "gcode_highlight_colors", None)
+        hl_colors = gcode_syntax_colors(get_theme()) if hl_enabled else None
         if hl_enabled and should_highlight and plain:
             highlighted = highlight_mdi_line(plain, hl_colors)
             if "[color=" in highlighted:
-                color = (1.0, 1.0, 1.0, 1.0)
+                color = list(get_theme().text)
         else:
             highlighted = escape_gcode_markup(plain)
         formatted = dict(entry)
@@ -7959,6 +8567,19 @@ class Makera(RelativeLayout):
         formatted["entry_type"] = entry_type
         formatted["highlight"] = should_highlight
         return formatted
+
+    def _recolor_mdi_history(self):
+        """Status lines keep the color they were logged with. Repaint them after a palette switch."""
+        theme = get_theme()
+        rv = getattr(self, "manual_rv", None)
+        if rv is not None and rv.data:
+            scroll = rv.scroll_y
+            rv.data = [self._format_mdi_entry(remap_mdi_entry(entry, theme)) for entry in rv.data]
+            rv.scroll_y = scroll
+        app = App.get_running_app()
+        data = getattr(app, "mdi_data", None) if app is not None else None
+        if data:
+            app.mdi_data = [remap_mdi_entry(entry, theme) for entry in data]
 
     @mainthread
     def _append_to_mdi(self, entries, log_to_mdi_data=False, scroll_to_bottom=False):
@@ -8561,6 +9182,16 @@ class Makera(RelativeLayout):
         if command is not None:
             self.controller.jog(command)
 
+    def _theme_editor(self):
+        """The theme editor, once the settings popup has built that page."""
+        popup = getattr(self, "config_popup", None)
+        if popup is None:
+            return None
+        for widget in popup._all_setting_items():
+            if hasattr(widget, "consume_force_reload"):
+                return widget
+        return None
+
     def apply_setting_changes(self):
         if self.setting_change_list:
             self.apply_machine_setting_changes()
@@ -8620,10 +9251,12 @@ class Makera(RelativeLayout):
             delay_value = float(self.controller_setting_change_list.get("tooltip_delay"))
             App.get_running_app().tooltip_delay = delay_value if delay_value > 0 else 0.5
 
-        if self.controller_setting_change_list.get("active_color"):
-            App.get_running_app().active_color = self._parse_active_color(
-                self.controller_setting_change_list.get("active_color")
-            )
+        if self.controller_setting_change_list.get("theme"):
+            theme_name = self.controller_setting_change_list["theme"]
+            editor = self._theme_editor()
+            force = editor.consume_force_reload() if editor is not None else False
+            App.get_running_app().set_theme(theme_name, force=force)
+            self.refresh_gcode_color_legend()
 
         pendant_changed = any(
             k == "pendant_type" or k.startswith("gamepad_") for k in self.controller_setting_change_list
@@ -8672,27 +9305,13 @@ class Makera(RelativeLayout):
                 self.refresh_gcode_color_legend()
                 self._refresh_idle_progress_info()
 
-        gcode_hl_changed = False
         if "gcode_highlight_enabled" in self.controller_setting_change_list:
             self.gcode_highlight_enabled = self.controller_setting_change_list["gcode_highlight_enabled"] not in (
                 "0",
                 "false",
                 "False",
             )
-            gcode_hl_changed = True
-        for cat in GCODE_DEFAULT_COLORS:
-            config_key = f"gcode_color_{cat}"
-            if config_key in self.controller_setting_change_list:
-                self.gcode_highlight_colors[cat] = self._config_color_to_hex(
-                    self.controller_setting_change_list[config_key]
-                )
-                gcode_hl_changed = True
-        if gcode_hl_changed:
-            app = App.get_running_app()
-            if hasattr(self, "gcode_rv") and self.gcode_rv.data:
-                self.load_page(app.curr_page)
-            if hasattr(self, "manual_rv") and self.manual_rv.data:
-                self.manual_rv.data = [self._format_mdi_entry(entry) for entry in self.manual_rv.data]
+            self._refresh_syntax_highlighting()
 
         if "show_playbar_tool_change_markers" in self.controller_setting_change_list:
             raw_enabled = self.controller_setting_change_list["show_playbar_tool_change_markers"]
@@ -8958,25 +9577,199 @@ class Makera(RelativeLayout):
 
     # -----------------------------------------------------------------------
     def toggle_camera_stream(self):
-        splitter = self.ids.get("camera_splitter")
-        if splitter is not None:
-            splitter.toggle_collapsed()
+        self.toggle_camera_pane()
+
+    # -----------------------------------------------------------------------
+    def toggle_camera_pane(self):
+        if not App.get_running_app().supports_camera:
+            return
+        self.camera_pane_open = not self.camera_pane_open
+        self._dock_restore_camera = self.camera_pane_open
+        if self.graph_pane_open:
+            self._dock_restore_graph = True
+        self._sync_camera_stream()
+        self._apply_bottom_dock_layout()
+
+    # -----------------------------------------------------------------------
+    def toggle_graph_updates(self):
+        """Freeze the display, or show the samples recorded while it was frozen."""
+        self.graph_updates_paused = not self.graph_updates_paused
+        if self.graph_updates_paused:
+            self._graph_paused_samples = {key: list(series) for key, series in self._graph_samples.items()}
+            return
+        self._graph_paused_samples = None
+        if self.graph_pane_open:
+            self._render_graph_chart()
+
+    def toggle_graph_pane(self):
+        self.graph_pane_open = not self.graph_pane_open
+        self._dock_restore_graph = self.graph_pane_open
+        if self.camera_pane_open:
+            self._dock_restore_camera = True
+        self._apply_bottom_dock_layout()
+        if self.graph_pane_open:
+            Clock.schedule_once(lambda dt: self._render_graph_chart(), 0)
+        else:
+            self._close_graph_controls()
+
+    # -----------------------------------------------------------------------
+    def _sync_camera_stream(self):
+        app = App.get_running_app()
+        if self.camera_pane_open and app.supports_camera:
+            if not self.camera_stream.is_streaming():
+                self.camera_stream.start(self.controller.connection_address.split(":")[0])
             return
         if self.camera_stream.is_streaming():
             self.camera_stream.stop()
-        elif App.get_running_app().supports_camera:
-            self.camera_stream.start(self.controller.connection_address.split(":")[0])
+        controls = self.ids.get("camera_controls")
+        if controls is not None:
+            controls.adjust_open = False
 
     # -----------------------------------------------------------------------
-    def _on_camera_splitter_collapsed(self, _splitter, collapsed):
+    def _on_bottom_dock_collapsed(self, _dock, collapsed):
+        if self._dock_layout_updating:
+            return
         if collapsed:
-            if self.camera_stream.is_streaming():
-                self.camera_stream.stop()
-            controls = self.ids.get("camera_controls")
-            if controls is not None:
-                controls.adjust_open = False
-        elif App.get_running_app().supports_camera and not self.camera_stream.is_streaming():
-            self.camera_stream.start(self.controller.connection_address.split(":")[0])
+            self._dock_restore_camera = self.camera_pane_open
+            self._dock_restore_graph = self.graph_pane_open
+            self.camera_pane_open = False
+            self.graph_pane_open = False
+            self._sync_camera_stream()
+            self._close_graph_controls()
+            self._apply_bottom_dock_layout()
+            return
+        if not self.camera_pane_open and not self.graph_pane_open:
+            app = App.get_running_app()
+            self.camera_pane_open = bool(self._dock_restore_camera and app.supports_camera)
+            self.graph_pane_open = bool(self._dock_restore_graph)
+            if not self.camera_pane_open and not self.graph_pane_open:
+                self.graph_pane_open = True
+        self._sync_camera_stream()
+        self._apply_bottom_dock_layout()
+
+    # -----------------------------------------------------------------------
+    def _apply_bottom_dock_layout(self):
+        if self._dock_layout_updating:
+            return
+        dock = self.ids.get("bottom_dock")
+        camera_pane = self.ids.get("camera_pane")
+        graph_pane = self.ids.get("graph_pane")
+        if dock is None or camera_pane is None or graph_pane is None:
+            return
+
+        self._dock_layout_updating = True
+        try:
+            app = App.get_running_app()
+            camera_open = bool(self.camera_pane_open and app.supports_camera)
+            if self.camera_pane_open and not camera_open:
+                self.camera_pane_open = False
+            graph_open = bool(self.graph_pane_open)
+
+            if camera_open:
+                camera_pane.opacity = 1
+                camera_pane.disabled = False
+                camera_pane.size_hint_x = 1
+            else:
+                camera_pane.opacity = 0
+                camera_pane.disabled = True
+                camera_pane.size_hint_x = None
+                camera_pane.width = 0
+
+            if graph_open and camera_open:
+                graph_pane.opacity = 1
+                graph_pane.disabled = False
+                graph_pane.size_hint_x = None
+                graph_pane.strip_size = dp(5)
+                Clock.schedule_once(lambda dt: self._size_both_dock_panes(), 0)
+            elif graph_open:
+                graph_pane.opacity = 1
+                graph_pane.disabled = False
+                graph_pane.size_hint_x = 1
+                graph_pane.strip_size = 0
+                graph_pane.min_size = 0
+            else:
+                graph_pane.opacity = 0
+                graph_pane.disabled = True
+                graph_pane.size_hint_x = None
+                graph_pane.width = 0
+                graph_pane.strip_size = 0
+                graph_pane.min_size = 0
+
+            if camera_open or graph_open:
+                if dock.collapsed:
+                    dock.expand()
+            elif not dock.collapsed:
+                dock.collapse()
+
+            peer = self.ids.get("collapsed_peer_strip")
+            if peer is not None:
+                closed_needs_strip = (not camera_open and app.supports_camera) or (not graph_open and camera_open)
+                peer.height = dp(5) if camera_open != graph_open and closed_needs_strip else 0
+        finally:
+            self._dock_layout_updating = False
+        self._update_dock_toggle_buttons()
+
+    # -----------------------------------------------------------------------
+    def _size_both_dock_panes(self):
+        if not (self.camera_pane_open and self.graph_pane_open):
+            return
+        graph_pane = self.ids.get("graph_pane")
+        body = self.ids.get("bottom_dock_body")
+        if graph_pane is None or body is None:
+            return
+        self._update_graph_pane_max_size()
+        graph_pane.size_hint_x = None
+        graph_pane.width = max(graph_pane.min_size, body.width / 2)
+
+    def _update_graph_pane_max_size(self, *_args):
+        graph_pane = self.ids.get("graph_pane")
+        body = self.ids.get("bottom_dock_body")
+        if graph_pane is None or body is None:
+            return
+        min_size = dp(80)
+        if self.camera_pane_open and self.graph_pane_open:
+            graph_pane.min_size = min_size
+            graph_pane.max_size = max(min_size, body.width - min_size)
+
+    # -----------------------------------------------------------------------
+    def _update_dock_toggle_buttons(self, *_args):
+        float_layout = self.ids.get("float_layout")
+        dock = self.ids.get("bottom_dock")
+        cam_btn = self.ids.get("camera_toggle_btn")
+        graph_btn = self.ids.get("graph_toggle_btn")
+        if float_layout is None or dock is None or cam_btn is None or graph_btn is None:
+            return
+
+        app = App.get_running_app()
+        camera_open = bool(self.camera_pane_open and app.supports_camera)
+        graph_open = bool(self.graph_pane_open)
+        show_camera_btn = bool(app.supports_camera)
+        btn_w = dp(70)
+        btn_h = dp(28)
+
+        cam_btn.size = (btn_w if show_camera_btn else 0, btn_h)
+        graph_btn.size = (btn_w, btn_h)
+
+        # Open-pane buttons sit on the dock strip; collapsed buttons sit with
+        # their bottom edge on the parent bottom (original camera-button y).
+        strip_y = dock.top - dock.strip_size / 2 - btn_h / 2
+        bottom_y = float_layout.y
+
+        def row_x(index, count):
+            if count <= 1:
+                return float_layout.center_x - btn_w / 2
+            gap = (float_layout.width - 2 * btn_w) / 3
+            if index == 0:
+                return float_layout.x + gap
+            return float_layout.x + 2 * gap + btn_w
+
+        if not show_camera_btn:
+            graph_btn.pos = (row_x(0, 1), strip_y if graph_open else bottom_y)
+            cam_btn.pos = (float_layout.x, bottom_y)
+            return
+
+        cam_btn.pos = (row_x(0, 2), strip_y if camera_open else bottom_y)
+        graph_btn.pos = (row_x(1, 2), strip_y if graph_open else bottom_y)
 
     # -----------------------------------------------------------------------
     def _detect_camera(self, host, probe):
@@ -8989,13 +9782,10 @@ class Makera(RelativeLayout):
         if probe != self.camera_probe:
             return
         App.get_running_app().supports_camera = found
-        splitter = self.ids.get("camera_splitter")
-        if splitter is None:
-            return
-        if found and splitter.collapsed:
-            splitter.height = splitter.strip_size
-        elif not found:
-            splitter.collapse()
+        if not found and self.camera_pane_open:
+            self.camera_pane_open = False
+            self._sync_camera_stream()
+            self._apply_bottom_dock_layout()
 
     # -----------------------------------------------------------------------
     def set_camera_resolution(self, label):
@@ -9032,9 +9822,9 @@ class Makera(RelativeLayout):
         blip does not come through here.
         """
         App.get_running_app().camera_streaming = streaming
-        splitter = self.ids.get("camera_splitter")
-        if splitter is not None and not streaming and not splitter.collapsed:
-            splitter.collapse()
+        if not streaming and self.camera_pane_open:
+            self.camera_pane_open = False
+            self._apply_bottom_dock_layout()
 
     # -----------------------------------------------------------------------
     def _set_camera_reconnecting(self, reconnecting):
@@ -9118,7 +9908,7 @@ class Makera(RelativeLayout):
             page_no = app.total_pages
         self.gcode_rv.data = []
         hl_enabled = getattr(self, "gcode_highlight_enabled", False)
-        hl_colors = getattr(self, "gcode_highlight_colors", None)
+        hl_colors = gcode_syntax_colors(get_theme()) if hl_enabled else None
         line_no = (page_no - 1) * MAX_LOAD_LINES + 1
         for line in self.lines[(page_no - 1) * MAX_LOAD_LINES : MAX_LOAD_LINES * page_no]:
             line_txt = line.rstrip("\r\n")
@@ -9133,7 +9923,7 @@ class Makera(RelativeLayout):
                         "line_no": line_no,
                         "text": plain,
                         "highlighted_text": hl,
-                        "color": (200 / 255, 200 / 255, 200 / 255, 1),
+                        "color": list(get_theme().text_secondary),
                     }
                 )
             except IndexError:
@@ -9619,7 +10409,7 @@ class Makera(RelativeLayout):
                         self._format_mdi_entry(
                             {
                                 "text": "clear command can't be used together with other commands",
-                                "color": (250 / 255, 105 / 255, 102 / 255, 1),
+                                "color": list(get_theme().danger_text),
                             }
                         )
                     )
@@ -9686,7 +10476,9 @@ class MakeraApp(App):
     jog_step_xy = StringProperty("10")
     jog_step_z = StringProperty("1")
     jog_step_a = StringProperty("90")
-    active_color = ListProperty([0, 1, 1, 1])  # Default cyan (0, 255, 255) in 0-1 range
+    # rebind so kv `app.theme.<token>` follows token edits and a replaced instance.
+    theme = ObjectProperty(None, rebind=True)
+    control_compact = BooleanProperty(False)
     jog_mode_text = StringProperty(tr._("Jog Mode:Step"))
     jog_speed_text = StringProperty(tr._("Jog Speed:Max"))
     jog_keyboard_enable = StringProperty("normal")
@@ -9695,6 +10487,52 @@ class MakeraApp(App):
     # [left, top, right, bottom] in pixels — populated on iOS from
     # UIWindow.safeAreaInsets (see _update_safe_area_padding).
     safe_area_padding = ListProperty([0, 0, 0, 0])
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Custom themes live in the app data folder, and must be found before the first palette load.
+        set_user_themes_dir(Path(self.user_data_dir) / "themes")
+        self.theme = Theme(self._configured_theme_name())
+
+    @staticmethod
+    def _configured_theme_name():
+        """Theme chosen in the settings, or the default when it is missing or unknown."""
+        name = Config.get("carvera", "theme", fallback=DEFAULT_THEME) or DEFAULT_THEME
+        if name not in theme_names():
+            logger.warning("Unknown theme %r in config, using %r", name, DEFAULT_THEME)
+            return DEFAULT_THEME
+        return name
+
+    def set_theme(self, name, *, force=False):
+        """Switch the whole interface to the palette ``name``.
+
+        ``force`` reloads the palette even when it is already selected, so a
+        Custom theme overwritten on disk replaces the one on screen.
+        """
+        if name not in theme_names():
+            logger.warning("Unknown theme %r, keeping %r", name, self.theme.name)
+            return
+        if force or name != self.theme.name:
+            self.theme.apply_palette(name)
+            # MDI rows store the info color from the palette that was active when
+            # the line arrived. The list background follows the theme immediately,
+            # so a dark-theme cyan would sit on the light list until this repaint.
+            root = self.root
+            if root is not None and hasattr(root, "_recolor_mdi_history"):
+                root._recolor_mdi_history()
+            # The status icon's Kv rule binds color to text_muted, so the palette
+            # update clears the Run/Idle/Alarm tint. Paint the current state again.
+            self._reapply_status_color()
+
+    def _reapply_status_color(self):
+        """Put the machine-state tint back on the top-bar status icon."""
+        root = self.root
+        status = getattr(root, "status_data_view", None) if root is not None else None
+        if status is None:
+            return
+        color = machine_state_color(self.state)
+        CNC.vars["color"] = color
+        status.color = color
 
     def on_stop(self):
         # Cancel any ongoing reconnection attempts to prevent hanging
@@ -9820,10 +10658,10 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "show_tooltips", "1")
     if not Config.has_option("carvera", "tooltip_delay"):
         Config.set("carvera", "tooltip_delay", "1.5")
-    if not Config.has_option("carvera", "active_color"):
-        Config.set("carvera", "active_color", "0,255,255,255")
     if not Config.has_option("carvera", "language"):
         Config.set("carvera", "language", default_lang)
+    if not Config.has_option("carvera", "theme"):
+        Config.set("carvera", "theme", DEFAULT_THEME)
     if not Config.has_option("carvera", "local_folder_1"):
         Config.set("carvera", "local_folder_1", "")
     if not Config.has_option("carvera", "local_folder_2"):
@@ -9909,34 +10747,6 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "gcode_viewer_ghost_paths", "0")
     if not Config.has_option("carvera", "gcode_highlight_enabled"):
         Config.set("carvera", "gcode_highlight_enabled", "1")
-    if not Config.has_option("carvera", "gcode_color_comment"):
-        Config.set("carvera", "gcode_color_comment", "106,153,85,255")
-    if not Config.has_option("carvera", "gcode_color_g_command"):
-        Config.set("carvera", "gcode_color_g_command", "86,156,214,255")
-    if not Config.has_option("carvera", "gcode_color_m_command"):
-        Config.set("carvera", "gcode_color_m_command", "197,134,192,255")
-    if not Config.has_option("carvera", "gcode_color_coordinate"):
-        Config.set("carvera", "gcode_color_coordinate", "206,145,120,255")
-    if not Config.has_option("carvera", "gcode_color_feedrate"):
-        Config.set("carvera", "gcode_color_feedrate", "78,201,176,255")
-    if not Config.has_option("carvera", "gcode_color_spindle"):
-        Config.set("carvera", "gcode_color_spindle", "209,105,105,255")
-    if not Config.has_option("carvera", "gcode_color_tool"):
-        Config.set("carvera", "gcode_color_tool", "181,206,168,255")
-    if not Config.has_option("carvera", "gcode_color_line_number"):
-        Config.set("carvera", "gcode_color_line_number", "133,133,133,255")
-    if not Config.has_option("carvera", "gcode_color_parameter"):
-        Config.set("carvera", "gcode_color_parameter", "156,220,254,255")
-    if not Config.has_option("carvera", "gcode_color_o_label"):
-        Config.set("carvera", "gcode_color_o_label", "86,156,214,255")
-    if not Config.has_option("carvera", "gcode_color_o_keyword"):
-        Config.set("carvera", "gcode_color_o_keyword", "220,220,170,255")
-    if not Config.has_option("carvera", "gcode_color_param_ref"):
-        Config.set("carvera", "gcode_color_param_ref", "181,206,168,255")
-    if not Config.has_option("carvera", "gcode_color_math_keyword"):
-        Config.set("carvera", "gcode_color_math_keyword", "215,186,125,255")
-    if not Config.has_option("carvera", "gcode_color_shell_command"):
-        Config.set("carvera", "gcode_color_shell_command", "47,117,181,255")
 
     Config.write()
 
@@ -9991,7 +10801,7 @@ def main():
     HALT_REASON = load_halt_translations(tr)
 
     base_path = app_base_path()
-    register_fonts(base_path)
+    register_fonts()
     register_images(base_path)
 
     # Make it global to be able to access it from native APIs

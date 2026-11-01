@@ -4,14 +4,14 @@
     padding: dp(6), dp(6)
     canvas.before:
         Color:
-            rgba: 0.1, 0.1, 0.1, 0.94
+            rgba: app.theme.tooltip_bg
         Rectangle:
             pos: self.pos
             size: self.size
         Color:
-            rgba: 0.8, 0.8, 0.8, 1
+            rgba: app.theme.tooltip_border
         Line:
-            width: 1.2
+            width: app.theme.tooltip_border_width
             rectangle: (self.x, self.y, self.width, self.height)
 
 <IntellisensePopup>:
@@ -28,7 +28,7 @@
             text_size: self.width, None
             halign: 'left'
             valign: 'top'
-            color: 0.92, 0.92, 0.92, 1
+            color: app.theme.text
 
 <MDICompletionPopup>:
     BoxLayout:
@@ -44,7 +44,7 @@
         text_size: self.width, None
         halign: 'left'
         valign: 'top'
-        color: 0.92, 0.92, 0.92, 1
+        color: app.theme.text
 
 <MDISuggestionRow>:
     orientation: 'horizontal'
@@ -54,7 +54,7 @@
     spacing: dp(10)
     canvas.before:
         Color:
-            rgba: (50/255, 164/255, 206/255, 0.35) if self.selected else (0, 0, 0, 0)
+            rgba: app.theme.selection_fill(0.35 if self.selected else 0, app.theme.revision)
         Rectangle:
             pos: self.pos
             size: self.size
@@ -68,7 +68,7 @@
         text_size: self.size
         shorten: True
         shorten_from: 'right'
-        color: 0.95, 0.95, 0.95, 1
+        color: app.theme.text
     Label:
         text: root.summary
         halign: 'left'
@@ -76,4 +76,4 @@
         text_size: self.size
         shorten: True
         shorten_from: 'right'
-        color: 0.78, 0.78, 0.78, 1
+        color: app.theme.text_secondary

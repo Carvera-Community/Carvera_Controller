@@ -13,6 +13,23 @@ _kivy_home = tempfile.mkdtemp(prefix="kivy_unit_test_")
 os.environ.setdefault("KIVY_HOME", _kivy_home)
 os.environ.setdefault("KIVY_NO_FILELOG", "1")
 os.environ.setdefault("KIVY_NO_CONSOLELOG", "1")
+# App JSON must not fall through to the real user-data dir (or migrate ~/.kivy).
+os.environ["APP_USER_DATA_DIR"] = os.path.join(_kivy_home, "user_data")
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _register_app_fonts():
+    """Match startup: the bundled font, and icons addressed as ``data/...``."""
+    from pathlib import Path
+
+    from kivy.resources import resource_add_path
+
+    from carveracontroller.ui.fonts import register_arialuni
+
+    register_arialuni()
+    resource_add_path(str(Path(__file__).resolve().parents[2] / "carveracontroller"))
 
 
 def pytest_sessionfinish(session, exitstatus):

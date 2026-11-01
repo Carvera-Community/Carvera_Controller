@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import webbrowser
+from collections.abc import Callable
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -19,6 +20,7 @@ from kivy.uix.widget import Widget
 from carveracontroller.addons.tooltips.Tooltips import Tooltip, set_tooltips_suppressed
 from carveracontroller.documentation import resolve_documentation_url
 from carveracontroller.ui.common.action_button import PopupActionButton
+from carveracontroller.ui.theme import get_theme, rgba_to_hex
 from carveracontroller.ui.tutorial.placement import (
     BUTTON_ROW_H,
     Placement,
@@ -32,15 +34,16 @@ from carveracontroller.ui.tutorial.steps import TourStep
 
 BANNER_TEXT = "Demo mode (not connected)"
 DOCS_URL = "https://carvera-community.gitbook.io/docs"
-ACCENT = (50 / 255, 164 / 255, 206 / 255, 1)
-CARD_BG = (38 / 255, 40 / 255, 46 / 255, 1)
-BANNER_BG = (14 / 255, 28 / 255, 36 / 255, 0.96)
+
+
+def _accent():
+    return tuple(get_theme().accent)
 
 
 class _Dimmer(Widget):
     """Dim the window, leaving one clear rectangle per target."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)
         self.holes: list[Rect] = []
         self.bind(pos=self._redraw, size=self._redraw)
@@ -55,12 +58,13 @@ class _Dimmer(Widget):
         holes = [hole for hole in self.holes if hole.w > 1 and hole.h > 1]
         pieces = _subtract_holes(bounds, holes) if holes else [bounds]
         with self.canvas.before:
-            Color(0, 0, 0, 0.55)
+            scrim = get_theme().overlay
+            Color(scrim[0], scrim[1], scrim[2], 0.55)
             for piece in pieces:
                 Rectangle(pos=(piece.x, piece.y), size=(piece.w, piece.h))
             if not holes:
                 return
-            Color(*ACCENT)
+            Color(*_accent())
             for hole in holes:
                 Line(rectangle=(hole.x, hole.y, hole.w, hole.h), width=1.4)
 
@@ -68,7 +72,7 @@ class _Dimmer(Widget):
 class TourOverlay(FloatLayout):
     """Full-window layer. Touches outside the card are swallowed."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)
         self.mode = "welcome"
         self.step: TourStep | None = None
@@ -78,34 +82,36 @@ class TourOverlay(FloatLayout):
         self._targets: list[Rect] = []
         self._target: Rect | None = None
         self._holes: list[Rect] = []
-        self.on_skip = None
-        self.on_back = None
-        self.on_next = None
-        self.on_show = None
-        self.on_done = None
-        self.on_usb = None
-        self.on_wifi = None
-        self.on_ip = None
-        self.on_relayout = None
+        self.on_skip: Callable[[], None] | None = None
+        self.on_back: Callable[[], None] | None = None
+        self.on_next: Callable[[], None] | None = None
+        self.on_show: Callable[[], None] | None = None
+        self.on_done: Callable[[], None] | None = None
+        self.on_usb: Callable[[], None] | None = None
+        self.on_wifi: Callable[[], None] | None = None
+        self.on_ip: Callable[[], None] | None = None
+        self.on_relayout: Callable[[], None] | None = None
         self._bringing = False
         self._link_cursor = False
         self._cursor_unsupported = False
         self._reset_scroll = False
         Window.bind(mouse_pos=self._on_mouse_pos)
         self._applying = False
+        self._watched_theme = None
 
         self.dimmer = _Dimmer(size_hint=(1, 1))
+        _theme = get_theme()
         self.banner = Label(
             text=BANNER_TEXT,
             size_hint=(None, None),
-            color=(0.85, 0.95, 1, 1),
+            color=list(_theme.info_text),
             bold=True,
             font_size=dp(15),
             halign="center",
             valign="middle",
         )
         with self.banner.canvas.before:
-            Color(*BANNER_BG)
+            self._banner_fill = Color(0, 0, 0, 0)
             self._banner_bg = Rectangle()
         self.banner.bind(pos=self._sync_banner_bg, size=self._sync_banner_bg)
 
@@ -116,9 +122,9 @@ class TourOverlay(FloatLayout):
             size_hint=(None, None),
         )
         with self.card.canvas.before:
-            Color(*CARD_BG)
+            self._card_fill = Color(0, 0, 0, 0)
             self._card_bg = RoundedRectangle(radius=[dp(8), dp(8), dp(8), dp(8)])
-            Color(*ACCENT)
+            self._accent_color = Color(*_accent())
             self._card_accent = Rectangle()
         self.card.bind(pos=self._sync_card_bg, size=self._sync_card_bg)
 
@@ -133,7 +139,7 @@ class TourOverlay(FloatLayout):
             text="",
             bold=True,
             font_size=dp(18),
-            color=(1, 1, 1, 1),
+            color=list(_theme.text),
             halign="left",
             valign="middle",
         )
@@ -143,7 +149,7 @@ class TourOverlay(FloatLayout):
             size_hint_x=None,
             width=dp(64),
             font_size=dp(14),
-            color=(0.7, 0.8, 0.86, 1),
+            color=list(_theme.text_secondary),
             halign="right",
             valign="middle",
         )
@@ -157,7 +163,7 @@ class TourOverlay(FloatLayout):
             size_hint=(None, None),
             width=dp(420),
             font_size=dp(16),
-            color=(0.92, 0.93, 0.95, 1),
+            color=list(_theme.text),
             halign="left",
             valign="top",
         )
@@ -183,6 +189,8 @@ class TourOverlay(FloatLayout):
         self.add_widget(self.banner)
         self.add_widget(self.card)
         self.bind(size=self._on_overlay_size)
+        self._watch_theme()
+        self._apply_accent()
 
     def open(self) -> None:
         set_tooltips_suppressed(True)
@@ -229,7 +237,7 @@ class TourOverlay(FloatLayout):
             "Feel free to skip it if you already know the workflow.\n"
             "You will also be able to access the tour again from the help menu later.\n\n"
             "If you need more information our documentation is available at "
-            f"[ref={DOCS_URL}][color=#32a4ce][u]{DOCS_URL}[/u][/color][/ref]"
+            f"[ref={DOCS_URL}][color={rgba_to_hex(get_theme().accent_text, with_hash=True)}][u]{DOCS_URL}[/u][/color][/ref]"
         )
         self._rebuild_buttons()
         self._reset_scroll = True
@@ -403,6 +411,36 @@ class TourOverlay(FloatLayout):
         else:
             self.step_icon.size = (0, 0)
             self.step_icon.opacity = 0
+
+    def _watch_theme(self) -> None:
+        app = App.get_running_app()
+        if app is None:
+            return
+        app.fbind("theme", self._on_app_theme)
+        self._on_app_theme(app, getattr(app, "theme", None))
+
+    def _on_app_theme(self, _app, theme) -> None:
+        if self._watched_theme is not None:
+            self._watched_theme.unbind(revision=self._apply_accent)
+        self._watched_theme = theme
+        if theme is not None:
+            theme.bind(revision=self._apply_accent)
+        self._apply_accent()
+
+    def _apply_accent(self, *_args) -> None:
+        theme = get_theme()
+        self._accent_color.rgba = list(theme.accent)
+        banner_bg = list(theme.panel_deep)
+        banner_bg[3] = 0.96
+        self._banner_fill.rgba = banner_bg
+        self._card_fill.rgba = list(theme.surface)
+        self.banner.color = theme.info_text
+        self.title.color = theme.text
+        self.counter.color = theme.text_secondary
+        self.body.color = theme.text
+        # The step glyphs are white. Untinted, they disappear on the light card.
+        self.step_icon.color = theme.icon
+        self.dimmer._redraw()
 
     def _sync_card_bg(self, *_args) -> None:
         self._card_bg.pos = self.card.pos

@@ -265,5 +265,17 @@ This product includes the following third-party icons:
    - URL: https://pictogrammers.com/library/mdi/icon/hand-wave/
    - Used in: carveracontroller/data/hand-wave.png
 
+32. chart-bell-curve-cumulative.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/chart-bell-curve-cumulative/
+   - Used in: carveracontroller/data/chart-bell-curve-cumulative.png
+
+33. floppy.png
+   - Author: Austin Andrews
+   - License: Apache 2.0 License
+   - URL: https://pictogrammers.com/library/mdi/icon/floppy/
+   - Used in: carveracontroller/data/floppy.png
+
 ===============================================================================
 Please see the respective license files for detailed information.

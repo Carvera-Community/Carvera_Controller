@@ -3,7 +3,7 @@
         do_scroll_x: False
         size_hint: 1,1
         bar_width: 4
-        bar_inactive_color: [.7,.7,.7,.9]
+        bar_inactive_color: app.theme.scroll_bar_inactive
         GridLayout:
             cols: 2
             size_hint_y: None
@@ -23,7 +23,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("required")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance between probe points on X axis')
                     tooltip_image: ''
                     multiline: False
@@ -41,7 +40,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("required")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance between probe points on Y axis')
                     tooltip_image: ''
                     multiline: False
@@ -58,7 +56,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("2")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance along secondary axis to probe')
                     tooltip_image: ''
                     multiline: False
@@ -75,7 +72,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("config")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Effective Diameter of Probe Tip. Measure with M460')
                     tooltip_image: 'addons/probing/data/icons_1024x768/general_parameters/probe_parameter_d.png'
                     tooltip_image_size: 200,200
@@ -93,7 +89,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance to probe straight down before performing remainder of probing operations')
                     tooltip_image: ''
                     multiline: False
@@ -110,7 +105,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("300")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Optional probing feed rate override')
                     tooltip_image: ''
                     multiline: False
@@ -127,7 +121,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("800")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Optional rapid feed rate override')
                     tooltip_image: ''
                     multiline: False
@@ -144,7 +137,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Number of times to repeat the probing operation')
                     tooltip_image: ''
                     multiline: False
@@ -161,7 +153,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("1.5")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Distance away from surface to retract before double tapping the probe')
                     tooltip_image: ''
                     multiline: False
@@ -178,7 +169,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("2")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('If Pocket Depth is enabled, how far above the surface to raise before continuing the operation')
                     tooltip_image: ''
                     multiline: False
@@ -194,7 +184,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('Degrees to rotate the XY coordinate plane when probing.')
                     tooltip_image: 'addons/probing/data/icons_1024x768/angle/probe_angle_arbitrary_negative.png'
                     tooltip_image_size: 200,200
@@ -212,7 +201,6 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-					hint_text_color: (0.2,0.5,0.5,0.5)
                     tooltip_txt: tr._('If set, the probe will trace the probed angle after the operation finishes')
                     tooltip_image: ''
                     multiline: False
@@ -231,7 +219,7 @@
                     tooltip_txt: tr._('This switch will set your current WCS rotation to the probed rotation angle')
                     canvas.before:
                         Color:
-                            rgba: 50/255, 50/255, 50/255, 1
+                            rgba: app.theme.row_alt
                         Rectangle:
                             pos: self.pos
                             size: self.size
@@ -248,7 +236,7 @@
                     tooltip_txt: tr._('Enable this switch if you have a normally closed probe instead of a normally open one')
                     canvas.before:
                         Color:
-                            rgba: 50/255, 50/255, 50/255, 1
+                            rgba: app.theme.row_alt
                         Rectangle:
                             pos: self.pos
                             size: self.size

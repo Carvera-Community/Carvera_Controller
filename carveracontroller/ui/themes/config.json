@@ -1,0 +1,9 @@
+[
+    {
+        "type": "theme_editor",
+        "title": "Theme",
+        "section": "carvera",
+        "key": "theme",
+        "default": "dark"
+    }
+]

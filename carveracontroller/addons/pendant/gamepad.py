@@ -400,7 +400,14 @@ class GamepadManager:
         self._connected = False
 
     def _rescan_sdl_joysticks(self, _dt: float) -> None:
-        ensure_sdl_joysticks_open()
+        present = ensure_sdl_joysticks_open()
+        if present is None or self._active_stick is None:
+            return
+        if self._active_stick not in present:
+            logger.info("Gamepad disconnected (stick id %s)", self._active_stick)
+            self._release_all_inputs()
+            self._active_stick = None
+            self._connected = False
 
     def _bind_events(self) -> None:
         logger.info("GamepadManager: binding on_joy_* events on Window")

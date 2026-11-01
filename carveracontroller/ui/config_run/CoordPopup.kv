@@ -16,7 +16,7 @@
     disabled: self.collapsed or self.section_disabled
     canvas.before:
         Color:
-            rgba: 32/255, 36/255, 40/255, 1
+            rgba: app.theme.panel_deep
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -43,14 +43,16 @@
                 opacity: 1 if root.icon else 0
                 allow_stretch: True
                 keep_ratio: True
-                color: 230/255, 230/255, 230/255, 1
+                color: app.theme.icon
         Button:
             text: root.title_text
+            chrome: False
+            use_theme_text: False
             background_normal: ''
             background_down: ''
             background_disabled_normal: ''
             background_color: 0, 0, 0, 0
-            color: 230/255, 230/255, 230/255, 1
+            color: app.theme.text
             font_size: dp(14)
             halign: 'left'
             valign: 'middle'
@@ -74,7 +76,7 @@
         halign: 'left'
         valign: 'top'
         font_size: dp(13)
-        color: (140/255, 140/255, 140/255, 1) if self.disabled else (200/255, 200/255, 200/255, 1)
+        color: app.theme.text_muted if self.disabled else app.theme.text_secondary
         disabled: root.summary_blocked or (root.show_checkbox and not _cbx.active)
         shorten: False
     BoxLayout:
@@ -90,12 +92,6 @@
             size_hint: None, None
             size: (dp(84), dp(28)) if root.show_config else (0, 0)
             pos_hint: {'center_y': 0.5}
-            background_normal: ''
-            background_down: ''
-            background_disabled_normal: ''
-            background_disabled_down: ''
-            background_color: (50/255, 50/255, 50/255, 1) if self.disabled else ((64/255, 64/255, 64/255, 1) if self.state == 'down' else (88/255, 88/255, 88/255, 1))
-            color: (150/255, 150/255, 150/255, 1) if self.disabled else (1, 1, 1, 1)
             disabled: (not root.show_config) or root.config_blocked or (root.show_checkbox and not _cbx.active)
     BoxLayout:
         size_hint_y: None
@@ -108,15 +104,15 @@
             size_hint_x: None
             width: self.texture_size[0]
             font_size: dp(14)
-            color: 220/255, 220/255, 220/255, 1
-            disabled_color: 140/255, 140/255, 140/255, 1
+            color: app.theme.text
+            disabled_color: app.theme.text_muted
             disabled: (not root.show_line_field) or (not _cbx.active) or _cbx.disabled
         BoxLayout:
             size_hint_x: None
             width: dp(132)
             canvas.before:
                 Color:
-                    rgba: 70/255, 74/255, 78/255, 1
+                    rgba: app.theme.field_bg
                 RoundedRectangle:
                     pos: self.pos
                     size: self.size
@@ -129,10 +125,9 @@
                 input_filter: 'int'
                 font_size: dp(14)
                 padding: dp(8), dp(6)
-                cursor_color: 1, 1, 1, 1
-                foreground_color: 1, 1, 1, 1
-                disabled_foreground_color: 140/255, 140/255, 140/255, 1
-                hint_text_color: 190/255, 194/255, 198/255, 1
+                cursor_color: app.theme.text
+                foreground_color: app.theme.text
+                disabled_foreground_color: app.theme.text_muted
                 background_color: 0, 0, 0, 0
                 background_normal: ''
                 background_active: ''
@@ -167,6 +162,7 @@
             spacing: dp(8)
             Image:
                 source: 'data/cog.png'
+                color: app.theme.icon
                 size_hint: None, None
                 size: dp(22), dp(22)
                 pos_hint: {'center_y': 0.5}
@@ -190,7 +186,7 @@
                 height: min(dp(220), max(dp(96), root.height * 0.28)) if root.compact else (self.parent.height if self.parent else dp(220))
                 canvas.before:
                     Color:
-                        rgba: 32/255, 36/255, 40/255, 1
+                        rgba: app.theme.panel_deep
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
@@ -228,7 +224,7 @@
                             spacing: 0
                             canvas.before:
                                 Color:
-                                    rgba: 32/255, 36/255, 40/255, 1
+                                    rgba: app.theme.panel_deep
                                 RoundedRectangle:
                                     pos: self.pos
                                     size: self.size
@@ -238,7 +234,7 @@
                                 size_hint_y: None
                                 height: dp(22)
                                 font_size: dp(13)
-                                color: 160/255, 160/255, 160/255, 1
+                                color: app.theme.text_muted
                                 halign: 'left'
                                 valign: 'middle'
                                 text_size: self.size
@@ -260,7 +256,7 @@
                             disabled: self.height == 0
                             canvas.before:
                                 Color:
-                                    rgba: 32/255, 36/255, 40/255, 1
+                                    rgba: app.theme.panel_deep
                                 RoundedRectangle:
                                     pos: self.pos
                                     size: self.size
@@ -276,7 +272,7 @@
                                     halign: 'left'
                                     valign: 'middle'
                                     font_size: dp(13)
-                                    color: 220/255, 220/255, 220/255, 1
+                                    color: app.theme.text
                                     text_size: self.size
                                 Switch:
                                     id: vacuum_switch_play
@@ -296,7 +292,7 @@
                                     halign: 'left'
                                     valign: 'middle'
                                     font_size: dp(13)
-                                    color: 220/255, 220/255, 220/255, 1
+                                    color: app.theme.text
                                     text_size: self.size
                                 ToolTipSwitch:
                                     id: extout_switch_play
@@ -319,7 +315,7 @@
                                     halign: 'left'
                                     valign: 'middle'
                                     font_size: dp(13)
-                                    color: 220/255, 220/255, 220/255, 1
+                                    color: app.theme.text
                                     text_size: self.size
                                 ToolTipSwitch:
                                     id: autoblow_switch_play
@@ -342,7 +338,7 @@
                                     halign: 'left'
                                     valign: 'middle'
                                     font_size: dp(13)
-                                    color: 220/255, 220/255, 220/255, 1
+                                    color: app.theme.text
                                     text_size: self.size
                                 ToolTipSwitch:
                                     id: autobedclean_switch_play
@@ -365,7 +361,7 @@
                                     halign: 'left'
                                     valign: 'middle'
                                     font_size: dp(13)
-                                    color: 220/255, 220/255, 220/255, 1
+                                    color: app.theme.text
                                     text_size: self.size
                                 ToolTipSwitch:
                                     id: ionizer_switch_play
@@ -388,7 +384,7 @@
                                     halign: 'left'
                                     valign: 'middle'
                                     font_size: dp(13)
-                                    color: 220/255, 220/255, 220/255, 1
+                                    color: app.theme.text
                                     text_size: self.size
                                 ToolTipSwitch:
                                     id: timelapse_switch_play
@@ -403,7 +399,7 @@
                     CoordSetupCard:
                         id: origin_card
                         title_text: tr._(" Work Origin")
-                        dot_rgba: 52/255, 152/255, 219/255, 1
+                        dot_rgba: app.theme.map_origin
                         show_checkbox: False
                         checkbox_locked: True
                         show_summary: True
@@ -411,21 +407,21 @@
                     CoordSetupCard:
                         id: margin_card
                         title_text: tr._(' Scan Margin')
-                        dot_rgba: 0, 0.8, 0, 1
+                        dot_rgba: app.theme.map_work_area
                         show_summary: False
                         show_config: False
                         section_disabled: (root.mode != 'Run' and root.mode != 'Margin') or app.lasering
                     CoordSetupCard:
                         id: zprobe_card
                         title_text: tr._(' Auto Z Probe')
-                        dot_rgba: 231/255, 76/255, 60/255, 1
+                        dot_rgba: app.theme.map_zprobe
                         section_disabled: (root.mode != 'Run' and root.mode != 'ZProbe' and root.mode != 'Leveling') or app.lasering
                         summary_blocked: (root.mode != 'Run' and root.mode != 'ZProbe' and root.mode != 'Leveling') or app.lasering
                         config_blocked: (root.mode != 'Run' and root.mode != 'ZProbe' and root.mode != 'Leveling') or app.lasering or app.has_4axis
                     CoordSetupCard:
                         id: leveling_card
                         title_text: tr._(' Auto Leveling')
-                        dot_rgba: 244/255, 208/255, 63/255, 1
+                        dot_rgba: app.theme.map_leveling
                         section_disabled: (root.mode != 'Run' and root.mode != 'Leveling') or app.has_4axis or app.lasering
                         summary_blocked: (root.mode != 'Run' and root.mode != 'Leveling') or app.has_4axis
                         config_blocked: (root.mode != 'Run' and root.mode != 'Leveling') or app.has_4axis

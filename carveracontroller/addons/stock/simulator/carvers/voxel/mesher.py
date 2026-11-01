@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from carveracontroller.addons.stock.simulator.mesh_format import DEFAULT_COLOR
+from carveracontroller.addons.stock.simulator.mesh_format import default_stock_color
 
 if TYPE_CHECKING:
     from carveracontroller.addons.stock.simulator.carvers.array_mesh import PackedMesh
@@ -93,7 +93,7 @@ def mesh_chunk(
     grid: ChunkedVoxelGrid,
     coord: ChunkCoord,
     occupancy: np.ndarray,
-    color: tuple[float, float, float, float] = DEFAULT_COLOR,
+    color: tuple[float, float, float, float] | None = None,
 ) -> list[PackedMesh]:
     """Build a triangle mesh for the exposed faces of one chunk.
 
@@ -102,6 +102,8 @@ def mesh_chunk(
     Vertex positions are in **world millimetres** (caller scales into viewer space).
     Coplanar unit faces are greedily merged; vertices/indices are ``array.array``.
     """
+    if color is None:
+        color = default_stock_color()
     valid = None if grid._chunk_fully_in_bounds(coord) else grid._valid_mask(coord)
     cs = grid.chunk_size
     if occupancy.shape != (cs, cs, cs):
@@ -139,9 +141,11 @@ def mesh_chunk_state(
 def mesh_full_chunk(
     grid: ChunkedVoxelGrid,
     coord: ChunkCoord,
-    color: tuple[float, float, float, float] = DEFAULT_COLOR,
+    color: tuple[float, float, float, float] | None = None,
 ) -> list[PackedMesh]:
     """Mesh an implicit FULL chunk from neighbour faces (no 16³ occupancy)."""
+    if color is None:
+        color = default_stock_color()
     if not grid._chunk_fully_in_bounds(coord):
         return mesh_chunk(grid, coord, solid_occupancy_for_chunk(grid, coord), color)
 

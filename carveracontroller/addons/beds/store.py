@@ -1,4 +1,4 @@
-"""Persisted per-machine bed list (~/.kivy/beds.json)."""
+"""Persisted per-machine bed list (beds.json in the user data directory)."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ MESHES_SUBDIR = os.path.join("beds", "meshes")
 
 
 def custom_meshes_dir() -> str:
-    return os.path.join(ConfigUtils.CONFIG_DIR, MESHES_SUBDIR)
+    return os.path.join(ConfigUtils.config_dir(), MESHES_SUBDIR)
 
 
 def _empty_machine() -> dict[str, Any]:

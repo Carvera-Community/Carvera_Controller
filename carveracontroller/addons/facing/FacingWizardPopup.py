@@ -27,6 +27,8 @@ from carveracontroller.CNC import (
     is_probe_tools_range,
 )
 from carveracontroller.translation import tr
+from carveracontroller.ui.theme import get_theme, watch_theme
+from carveracontroller.ui.themes import gcode_syntax_colors
 
 # Loads facing_preview_sketch so Factory registers widget name "FacingSketch" for KV before Builder applies rules.
 from . import facing_preview_sketch as _facing_preview_sketch
@@ -141,6 +143,7 @@ class FacingWizardPopup(ModalView):
         self._preview_bindings_done = False
         self._preview_bind_attempts = 0
         self._gcode_plain = ""
+        self._stop_syntax_theme = watch_theme(lambda _theme: self._refresh_gcode_preview())
         self._facing_gcode_stale = False
         self._facing_suspend_stale = False
         self._gcode_preview_width_bound = False
@@ -170,9 +173,10 @@ class FacingWizardPopup(ModalView):
             rv = self.ids.rv_gcode_preview
         except Exception:
             return
-        root = App.get_running_app().root
+        app = App.get_running_app()
+        root = getattr(app, "root", None) if app else None
         hl_on = getattr(root, "gcode_highlight_enabled", True)
-        hl_colors = getattr(root, "gcode_highlight_colors", None)
+        hl_colors = gcode_syntax_colors(get_theme())
         raw = self._gcode_plain.replace("\r\n", "\n").replace("\r", "\n")
         if not raw.strip():
             rv.data = []
@@ -244,7 +248,7 @@ class FacingWizardPopup(ModalView):
             size_hint_y=None,
             height=dp(32),
             font_size=dp(12),
-            color=(0.75, 0.76, 0.8, 1),
+            color=get_theme().text_secondary,
             halign="left",
             valign="top",
         )
@@ -307,7 +311,7 @@ class FacingWizardPopup(ModalView):
             size_hint_y=None,
             height=dp(32),
             font_size=dp(12),
-            color=(0.75, 0.76, 0.8, 1),
+            color=get_theme().text_secondary,
             halign="left",
             valign="top",
         )

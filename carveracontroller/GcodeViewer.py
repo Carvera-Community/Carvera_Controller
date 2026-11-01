@@ -52,6 +52,8 @@ from kivy.input.motionevent import MotionEvent
 # input
 from kivy.input.provider import MotionEventProvider
 
+from carveracontroller.ui.theme import get_theme, watch_theme
+
 from .addons.beds.materials import normalize_bed_material, style_for_bed_material
 from .addons.beds.mesh_loader import BED_VERTEX_FORMAT, BedMeshData, load_bed_mesh, pack_bed_mesh_chunks
 from .addons.beds.placement import model_offset_viewer, wcs_rotation_4x4
@@ -241,26 +243,22 @@ def vec3_distance(v1, v2):
 
 GRID_STEP_MM = 10.0
 GRID_MAJOR_STEP_MM = 100.0
-GRID_COLOR_MINOR = [0.35, 0.35, 0.35]
-GRID_COLOR_MAJOR = [0.55, 0.55, 0.55]
-# axis.obj points along +Y; rotations map meshes to world axes (see axis arrow setup)
-AXIS_COLOR_X = [1.0, 0.0, 0.0]
-AXIS_COLOR_Y = [0.0, 1.0, 0.0]
-AXIS_COLOR_Z = [0.0, 0.0, 1.0]
+# Ten tool colors (toolpath.glsl tool_color0..9).
+TOOL_PALETTE_SIZE = 10
 
-# T1–T10 tool colors (matches toolpath.glsl tool_palette_color).
-TOOL_PALETTE = (
-    (0.406684, 0.735902, 0.235489, 1),
-    (0.000000, 0.459774, 0.840728, 1),
-    (0.779915, 0.319537, 0.130857, 1),
-    (0.740127, 0.236840, 0.700182, 1),
-    (0.000000, 0.755849, 0.602221, 1),
-    (0.825216, 0.043248, 0.043248, 1),
-    (0.894806, 0.717161, 0.000000, 1),
-    (0.128923, 0.578319, 0.877916, 1),
-    (0.431518, 0.268501, 0.839063, 1),
-    (0.248716, 0.777237, 0.402157, 1),
-)
+
+def _theme_tool_palette_entry(theme, index: int) -> tuple[float, float, float, float]:
+    return tuple(getattr(theme, f"viewer_tool_color_{index + 1}"))
+
+
+def _theme_speed_colormap_stops(theme) -> tuple[tuple[float, float, float], ...]:
+    return (
+        tuple(theme.speed_colormap_1[:3]),
+        tuple(theme.speed_colormap_2[:3]),
+        tuple(theme.speed_colormap_3[:3]),
+        tuple(theme.speed_colormap_4[:3]),
+    )
+
 
 DEFAULT_FEED_MM_MIN = 3000.0
 DEFAULT_AXIS_LIMITS = {
@@ -402,9 +400,10 @@ def _feed_z_height_range_mm(
 
 
 def tool_palette_rgb(tool_number):
-    """RGB from tool number, wrapping through TOOL_PALETTE (matches toolpath.glsl)."""
-    idx = (int(tool_number) - 1) % len(TOOL_PALETTE)
-    return TOOL_PALETTE[idx][:3]
+    """RGB for a tool number, wrapping through the theme tool colors."""
+    theme = get_theme()
+    idx = (int(tool_number) - 1) % TOOL_PALETTE_SIZE
+    return list(_theme_tool_palette_entry(theme, idx)[:3])
 
 
 def tool_marker_palette_rgb(tool_number):
@@ -414,20 +413,28 @@ def tool_marker_palette_rgb(tool_number):
     return (r * (1 - t) + t, g * (1 - t) + t, b * (1 - t) + t)
 
 
+def toolpath_color_uniforms(theme) -> dict:
+    """RGB uniforms for toolpath.glsl, same colors as the legend."""
+    values = {
+        f"tool_color{index}": list(_theme_tool_palette_entry(theme, index)[:3]) for index in range(TOOL_PALETTE_SIZE)
+    }
+    for index, rgb in enumerate(_theme_speed_colormap_stops(theme)):
+        values[f"speed_color{index}"] = list(rgb)
+    return values
+
+
 def speed_colormap_rgb(t):
     """Match toolpath.glsl speed_colormap."""
+    c1, c2, c3, c4 = _theme_speed_colormap_stops(get_theme())
     t = max(0.0, min(1.0, float(t)))
     if t < 0.33:
-        a = (0.2, 0.4, 0.9)
-        b = (0.1, 0.7, 0.5)
+        a, b = c1, c2
         u = t / 0.33
     elif t < 0.66:
-        a = (0.1, 0.7, 0.5)
-        b = (0.95, 0.85, 0.15)
+        a, b = c2, c3
         u = (t - 0.33) / 0.33
     else:
-        a = (0.95, 0.85, 0.15)
-        b = (0.9, 0.25, 0.2)
+        a, b = c3, c4
         u = (t - 0.66) / 0.34
     return (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u)
 
@@ -440,7 +447,7 @@ PATH_GHOST_RECENT_ALPHA = 1.0
 PATH_GHOST_RECENT_PART_FRACTION = 3.0
 VIEW_CUBE_SIZE = dp(96)
 VIEW_CUBE_MARGIN = dp(10)
-VIEW_CUBE_TOOLBAR_INSET = dp(48)
+VIEW_CUBE_TOOLBAR_INSET = dp(52)
 VIEW_CUBE_TEXTURE_UNIT = 1
 VIEW_CUBE_WORLD_SCALE = 0.5
 LASER_DECAL_TEXTURE_UNIT = 1
@@ -453,6 +460,7 @@ def _gcode_viewer_asset(name):
 
 VIEW_CUBE_ATLAS_PATH = _gcode_viewer_asset("view_cube_atlas.png")
 VIEW_CUBE_MODEL_PATH = _gcode_viewer_asset("view_cube_model.obj")
+# axis.obj points along +Y; rotations map meshes to world axes.
 AXIS_OBJ_PATH = _gcode_viewer_asset("axis.obj")
 
 
@@ -938,6 +946,38 @@ class GCodeViewer(Widget):
 
         Clock.schedule_interval(self._on_frame_tick, 1 / 60)
 
+        self._stop_theme = watch_theme(self._on_theme_changed)
+
+    def _on_theme_changed(self, theme) -> None:
+        self._update_grid_uniforms()
+        self._update_toolpath_color_uniforms(theme)
+        self._refresh_tool_colors()
+        if self.stock_bounds_mm is not None:
+            self._rebuild_stock_mesh()
+        self._update_carved_uniforms()
+        self._scene_dirty = True
+
+    def _refresh_tool_colors(self) -> None:
+        """Rebuild tool meshes so flute and shank pick up the current theme."""
+        if not self._tool_meshes and self._default_tool_mesh is None:
+            return
+        scale = getattr(self, "move_scale_by_positon", None)
+        if not scale:
+            return
+        self._tool_meshes, self._default_tool_mesh = build_tool_meshes(
+            self.tool_table or {}, scale=scale * self.tool_unit_scale
+        )
+        if not self.pointer_mesh_instrs:
+            return
+        vertices, indices, _fmt = self._get_tool_mesh(self._active_tool_number)
+        for mesh in self.pointer_mesh_instrs:
+            mesh.vertices = vertices
+            mesh.indices = indices
+
+    def _update_toolpath_color_uniforms(self, theme) -> None:
+        for name, rgb in toolpath_color_uniforms(theme).items():
+            self.linemesh[name] = rgb
+
     def _on_size_change(self, *args):
         self._proj_dirty = True
         self._scene_dirty = True
@@ -1118,10 +1158,14 @@ class GCodeViewer(Widget):
         self.gridmesh["grid_size"] = float(self._grid_quad_extent())
         self.gridmesh["subcell_size"] = float(GRID_STEP_MM * scale)
         self.gridmesh["cell_size"] = float(GRID_MAJOR_STEP_MM * scale)
-        self.gridmesh["color_minor"] = GRID_COLOR_MINOR
-        self.gridmesh["color_major"] = GRID_COLOR_MAJOR
-        self.gridmesh["color_axis_x"] = AXIS_COLOR_X
-        self.gridmesh["color_axis_y"] = AXIS_COLOR_Y
+        theme = get_theme()
+        self.gridmesh["color_minor"] = list(theme.viewer_grid_minor[:3])
+        self.gridmesh["color_major"] = list(theme.viewer_grid_major[:3])
+        self.gridmesh["color_axis_x"] = list(theme.viewer_axis_x[:3])
+        self.gridmesh["color_axis_y"] = list(theme.viewer_axis_y[:3])
+        self.axisxmesh["diff_color"] = list(theme.viewer_axis_y[:3])
+        self.axisymesh["diff_color"] = list(theme.viewer_axis_z[:3])
+        self.axiszmesh["diff_color"] = list(theme.viewer_axis_x[:3])
 
     def clearDisplay(self, close_progress=True):
         self.lengths = []
@@ -2881,15 +2925,12 @@ class GCodeViewer(Widget):
         axis_offset = (-self.lines_center[0], -self.lines_center[1], -self.lines_center[2])
         self.axisxmesh["offset"] = axis_offset
         self.axisxmesh["rotation"] = self._identity_mat
-        self.axisxmesh["diff_color"] = AXIS_COLOR_Y
 
         self.axisymesh["offset"] = axis_offset
         self.axisymesh["rotation"] = self._axis_y_rot
-        self.axisymesh["diff_color"] = AXIS_COLOR_Z
 
         self.axiszmesh["offset"] = axis_offset
         self.axiszmesh["rotation"] = self._axis_z_rot
-        self.axiszmesh["diff_color"] = AXIS_COLOR_X
 
         self.axisxmesh["modelview_mat"] = self.m_viewMatrix
         self.axisymesh["modelview_mat"] = self.m_viewMatrix

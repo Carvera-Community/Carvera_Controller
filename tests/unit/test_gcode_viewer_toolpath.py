@@ -1,7 +1,10 @@
 """Toolpath line-strip bridging keeps discrete attributes from interpolating."""
 
+import pytest
+
 from carveracontroller.CNC import CNC
-from carveracontroller.GcodeViewer import bridge_toolpath_vertices
+from carveracontroller.GcodeViewer import TOOL_PALETTE_SIZE, bridge_toolpath_vertices, toolpath_color_uniforms
+from carveracontroller.ui.theme import Theme
 
 
 def _pt(x, y, z, color, line_no, tool, feed=0.0, a=0.0, speed=0.0):
@@ -34,6 +37,18 @@ def _positive_length_pairs(rows):
         if dx * dx + dy * dy + dz * dz > 1e-12:
             pairs.append((prev, cur))
     return pairs
+
+
+def test_toolpath_color_uniforms_follow_the_theme():
+    theme = Theme("monokai")
+    values = toolpath_color_uniforms(theme)
+    assert set(values) == {f"tool_color{index}" for index in range(TOOL_PALETTE_SIZE)} | {
+        f"speed_color{index}" for index in range(4)
+    }
+    assert values["tool_color0"] == pytest.approx(list(theme.viewer_tool_color_1[:3]))
+    assert values[f"tool_color{TOOL_PALETTE_SIZE - 1}"] == pytest.approx(list(theme.viewer_tool_color_10[:3]))
+    assert values["speed_color0"] == pytest.approx(list(theme.speed_colormap_1[:3]))
+    assert values["speed_color3"] == pytest.approx(list(theme.speed_colormap_4[:3]))
 
 
 def test_color_change_still_duplicates_destination_with_previous_color():

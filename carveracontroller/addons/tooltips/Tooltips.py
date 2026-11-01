@@ -6,11 +6,12 @@ from kivy.clock import Clock
 from kivy.compat import string_types
 from kivy.core.window import Window
 from kivy.factory import Factory
-from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
+from kivy.properties import BooleanProperty, NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.popup import Popup
@@ -459,7 +460,6 @@ class ToolTipButton(Button):
     # intended Image size in display pixels (a supersampled texture may be
     # larger than that; do not use texture.size for layout).
     tooltip_texture_provider = ObjectProperty(None, allownone=True)
-    tooltip_radius = NumericProperty(0.2)
     tooltip_horizontal = BooleanProperty(False)
     tooltip_markup = BooleanProperty(False)
 
@@ -1017,19 +1017,13 @@ class ToolTipLabel(Label):
         Window.add_widget(self._tooltip)
 
 
-class HelpButton(ButtonBehavior, BoxLayout):
+class HelpButton(ButtonBehavior, FloatLayout):
     image_source = StringProperty("data/open_iconic_UI/oi--question-mark.png")
     helpPath = StringProperty("https://carvera-community.gitbook.io/docs")
-    background_normal = StringProperty("atlas://data/images/defaulttheme/button")
-    background_down = StringProperty("atlas://data/images/defaulttheme/button_pressed")
-    background_disabled_normal = StringProperty("atlas://data/images/defaulttheme/button_disabled")
-    background_disabled_down = StringProperty("atlas://data/images/defaulttheme/button_disabled_pressed")
-    border = ListProperty([16, 16, 16, 16])
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bind(on_release=self.open_link)
-        fbind = self.fbind
 
     def open_link(self, *args):
         webbrowser.open(resolve_documentation_url(self.helpPath))

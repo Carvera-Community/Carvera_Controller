@@ -2,6 +2,14 @@
 #:import HEADER_HEIGHT carveracontroller.ui.GcodeColorSchemePanel.HEADER_HEIGHT
 #:import PANEL_BOTTOM_PADDING carveracontroller.ui.GcodeColorSchemePanel.PANEL_BOTTOM_PADDING
 
+<SchemeSpinnerOption@SpinnerOption>:
+    height: dp(40)
+    shorten: True
+    shorten_from: 'right'
+    halign: 'center'
+    valign: 'middle'
+    text_size: self.width - dp(16), self.height
+
 <GcodeColorSchemePanel>:
     orientation: 'vertical'
     size_hint: None, None
@@ -9,38 +17,62 @@
     height: 0 if not app.show_gcode_ctl_bar else (HEADER_HEIGHT + PANEL_BOTTOM_PADDING + legend_scroll.height)
     opacity: 1 if app.show_gcode_ctl_bar else 0
     disabled: not app.show_gcode_ctl_bar or (app.selected_remote_filename == '' and app.selected_local_filename == '')
-    pos_hint: {'right': 1.0, 'top': 1.0}
+    # Sit inside the viewer, clear of the corner, and follow the panel's own size.
+    pos_hint: {}
+    x: self.parent.right - self.width - dp(8) if self.parent else 0
+    y: self.parent.top - self.height - dp(8) if self.parent else 0
     padding: 0, 0, 0, dp(6)
     spacing: 0
     canvas.before:
         Color:
-            rgba: 10/255, 10/255, 10/255, 0.5
-        Rectangle:
+            rgba: app.theme.viewer_hud_bg
+        RoundedRectangle:
             pos: self.pos
             size: self.size
+            radius: [dp(app.theme.radius_m),]
+    canvas.after:
+        Color:
+            rgba: app.theme.border[0], app.theme.border[1], app.theme.border[2], .45
+        Line:
+            width: dp(1)
+            rounded_rectangle: (self.x + dp(0.5), self.y + dp(0.5), max(0, self.width - dp(1)), max(0, self.height - dp(1)), dp(app.theme.radius_m))
     BoxLayout:
         size_hint_y: None
         height: dp(36)
         spacing: dp(6)
-        padding: dp(6), dp(4)
-        canvas.before:
+        padding: dp(10), dp(4)
+        canvas.after:
             Color:
-                rgba: 88/255, 88/255, 88/255, 1
+                rgba: app.theme.border[0], app.theme.border[1], app.theme.border[2], .4
             Rectangle:
-                pos: self.pos
-                size: self.size
-        Spinner:
+                pos: self.x + dp(10), self.y
+                size: max(0, self.width - dp(20)), dp(1)
+        SchemeSpinner:
             id: gcode_color_scheme_spinner
+            option_cls: 'SchemeSpinnerOption'
             text: tr._('Tool')
             values: tr._('Tool'), tr._('Move type'), tr._('Speed'), tr._('Height')
-            size_hint_x: 1
+            chrome: False
+            size_hint_x: None
+            width: self.texture_size[0] + dp(18)
+            font_size: '14sp'
+            halign: 'left'
+            valign: 'middle'
+            padding: [0, 0, dp(14), 0]
             on_text:
                 app.root.on_gcode_color_scheme_changed(self.text)
+            canvas.after:
+                Color:
+                    rgba: app.theme.text_muted if not self.disabled else app.theme.text_disabled
+                Triangle:
+                    points: [self.right - dp(11), self.center_y + dp(2), self.right - dp(3), self.center_y + dp(2), self.right - dp(7), self.center_y - dp(3)]
+        Widget:
         TransparentGrayButton:
             id: visibility_toggle
             size_hint: None, None
             width: dp(32)
             height: dp(28)
+            pos_hint: {'center_y': 0.5}
             icon: 'data/eye.png'
             icon_size: 18
             active: root.any_visible
@@ -52,8 +84,8 @@
         size_hint_y: None
         do_scroll_x: False
         bar_width: dp(5)
-        bar_color: 0.45, 0.45, 0.45, 0.8
-        bar_inactive_color: 0.35, 0.35, 0.35, 0.5
+        bar_color: app.theme.scroll_bar
+        bar_inactive_color: app.theme.scroll_bar_inactive
         BoxLayout:
             id: legend_box
             orientation: 'vertical'

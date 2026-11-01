@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, StringProperty
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.dropdown import DropDown
@@ -28,6 +28,7 @@ class LocalFilePickerSheet(BoxLayout):
 
     curr_path_list = ListProperty([])
     curr_dir_name = StringProperty("")
+    show_filename = BooleanProperty(True)
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -92,21 +93,30 @@ def confirm_overwrite_then(dest: str, write_fn: Callable[[str], None]) -> None:
 def open_local_file_picker(
     *,
     title: str,
-    default_name: str,
+    default_name: str = "",
     on_confirm: Callable[[Popup, str], None],
     confirm_label: str | None = None,
     size_hint: tuple[float, float] = (0.82, 0.82),
     filters: Sequence[str] | None = None,
+    folder_only: bool = False,
+    on_cancel: Callable[[], None] | None = None,
 ) -> None:
-    """Open a popup to pick a folder and file name; on_confirm receives (popup, full_path)."""
+    """Open a popup to pick a folder and file name; on_confirm receives (popup, full_path).
+
+    When folder_only is set, the file name field is hidden and on_confirm receives
+    the selected directory.
+    """
     root = App.get_running_app().root
     try:
         content = Factory.LocalFilePickerSheet()
     except KeyError:
         if hasattr(root, "show_message_popup"):
             root.show_message_popup(tr._("Dialog unavailable (UI not loaded)."), False)
+        if on_cancel is not None:
+            on_cancel()
         return
 
+    content.show_filename = not folder_only
     fc = content.ids.fc
     ti = content.ids.ti_filename
     fc.path = home_directory()
@@ -134,19 +144,27 @@ def open_local_file_picker(
     if confirm_label:
         content.ids.btn_confirm.text = confirm_label
 
+    def cancel(*_):
+        popup.dismiss()
+        if on_cancel is not None:
+            on_cancel()
+
     def attempt(*_):
-        raw_name = ti.text.strip()
-        if not raw_name:
-            root.show_message_popup(tr._("Enter a file name."), False)
-            return
-        fn = os.path.basename(raw_name)
         dd = fc.path
         if not dd or not os.path.isdir(dd):
             root.show_message_popup(tr._("Choose an existing folder."), False)
             return
+        if folder_only:
+            dest = dd
+        else:
+            raw_name = ti.text.strip()
+            if not raw_name:
+                root.show_message_popup(tr._("Enter a file name."), False)
+                return
+            dest = os.path.join(dd, os.path.basename(raw_name))
         Utils.record_recent_local_directory(dd)
-        on_confirm(popup, os.path.join(dd, fn))
+        on_confirm(popup, dest)
 
-    content.ids.btn_cancel.bind(on_release=lambda *_: popup.dismiss())
+    content.ids.btn_cancel.bind(on_release=cancel)
     content.ids.btn_confirm.bind(on_release=attempt)
     popup.open()
