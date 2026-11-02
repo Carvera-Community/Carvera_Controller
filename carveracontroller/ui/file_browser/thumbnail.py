@@ -14,6 +14,7 @@ import logging
 import os
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,11 @@ PNG_MAGIC = b"\x89PNG"
 TAIL_READ_BYTES = 512 * 1024
 MAX_SIDE_PX = 256
 CACHE_VERSION = 1
-CACHE_MAX_IMAGES = 256
+CACHE_MAX_IMAGES = 512
+CACHE_SIZE_MIN = 1
+CACHE_SIZE_MAX = 10000
+THUMBNAILS_CONFIG_KEY = "file_browser_thumbnails"
+CACHE_SIZE_CONFIG_KEY = "file_browser_thumbnail_cache_size"
 INDEX_NAME = "index.json"
 
 _CACHE_LOCK = threading.Lock()
@@ -58,6 +63,36 @@ def local_cache_key(path: str) -> str:
 def machine_cache_key(connection_key: str, remote_path: str) -> str:
     remote = os.path.normpath(remote_path or "").replace("\\", "/")
     return f"machine|{connection_key}|{remote}"
+
+
+def clamp_thumbnail_cache_size(value: Any, *, default: int = CACHE_MAX_IMAGES) -> int:
+    """Return a cache size inside the allowed range."""
+    try:
+        count = int(value)
+    except (TypeError, ValueError):
+        try:
+            count = int(float(value))
+        except (TypeError, ValueError):
+            return default
+    return max(CACHE_SIZE_MIN, min(CACHE_SIZE_MAX, count))
+
+
+def thumbnails_enabled() -> bool:
+    """True when the file browser should read and store preview images."""
+    from kivy.config import Config
+
+    if not Config.has_option("carvera", THUMBNAILS_CONFIG_KEY):
+        return True
+    return str(Config.get("carvera", THUMBNAILS_CONFIG_KEY)) == "1"
+
+
+def configured_thumbnail_cache_size() -> int:
+    """Cache size from settings, or the code default when unset."""
+    from kivy.config import Config
+
+    if not Config.has_option("carvera", CACHE_SIZE_CONFIG_KEY):
+        return CACHE_MAX_IMAGES
+    return clamp_thumbnail_cache_size(Config.get("carvera", CACHE_SIZE_CONFIG_KEY))
 
 
 def mtime_token(mtime: Any) -> str:
@@ -171,8 +206,10 @@ class GcodeThumbnailCache:
 
     def __init__(self, root: str | os.PathLike[str], *, max_images: int = CACHE_MAX_IMAGES):
         self.root = Path(root)
-        self.max_images = max(1, int(max_images))
+        self.max_images = max(CACHE_SIZE_MIN, int(max_images))
         self._lock = threading.Lock()
+        self._defer_index_writes = 0
+        self._index_dirty = False
         self.root.mkdir(parents=True, exist_ok=True)
         self._index = self._load_index()
 
@@ -188,12 +225,10 @@ class GcodeThumbnailCache:
             image_name = entry.get("image")
             entry["accessed"] = time.time()
             if not image_name:
-                self._write_index_unlocked()
                 return ThumbnailLookup(hit=True, image_path=None)
             image_path = self.root / str(image_name)
             if not image_path.is_file():
                 return ThumbnailLookup(hit=False)
-            self._write_index_unlocked()
             return ThumbnailLookup(hit=True, image_path=str(image_path))
 
     def store(self, key: str, size: int, mtime: Any, png_bytes: bytes | None) -> str | None:
@@ -213,7 +248,7 @@ class GcodeThumbnailCache:
                     "accessed": time.time(),
                 }
                 self._evict_unlocked()
-                self._write_index_unlocked()
+                self._persist_index_unlocked()
                 return str(image_path)
             if image_path.is_file():
                 try:
@@ -226,8 +261,29 @@ class GcodeThumbnailCache:
                 "image": None,
                 "accessed": time.time(),
             }
-            self._write_index_unlocked()
+            self._persist_index_unlocked()
             return None
+
+    def set_max_images(self, count: int) -> None:
+        """Change how many PNGs are kept and drop the oldest ones immediately."""
+        with self._lock:
+            self.max_images = max(CACHE_SIZE_MIN, int(count))
+            self._evict_unlocked()
+            self._persist_index_unlocked()
+
+    @contextmanager
+    def defer_index_writes(self):
+        """Update the in-memory index per file and write ``index.json`` once at the end."""
+        with self._lock:
+            self._defer_index_writes += 1
+        try:
+            yield
+        finally:
+            with self._lock:
+                self._defer_index_writes = max(0, self._defer_index_writes - 1)
+                if self._defer_index_writes == 0 and self._index_dirty:
+                    self._write_index_unlocked()
+                    self._index_dirty = False
 
     def ingest_file(self, file_path: str, key: str, size: int, mtime: Any) -> str | None:
         if not file_path or not os.path.isfile(file_path):
@@ -272,6 +328,13 @@ class GcodeThumbnailCache:
             raw["entries"] = {}
         return raw
 
+    def _persist_index_unlocked(self) -> None:
+        if self._defer_index_writes:
+            self._index_dirty = True
+            return
+        self._write_index_unlocked()
+        self._index_dirty = False
+
     def _write_index_unlocked(self) -> None:
         index_path = self.root / INDEX_NAME
         payload = json.dumps(self._index, indent=0, sort_keys=True)
@@ -294,5 +357,5 @@ def thumbnail_cache_for_app(user_data_dir: str | os.PathLike[str] | None = None)
     with _CACHE_LOCK:
         if _APP_CACHE is not None and _APP_CACHE.root == root:
             return _APP_CACHE
-        _APP_CACHE = GcodeThumbnailCache(root)
+        _APP_CACHE = GcodeThumbnailCache(root, max_images=configured_thumbnail_cache_size())
         return _APP_CACHE

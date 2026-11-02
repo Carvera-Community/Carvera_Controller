@@ -1417,4 +1417,113 @@ def test_action_state_ios_device_uses_browse():
     assert state.show_ios_browse is True
     assert state.show_places is False
     assert state.show_multi_toggle is False
-    assert state.show_rename is False
+
+
+def test_fill_entry_thumbnails_skips_lookup_when_previews_disabled(monkeypatch):
+    monkeypatch.setattr(file_browser_popup, "thumbnails_enabled", lambda: False)
+    entries = [{"name": "a.nc", "path": "/tmp/a.nc", "is_dir": False, "size": 3, "date": 1, "thumbnail": "old.png"}]
+    browser = SimpleNamespace(firmware_mode=False, location=LOCATION_DEVICE)
+    browser._thumbnail_cache = MagicMock()
+
+    FileBrowserPopup._fill_entry_thumbnails(browser, entries)
+
+    assert entries[0]["thumbnail"] == ""
+    browser._thumbnail_cache.assert_not_called()
+
+
+def test_schedule_local_thumbnail_extract_skips_when_previews_disabled(monkeypatch):
+    monkeypatch.setattr(file_browser_popup, "thumbnails_enabled", lambda: False)
+    browser = SimpleNamespace(firmware_mode=False, location=LOCATION_DEVICE, _thumb_gen=0)
+    browser._start_local_thumbnail_extract = MagicMock()
+
+    FileBrowserPopup._schedule_local_thumbnail_extract(browser)
+
+    assert browser._thumb_gen == 0
+    browser._start_local_thumbnail_extract.assert_not_called()
+
+
+def test_apply_thumbnail_preferences_stops_scan_and_restarts_when_enabled(monkeypatch):
+    browser = SimpleNamespace(_thumb_gen=4, _rebuild_list=MagicMock())
+    browser._start_local_thumbnail_extract = MagicMock()
+
+    FileBrowserPopup.apply_thumbnail_preferences(browser, previews_toggled_on=False, previews_enabled=False)
+
+    assert browser._thumb_gen == 5
+    browser._start_local_thumbnail_extract.assert_not_called()
+    browser._rebuild_list.assert_called_once_with()
+
+    FileBrowserPopup.apply_thumbnail_preferences(browser, previews_toggled_on=True, previews_enabled=True)
+
+    assert browser._thumb_gen == 5
+    browser._start_local_thumbnail_extract.assert_called_once_with()
+    assert browser._rebuild_list.call_count == 2
+
+
+def test_refresh_row_selection_updates_highlight_in_place():
+    rows = [
+        {"path": "/tmp/a.nc", "selected": False, "checked": False},
+        {"path": "/tmp/b.nc", "selected": True, "checked": True},
+    ]
+    rv = SimpleNamespace(data=rows, refresh_from_data=MagicMock(), children=[])
+    browser = SimpleNamespace(
+        ids={"file_list": rv},
+        _highlight_path="/tmp/a.nc",
+        multi_select_mode=False,
+        _multi_select_allowed=lambda: True,
+        _selected_paths=lambda: ["/tmp/a.nc"],
+    )
+    browser._refresh_list_view = lambda *args, **kwargs: FileBrowserPopup._refresh_list_view(browser, *args, **kwargs)
+
+    FileBrowserPopup._refresh_row_selection(browser)
+
+    assert rows[0]["selected"] is True
+    assert rows[0]["checked"] is True
+    assert rows[1]["selected"] is False
+    assert rows[1]["checked"] is False
+    rv.refresh_from_data.assert_called_once_with()
+    assert rv.scroll_y == 1
+
+
+def test_machine_thumbnail_ingest_skips_when_previews_disabled(monkeypatch):
+    monkeypatch.setattr("carveracontroller.main.thumbnails_enabled", lambda: False)
+    pending = ("/sd/gcodes/job.nc", "/tmp/job.nc")
+    root = SimpleNamespace(_pending_machine_thumb=pending)
+
+    Makera._ingest_machine_gcode_thumbnail(SimpleNamespace(), pending[0], pending[1])
+    Makera.flush_pending_machine_thumbnail(root)
+
+    assert root._pending_machine_thumb == pending
+
+
+def test_reenabling_previews_flushes_pending_machine_thumbnail(monkeypatch):
+    monkeypatch.setattr("carveracontroller.main.thumbnails_enabled", lambda: True)
+    order = []
+    popup = SimpleNamespace(apply_thumbnail_preferences=lambda **_kwargs: order.append("rebuild"))
+    root = SimpleNamespace(
+        controller_setting_change_list={"file_browser_thumbnails": "1"},
+        file_popup=popup,
+        flush_pending_machine_thumbnail=lambda: order.append("flush"),
+    )
+
+    Makera._apply_file_browser_setting_changes(root)
+
+    assert order == ["flush", "rebuild"]
+
+
+def test_cache_size_apply_shows_clamped_value(monkeypatch):
+    widget = SimpleNamespace(section="carvera", key="file_browser_thumbnail_cache_size", value="15000")
+    cache = MagicMock()
+    root = SimpleNamespace(
+        controller_setting_change_list={"file_browser_thumbnail_cache_size": "15000"},
+        config_popup=SimpleNamespace(_all_setting_items=lambda: [widget]),
+        file_popup=SimpleNamespace(apply_thumbnail_preferences=MagicMock()),
+        _gcode_thumbnail_cache=lambda: cache,
+    )
+    monkeypatch.setattr("carveracontroller.main.Config.set", MagicMock())
+    monkeypatch.setattr("carveracontroller.main.Config.write", MagicMock())
+    monkeypatch.setattr("carveracontroller.main.thumbnails_enabled", lambda: True)
+
+    Makera._apply_file_browser_setting_changes(root)
+
+    assert widget.value == "10000"
+    cache.set_max_images.assert_called_once_with(10000)
