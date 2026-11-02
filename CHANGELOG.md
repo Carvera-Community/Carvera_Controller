@@ -1,4 +1,5 @@
 [unreleased]
+- Change: Gamepad continuous jog speed percentage now scales the selected Jog Speed (same as WHB04), instead of a separate gamepad max-speed setting
 - Fixed: Gamepad hotplug would not detect a reconnected controller
 - Fixed: Android builds were incorrectly detecting the default language
 - Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
