@@ -1,0 +1,42 @@
+[
+    {
+        "type": "bool",
+        "title": "Enable Upload API",
+        "desc": "Let other programs on this computer queue G-code uploads through this Controller's connection (HTTP, upload only). Uploads wait until the machine is Idle.",
+        "section": "carvera",
+        "key": "upload_api_enabled",
+        "default": "0"
+    },
+    {
+        "type": "numeric",
+        "title": "Upload API port",
+        "desc": "TCP port the Upload API listens on.",
+        "section": "carvera",
+        "key": "upload_api_port",
+        "default": "8642"
+    },
+    {
+        "type": "bool",
+        "title": "Allow other computers",
+        "desc": "Listen on all network interfaces instead of only this computer. Requires a token.",
+        "section": "carvera",
+        "key": "upload_api_lan",
+        "default": "0"
+    },
+    {
+        "type": "string",
+        "title": "Upload API token",
+        "desc": "When set, clients must send 'Authorization: Bearer <token>'. Required for other computers.",
+        "section": "carvera",
+        "key": "upload_api_token",
+        "default": ""
+    },
+    {
+        "type": "string",
+        "title": "Allowed web origins",
+        "desc": "Web pages (origins, separated by spaces) allowed to call the API from a browser, e.g. https://app.example.com. Leave empty to allow only non-browser clients.",
+        "section": "carvera",
+        "key": "upload_api_origins",
+        "default": ""
+    }
+]
