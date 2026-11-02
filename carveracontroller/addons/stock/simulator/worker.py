@@ -12,6 +12,9 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Callable
 
+import numpy as np
+
+from carveracontroller.addons.stock.mrr_smoothing import smooth_mrr_at
 from carveracontroller.addons.stock.simulator.carver_select import (
     BACKEND_CYLINDRICAL,
     BACKEND_HEIGHTMAP,
@@ -362,6 +365,7 @@ class CarveJob:
     tool_def: ToolDefinition | None
     is_cut: bool
     end_vertex: int = 0  # path vertex at segment end (checkpoints / seek)
+    start_vertex: int = 0  # path vertex at segment start (MRR spans this, end]
     a0: float = 0.0
     a1: float = 0.0
     tool_number: int | None = None
@@ -396,6 +400,9 @@ class PathSnapshot:
     tool_scale: float = 1.0
     angles: list[float] | None = None
     speeds: list[float] | None = None
+    feeds: list[float] | None = None
+    axis_limits: dict | None = None
+    mrr: np.ndarray | None = None
 
     def vertex_count(self) -> int:
         if not self.positions:
@@ -515,6 +522,12 @@ class StockSimulator:
         self._path_tools: list[int] | None = None
         self._path_angles: list[float] | None = None
         self._path_speeds: list[float] | None = None
+        self._path_feeds: list[float] | None = None
+        self._path_axis_limits: dict | None = None
+        # Per-vertex MRR (mm3/min). NaN until a completed carve measures that move.
+        self._path_mrr: np.ndarray | None = None
+        # Bumped whenever ``_path_mrr`` is replaced or written (cheap change detection for readers).
+        self._mrr_version = 0
         self._tool_table: dict | None = None
         self._tool_scale: float = 1.0
         self._profile_cache: dict[tuple, list] = {}
@@ -551,6 +564,66 @@ class StockSimulator:
         """Furthest vertex the live occupancy has been carved to (UI-thread safe)."""
         with self._lock:
             return int(self._grid_carved_vertex)
+
+    @property
+    def mrr_values(self) -> np.ndarray | None:
+        """Live per-vertex MRR (mm³/min), or None when simulation is off."""
+        with self._lock:
+            if not self._enabled:
+                return None
+            return self._path_mrr
+
+    @property
+    def mrr_version(self) -> int:
+        """Counter that changes whenever the per-vertex MRR is replaced or written."""
+        with self._lock:
+            return self._mrr_version
+
+    def mrr_copy(self) -> np.ndarray | None:
+        """Snapshot of per-vertex MRR (mm³/min), or None when simulation is off."""
+        with self._lock:
+            if not self._enabled or self._path_mrr is None:
+                return None
+            return self._path_mrr.copy()
+
+    def mrr_at(self, vertex: float, window_sec: float | None = None) -> float | None:
+        """MRR (mm³/min) of the move ending at ``ceil(vertex)``, or None if unknown.
+
+        With ``window_sec`` the rate is averaged over that many seconds of programmed
+        time ending at the move, which evens out the jumps between very short moves.
+        """
+        with self._lock:
+            if not self._enabled:
+                return None
+            mrr = self._path_mrr
+            path = self._path_snapshot_locked() if window_sec else None
+        if mrr is None or mrr.size == 0:
+            return None
+        try:
+            v = float(vertex)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(v):
+            return None
+        if v < 0.0:
+            v = 0.0
+        idx = int(math.ceil(v))
+        n = int(mrr.shape[0])
+        if idx >= n:
+            idx = n - 1
+        if path is not None:
+            return smooth_mrr_at(
+                mrr,
+                idx,
+                float(window_sec),
+                lambda i: self._segment_seconds(path, i),
+                lambda i: self._is_mrr_window_vertex(path, i),
+                lambda i: self._tool_number_at_vertex(path, i),
+            )
+        value = float(mrr[idx])
+        if value != value:
+            return None
+        return value
 
     @property
     def bake_grid(self):
@@ -717,6 +790,8 @@ class StockSimulator:
             self._clear_open_segment_locked()
             self._display_poke_pending = False
             self._mesh_flush = False
+            self._path_mrr = self._allocate_mrr_locked()
+            self._mrr_version += 1
             self._force_mesh_replace = True
             self._mesh_updates_enabled = True
             self._coalesce_gpu_keys.clear()
@@ -744,6 +819,8 @@ class StockSimulator:
             self._clear_open_segment_locked()
             self._display_poke_pending = False
             self._mesh_flush = False
+            self._path_mrr = None
+            self._mrr_version += 1
             self._force_mesh_replace = False
             self._mesh_updates_enabled = True
             self._coalesce_gpu_keys.clear()
@@ -836,6 +913,8 @@ class StockSimulator:
         has_4axis: bool = False,
         has_off_axis_y: bool = False,
         speeds: list[float] | None = None,
+        feeds: list[float] | None = None,
+        axis_limits: dict | None = None,
     ) -> None:
         """Publish the active toolpath (UI thread). Buffers must stay read-only.
 
@@ -851,6 +930,8 @@ class StockSimulator:
             self._path_tools = tools
             self._path_angles = angles
             self._path_speeds = speeds
+            self._path_feeds = feeds
+            self._path_axis_limits = dict(axis_limits) if axis_limits else None
             self._tool_table = tool_table
             self._tool_scale = float(tool_scale) if tool_scale else 1.0
             self._profile_cache = {}
@@ -881,6 +962,8 @@ class StockSimulator:
                     self._clear_open_segment_locked()
                     self._force_mesh_replace = True
                     reinited = True
+            self._path_mrr = self._allocate_mrr_locked()
+            self._mrr_version += 1
         self._emit_checkpoints()
         if reinited:
             self._drain_queue()
@@ -1059,6 +1142,10 @@ class StockSimulator:
             bake_carved = int(self._bake_carved_vertex)
             hint = max(0, int(hint_vertex))
             target_head = max(bake_carved, hint)
+            # Checkpoints skip carving, so moves they jump over never got their volume measured.
+            first_missing = self._first_missing_mrr_locked()
+            if first_missing is not None:
+                target_head = min(target_head, max(bake_carved, first_missing - 1))
             store = self._checkpoints
             cp = store.best_at_or_before(target_head) if store is not None else None
             if cp is not None:
@@ -1087,6 +1174,9 @@ class StockSimulator:
             tool_scale=self._tool_scale,
             angles=self._path_angles,
             speeds=self._path_speeds,
+            feeds=self._path_feeds,
+            axis_limits=self._path_axis_limits,
+            mrr=self._path_mrr,
         )
 
     def _path_vertex_count_locked(self) -> int:
@@ -1268,6 +1358,7 @@ class StockSimulator:
             a1=self._raw_angle(path, end_idx),
             tool_number=self._tool_number_at_vertex(path, end_idx),
             spindle_s=self._spindle_at_vertex(path, end_idx),
+            start_vertex=start_idx,
         )
 
     @staticmethod
@@ -1492,8 +1583,13 @@ class StockSimulator:
                 return True
             jobs = batch
             batch = []
+            volumes = None
+            if path.mrr is not None:
+                volumes = np.zeros(len(jobs), dtype=np.float64)
             # Carve outside the lock so HUD/playhead can progress during long wraps.
-            dirty = self._carve_jobs(grid_or_backend, jobs, path.tool_scale)
+            dirty = self._carve_jobs(grid_or_backend, jobs, path.tool_scale, volumes)
+            if volumes is not None:
+                self._store_job_mrr(path, jobs, volumes, skip_open_recarve=not idle)
             return _apply_carved(jobs, dirty)
 
         def _flush_laser() -> bool:
@@ -2209,19 +2305,147 @@ class StockSimulator:
         for job in strokes:
             self._carve_one(backend, job, tool_unit_scale)
 
-    def _carve_jobs(self, backend, jobs: list[CarveJob], tool_unit_scale: float) -> set[tuple[int, int, int]]:
+    def _allocate_mrr_locked(self) -> np.ndarray | None:
+        """Fresh per-vertex MRR buffer. Caller holds ``_lock``."""
+        positions = self._path_positions
+        if not positions:
+            return None
+        n = len(positions) // 3
+        mrr = np.full(n, np.float32(np.nan), dtype=np.float32)
+        types = self._path_vertex_types
+        tools = self._path_tools
+        for i in range(n):
+            is_cut = bool(types) and i < len(types) and float(types[i]) <= 1.5
+            tool = int(tools[i]) if tools and i < len(tools) else None
+            if i == 0 or not is_cut or tool == LASER_TOOL_NUMBER:
+                mrr[i] = np.float32(0.0)
+        return mrr
+
+    def _first_missing_mrr_locked(self) -> int | None:
+        """First vertex whose MRR is still unknown. Caller holds ``_lock``."""
+        mrr = self._path_mrr
+        if mrr is None or mrr.size == 0:
+            return None
+        missing = np.flatnonzero(np.isnan(mrr))
+        if missing.size == 0:
+            return None
+        return int(missing[0])
+
+    @classmethod
+    def _is_mrr_window_vertex(cls, path: PathSnapshot, index: int) -> bool:
+        """True for a cutting move with a measured rate (not a rapid, not the laser)."""
+        if index <= 0 or not cls._is_cut_vertex(path, index):
+            return False
+        return cls._tool_number_at_vertex(path, index) != LASER_TOOL_NUMBER
+
+    def _segment_seconds(self, path: PathSnapshot, index: int) -> float:
+        """Programmed duration of the move ending at ``index``."""
+        positions = path.positions
+        if not positions or index <= 0:
+            return 0.0
+        end = index * 3 + 2
+        if end >= len(positions):
+            return 0.0
+        start = (index - 1) * 3
+        p0 = (float(positions[start]), float(positions[start + 1]), float(positions[start + 2]))
+        p1 = (float(positions[end - 2]), float(positions[end - 1]), float(positions[end]))
+        feed = 0.0
+        feeds = path.feeds
+        if feeds and index < len(feeds):
+            try:
+                feed = float(feeds[index])
+            except (TypeError, ValueError):
+                feed = 0.0
+        from carveracontroller.GcodeViewer import _segment_duration_sec
+
+        return _segment_duration_sec(
+            p0,
+            p1,
+            self._raw_angle(path, index - 1),
+            self._raw_angle(path, index),
+            feed,
+            path.axis_limits,
+        )
+
+    def _store_job_mrr(
+        self,
+        path: PathSnapshot,
+        jobs: list[CarveJob],
+        volumes: np.ndarray,
+        *,
+        skip_open_recarve: bool = False,
+    ) -> None:
+        """Write job volumes into ``path.mrr`` as mm³/min.
+
+        ``skip_open_recarve`` ignores the job that repeats the segment the live grid already
+        cut part-way: its volume would only be the leftover material, not the real rate.
+        """
+        mrr = path.mrr
+        if mrr is None:
+            return
+        partial_anchor = -1
+        partial_fraction = 0.0
+        if skip_open_recarve:
+            with self._lock:
+                partial_anchor = int(self._partial_anchor)
+                partial_fraction = float(self._partial_fraction)
+        n = int(mrr.shape[0])
+        for job, volume in zip(jobs, volumes):
+            if job.tool_number == LASER_TOOL_NUMBER:
+                continue
+            if (
+                skip_open_recarve
+                and partial_anchor >= 0
+                and partial_fraction > _PARTIAL_EPS
+                and int(job.start_vertex) <= partial_anchor < int(job.end_vertex)
+            ):
+                continue
+            vol = float(volume)
+            if not math.isfinite(vol) or vol < 0.0:
+                continue
+            start = int(job.start_vertex)
+            end = int(job.end_vertex)
+            if end <= start:
+                continue
+            total_sec = 0.0
+            for index in range(start + 1, end + 1):
+                total_sec += self._segment_seconds(path, index)
+            if total_sec <= 1e-9:
+                rate = 0.0
+            else:
+                rate = vol * 60.0 / total_sec
+            if not math.isfinite(rate) or rate < 0.0:
+                rate = 0.0
+            lo = max(start + 1, 0)
+            hi = min(end, n - 1)
+            if hi >= lo:
+                # Readers copy under the lock, so write under it too.
+                with self._lock:
+                    mrr[lo : hi + 1] = np.float32(rate)
+                    self._mrr_version += 1
+
+    def _carve_jobs(
+        self,
+        backend,
+        jobs: list[CarveJob],
+        tool_unit_scale: float,
+        volumes: np.ndarray | None = None,
+    ) -> set[tuple[int, int, int]]:
         if not jobs:
             return set()
         profile = self._cached_cutting_profile(jobs[0].tool_def, tool_unit_scale)
         segments = [(job.p0, job.p1, job.a0, job.a1) for job in jobs]
         carve_many = getattr(backend, "carve_segments", None)
         if carve_many is not None:
-            return carve_many(
-                segments,
-                profile,
-                tool_unit_scale=tool_unit_scale,
-                tool_def=jobs[0].tool_def,
-            )
+            kwargs = {
+                "tool_unit_scale": tool_unit_scale,
+                "tool_def": jobs[0].tool_def,
+            }
+            if volumes is not None:
+                kwargs["volumes"] = volumes
+            return carve_many(segments, profile, **kwargs)
+        if volumes is not None:
+            volumes.fill(np.nan)
         dirty: set[tuple[int, int, int]] = set()
         for job in jobs:
             dirty |= self._carve_one(backend, job, tool_unit_scale, profile=profile)

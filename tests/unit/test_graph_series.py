@@ -1,6 +1,8 @@
-"""Derived monitoring series: spindle speed deviation."""
+"""Derived monitoring series: spindle speed deviation and material removal rate."""
 
-from carveracontroller.ui.graph_series import format_graph_value, rpm_deviation_percent
+import math
+
+from carveracontroller.ui.graph_series import format_graph_value, mrr_graph_sample, rpm_deviation_percent
 
 
 def test_graph_values_are_not_written_in_scientific_notation():
@@ -20,3 +22,14 @@ def test_rpm_deviation_percent_is_signed_against_the_request():
 def test_rpm_deviation_is_zero_when_no_speed_was_requested():
     assert rpm_deviation_percent(0, 0) == 0.0
     assert rpm_deviation_percent(12000, 0) == 0.0
+
+
+def test_mrr_graph_sample_scales_by_feed_override():
+    assert mrr_graph_sample(1000.0, 100) == 1000.0
+    assert mrr_graph_sample(1000.0, 50) == 500.0
+    assert mrr_graph_sample(1000.0, 150) == 1500.0
+
+
+def test_mrr_graph_sample_missing_is_nan():
+    assert math.isnan(mrr_graph_sample(None, 100))
+    assert math.isnan(mrr_graph_sample(float("nan"), 80))

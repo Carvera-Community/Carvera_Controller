@@ -677,10 +677,12 @@ def test_idle_precompute_is_preempted_by_real_work():
     call_count = {"n": 0}
     original_carve = voxel_backend.VoxelBackend.carve_segments
 
-    def slow_counting_carve(self, segments, profile, tool_unit_scale=1.0, tool_def=None):
+    def slow_counting_carve(self, segments, profile, tool_unit_scale=1.0, tool_def=None, volumes=None):
         call_count["n"] += len(segments)
         time.sleep(0.003 * len(segments))
-        return original_carve(self, segments, profile, tool_unit_scale=tool_unit_scale, tool_def=tool_def)
+        return original_carve(
+            self, segments, profile, tool_unit_scale=tool_unit_scale, tool_def=tool_def, volumes=volumes
+        )
 
     sim = StockSimulator(on_progress=waiter.on_progress, mesh_throttle_s=0.01)
     try:
@@ -765,9 +767,11 @@ def test_seek_forward_past_existing_checkpoint_jumps_instead_of_recarving():
     call_count = {"n": 0}
     original_carve = voxel_backend.VoxelBackend.carve_segments
 
-    def counting_carve(self, segments, profile, tool_unit_scale=1.0, tool_def=None):
+    def counting_carve(self, segments, profile, tool_unit_scale=1.0, tool_def=None, volumes=None):
         call_count["n"] += len(segments)
-        return original_carve(self, segments, profile, tool_unit_scale=tool_unit_scale, tool_def=tool_def)
+        return original_carve(
+            self, segments, profile, tool_unit_scale=tool_unit_scale, tool_def=tool_def, volumes=volumes
+        )
 
     sim = StockSimulator(on_progress=waiter.on_progress, mesh_throttle_s=0.01)
     try:
@@ -2355,9 +2359,11 @@ def test_display_follow_jumps_checkpoints_recorded_by_bake():
     call_count = {"n": 0}
     original_carve = voxel_backend.VoxelBackend.carve_segments
 
-    def counting_carve(self, segments, profile, tool_unit_scale=1.0, tool_def=None):
+    def counting_carve(self, segments, profile, tool_unit_scale=1.0, tool_def=None, volumes=None):
         call_count["n"] += len(segments)
-        return original_carve(self, segments, profile, tool_unit_scale=tool_unit_scale, tool_def=tool_def)
+        return original_carve(
+            self, segments, profile, tool_unit_scale=tool_unit_scale, tool_def=tool_def, volumes=volumes
+        )
 
     try:
         sim.reset(bounds, cell_size_mm=0.5, enable=True, checkpoint_slots=8, carver_mode="voxel")
@@ -2695,3 +2701,59 @@ def test_paused_scrub_emits_mesh_before_idle_bake(monkeypatch):
         assert _wait_until(lambda: any(_is_patch(m) for m in patches), timeout=2.0)
     finally:
         sim.stop()
+
+
+def _solid_cube_count(grid) -> int:
+    from carveracontroller.addons.stock.simulator.carvers.voxel.grid import CHUNK_EMPTY, CHUNK_FULL, ChunkCoord
+
+    total = 0
+    for cx in range(grid.n_chunks_x):
+        for cy in range(grid.n_chunks_y):
+            for cz in range(grid.n_chunks_z):
+                coord = ChunkCoord(cx, cy, cz)
+                state = grid.get_chunk_state(coord)
+                if state is CHUNK_EMPTY:
+                    continue
+                if state is CHUNK_FULL:
+                    total += int(grid._valid_count(coord))
+                else:
+                    total += int(state.sum())
+    return total
+
+
+def test_voxel_reports_slot_volume():
+    """Removed volume is the cleared cubes, and asking for it does not change occupancy."""
+    import math
+
+    from carveracontroller.addons.stock.simulator.carver_select import resolve_cutting_profile
+    from carveracontroller.addons.stock.simulator.carvers.voxel import VoxelBackend
+    from carveracontroller.addons.stock.stock_shape import RectangularStock
+
+    bounds = StockBounds(0, -10, 0, 40, 10, 10)
+    cell = 0.5
+    shape = RectangularStock(40, 20, 10)
+    tool = _flat_tool(diameter=6.0, flute_length=10.0)
+    profile = resolve_cutting_profile(tool, tool_unit_scale=1.0)
+    segment = ((10.0, 0.0, 8.0), (30.0, 0.0, 8.0), 0.0, 0.0)
+
+    plain = VoxelBackend(bounds, cell, shape)
+    measured = VoxelBackend(bounds, cell, shape)
+    before = _solid_cube_count(measured.grid)
+    volumes = np.zeros(2, dtype=np.float64)
+    plain.carve_segments([segment], profile)
+    measured.carve_segments([segment, segment], profile, volumes=volumes)
+
+    removed = before - _solid_cube_count(measured.grid)
+    assert removed > 0
+    assert abs(float(volumes[0]) - removed * cell**3) < 1e-6
+    assert float(volumes[1]) == 0.0
+    plain_chunks, _plain_bytes = plain.grid.snapshot_non_full()
+    measured_chunks, _measured_bytes = measured.grid.snapshot_non_full()
+    _assert_snapshots_equal(measured_chunks, plain_chunks)
+
+    length = 20.0
+    diameter = 6.0
+    depth = 2.0
+    analytic = (length * diameter + math.pi * (diameter / 2.0) ** 2) * depth
+    perimeter = 2.0 * length + math.pi * diameter
+    assert abs(float(volumes[0]) - analytic) < cell * depth * perimeter

@@ -201,9 +201,12 @@ static ScChunkRec *sc_chunk_get(ScChunkTable *table, ScGetChunkFn get_chunk, voi
 }
 
 /* Remove every cube in the chunk (padding cubes outside the grid were already empty). */
-static void sc_chunk_clear_all(ScChunkRec *rec, int cs) {
+static void sc_chunk_clear_all(ScChunkRec *rec, int cs, int *removed) {
     size_t n = (size_t)cs * (size_t)cs * (size_t)cs;
     if (rec->solid > 0) {
+        if (removed != NULL) {
+            *removed += rec->solid;
+        }
         rec->hits += rec->solid;
         rec->solid = 0;
     }
@@ -246,6 +249,7 @@ typedef struct ScVoxelPass {
     ScChunkTable *table;
     ScGetChunkFn get_chunk;
     void *ctx;
+    int *removed; /* optional cubes deleted this move; NULL skips counting */
 } ScVoxelPass;
 
 /* True when every in-bounds cube center of this chunk sits inside a plain-cylinder sweep.
@@ -355,6 +359,9 @@ static void sc_carve_chunk_cubes(const ScVoxelPass *pass, ScChunkRec *rec, int c
                 rec->data[idx] = 0;
                 rec->solid -= 1;
                 rec->hits += 1;
+                if (pass->removed != NULL) {
+                    *pass->removed += 1;
+                }
                 if (rec->solid < 0) {
                     rec->solid = 0;
                 }
@@ -376,7 +383,8 @@ static void sc_carve_constant_a(
     const ScProfile *profile,
     ScChunkTable *table,
     ScGetChunkFn get_chunk,
-    void *ctx) {
+    void *ctx,
+    int *removed) {
     double vs = grid->voxel;
     double pad = profile->max_r + vs;
     /* World-space box around everything the tool can touch during the move. */
@@ -403,6 +411,7 @@ static void sc_carve_constant_a(
     pass.table = table;
     pass.get_chunk = get_chunk;
     pass.ctx = ctx;
+    pass.removed = removed;
 
     if (pass.rotate) {
         double rad = angle * (M_PI / 180.0);
@@ -432,7 +441,7 @@ static void sc_carve_constant_a(
                     continue;
                 }
                 if (pass.allow_full_clear && sc_chunk_fully_inside_const_r(grid, cx, cy, cz, &pass.seg)) {
-                    sc_chunk_clear_all(rec, grid->chunk);
+                    sc_chunk_clear_all(rec, grid->chunk, pass.removed);
                     continue;
                 }
                 sc_carve_chunk_cubes(&pass, rec, cx, cy, cz);
@@ -455,7 +464,8 @@ static void sc_carve_segment(
     const ScProfile *profile,
     ScChunkTable *table,
     ScGetChunkFn get_chunk,
-    void *ctx) {
+    void *ctx,
+    int *removed) {
     double da = a1 - a0;
     if (fabs(da) > SC_MAX_DA) {
         int n = (int)ceil(fabs(da) / SC_MAX_DA);
@@ -482,11 +492,12 @@ static void sc_carve_segment(
                 profile,
                 table,
                 get_chunk,
-                ctx);
+                ctx,
+                removed);
         }
         return;
     }
-    sc_carve_constant_a(grid, p0x, p0y, p0z, p1x, p1y, p1z, a0, profile, table, get_chunk, ctx);
+    sc_carve_constant_a(grid, p0x, p0y, p0z, p1x, p1y, p1z, a0, profile, table, get_chunk, ctx, removed);
 }
 
 int sc_voxel_carve(
@@ -500,7 +511,8 @@ int sc_voxel_carve(
     ScGetChunkFn get_chunk,
     void *ctx,
     ScChunkRec **touched,
-    int *n_touched) {
+    int *n_touched,
+    double *volumes) {
     ScChunkTable table;
     int i;
     if (touched) {
@@ -521,7 +533,12 @@ int sc_voxel_carve(
         const double *b = p1 + (size_t)i * 3;
         double angle_start = a0 ? a0[i] : 0.0;
         double angle_end = a1 ? a1[i] : 0.0;
-        sc_carve_segment(grid, a[0], a[1], a[2], b[0], b[1], b[2], angle_start, angle_end, profile, &table, get_chunk, ctx);
+        int removed = 0;
+        sc_carve_segment(grid, a[0], a[1], a[2], b[0], b[1], b[2], angle_start, angle_end, profile, &table, get_chunk, ctx, volumes != NULL ? &removed : NULL);
+        if (volumes != NULL) {
+            double edge = grid->voxel;
+            volumes[i] = (double)removed * edge * edge * edge;
+        }
     }
     if (touched) {
         *touched = table.items;

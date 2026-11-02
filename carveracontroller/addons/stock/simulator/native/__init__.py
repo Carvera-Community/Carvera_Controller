@@ -68,6 +68,17 @@ def _soa(segments: list) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray
     return p0, p1, a0, a1
 
 
+def _volume_buffer(volumes: np.ndarray | None, nseg: int) -> np.ndarray | None:
+    """Contiguous float64 buffer of length ``nseg`` for the C kernels (zeroed)."""
+    if volumes is None:
+        return None
+    buf = np.ascontiguousarray(volumes, dtype=np.float64)
+    if buf.shape != (nseg,):
+        raise ValueError(f"volumes must have shape ({nseg},)")
+    buf.fill(0.0)
+    return buf
+
+
 def _laser_dirty_args(dirty: tuple[np.ndarray, np.ndarray, np.ndarray] | None) -> tuple:
     """The optional dirty-texel log as three call arguments: u indices, v indices, [count, overflow]."""
     if dirty is None:
@@ -123,11 +134,13 @@ def carve_heightmap(
     laser_origin_u: float = 0.0,
     laser_origin_v: float = 0.0,
     laser_dirty: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+    volumes: np.ndarray | None = None,
 ) -> tuple[set[tuple[int, int, int]], bool]:
     """Carve ``segments`` into a heightmap. Returns the changed tiles and whether the laser decal changed."""
     if not segments or not profile:
         return set(), False
     impl = _require_impl()
+    vol_buf = _volume_buffer(volumes, len(segments))
     nx, ny = int(heights.shape[0]), int(heights.shape[1])
     ntx = max(1, int(math.ceil(nx / max(int(tile), 1))))
     nty = max(1, int(math.ceil(ny / max(int(tile), 1))))
@@ -166,7 +179,10 @@ def carve_heightmap(
             flag=flag,
             dirty=laser_dirty,
         ),
+        vol_buf,
     )
+    if volumes is not None and vol_buf is not volumes:
+        np.copyto(np.asarray(volumes), vol_buf)
     if heights_c is not heights:
         heights[...] = heights_c
     if laser_c is not None and laser_c is not laser:
@@ -197,11 +213,13 @@ def carve_cylindrical(
     laser_wrap: bool = False,
     laser_period: float = 360.0,
     laser_dirty: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+    volumes: np.ndarray | None = None,
 ) -> tuple[set[tuple[int, int, int]], bool]:
     """Carve ``segments`` into a cylindrical stock. Returns the changed tiles and whether the laser decal changed."""
     if not segments or not profile:
         return set(), False
     impl = _require_impl()
+    vol_buf = _volume_buffer(volumes, len(segments))
     nx, n_theta = int(radii.shape[0]), int(radii.shape[1])
     ntx = max(1, int(math.ceil(nx / max(int(tile), 1))))
     ntt = max(1, int(math.ceil(n_theta / max(int(tile), 1))))
@@ -246,7 +264,10 @@ def carve_cylindrical(
             flag=flag,
             dirty=laser_dirty,
         ),
+        vol_buf,
     )
+    if volumes is not None and vol_buf is not volumes:
+        np.copyto(np.asarray(volumes), vol_buf)
     if radii_c is not radii:
         radii[...] = radii_c
     if laser_c is not None and laser_c is not laser:
@@ -254,7 +275,9 @@ def carve_cylindrical(
     return set(dirty), bool(flag[0])
 
 
-def carve_voxels(grid, segments: list, profile: list[tuple[float, float]]) -> set[tuple[int, int, int]]:
+def carve_voxels(
+    grid, segments: list, profile: list[tuple[float, float]], volumes: np.ndarray | None = None
+) -> set[tuple[int, int, int]]:
     """Carve ``segments`` into a voxel ``grid``. Returns the changed chunks.
 
     Chunks are loaded on demand: the C code calls ``get_chunk`` for every chunk a move touches.
@@ -262,6 +285,7 @@ def carve_voxels(grid, segments: list, profile: list[tuple[float, float]]) -> se
     if not segments or not profile:
         return set()
     impl = _require_impl()
+    vol_buf = _volume_buffer(volumes, len(segments))
     from carveracontroller.addons.stock.simulator.carvers.voxel.grid import CHUNK_EMPTY, CHUNK_FULL, ChunkCoord
 
     p0, p1, a0, a1 = _soa(segments)
@@ -303,7 +327,10 @@ def carve_voxels(grid, segments: list, profile: list[tuple[float, float]]) -> se
         zs,
         rs,
         get_chunk,
+        vol_buf,
     )
+    if volumes is not None and vol_buf is not volumes:
+        np.copyto(np.asarray(volumes), vol_buf)
     dirty: set[tuple[int, int, int]] = set()
     for cx, cy, cz, solid, hits, was_full in records:
         coord = ChunkCoord(int(cx), int(cy), int(cz))

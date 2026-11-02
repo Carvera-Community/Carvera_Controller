@@ -50,6 +50,15 @@ GRAPH_METRICS = (
         computed=True,
     ),
     GraphMetric("feed", "Feed", "curfeed", "Feed", 100.0, 1000.0),
+    GraphMetric(
+        "mrr",
+        "MRR (mm³/min)",
+        None,
+        "MRR (mm³/min)",
+        0.0,
+        1000.0,
+        computed=True,
+    ),
 )
 
 GRAPH_METRICS_BY_KEY = {metric.key: metric for metric in GRAPH_METRICS}

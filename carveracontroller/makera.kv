@@ -31,6 +31,7 @@
 #:include ui/DropDownSplitter.kv
 #:include ui/common/action_button.kv
 #:include ui/file_browser/FileBrowserPopup.kv
+#:include ui/file_sim_info/FileSimInfoPopup.kv
 #:include ui/config_run/CoordPopup.kv
 #:include ui/CmdPaneTab.kv
 #:include ui/GCodePageBar.kv
@@ -3480,8 +3481,8 @@
                                 spacing: dp(4) if app.show_gcode_ctl_bar else 0
                                 opacity: 1 if app.show_gcode_ctl_bar else 0
                                 x: gcode_viewer_container.x
-                                # Lift clear of the camera handle when that button sits on the viewer edge.
-                                y: gcode_viewer_container.y + (dp(26) if app.supports_camera else dp(8))
+                                # Lift clear of the dock toggle buttons (graph, and camera when present) that sit on the viewer edge.
+                                y: gcode_viewer_container.y + dp(30)
                                 AnchorLayout:
                                     size_hint_y: None
                                     height: dp(44) if app.show_gcode_ctl_bar else 0

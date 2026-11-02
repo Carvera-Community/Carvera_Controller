@@ -662,3 +662,55 @@ def test_heightmap_full_tile_through_cut_has_no_top():
     assert np.all(hm.heights <= bounds.min_z + 1e-3)
     meshes = hm.mesh_tiles(hm.initial_surface_keys())
     assert all(v is None for v in meshes.values())
+
+
+def test_heightmap_short_flute_engraver_carves_tapered_walls():
+    """Flute shorter than the cone height must not turn the V-bit into a vertical-walled cylinder."""
+    tool = ToolDefinition(
+        number=2,
+        tool_type=ToolType.ENGRAVING,
+        diameter=3.175,
+        tip_diameter=0.3,
+        taper_angle_deg=15.0,
+        flute_length=5.0,
+        length=40.0,
+    )
+    bounds = StockBounds(0, -5, 0, 20, 5, 10)
+    hm = HeightmapBackend(bounds, 0.05, RectangularStock(20, 10, 10))
+    hm.carve_segment((5.0, 0.0, 6.0), (15.0, 0.0, 6.0), tool)
+
+    # Floor sits at the tip depth, the wall must rise with the cone slope (tan 15 deg).
+    assert hm.height_at_world(10.0, 0.0) == pytest.approx(6.0, abs=1e-3)
+    slope = np.tan(np.radians(15.0))
+    for dy in (0.5, 0.8, 1.0):
+        expected = 6.0 + (dy - 0.15) / slope
+        assert hm.height_at_world(10.0, dy) == pytest.approx(expected, abs=0.1)
+
+
+def test_heightmap_reports_slot_volume():
+    """A flat slot's removed volume matches the stadium, and a recut adds nothing."""
+    import math
+
+    from carveracontroller.addons.stock.simulator.carver_select import resolve_cutting_profile
+
+    bounds = StockBounds(0, -10, 0, 40, 10, 10)
+    cell = 0.25
+    shape = RectangularStock(40, 20, 10)
+    tool = _flat_tool(6.0)
+    profile = resolve_cutting_profile(tool, tool_unit_scale=1.0)
+    segment = ((10.0, 0.0, 8.0), (30.0, 0.0, 8.0), 0.0, 0.0)
+
+    plain = HeightmapBackend(bounds, cell, shape)
+    measured = HeightmapBackend(bounds, cell, shape)
+    volumes = np.zeros(2, dtype=np.float64)
+    plain.carve_segments([segment], profile)
+    measured.carve_segments([segment, segment], profile, volumes=volumes)
+    assert np.array_equal(plain.heights, measured.heights)
+
+    length = 20.0
+    diameter = 6.0
+    depth = 2.0
+    analytic = (length * diameter + math.pi * (diameter / 2.0) ** 2) * depth
+    perimeter = 2.0 * length + math.pi * diameter
+    assert abs(float(volumes[0]) - analytic) < cell * depth * perimeter
+    assert float(volumes[1]) == 0.0

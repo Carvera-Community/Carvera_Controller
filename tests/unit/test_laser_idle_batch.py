@@ -33,8 +33,8 @@ def _mock_backend(laser_batches: list[list[int]], mill_batches: list[list[int]] 
         del tool_unit_scale
         laser_batches.append([int(j.end_vertex) for j in strokes])
 
-    def carve_segments(segments, profile, tool_unit_scale=1.0, tool_def=None):
-        del profile, tool_unit_scale, tool_def
+    def carve_segments(segments, profile, tool_unit_scale=1.0, tool_def=None, volumes=None):
+        del profile, tool_unit_scale, tool_def, volumes
         mill_batches.append([int(p1[0]) for _p0, p1, _a0, _a1 in segments])
         return set()
 

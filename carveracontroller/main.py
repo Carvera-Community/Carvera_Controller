@@ -210,6 +210,7 @@ from carveracontroller.ui.file_browser.thumbnail import (
     thumbnail_cache_for_app,
     thumbnails_enabled,
 )
+from carveracontroller.ui.file_sim_info.FileSimInfoPopup import FileSimInfoPopup
 from carveracontroller.ui.LocalFilePicker import open_local_file_picker
 from carveracontroller.ui.tutorial.session import demo_is_active, tutorial_blocks_motion
 from carveracontroller.ui.tutorial.tour import Tutorial, apply_demo_readout
@@ -350,6 +351,7 @@ from .GcodeViewer import (
     COLOR_SCHEME_BY_TOOL,
     COLOR_SCHEME_BY_TYPE,
     COLOR_SCHEME_BY_Z,
+    SIM_VIEW_SIMULATION,
     VISIBILITY_ALL_BUCKET_BITS,
     VISIBILITY_MAX_TOOLS,
     GCodeViewer,
@@ -398,7 +400,7 @@ from .ui.graph_controls import (  # noqa: F401  – GraphControls registers with
     graph_metric_ylim,
     graph_number_from_label,
 )
-from .ui.graph_series import format_graph_value, rpm_deviation_percent
+from .ui.graph_series import format_graph_value, mrr_graph_sample, rpm_deviation_percent
 from .ui.graph_widget_twinx import StaticMatplotFigureTwinx  # noqa: F401  – registers widget with Kivy Factory
 
 matplotlib.rcParams["path.simplify"] = True
@@ -3032,6 +3034,7 @@ class Makera(RelativeLayout):
         self.cmm_workbench_popup = None
         self.facing_popup = FacingWizardPopup()
         self.stock_settings_popup = StockSettingsPopup()
+        self.file_sim_info_popup = FileSimInfoPopup()
         self.bed_settings_popup = BedSettingsPopup()
         self.adv_calibrate_popup = AdvCalibratePopup()
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
@@ -3064,11 +3067,11 @@ class Makera(RelativeLayout):
         self.gcode_viewer.bind(sim_hud_text=self._on_viewer_sim_hud_text)
         self.gcode_viewer.bind(sim_hud_visible=self._on_viewer_sim_hud_visible)
         self.gcode_viewer.bind(sim_carving=self._on_viewer_sim_carving)
-        self.gcode_viewer.bind(sim_mesh_visible=self._on_viewer_sim_mesh_visible)
+        self.gcode_viewer.bind(sim_view=self._on_viewer_sim_view)
         self._on_viewer_sim_hud_text(self.gcode_viewer, self.gcode_viewer.sim_hud_text)
         self._on_viewer_sim_hud_visible(self.gcode_viewer, self.gcode_viewer.sim_hud_visible)
         self._on_viewer_sim_carving(self.gcode_viewer, self.gcode_viewer.sim_carving)
-        self._on_viewer_sim_mesh_visible(self.gcode_viewer, self.gcode_viewer.sim_mesh_visible)
+        self._on_viewer_sim_view(self.gcode_viewer, self.gcode_viewer.sim_view)
         self.gcode_viewer_display_drop_down.show_grid = self.gcode_viewer.is_grid_visible()
         self.gcode_viewer_display_drop_down.show_ghost = self.gcode_viewer.is_path_ghosted()
         self.gcode_viewer.bind(stock_visible=self._on_viewer_stock_visible)
@@ -3614,6 +3617,11 @@ class Makera(RelativeLayout):
         popup.rotary_mode = bool(App.get_running_app().has_4axis)
         popup.has_off_axis_y = bool(App.get_running_app().has_off_axis_y)
         popup.open()
+
+    def open_file_sim_info_popup(self):
+        self._pre_modal_keyboard_jog = self.keyboard_jog_control
+        self.toggle_keyboard_jog_control(True)
+        self.file_sim_info_popup.open()
 
     def open_bed_settings_popup(self):
         self._pre_modal_keyboard_jog = self.keyboard_jog_control
@@ -7674,7 +7682,23 @@ class Makera(RelativeLayout):
     def _graph_metric_sample(self, metric):
         if metric.key == "rpm_deviation":
             return rpm_deviation_percent(self._cnc_float("curspindle"), self._cnc_float("tarspindle"))
+        if metric.key == "mrr":
+            return self._graph_mrr_sample()
         return self._cnc_float(metric.cnc_var)
+
+    def _graph_mrr_sample(self):
+        app = App.get_running_app()
+        if not (app and getattr(app, "playing", False)):
+            return mrr_graph_sample(None, 100.0)
+        viewer = getattr(self, "gcode_viewer", None)
+        if viewer is None or not hasattr(viewer, "get_sim_mrr_at_playhead"):
+            return mrr_graph_sample(None, 100.0)
+        ov = CNC.vars.get("OvFeed", 100) or 100
+        try:
+            ov = float(ov)
+        except (TypeError, ValueError):
+            ov = 100.0
+        return mrr_graph_sample(viewer.get_sim_mrr_at_playhead(), ov)
 
     # -----------------------------------------------------------------------
     def _update_graph_chart(self, *_args):
@@ -9540,10 +9564,10 @@ class Makera(RelativeLayout):
         if hud is not None:
             hud.carving = bool(carving)
 
-    def _on_viewer_sim_mesh_visible(self, _instance, visible):
+    def _on_viewer_sim_view(self, _instance, mode):
         hud = getattr(self, "sim_stats_hud", None)
         if hud is not None:
-            hud.mesh_visible = bool(visible)
+            hud.view_mode = str(mode or SIM_VIEW_SIMULATION)
 
     def _on_viewer_stock_visible(self, _instance, visible):
         """Keep the Stock menu item highlight in sync with viewer visibility."""

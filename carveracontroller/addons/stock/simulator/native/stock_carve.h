@@ -135,7 +135,8 @@ int sc_heightmap_carve(
     const double *p1,
     int nseg,
     const ScProfile *profile,
-    const ScCarveOutputs *out);
+    const ScCarveOutputs *out,
+    double *volumes);
 
 /* Lower the leftover radii. a0[i] / a1[i] are the A-axis angles (degrees) at the two ends of move i.
  * Returns 0, or -1 if memory ran out.
@@ -148,7 +149,8 @@ int sc_cylindrical_carve(
     const double *a1,
     int nseg,
     const ScProfile *profile,
-    const ScCarveOutputs *out);
+    const ScCarveOutputs *out,
+    double *volumes);
 
 /* ------------------------------------------------------------------------- */
 /* Laser painting                                                            */
@@ -333,7 +335,8 @@ int sc_voxel_carve(
     ScGetChunkFn get_chunk,
     void *ctx,
     ScChunkRec **touched,
-    int *n_touched);
+    int *n_touched,
+    double *volumes);
 
 #ifdef __cplusplus
 }

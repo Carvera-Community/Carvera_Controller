@@ -167,13 +167,14 @@ class VoxelBackend(LaserDecalMixin):
         profile,
         tool_unit_scale: float = 1.0,
         tool_def=None,
+        volumes=None,
     ) -> set[TileKey]:
         del tool_unit_scale, tool_def
         if not segments or not profile:
             return set()
         from carveracontroller.addons.stock.simulator.native import carve_voxels
 
-        dirty = carve_voxels(self.grid, list(segments), profile)
+        dirty = carve_voxels(self.grid, list(segments), profile, volumes=volumes)
         if self._laser is not None:
             max_r = max((r for _z, r in profile), default=0.0)
             if max_r > 0 and self._clear_laser_batch(segments, max_r):

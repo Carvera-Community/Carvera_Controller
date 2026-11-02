@@ -3,7 +3,13 @@
 import pytest
 
 from carveracontroller.CNC import CNC
-from carveracontroller.GcodeViewer import TOOL_PALETTE_SIZE, bridge_toolpath_vertices, toolpath_color_uniforms
+from carveracontroller.GcodeViewer import (
+    TOOL_PALETTE_SIZE,
+    VERTEX_FLOAT_NUM,
+    MeshManager,
+    bridge_toolpath_vertices,
+    toolpath_color_uniforms,
+)
 from carveracontroller.ui.theme import Theme
 
 
@@ -51,16 +57,19 @@ def test_toolpath_color_uniforms_follow_the_theme():
     assert values["speed_color3"] == pytest.approx(list(theme.speed_colormap_4[:3]))
 
 
-def test_color_change_still_duplicates_destination_with_previous_color():
+def test_move_type_change_inserts_copy_of_previous_point_with_new_move_type():
     rows = [
         _pt(0, 0, 10, color=0, line_no=1, tool=1),
-        _pt(0, 0, 0, color=1, line_no=2, tool=1),
+        _pt(0, 0, 0, color=1, line_no=2, tool=1, feed=300, speed=10000),
     ]
     bridged = bridge_toolpath_vertices(rows)
     assert len(bridged) == 3
-    assert bridged[1][0:3] == rows[1][0:3]
-    assert bridged[1][4] == 0
-    assert bridged[2][4] == 1
+    snap = bridged[1]
+    assert snap[0:3] == rows[0][0:3]
+    assert snap[4] == 1
+    assert snap[5] == rows[0][5]
+    assert snap[7:] == rows[1][7:]
+    assert bridged[2] == rows[1]
 
 
 def test_tool_change_snap_attributes_connecting_move_to_new_tool():
@@ -153,3 +162,41 @@ def test_parsed_tool_change_rapid_is_bridged():
     bridged = bridge_toolpath_vertices(cnc.coordinates)
     for prev, cur in _positive_length_pairs(bridged):
         assert prev[6] == cur[6]
+
+
+def _mesh_from(rows):
+    manager = MeshManager()
+    manager.add_data_arrs(bridge_toolpath_vertices(rows), is_end=False)
+    return manager
+
+
+def _colors(manager, count):
+    return [manager.vertices[i * VERTEX_FLOAT_NUM + 3 : i * VERTEX_FLOAT_NUM + 6] for i in range(count)]
+
+
+def test_plunge_after_rapid_is_a_flat_cut_segment():
+    # Rapid above the part, then a plunge at F300: the plunge itself must be a cut.
+    rows = [
+        _pt(0, 0, 5, color=0, line_no=1, tool=1),
+        _pt(0, 0, -4, color=1, line_no=2, tool=1, feed=300),
+    ]
+    manager = _mesh_from(rows)
+    assert manager.raw_positions[3:6] == pytest.approx([0.0, 0.0, 5.0])  # zero-length step at the start
+    assert manager.raw_positions[6:9] == pytest.approx([0.0, 0.0, -4.0])
+    assert manager.vertex_types == [2.0, 1.0, 1.0]
+    assert manager.raw_feed_rates == [0.0, 300.0, 300.0]
+    # The plunge (vertex 1 to 2) has the same green colour and feed at both ends.
+    assert _colors(manager, 3) == [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0]]
+    feeds = [manager.vertices[i * VERTEX_FLOAT_NUM + 10] for i in range(3)]
+    assert feeds == [0.0, 300.0, 300.0]
+
+
+def test_retract_after_cut_is_a_flat_rapid_segment():
+    rows = [
+        _pt(0, 0, -4, color=1, line_no=1, tool=1, feed=300),
+        _pt(0, 0, 5, color=0, line_no=2, tool=1),
+    ]
+    manager = _mesh_from(rows)
+    assert manager.vertex_types == [1.0, 2.0, 2.0]
+    assert manager.raw_feed_rates == [300.0, 0.0, 0.0]
+    assert _colors(manager, 3) == [[0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]

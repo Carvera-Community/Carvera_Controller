@@ -23,6 +23,25 @@ def format_graph_value(value: float) -> str:
     return f"{number:.2f}"
 
 
+def mrr_graph_sample(mrr: float | None, ov_feed_percent: float) -> float:
+    """Programmed MRR scaled by the feed override. Missing values stay NaN."""
+    if mrr is None:
+        return math.nan
+    try:
+        value = float(mrr)
+    except (TypeError, ValueError):
+        return math.nan
+    if not math.isfinite(value):
+        return math.nan
+    try:
+        scale = float(ov_feed_percent) / 100.0
+    except (TypeError, ValueError):
+        scale = 1.0
+    if not math.isfinite(scale):
+        scale = 1.0
+    return value * max(0.0, scale)
+
+
 def rpm_deviation_percent(actual_rpm: float, target_rpm: float) -> float:
     """Signed percent by which actual spindle speed differs from the request.
 
