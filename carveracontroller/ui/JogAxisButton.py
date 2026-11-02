@@ -1,4 +1,4 @@
-"""Jog keys whose caption and face can follow the axis color.
+"""Jog keys whose caption and face can follow the jogging colors.
 
 ``JogAxisButton`` is the plain key. ``JogAxisTipButton`` is the same key with
 an axis-motion tooltip; the control page uses it for X, Y, and A.
@@ -15,14 +15,13 @@ from carveracontroller.ui.themes import jog_axis_markup
 def _show_jog_axis_caption(widget, caption: str, theme) -> None:
     """Show ``caption`` on ``widget``, coloring the letter and sign when asked.
 
-    A color tag would keep those glyphs in the axis color, so the coloring is
-    applied only while the key is enabled. A disabled pad paints ``disabled_color``.
-    The axis-background behavior leaves the caption plain; the key face carries the color.
+    The colors only show while the key is enabled. A disabled key keeps the
+    plain disabled text color. A pressed key uses the "pressed" colors.
     """
     if widget.disabled:
         text, markup = caption, False
     else:
-        text, markup = jog_axis_markup(caption, theme)
+        text, markup = jog_axis_markup(caption, theme, widget.state)
     if markup:
         widget.markup = True
         widget.text = text
@@ -36,12 +35,16 @@ def _refresh_jog_axis_label(widget, *_args) -> None:
 
 
 def _bind_jog_axis_label(widget) -> None:
-    widget.bind(axis_label=_refresh_jog_axis_label, disabled=_refresh_jog_axis_label)
+    widget.bind(
+        axis_label=_refresh_jog_axis_label,
+        disabled=_refresh_jog_axis_label,
+        state=_refresh_jog_axis_label,
+    )
     watch_theme(lambda _theme: _refresh_jog_axis_label(widget))
 
 
 class JogAxisButton(Button):
-    """Jog key. ``axis_label`` is the caption; axis behaviors color the letter, the sign, or the face."""
+    """Jog key. ``axis_label`` is the caption. With custom jogging colors on, the letter, the sign and the key background are colored."""
 
     axis_label = StringProperty("")
 

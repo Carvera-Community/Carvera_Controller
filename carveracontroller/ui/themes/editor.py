@@ -77,10 +77,9 @@ FIELDS_BAR_WIDTH = dp(8)
 FIELDS_SCROLL_GUTTER = FIELDS_BAR_WIDTH + dp(4)
 REVERT_ICON = "data/history.png"
 
+_JOGGING_BEHAVIOR = "jogging_custom_colors"
 _BEHAVIOR_CAPTIONS = {
-    "jog_pad_axis_colors": "Jog pad axis colors",
-    "jog_pad_sign_colors": "Jog pad sign colors",
-    "jog_pad_axis_background": "Jog pad axis background",
+    _JOGGING_BEHAVIOR: "Use custom jogging colors",
     "group_main_menu": "Group main menu buttons",
 }
 
@@ -90,6 +89,7 @@ _SECTION_TITLES = {
     "fonts": "Fonts",
     "behaviors": "Behaviors",
     "axis": "Axes",
+    "jogging": "Jogging",
     "map": "Preview Map",
     "gcode": "G-code",
     "sketch": "Sketch",
@@ -143,12 +143,28 @@ def preview_shown_for_width(width: float) -> bool:
 
 
 def _center_input_text(field, *_args) -> None:
-    """Keep a single-line field's text in the vertical middle of its box."""
-    line = field.line_height or field.font_size
-    pad_y = max((field.height - line) / 2, dp(2))
+    """Center one line, and keep the whole glyph inside the field."""
+    line = float(field.line_height or 0)
+    if line <= 1:
+        return
+    needed = line + dp(4)
+    if float(field.height) + 0.5 < needed:
+        field.height = needed
+        return
+    pad_y = max((float(field.height) - line) / 2, 0)
     padding = [dp(6), pad_y, dp(6), pad_y]
-    if [float(value) for value in field.padding] != padding:
+    current = [float(value) for value in field.padding]
+    if any(abs(left - right) > 0.1 for left, right in zip(current, padding)):
         field.padding = padding
+    # A viewport that used to be too short leaves the line scrolled out of view.
+    # Leave a value the user is still typing alone when it is wider than the box.
+    if field.scroll_x or field.scroll_y:
+        label = field._label_cached
+        visible = float(field.width) - padding[0] - padding[2]
+        text_width = field._get_text_width(field.text or " ", field.tab_width, label) if label is not None else 0
+        if text_width <= visible + 1:
+            field.scroll_x = 0
+            field.scroll_y = 0
 
 
 def _section_title(group: str) -> str:
@@ -353,8 +369,14 @@ class _TokenField(_DescribedRow, BoxLayout):
             pos_hint={"center_y": 0.5},
             padding=[dp(6), dp(6)],
         )
-        self.field.bind(text=self._changed, size=_center_input_text)
+        self.field.bind(
+            text=self._changed,
+            size=_center_input_text,
+            line_height=_center_input_text,
+            font_size=_center_input_text,
+        )
         self.add_widget(self.field)
+        _center_input_text(self.field)
         self.revert = _IconButton(REVERT_ICON, on_release=lambda *_args: self._on_revert(self.key))
         self.revert.pos_hint = {"center_y": 0.5}
         self.add_widget(self.revert)
@@ -734,9 +756,12 @@ class SettingThemeEditor(SettingItem):
         self._body_row.add_widget(self._fields_pane)
         self._body_row.add_widget(self._preview_column)
 
+        self._behavior_fields = {}
         sections = token_sections()
         for group, keys in sections:
             section = _CategorySection()
+            if group == "jogging":
+                self._add_behavior_field(section, _JOGGING_BEHAVIOR)
             for key in keys:
                 color = isinstance(getattr(self.draft, key), list)
                 row = _TokenField(
@@ -773,16 +798,10 @@ class SettingThemeEditor(SettingItem):
             field.style.bind(text=self._on_font_choice)
 
         behaviors_section = _CategorySection()
-        self._behavior_fields = {}
         for key in BEHAVIOR_KEYS:
-            row = _BehaviorFieldRow(
-                tr._(_BEHAVIOR_CAPTIONS.get(key, key)),
-                key,
-                self._on_behavior,
-                self.revert_behavior,
-            )
-            self._behavior_fields[key] = row
-            behaviors_section.add_widget(row)
+            if key == _JOGGING_BEHAVIOR:
+                continue
+            self._add_behavior_field(behaviors_section, key)
         self._register_section("behaviors", behaviors_section)
         first = next(iter(self._sections))
         self._section_tabs[first].state = "down"
@@ -808,6 +827,16 @@ class SettingThemeEditor(SettingItem):
         Clock.schedule_once(self._sync_viewport_height, 0)
         Clock.schedule_once(self._restore_editor_height, 0)
         Clock.schedule_once(lambda _dt: self._on_body_width(self._body_row, self._body_row.width), 0)
+
+    def _add_behavior_field(self, section, key: str) -> None:
+        row = _BehaviorFieldRow(
+            tr._(_BEHAVIOR_CAPTIONS.get(key, key)),
+            key,
+            self._on_behavior,
+            self.revert_behavior,
+        )
+        self._behavior_fields[key] = row
+        section.add_widget(row)
 
     def _register_section(self, group: str, section) -> None:
         """Keep ``section`` off the tree until its tab is selected."""

@@ -22,6 +22,8 @@ _RUN_ICON = "data/play.png"
 _DELETE_ICON = "data/delete.png"
 _ACTION_HEIGHT = dp(40)
 JOG_PREVIEW_SIDE = dp(88)
+_JOG_GAP = dp(8)
+_JOG_CAPTIONS = ("X+", "Y+", "Z+", "A+")
 _AXIS_LETTERS = ("X", "Y", "Z", "A")
 _GCODE_PREVIEW_LINES = (
     "(Setup)",
@@ -331,21 +333,24 @@ class ThemePreview(BoxLayout):
 
         jog_fill = theme.button_fill("normal", "normal", False, True)
         jog_text = theme.button_text("normal", "normal", False, True)
-        self.jog_x = _Painted("X+", jog_fill, jog_text, theme.font_jog_pad, width=JOG_PREVIEW_SIDE)
-        self.jog_y = _Painted("Y+", jog_fill, jog_text, theme.font_jog_pad, width=JOG_PREVIEW_SIDE)
         jog_font = min(sp(24), max(sp(16), JOG_PREVIEW_SIDE * 0.28))
-        for key in (self.jog_x, self.jog_y):
+        self.jog_keys = tuple(
+            _Painted(caption, jog_fill, jog_text, theme.font_jog_pad, width=JOG_PREVIEW_SIDE)
+            for caption in _JOG_CAPTIONS
+        )
+        self.jog_x, self.jog_y, self.jog_z, self.jog_a = self.jog_keys
+        for key in self.jog_keys:
             key.height = JOG_PREVIEW_SIDE
             key.label.font_size = jog_font
         self.jog_row = BoxLayout(
             orientation="horizontal",
             size_hint=(None, None),
             height=JOG_PREVIEW_SIDE,
-            spacing=dp(8),
+            spacing=_JOG_GAP,
         )
-        self.jog_row.add_widget(self.jog_x)
-        self.jog_row.add_widget(self.jog_y)
-        self.jog_row.width = JOG_PREVIEW_SIDE * 2 + dp(8)
+        for key in self.jog_keys:
+            self.jog_row.add_widget(key)
+        self.jog_row.width = JOG_PREVIEW_SIDE * len(self.jog_keys) + _JOG_GAP * (len(self.jog_keys) - 1)
 
         self.field = _Painted(
             "12.50",
@@ -413,7 +418,7 @@ class ThemePreview(BoxLayout):
         for letter, chip in zip(_AXIS_LETTERS, self.axis_chips):
             axis_color = getattr(theme, f"axis_{letter.lower()}")
             chip.paint(top_fill, axis_color, top_text, theme.text_muted, theme.font_top_bar, theme.top_bar_radius)
-        for key in (self.jog_x, self.jog_y):
+        for key in self.jog_keys:
             key.fill_color.rgba = theme.jog_axis_fill(key.plain, "normal", False, True)
             key.label.color = list(theme.jog_axis_text(key.plain, "normal", False, True))
             key.label.font_name = theme.font_jog_pad

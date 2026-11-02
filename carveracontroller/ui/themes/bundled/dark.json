@@ -8,9 +8,7 @@
     "code_list": null
   },
   "behaviors": {
-    "jog_pad_axis_colors": false,
-    "jog_pad_sign_colors": false,
-    "jog_pad_axis_background": false,
+    "jogging_custom_colors": false,
     "group_main_menu": false
   },
   "bg": "#18181a",
@@ -40,7 +38,7 @@
   "help": "#005800",
   "help_down": "#004000",
   "track": "#1c1d20",
-  "panel": "#2d2d2d",
+  "panel": "#28292d",
   "panel_deep": "#202428",
   "panel_inset": "#1c1c1c",
   "row": "#383838",
@@ -82,6 +80,32 @@
     "y": "#229954",
     "z": "#3498db",
     "a": "#f7dc6f"
+  },
+  "jogging": {
+    "x_background": "#a85a52",
+    "x_background_down": "#7d433e",
+    "x_letter": "#f6c7c2",
+    "x_letter_down": "#ffe4e0",
+    "x_sign": "#f6c7c2",
+    "x_sign_down": "#ffe4e0",
+    "y_background": "#3f8a62",
+    "y_background_down": "#2d6848",
+    "y_letter": "#c6edd8",
+    "y_letter_down": "#e4f7ec",
+    "y_sign": "#c6edd8",
+    "y_sign_down": "#e4f7ec",
+    "z_background": "#3d7eae",
+    "z_background_down": "#2c5e84",
+    "z_letter": "#c9e6f8",
+    "z_letter_down": "#e7f4fc",
+    "z_sign": "#c9e6f8",
+    "z_sign_down": "#e7f4fc",
+    "a_background": "#967f2e",
+    "a_background_down": "#705e22",
+    "a_letter": "#fff3c0",
+    "a_letter_down": "#fff9e2",
+    "a_sign": "#fff3c0",
+    "a_sign_down": "#fff9e2"
   },
   "map": {
     "bg": "#323232",

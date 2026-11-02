@@ -8,10 +8,10 @@
             cols: 2
             size_hint_y: None
             height: self.minimum_height
-            spacing:dp(2)
-            row_default_height: dp(28)
+            spacing: dp(6), dp(8)
+            row_default_height: dp(32)
             row_force_default: True
-            padding:dp(1)
+            padding: dp(4)
             halign:'right'
             valign:'top'
             wcs_drop_content: wcs_drop_content.__self__  # hack to prevent gc from removing object per https://kivy.org/doc/stable/guide/lang.html#referencing-widgets
@@ -276,11 +276,5 @@
                     size_hint_x: 0.4
                     font_size: '14dp'
                     tooltip_txt: tr._('Enable this switch if you have a normally closed probe instead of a normally open one')
-                    canvas.before:
-                        Color:
-                            rgba: app.theme.row_alt
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
                     active: root.get_setting('UseProbeNormallyClosed') == "1"
                     on_active: root.setting_changed('UseProbeNormallyClosed', "1" if self.active else "0")
