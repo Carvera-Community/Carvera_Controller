@@ -129,6 +129,18 @@ MD5_HEX_DIGITS = frozenset("0123456789abcdef")
 MD5_HEX_LENGTH = 32
 
 
+#: Console text skipped while waiting for the receiver's start byte, before giving up.
+MAX_START_NOISE_BYTES = 4096
+
+
+def _is_console_text(char) -> bool:
+    """True for one printable ASCII byte or CR/LF/TAB: console output, never a handshake byte."""
+    if not char or len(char) != 1:
+        return False
+    c = char[0]
+    return c in (9, 10, 13) or 32 <= c < 127 and c != ord("C")
+
+
 class RevPacketState(Enum):
     WAIT_HEADER = auto()
     READ_LENGTH = auto()
@@ -892,8 +904,15 @@ class XMODEM:
         error_count = 0
         crc_mode = 0
         cancel = 0
+        noise_bytes = 0
         while True:
             char = self.getc(1)
+            if char and _is_console_text(char) and noise_bytes < MAX_START_NOISE_BYTES:
+                # Console text still on the wire (a status reply, a message from an earlier
+                # transfer) is not part of the handshake. Nothing has been sent yet, so skip it
+                # instead of counting it as an error and aborting.
+                noise_bytes += 1
+                continue
             if char:
                 if char == NAK:
                     self.log.debug("standard checksum requested (NAK).")
@@ -961,9 +980,12 @@ class XMODEM:
             checksum = self._make_send_checksum(crc_mode, data)
 
             # emit packet
+            resend = True
             while True:
-                self.log.debug("send: block %d", sequence)
-                self.putc(header + data + checksum)
+                if resend:
+                    self.log.debug("send: block %d", sequence)
+                    self.putc(header + data + checksum)
+                resend = True
                 char = self.getc(1, timeout)
                 if char == ACK:
                     success_count += 1
@@ -971,12 +993,26 @@ class XMODEM:
                         callback(packet_size, total_packets, success_count, error_count)
                     error_count = 0
                     break
-                if char == CAN:
-                    if cancel:
-                        self.log.info("Transmission canceled: received 2xCAN.")
+                if char == CRC:
+                    # A late start byte, sent before the receiver saw block 0. Not a request
+                    # to resend; keep waiting for this block's ACK.
+                    resend = False
+                    error_count += 1
+                    if error_count > retry:
+                        self.log.error("send error: no ACK for block %d, aborting.", sequence)
+                        self.abort(timeout=timeout)
                         return False
-                    self.log.debug("Cancellation at Transmission.")
-                    cancel = 1
+                    continue
+                if char in (CAN, EOT) or _is_console_text(char):
+                    # The receiver has left its upload loop (it cancelled, or this is console
+                    # output). Anything sent now would be read as console input, and file data
+                    # there can be G-code or a halt byte, so stop without sending more.
+                    self.log.error(
+                        "send error: receiver stopped the transfer at block %d (got %r); not resending",
+                        sequence,
+                        char,
+                    )
+                    return False
 
                 self.log.info("send error: expected ACK; got %r for block %d", char, sequence)
                 error_count += 1

@@ -2263,6 +2263,29 @@ class Controller:
             time.sleep(wait_s)
         self.pausing = False
 
+    def discardPendingInput(self, max_bytes=65536):
+        """Throw away bytes already waiting on the stream; returns how many.
+
+        Call after ``pauseStream`` and before a file transfer's handshake. A status query sent just
+        before the pause leaves its reply unread on the stream, and the transfer would otherwise
+        read that text as handshake bytes (e.g. "MPos:" instead of XMODEM's 'C') and abort.
+        """
+        stream = self.stream
+        dropped = 0
+        if stream is None:
+            return 0
+        try:
+            while dropped < max_bytes and stream.waiting_for_recv():
+                data = stream.recv()
+                if not data:
+                    break
+                dropped += len(data)
+        except Exception:
+            logger.debug("discardPendingInput: stream read failed", exc_info=True)
+        if dropped:
+            logger.debug("Discarded %d stale bytes before a file transfer", dropped)
+        return dropped
+
     def resumeStream(self):
         self.paused = False
         self.pausing = False
