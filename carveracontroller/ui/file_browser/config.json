@@ -1,0 +1,18 @@
+[
+    {
+        "type": "bool",
+        "title": "Show thumbnail previews",
+        "desc": "Show preview images embedded in G-code files. Off leaves the file icon and does not read or update the thumbnail cache.",
+        "section": "carvera",
+        "key": "file_browser_thumbnails",
+        "default": "1"
+    },
+    {
+        "type": "numeric",
+        "title": "Thumbnail cache size",
+        "desc": "How many preview images to keep (1 to 10000). The oldest images are removed when the cache is full.",
+        "section": "carvera",
+        "key": "file_browser_thumbnail_cache_size",
+        "default": "512"
+    }
+]

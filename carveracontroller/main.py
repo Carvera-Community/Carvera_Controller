@@ -203,9 +203,11 @@ from carveracontroller.ui.file_browser.sources import (
     rename_local_path,
 )
 from carveracontroller.ui.file_browser.thumbnail import (
+    clamp_thumbnail_cache_size,
     is_gcode_path,
     machine_cache_key,
     thumbnail_cache_for_app,
+    thumbnails_enabled,
 )
 from carveracontroller.ui.LocalFilePicker import open_local_file_picker
 from carveracontroller.ui.tutorial.session import demo_is_active, tutorial_blocks_motion
@@ -3120,6 +3122,7 @@ class Makera(RelativeLayout):
         self.load_theme_config()
         self.load_keyboard_shortcuts_config()
         self.load_gcode_viewer_config()
+        self.load_file_browser_config()
         self.load_pendant_config()
         self.shortcut_manager = ShortcutManager(self)
         self.shortcut_manager.install()
@@ -3377,6 +3380,29 @@ class Makera(RelativeLayout):
 
         self.config_popup.settings_panel.add_json_panel(
             tr._("G-Code Viewer"), Config, data=json.dumps(gcode_viewer_config)
+        )
+
+    def load_file_browser_config(self):
+        config_def_file = os.path.join(os.path.dirname(__file__), "ui", "file_browser", "config.json")
+        try:
+            with open(config_def_file) as file:
+                file_browser_config_definition = json.load(file)
+        except Exception as e:
+            logger.error(f"Failed to load file browser config.json: {e}")
+            return
+        file_browser_config = []
+        for setting in file_browser_config_definition:
+            if "default" in setting:
+                Config.setdefault(setting["section"], setting["key"], setting["default"])
+                setting.pop("default", None)
+            file_browser_config.append(setting)
+        if Config.has_option("carvera", "file_browser_thumbnail_cache_size"):
+            raw_size = Config.get("carvera", "file_browser_thumbnail_cache_size")
+            clamped_size = str(clamp_thumbnail_cache_size(raw_size))
+            if raw_size != clamped_size:
+                Config.set("carvera", "file_browser_thumbnail_cache_size", clamped_size)
+        self.config_popup.settings_panel.add_json_panel(
+            tr._("File browser"), Config, data=json.dumps(file_browser_config)
         )
 
     def load_pendant_config(self):
@@ -5545,6 +5571,8 @@ class Makera(RelativeLayout):
         return None, None
 
     def _ingest_machine_gcode_thumbnail(self, remote_path, local_path):
+        if not thumbnails_enabled():
+            return
         if self.file_popup.firmware_mode or self.downloading_config or self.backing_up_config:
             return
         if not is_gcode_path(remote_path) and not is_gcode_path(local_path):
@@ -5566,6 +5594,8 @@ class Makera(RelativeLayout):
         self._pending_machine_thumb = (os.path.normpath(remote_path or ""), source_file)
 
     def flush_pending_machine_thumbnail(self):
+        if not thumbnails_enabled():
+            return
         pending = self._pending_machine_thumb
         if not pending:
             return
@@ -9289,7 +9319,42 @@ class Makera(RelativeLayout):
             self.show_playbar_tool_change_markers = raw_enabled not in ("0", "false", "False")
             self._apply_tool_change_markers()
 
+        self._apply_file_browser_setting_changes()
+
         self.controller_setting_change_list.clear()
+
+    def _apply_file_browser_setting_changes(self):
+        changes = self.controller_setting_change_list
+        size_changed = "file_browser_thumbnail_cache_size" in changes
+        thumbs_changed = "file_browser_thumbnails" in changes
+        if not size_changed and not thumbs_changed:
+            return
+        if size_changed:
+            raw_size = changes["file_browser_thumbnail_cache_size"]
+            clamped = clamp_thumbnail_cache_size(raw_size)
+            if str(raw_size) != str(clamped):
+                clamped_text = str(clamped)
+                Config.set("carvera", "file_browser_thumbnail_cache_size", clamped_text)
+                Config.write()
+                settings = getattr(self, "config_popup", None)
+                if settings is not None:
+                    for widget in settings._all_setting_items():
+                        if widget.section == "carvera" and widget.key == "file_browser_thumbnail_cache_size":
+                            widget.value = clamped_text
+                            break
+            cache = self._gcode_thumbnail_cache()
+            if cache is not None:
+                cache.set_max_images(clamped)
+        popup = getattr(self, "file_popup", None)
+        if popup is None:
+            return
+        enabled = thumbnails_enabled()
+        if thumbs_changed and enabled:
+            self.flush_pending_machine_thumbnail()
+        popup.apply_thumbnail_preferences(
+            previews_toggled_on=thumbs_changed and enabled,
+            previews_enabled=enabled,
+        )
 
     # -----------------------------------------------------------------------
     def open_setting_restore_confirm_popup(self):

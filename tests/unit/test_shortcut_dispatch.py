@@ -738,6 +738,7 @@ def test_applying_shortcuts_does_not_change_unrelated_mdi_permission():
         allow_mdi_while_machine_running="0",
         shortcut_manager=shortcut_manager,
         _update_macro_button_text=Mock(),
+        _apply_file_browser_setting_changes=Mock(),
         config_popup=SimpleNamespace(btn_apply=SimpleNamespace(disabled=False)),
     )
 
@@ -754,6 +755,7 @@ def test_applying_y_inversion_does_not_reload_current_shortcuts():
         controller_setting_change_list={"invert_y_axis_jogging": "0"},
         shortcut_manager=shortcut_manager,
         _update_macro_button_text=Mock(),
+        _apply_file_browser_setting_changes=Mock(),
         config_popup=SimpleNamespace(btn_apply=SimpleNamespace(disabled=False)),
     )
     app = SimpleNamespace(invert_y_axis_jogging=True)

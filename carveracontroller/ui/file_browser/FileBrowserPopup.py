@@ -65,6 +65,7 @@ from .thumbnail import (
     local_cache_key,
     machine_cache_key,
     thumbnail_cache_for_app,
+    thumbnails_enabled,
 )
 
 
@@ -574,7 +575,7 @@ class FileBrowserPopup(ModalView):
     def _fill_entry_thumbnails(self, entries: list) -> None:
         for entry in entries:
             entry["thumbnail"] = ""
-        if self.firmware_mode:
+        if self.firmware_mode or not thumbnails_enabled():
             return
         cache = self._thumbnail_cache()
         if cache is None:
@@ -604,7 +605,13 @@ class FileBrowserPopup(ModalView):
             entry["thumbnail"] = result.image_path or ""
 
     def _schedule_local_thumbnail_extract(self) -> None:
-        if self.firmware_mode or self.location != LOCATION_DEVICE:
+        if self.firmware_mode or self.location != LOCATION_DEVICE or not thumbnails_enabled():
+            return
+        self._start_local_thumbnail_extract()
+
+    def _start_local_thumbnail_extract(self) -> None:
+        """Scan the current local folder. Caller decides whether the device tab is showing."""
+        if self.firmware_mode or not thumbnails_enabled():
             return
         cache = self._thumbnail_cache()
         if cache is None:
@@ -619,24 +626,33 @@ class FileBrowserPopup(ModalView):
             daemon=True,
         ).start()
 
+    def apply_thumbnail_preferences(self, *, previews_toggled_on: bool, previews_enabled: bool) -> None:
+        """Refresh the open list after the thumbnail settings change."""
+        if not previews_enabled:
+            self._thumb_gen += 1
+        elif previews_toggled_on:
+            self._start_local_thumbnail_extract()
+        self._rebuild_list()
+
     def _extract_local_thumbnails(self, gen: int, directory: str, entries: list, cache) -> None:
         changed = False
-        for entry in entries:
-            if gen != self._thumb_gen:
-                return
-            if entry.get("is_dir"):
-                continue
-            path = entry.get("path") or ""
-            if not is_gcode_path(path):
-                continue
-            size = int(entry.get("size") or 0)
-            mtime = entry.get("date")
-            key = local_cache_key(path)
-            if cache.lookup(key, size, mtime).hit:
-                continue
-            cache.ingest_file(path, key, size, mtime)
-            changed = True
-        if changed:
+        with cache.defer_index_writes():
+            for entry in entries:
+                if gen != self._thumb_gen or not thumbnails_enabled():
+                    break
+                if entry.get("is_dir"):
+                    continue
+                path = entry.get("path") or ""
+                if not is_gcode_path(path):
+                    continue
+                size = int(entry.get("size") or 0)
+                mtime = entry.get("date")
+                key = local_cache_key(path)
+                if cache.lookup(key, size, mtime).hit:
+                    continue
+                cache.ingest_file(path, key, size, mtime)
+                changed = True
+        if changed and gen == self._thumb_gen and thumbnails_enabled():
             Clock.schedule_once(lambda *_: self._on_local_thumbnails_ready(gen, directory), 0)
 
     def _on_local_thumbnails_ready(self, gen: int, directory: str) -> None:
@@ -674,6 +690,21 @@ class FileBrowserPopup(ModalView):
         if reset_scroll:
             rv.scroll_y = 1
         Clock.schedule_once(lambda *_: self._refresh_list_view(reset_scroll=reset_scroll), 0)
+
+    def _refresh_row_selection(self) -> None:
+        """Update the highlight on the rows already shown."""
+        rv = self.ids.get("file_list")
+        if rv is None or not rv.data:
+            return
+        highlight = os.path.normpath(self._highlight_path) if self._highlight_path else ""
+        multi = bool(self.multi_select_mode and self._multi_select_allowed())
+        selected = {os.path.normpath(path) for path in self._selected_paths() if path}
+        for row in rv.data:
+            raw_path = row.get("path") or ""
+            path = os.path.normpath(raw_path) if raw_path else ""
+            row["selected"] = (not multi) and bool(highlight) and path == highlight
+            row["checked"] = bool(path) and path in selected
+        self._refresh_list_view()
 
     def _refresh_list_view(self, *_args, reset_scroll: bool = False):
         rv = self.ids.get("file_list")
@@ -752,14 +783,14 @@ class FileBrowserPopup(ModalView):
         self._apply_selected_paths([path])
         if self.location == LOCATION_MACHINE:
             self.selected_machine_filesize = intsize
-        self._rebuild_list()
+        self._refresh_row_selection()
         self._last_range_index = self._index_for_path(path)
         self._sync_chrome()
 
     def _on_select_row(self, path: str, _kind: str, intsize: int):
         if self._highlight_path == path:
             self._clear_list_selection()
-            self._rebuild_list()
+            self._refresh_row_selection()
             self._sync_chrome()
             return
         self._select_file(path, intsize)
