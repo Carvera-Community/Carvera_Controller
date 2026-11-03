@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from carveracontroller.addons.stock.simulator.carver_select import (
     BACKEND_CYLINDRICAL,
     BACKEND_HEIGHTMAP,
@@ -115,6 +117,23 @@ def test_profile_undercuts_only_reentrant_silhouettes():
     assert not profile_undercuts(ball)
     assert not profile_undercuts(bull)
     assert not profile_undercuts(radius)
+
+
+def test_cutting_profile_keeps_taper_when_flute_is_shorter_than_cone():
+    """Engraving bit with flute shorter than its cone must stay a cone, not a thin cylinder."""
+    tool = ToolDefinition(
+        number=2,
+        tool_type=ToolType.ENGRAVING,
+        diameter=3.175,
+        tip_diameter=0.3,
+        taper_angle_deg=15.0,
+        flute_length=5.0,  # cone height is ~5.36 mm
+    )
+    profile = resolve_cutting_profile(tool)
+    assert profile[0] == (0.0, 0.15)
+    assert abs(profile[-1][0] - 5.0) < 1e-9
+    assert abs(profile[-1][1] - (0.15 + 5.0 * math.tan(math.radians(15.0)))) < 1e-6
+    assert not profile_undercuts(profile)
 
 
 def test_auto_3axis_vbit_heightmap():

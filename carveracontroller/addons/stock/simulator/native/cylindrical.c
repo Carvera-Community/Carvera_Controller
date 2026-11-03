@@ -591,6 +591,7 @@ typedef struct ScCylCtx {
     uint8_t *changed;   /* [nx * n_theta] which cells of the rows being carved were lowered */
     double *r_cut;      /* [nx] new radius of each row (used when A spins in place) */
     int *all_theta;     /* [n_theta] 0, 1, 2, ... */
+    double *volume;     /* optional accumulator for the move being carved; NULL skips it */
 } ScCylCtx;
 
 /* cos/sin of -angle_deg: the tool is spun by -A so the stock rays stay put. */
@@ -790,6 +791,21 @@ static void sc_mark_tiles(
     }
 }
 
+static void sc_add_shell_volume(ScCylCtx *ctx, double old_r, double new_r) {
+    double theta, drop;
+    if (ctx->volume == NULL || !(new_r < old_r) || !(old_r > 0.0)) {
+        return;
+    }
+    if (new_r < 0.0) {
+        new_r = 0.0;
+    }
+    theta = ctx->grid->d_theta * (M_PI / 180.0);
+    drop = 0.5 * (old_r * old_r - new_r * new_r) * theta * ctx->grid->cell;
+    if (drop > 0.0) {
+        *ctx->volume += drop;
+    }
+}
+
 /* Store the new radius of cell (ix, ith) from ctx->work (row `row`) into the grid and the change mask. */
 static void sc_store_cell(ScCylCtx *ctx, int row, int ix, int ith) {
     int n_theta = ctx->grid->n_theta;
@@ -837,6 +853,7 @@ static void sc_carve_constant(ScCylCtx *ctx, const ScSegTool *move, double angle
             ray.uz = ctx->ray_uz[col];
             sc_cut_one(&ray, s, move, grid->cell, grid->stock_radius, &neu, &hit);
             if (hit && neu < s - 1e-9) {
+                sc_add_shell_volume(ctx, s, neu);
                 ctx->work[row * n_theta + ith] = neu;
                 ctx->changed[row * n_it + col] = 1;
                 any = 1;
@@ -904,6 +921,7 @@ static void sc_carve_full_rev(ScCylCtx *ctx, const ScSegTool *move, double angle
         for (col = 0; col < n_theta; col++) {
             double s = ctx->work[row * n_theta + col];
             if (ctx->r_cut[row] < s - 1e-9) {
+                sc_add_shell_volume(ctx, s, ctx->r_cut[row]);
                 ctx->work[row * n_theta + col] = ctx->r_cut[row];
                 ctx->changed[row * n_theta + col] = 1;
                 sc_store_cell(ctx, row, ix0 + row, col);
@@ -1089,6 +1107,7 @@ static int sc_carve_moving(ScCylCtx *ctx, const ScSegTool *move, double a0, doub
                 ray.uz = ctx->ray_uz[col];
                 sc_cut_one(&ray, s, &stamp, grid->cell, grid->stock_radius, &neu, &hit);
                 if (hit && neu < s - 1e-9) {
+                    sc_add_shell_volume(ctx, s, neu);
                     ctx->work[row * n_theta + ith] = neu;
                     ctx->changed[row * n_theta + ith] = 1;
                 }
@@ -1214,7 +1233,8 @@ int sc_cylindrical_carve(
     const double *a1,
     int nseg,
     const ScProfile *profile,
-    const ScCarveOutputs *out) {
+    const ScCarveOutputs *out,
+    double *volumes) {
     static const ScCarveOutputs no_outputs = {0};
     ScCylCtx ctx;
     int i;
@@ -1244,7 +1264,14 @@ int sc_cylindrical_carve(
     for (i = 0; i < nseg; i++) {
         const double *a = p0 + (size_t)i * 3;
         const double *b = p1 + (size_t)i * 3;
-        int rc = sc_carve_one(&ctx, a[0], a[1], a[2], b[0], b[1], b[2], a0[i], a1[i]);
+        int rc;
+        if (volumes != NULL) {
+            volumes[i] = 0.0;
+            ctx.volume = &volumes[i];
+        } else {
+            ctx.volume = NULL;
+        }
+        rc = sc_carve_one(&ctx, a[0], a[1], a[2], b[0], b[1], b[2], a0[i], a1[i]);
         if (rc != 0) {
             free(local_mask);
             sc_ctx_free(&ctx);

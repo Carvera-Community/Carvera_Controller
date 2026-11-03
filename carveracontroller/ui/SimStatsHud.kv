@@ -6,7 +6,7 @@
 
 <CarveSpinner>:
     size_hint: None, None
-    width: dp(16) if self.spinning else 0
+    width: dp(16)
     height: dp(16)
     line_rgba: app.theme.active_color
 
@@ -65,16 +65,21 @@
         Widget:
             size_hint_x: 1
         SimStatsHudIcon:
+            icon_source: 'data/information-outline.png'
+            tooltip_txt: tr._('File info')
+            pos_hint: {'center_y': 0.5}
+            on_release: app.root.open_file_sim_info_popup()
+        SimStatsHudIcon:
             icon_source: 'data/cog.png'
             tooltip_txt: tr._('Stock settings')
             pos_hint: {'center_y': 0.5}
             on_release: app.root.open_stock_settings_popup()
         SimStatsHudIcon:
             icon_source: 'data/eye.png'
-            icon_active: root.mesh_visible
-            tooltip_txt: tr._('Hide simulation') if root.mesh_visible else tr._('Show simulation')
+            icon_active: root.view_mode == 'simulation'
+            tooltip_txt: tr._('Simulation view')
             pos_hint: {'center_y': 0.5}
-            on_release: app.root.gcode_viewer.set_sim_mesh_visible(not root.mesh_visible)
+            on_release: root.open_view_menu(self)
     BoxLayout:
         size_hint: None, None
         size: self.minimum_size
@@ -87,3 +92,37 @@
             color: app.theme.text
             halign: 'left'
             valign: 'top'
+
+<SimViewMenuButton>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: '44dp'
+    padding: [dp(10), 0]
+    spacing: dp(8)
+    canvas.before:
+        Color:
+            rgba: app.theme.accent if self.state == 'down' else (0, 0, 0, 0)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Widget:
+        size_hint_x: None
+        width: dp(28)
+        canvas:
+            Color:
+                rgba: tuple(app.theme.active_color) if root.active else (app.theme.text_on_fill if root.state == 'down' else app.theme.icon)
+            Rectangle:
+                source: root.icon
+                pos: self.center_x - dp(12), self.center_y - dp(12)
+                size: dp(24) if root.icon else 0, dp(24) if root.icon else 0
+    Label:
+        text: root.text
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        font_size: '14sp'
+        color: tuple(app.theme.active_color) if root.active else (app.theme.text_on_fill if root.state == 'down' else app.theme.text)
+
+<SimViewDropDown>:
+    auto_width: False
+    width: dp(220)

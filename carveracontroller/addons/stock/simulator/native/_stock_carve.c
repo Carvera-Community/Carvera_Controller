@@ -54,6 +54,25 @@ static int sc_bind_f64(PyObject *obj, Py_buffer *view, const double **out, const
     return 0;
 }
 
+/* Borrow an optional writable float64 array of at least `n` items (None -> *out NULL). */
+static int sc_bind_volumes(PyObject *obj, Py_buffer *view, int n, double **out) {
+    *out = NULL;
+    memset(view, 0, sizeof(*view));
+    if (obj == NULL || obj == Py_None) {
+        return 0;
+    }
+    if (sc_get_buffer(obj, view, 1) != 0) {
+        return -1;
+    }
+    if (view->itemsize != (Py_ssize_t)sizeof(double) || view->len / (Py_ssize_t)sizeof(double) < (Py_ssize_t)n) {
+        PyErr_SetString(PyExc_ValueError, "volumes must be a float64 buffer of length nseg");
+        sc_release(view);
+        return -1;
+    }
+    *out = (double *)view->buf;
+    return 0;
+}
+
 /* Borrow an optional writable uint8 array: None leaves *ptr NULL. */
 static int sc_bind_optional_mask(PyObject *obj, Py_buffer *view, uint8_t **ptr) {
     *ptr = NULL;
@@ -324,21 +343,22 @@ static void sc_laser_release(ScPyLaser *laser) {
 
 static PyObject *py_heightmap(PyObject *self, PyObject *args) {
     PyObject *heights_obj, *p0_obj, *p1_obj, *zs_obj, *rs_obj, *hit_obj, *tile_obj;
-    PyObject *laser_obj, *flag_obj, *dirty_iu_obj, *dirty_iv_obj, *dirty_meta_obj;
+    PyObject *laser_obj, *flag_obj, *dirty_iu_obj, *dirty_iv_obj, *dirty_meta_obj, *volumes_obj;
     int nx, ny, tile, nseg, lnx, lnv, wrap;
     double min_x, min_y, min_z, cell, cell_u, cell_v, origin_u, origin_v, v_period;
-    Py_buffer heights = {0}, p0 = {0}, p1 = {0}, zs = {0}, rs = {0}, hit = {0}, tiles = {0};
+    Py_buffer heights = {0}, p0 = {0}, p1 = {0}, zs = {0}, rs = {0}, hit = {0}, tiles = {0}, volumes = {0};
     ScPyLaser laser;
     ScProfile profile;
     ScHeightGrid grid;
     ScCarveOutputs out;
+    double *volume_ptr = NULL;
     PyObject *result = NULL;
     int ntx, nty, rc;
     (void)self;
     memset(&laser, 0, sizeof(laser));
     if (!PyArg_ParseTuple(
             args,
-            "OiiiddddiOOOOiiOOOiiddddidOOOO",
+            "OiiiddddiOOOOiiOOOiiddddidOOOOO",
             &heights_obj,
             &nx,
             &ny,
@@ -368,7 +388,8 @@ static PyObject *py_heightmap(PyObject *self, PyObject *args) {
             &flag_obj,
             &dirty_iu_obj,
             &dirty_iv_obj,
-            &dirty_meta_obj)) {
+            &dirty_meta_obj,
+            &volumes_obj)) {
         return NULL;
     }
     memset(&out, 0, sizeof(out));
@@ -378,7 +399,8 @@ static PyObject *py_heightmap(PyObject *self, PyObject *args) {
         sc_bind_optional_mask(tile_obj, &tiles, &out.tile_mask) != 0 ||
         sc_laser_bind(
             &laser, laser_obj, lnx, lnv, cell_u, cell_v, origin_u, origin_v, wrap, v_period, 1.0, flag_obj,
-            dirty_iu_obj, dirty_iv_obj, dirty_meta_obj) != 0) {
+            dirty_iu_obj, dirty_iv_obj, dirty_meta_obj) != 0 ||
+        sc_bind_volumes(volumes_obj, &volumes, nseg, &volume_ptr) != 0) {
         goto done;
     }
     grid.heights = (float *)heights.buf;
@@ -395,7 +417,7 @@ static PyObject *py_heightmap(PyObject *self, PyObject *args) {
 
     /* Drop the GIL so Python can keep running while we carve. */
     Py_BEGIN_ALLOW_THREADS
-    rc = sc_heightmap_carve(&grid, (const double *)p0.buf, (const double *)p1.buf, nseg, &profile, &out);
+    rc = sc_heightmap_carve(&grid, (const double *)p0.buf, (const double *)p1.buf, nseg, &profile, &out, volume_ptr);
     Py_END_ALLOW_THREADS
     if (rc != 0) {
         PyErr_SetString(PyExc_MemoryError, "heightmap carve failed");
@@ -411,29 +433,31 @@ done:
     sc_release(&rs);
     sc_release(&hit);
     sc_release(&tiles);
+    sc_release(&volumes);
     sc_laser_release(&laser);
     return result;
 }
 
 static PyObject *py_cylindrical(PyObject *self, PyObject *args) {
     PyObject *radii_obj, *sin_obj, *cos_obj, *p0_obj, *p1_obj, *a0_obj, *a1_obj, *zs_obj, *rs_obj, *chg_obj, *tile_obj;
-    PyObject *laser_obj, *flag_obj, *dirty_iu_obj, *dirty_iv_obj, *dirty_meta_obj;
+    PyObject *laser_obj, *flag_obj, *dirty_iu_obj, *dirty_iv_obj, *dirty_meta_obj, *volumes_obj;
     int nx, n_theta, tile, nseg, ntx, ntt, lnx, lnv, wrap;
     double min_x, cell, d_theta, axis_y, axis_z, stock_radius;
     double cell_u, cell_v, origin_u, origin_v, v_period;
     Py_buffer radii = {0}, sint = {0}, cost = {0}, p0 = {0}, p1 = {0}, a0 = {0}, a1 = {0};
-    Py_buffer zs = {0}, rs = {0}, chg = {0}, tiles = {0};
+    Py_buffer zs = {0}, rs = {0}, chg = {0}, tiles = {0}, volumes = {0};
     ScPyLaser laser;
     ScProfile profile;
     ScCylGrid grid;
     ScCarveOutputs out;
+    double *volume_ptr = NULL;
     PyObject *result = NULL;
     int rc;
     (void)self;
     memset(&laser, 0, sizeof(laser));
     if (!PyArg_ParseTuple(
             args,
-            "OiiiddddddOOiOOOOOOiiOOOiiddddidOOOO",
+            "OiiiddddddOOiOOOOOOiiOOOiiddddidOOOOO",
             &radii_obj,
             &nx,
             &n_theta,
@@ -469,7 +493,8 @@ static PyObject *py_cylindrical(PyObject *self, PyObject *args) {
             &flag_obj,
             &dirty_iu_obj,
             &dirty_iv_obj,
-            &dirty_meta_obj)) {
+            &dirty_meta_obj,
+            &volumes_obj)) {
         return NULL;
     }
     memset(&out, 0, sizeof(out));
@@ -481,7 +506,8 @@ static PyObject *py_cylindrical(PyObject *self, PyObject *args) {
         sc_bind_optional_mask(tile_obj, &tiles, &out.tile_mask) != 0 ||
         sc_laser_bind(
             &laser, laser_obj, lnx, lnv, cell_u, cell_v, origin_u, origin_v, wrap, v_period, 1.0, flag_obj,
-            dirty_iu_obj, dirty_iv_obj, dirty_meta_obj) != 0) {
+            dirty_iu_obj, dirty_iv_obj, dirty_meta_obj) != 0 ||
+        sc_bind_volumes(volumes_obj, &volumes, nseg, &volume_ptr) != 0) {
         goto done;
     }
     grid.radii = (float *)radii.buf;
@@ -509,7 +535,8 @@ static PyObject *py_cylindrical(PyObject *self, PyObject *args) {
         (const double *)a1.buf,
         nseg,
         &profile,
-        &out);
+        &out,
+        volume_ptr);
     Py_END_ALLOW_THREADS
     if (rc != 0) {
         PyErr_SetString(PyExc_MemoryError, "cylindrical carve failed");
@@ -529,6 +556,7 @@ done:
     sc_release(&rs);
     sc_release(&chg);
     sc_release(&tiles);
+    sc_release(&volumes);
     sc_laser_release(&laser);
     return result;
 }
@@ -605,10 +633,11 @@ static PyObject *sc_touched_to_list(const ScChunkRec *touched, int n_touched) {
 }
 
 static PyObject *py_voxel(PyObject *self, PyObject *args) {
-    PyObject *p0_obj, *p1_obj, *a0_obj, *a1_obj, *zs_obj, *rs_obj, *cb;
+    PyObject *p0_obj, *p1_obj, *a0_obj, *a1_obj, *zs_obj, *rs_obj, *cb, *volumes_obj;
     double min_x, min_y, min_z, voxel;
     int chunk, nx, ny, nz, ncx, ncy, ncz, nseg;
-    Py_buffer p0 = {0}, p1 = {0}, a0 = {0}, a1 = {0}, zs = {0}, rs = {0};
+    Py_buffer p0 = {0}, p1 = {0}, a0 = {0}, a1 = {0}, zs = {0}, rs = {0}, volumes = {0};
+    double *volume_ptr = NULL;
     ScProfile profile;
     ScVoxelGrid grid;
     ScVoxelPyCtx ctx;
@@ -620,7 +649,7 @@ static PyObject *py_voxel(PyObject *self, PyObject *args) {
     ctx.keepers = NULL;
     if (!PyArg_ParseTuple(
             args,
-            "ddddiiiiiiiiOOOOOOO",
+            "ddddiiiiiiiiOOOOOOOO",
             &min_x,
             &min_y,
             &min_z,
@@ -639,7 +668,8 @@ static PyObject *py_voxel(PyObject *self, PyObject *args) {
             &a1_obj,
             &zs_obj,
             &rs_obj,
-            &cb)) {
+            &cb,
+            &volumes_obj)) {
         return NULL;
     }
     if (!PyCallable_Check(cb)) {
@@ -648,7 +678,8 @@ static PyObject *py_voxel(PyObject *self, PyObject *args) {
     }
     if (sc_get_buffer(p0_obj, &p0, 0) != 0 || sc_get_buffer(p1_obj, &p1, 0) != 0 ||
         sc_get_buffer(a0_obj, &a0, 0) != 0 || sc_get_buffer(a1_obj, &a1, 0) != 0 ||
-        sc_load_profile(zs_obj, rs_obj, &zs, &rs, &profile) != 0) {
+        sc_load_profile(zs_obj, rs_obj, &zs, &rs, &profile) != 0 ||
+        sc_bind_volumes(volumes_obj, &volumes, nseg, &volume_ptr) != 0) {
         goto done;
     }
     grid.min_x = min_x;
@@ -680,7 +711,8 @@ static PyObject *py_voxel(PyObject *self, PyObject *args) {
         sc_py_get_chunk,
         &ctx,
         &touched,
-        &n_touched);
+        &n_touched,
+        volume_ptr);
     if (ctx.failed || rc != 0) {
         if (!PyErr_Occurred()) {
             PyErr_SetString(PyExc_RuntimeError, "voxel carve failed");
@@ -697,6 +729,7 @@ done:
     sc_release(&a1);
     sc_release(&zs);
     sc_release(&rs);
+    sc_release(&volumes);
     return result;
 }
 

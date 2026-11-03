@@ -23,6 +23,7 @@ from kivy.uix.widget import Widget
 from kivy.utils import platform
 
 from carveracontroller.translation import tr
+from carveracontroller.ui.file_sim_info.summary import FileSimSummary, summarize_file_sim
 
 from .CNC import LASER_TOOL_NUMBER, ZPROBE_TOOL_NUMBER, is_probe_tools_range
 
@@ -57,6 +58,7 @@ from carveracontroller.ui.theme import get_theme, watch_theme
 from .addons.beds.materials import normalize_bed_material, style_for_bed_material
 from .addons.beds.mesh_loader import BED_VERTEX_FORMAT, BedMeshData, load_bed_mesh, pack_bed_mesh_chunks
 from .addons.beds.placement import model_offset_viewer, wcs_rotation_4x4
+from .addons.stock.mrr_smoothing import MRR_SMOOTH_WINDOW_SEC
 from .addons.stock.simulator import (
     DEFAULT_MESH_THROTTLE_S,
     PLAY_MESH_THROTTLE_S,
@@ -324,30 +326,37 @@ def _linedata_tool(line):
 
 
 def bridge_toolpath_vertices(lines, prev_line=None):
-    """Insert extra vertices so discrete line-strip attributes do not interpolate."""
+    """Insert extra vertices so discrete line-strip attributes do not interpolate.
+
+    A parsed row looks like:
+        [x, y, z, a, move_type, line_number, tool, feed, speed]
+    where move_type is 0 for a rapid move and 1 for a cutting move.
+
+    The graphics card blends colours (and other attributes) along each line, so a rapid
+    followed by a cut would fade from red to green. To avoid that, when the move type or
+    the tool changes we insert a copy of the previous point that already has the new move's
+    values. The zero-length step between the two points takes the switch, and the real move
+    after it keeps one flat colour.
+    """
     dataarrs = []
     last_line = prev_line
-    last_color = prev_line[4] if prev_line is not None else -1
     for line in lines:
-        color = line[4]
-        tool = _linedata_tool(line)
-        last_tool = _linedata_tool(last_line)
+        if last_line is not None:
+            tool = _linedata_tool(line)
+            last_tool = _linedata_tool(last_line)
+            tool_changed = tool is not None and last_tool is not None and tool != last_tool
+            type_changed = last_line[4] >= 0 and line[4] >= 0 and line[4] != last_line[4]
+            if tool_changed or type_changed:
+                snap = last_line.copy()
+                if tool_changed:
+                    snap[6] = tool
+                if type_changed:
+                    snap[4] = line[4]
+                    snap[7:] = line[7:]  # feed and spindle speed belong to the new move
+                dataarrs.append(snap)
 
-        if last_line is not None and tool is not None and last_tool is not None and tool != last_tool:
-            snap = last_line.copy()
-            snap[6] = tool
-            dataarrs.append(snap)
-
-        if last_color >= 0 and color >= 0 and color != last_color:
-            copyline = line.copy()
-            copyline[4] = last_color
-            dataarrs.append(copyline)
-            dataarrs.append(line)
-        else:
-            dataarrs.append(line)
-
+        dataarrs.append(line)
         last_line = line
-        last_color = color
     return dataarrs
 
 
@@ -690,6 +699,13 @@ def frame_call_back_test(distance, num):
     print(f"Current line: {num}")
 
 
+# What a running cut simulation draws. Switching these does not reset the carve.
+SIM_VIEW_PATHS = "paths"
+SIM_VIEW_STOCK = "stock"
+SIM_VIEW_SIMULATION = "simulation"
+SIM_VIEWS = (SIM_VIEW_PATHS, SIM_VIEW_STOCK, SIM_VIEW_SIMULATION)
+
+
 class GCodeViewer(Widget):
     axis = (0, 0, 1)
     angle = 0
@@ -724,7 +740,7 @@ class GCodeViewer(Widget):
     sim_hud_text = StringProperty("")
     sim_hud_visible = BooleanProperty(False)
     sim_carving = BooleanProperty(False)
-    sim_mesh_visible = BooleanProperty(True)
+    sim_view = StringProperty(SIM_VIEW_SIMULATION)
     stock_visible = BooleanProperty(False)
     bed_visible = BooleanProperty(False)
 
@@ -916,7 +932,7 @@ class GCodeViewer(Widget):
         self.stock_visible = False
         self.simulate_cut = False
         self.stock_mesh_while_playing = True
-        self.sim_mesh_visible = True
+        self.sim_view = SIM_VIEW_SIMULATION
         # Keep the translucent AABB up after pause until the worker flush
         # patches GPU chunks; otherwise the last meshed shell (often uncut)
         # is shown for a frame.
@@ -1129,8 +1145,9 @@ class GCodeViewer(Widget):
         self.canvas.add(self.gridmesh)
         if self.bed_visible:
             self.canvas.add(self.bedmesh)
-        if self.stock_visible or self.simulate_cut:
+        if self._stock_shell_on_canvas():
             self.canvas.add(self.stockmesh)
+        if self._carved_stock_visible():
             self.canvas.add(self.carvedmesh)
         self.canvas.add(self.linemesh)
         self.canvas.add(self.pointermesh)
@@ -1211,7 +1228,7 @@ class GCodeViewer(Widget):
         self.sim_hud_text = ""
         self.sim_hud_visible = False
         self.sim_carving = False
-        self.sim_mesh_visible = True
+        self.sim_view = SIM_VIEW_SIMULATION
         self.stock_visible = False
         self.bed_visible = False
         self.simulate_cut = False
@@ -1569,6 +1586,18 @@ class GCodeViewer(Widget):
         if self.frame_callback is not None:
             cur_distance, linenumber = self.get_cur_pos_index()
             self.frame_callback(cur_distance, linenumber)
+
+    def seek_to_vertex(self, vertex: float) -> bool:
+        """Move the playhead to a (fractional) vertex index of the toolpath."""
+        if not self.lengths:
+            return False
+        last = len(self.lengths) - 1
+        position = min(max(float(vertex), 0.0), float(last))
+        index = int(position)
+        following = min(index + 1, last)
+        distance = self.lengths[index] + (position - index) * (self.lengths[following] - self.lengths[index])
+        self.set_pos_by_distance(min(distance, self.get_total_distance()))
+        return True
 
     def _report_time_estimate_progress(self, state, percent):
         """Call the progress callback on the main thread (call from worker via Clock.schedule_once)."""
@@ -2102,7 +2131,7 @@ class GCodeViewer(Widget):
         self.stock_visible = stock_visible
         self.simulate_cut = want_sim
         if not want_sim:
-            self.sim_mesh_visible = True
+            self.sim_view = SIM_VIEW_SIMULATION
             self._cancel_sim_carving_hold()
             self.sim_carving = False
         self.stock_mesh_while_playing = mesh_while
@@ -2206,20 +2235,35 @@ class GCodeViewer(Widget):
 
         Clock.schedule_once(_apply, 0)
 
-    def set_sim_mesh_visible(self, visible: bool) -> None:
-        """Show or hide the carved stock without resetting occupancy.
+    def set_sim_view(self, mode: str) -> None:
+        """Choose what a running simulation draws without resetting the carve.
 
-        Hiding leaves the same preview shell used when stock is shown and
-        simulation is off. Showing rebuilds that shell as edge lines over the
-        carved mesh.
+        ``paths`` hides the stock shell and the carved mesh. ``stock`` shows
+        the uncut preview shell. ``simulation`` shows the carved mesh when it
+        is allowed to draw, and the preview shell otherwise.
         """
-        visible = bool(visible)
-        if visible == bool(getattr(self, "sim_mesh_visible", True)):
+        mode = str(mode or "")
+        if mode not in SIM_VIEWS:
+            logger.warning("ignored unknown simulation view %r", mode)
             return
-        self.sim_mesh_visible = visible
+        if mode == self._sim_view_mode():
+            return
+        self.sim_view = mode
         self._rebuild_stock_mesh()
         self._ensure_stock_on_canvas()
         self._scene_dirty = True
+
+    def _sim_view_mode(self) -> str:
+        mode = getattr(self, "sim_view", SIM_VIEW_SIMULATION)
+        if mode not in SIM_VIEWS:
+            return SIM_VIEW_SIMULATION
+        return str(mode)
+
+    def _stock_shell_on_canvas(self) -> bool:
+        """True when the preview shell (fill and/or edges) should be drawn."""
+        if not (self.stock_visible or self.simulate_cut):
+            return False
+        return not (self.simulate_cut and self._sim_view_mode() == SIM_VIEW_PATHS)
 
     def _vertex_to_path_percent(self, vertex: int) -> float:
         total = self.get_total_distance() if self.lengths else 0.0
@@ -2231,24 +2275,29 @@ class GCodeViewer(Widget):
     def _ensure_stock_on_canvas(self) -> None:
         if not self._viewer_meshes_active:
             return
-        show_stock = self.stock_visible or self.simulate_cut
+        show_shell = self._stock_shell_on_canvas()
         show_voxels = self._carved_stock_visible()
         for mesh in (self.stockmesh, self.carvedmesh):
             if mesh in self.canvas.children:
                 self.canvas.remove(mesh)
-        if not show_stock:
-            self._clear_carved_meshes()
+        if not show_shell and not show_voxels:
+            # Paths-only keeps the carve buffers so switching back does not restart.
+            if not self.simulate_cut:
+                self._clear_carved_meshes()
             return
         try:
             if getattr(self, "bedmesh", None) is not None and self.bedmesh in self.canvas.children:
                 idx = self.canvas.children.index(self.bedmesh) + 1
             else:
                 idx = self.canvas.children.index(self.gridmesh) + 1
-            self.canvas.insert(idx, self.stockmesh)
+            if show_shell:
+                self.canvas.insert(idx, self.stockmesh)
+                idx += 1
             if show_voxels:
-                self.canvas.insert(idx + 1, self.carvedmesh)
+                self.canvas.insert(idx, self.carvedmesh)
         except ValueError:
-            self.canvas.add(self.stockmesh)
+            if show_shell:
+                self.canvas.add(self.stockmesh)
             if show_voxels:
                 self.canvas.add(self.carvedmesh)
         self._raise_view_cube_to_top()
@@ -2410,7 +2459,7 @@ class GCodeViewer(Widget):
         pause, ``_defer_carved_stock`` keeps that AABB until the flush
         patches GPU chunks so the stale uncut shell is not flashed.
         """
-        if not bool(getattr(self, "sim_mesh_visible", True)):
+        if self._sim_view_mode() != SIM_VIEW_SIMULATION:
             return False
         if self._defer_carved_stock:
             return False
@@ -2802,6 +2851,61 @@ class GCodeViewer(Widget):
             has_4axis=has_4axis,
             has_off_axis_y=has_off_axis_y,
             speeds=self.raw_spindle_speeds,
+            feeds=self.raw_feed_rates,
+            axis_limits=_axis_limits_from_app(),
+        )
+
+    def get_sim_mrr_at_playhead(self) -> float | None:
+        if not self.simulate_cut:
+            return None
+        sim = self._stock_simulator
+        if sim is None or not sim.enabled:
+            return None
+        return sim.mrr_at(float(self.cur_line_index or 0.0), window_sec=MRR_SMOOTH_WINDOW_SEC)
+
+    def sim_summary_key(self) -> tuple:
+        """Cheap key that changes whenever ``sim_file_summary()`` could return something new."""
+        app = App.get_running_app()
+        remote = getattr(app, "selected_remote_filename", "") if app is not None else ""
+        local = getattr(app, "selected_local_filename", "") if app is not None else ""
+        sim = self._stock_simulator
+        mrr_version = None
+        if self.simulate_cut and sim is not None and sim.enabled:
+            mrr_version = sim.mrr_version
+        return (
+            mrr_version,
+            id(self.raw_positions),
+            len(self.raw_positions),
+            id(self.vertex_types),
+            len(self.line_times or ()),
+            remote,
+            local,
+        )
+
+    def sim_file_summary(self) -> FileSimSummary:
+        app = App.get_running_app()
+        remote = ""
+        local = ""
+        if app is not None:
+            remote = getattr(app, "selected_remote_filename", "") or ""
+            local = getattr(app, "selected_local_filename", "") or ""
+        mrr = None
+        sim = self._stock_simulator
+        if self.simulate_cut and sim is not None and sim.enabled:
+            mrr = sim.mrr_copy()
+        return summarize_file_sim(
+            filename=_display_filename(remote or local),
+            positions=self.raw_positions,
+            mrr=mrr,
+            line_times=self.line_times or None,
+            feeds=self.raw_feed_rates,
+            angles=self.angles_of_vertices,
+            axis_limits=_axis_limits_from_app(),
+            vertex_types=self.vertex_types,
+            tools=self.raw_tools,
+            tool_table=self.tool_table,
+            tool_unit_scale=float(self.tool_unit_scale or 1.0),
+            laser_tool_number=LASER_TOOL_NUMBER,
         )
 
     def _sync_stock_simulation(self, current_vertex: float) -> None:
@@ -3189,6 +3293,13 @@ def _z_bucket_index(z_mm, z_min_mm, z_max_mm):
     z_t = _clamp01((float(z_mm) - float(z_min_mm)) / z_span)
     bucket = int(math.floor((1.0 - z_t) * 10.0 + 0.5))
     return min(max(bucket, 0), VISIBILITY_BUCKET_COUNT - 1)
+
+
+def _display_filename(path: str) -> str:
+    text = (path or "").replace("\\", "/").rstrip("/")
+    if not text:
+        return ""
+    return text.rsplit("/", 1)[-1]
 
 
 def _axis_limits_from_settings(setting_list):

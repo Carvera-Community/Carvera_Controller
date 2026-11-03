@@ -38,6 +38,17 @@ class CarverBackend(Protocol):
         """Carve one segment; return dirty tile keys."""
         ...
 
+    def carve_segments(
+        self,
+        segments,
+        profile,
+        tool_unit_scale: float = 1.0,
+        tool_def=None,
+        volumes=None,
+    ) -> set[TileKey]:
+        """Carve a batch of segments. Optional ``volumes`` receives removed mm³ per segment."""
+        ...
+
     def snapshot_full(self) -> object:
         """Full checkpoint payload (non-FULL / full heightfield)."""
         ...

@@ -62,15 +62,25 @@ def _truncate_profile_to_cut(profile: list[tuple[float, float]], cut_z: float) -
     if not profile or cut_z <= 0:
         return profile
     out: list[tuple[float, float]] = []
+    cut_inside_segment = False
     for z, r in profile:
         if z <= cut_z + 1e-9:
             out.append((z, r))
         else:
+            cut_inside_segment = True
             break
     if not out:
         return profile[:2] if len(profile) >= 2 else profile
     if out[-1][0] < cut_z - 1e-9:
-        out.append((cut_z, out[-1][1]))
+        if cut_inside_segment:
+            # The cut ends partway along a sloped segment (e.g. an engraving bit whose flute is shorter
+            # than its cone): follow the slope up to cut_z instead of stepping out at the last radius.
+            z0, r0 = out[-1]
+            z1, r1 = profile[len(out)]
+            t = (cut_z - z0) / (z1 - z0) if z1 - z0 > 1e-12 else 0.0
+            out.append((cut_z, r0 + t * (r1 - r0)))
+        else:
+            out.append((cut_z, out[-1][1]))
     return out
 
 

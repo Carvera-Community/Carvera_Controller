@@ -96,7 +96,7 @@ static double sc_cell_cut_z(const ScSegTool *seg, double wx, double wy) {
 }
 
 /* Carve one move into the leftover-height grid. */
-static void sc_heightmap_one(const ScHeightGrid *grid, const ScSegTool *seg, const ScCarveOutputs *out) {
+static void sc_heightmap_one(const ScHeightGrid *grid, const ScSegTool *seg, const ScCarveOutputs *out, double *volume) {
     double cell = grid->cell;
     double pad;
     int ix0, iy0, ix1, iy1, ix, iy;
@@ -130,6 +130,12 @@ static void sc_heightmap_one(const ScHeightGrid *grid, const ScSegTool *seg, con
                 continue; /* untouched, or already lower than the tool reaches */
             }
             if ((float)cut < *height) {
+                if (volume != NULL) {
+                    double drop = h - (double)(float)cut;
+                    if (drop > 0.0) {
+                        *volume += drop * cell * cell;
+                    }
+                }
                 *height = (float)cut;
             }
             if (out->changed_mask != NULL) {
@@ -150,7 +156,8 @@ int sc_heightmap_carve(
     const double *p1,
     int nseg,
     const ScProfile *profile,
-    const ScCarveOutputs *out) {
+    const ScCarveOutputs *out,
+    double *volumes) {
     static const ScCarveOutputs no_outputs = {0};
     int i;
     if (grid == NULL || grid->heights == NULL || profile == NULL || nseg <= 0 || grid->nx <= 0 || grid->ny <= 0) {
@@ -164,7 +171,10 @@ int sc_heightmap_carve(
         const double *b = p1 + (size_t)i * 3;
         ScSegTool seg;
         sc_seg_tool_init(&seg, a[0], a[1], a[2], b[0], b[1], b[2], profile);
-        sc_heightmap_one(grid, &seg, out);
+        if (volumes != NULL) {
+            volumes[i] = 0.0;
+        }
+        sc_heightmap_one(grid, &seg, out, volumes != NULL ? &volumes[i] : NULL);
     }
     return 0;
 }

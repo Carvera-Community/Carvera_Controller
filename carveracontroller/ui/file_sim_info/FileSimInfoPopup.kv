@@ -1,0 +1,144 @@
+#:import tr carveracontroller.__main__.tr
+#:import Window kivy.core.window.Window
+#:import StaticMatplotFigureTwinx carveracontroller.ui.graph_widget_twinx.StaticMatplotFigureTwinx
+
+<FileSimInfoStat@Label>:
+    muted: False
+    color: app.theme.text_muted if self.muted else app.theme.text
+    font_size: '14sp'
+    halign: 'left'
+    valign: 'middle'
+    text_size: self.width, None
+    size_hint_y: None
+    height: max(dp(28), self.texture_size[1] + dp(4))
+
+<FileSimInfoPopup>:
+    size_hint: (0.72 if Window.width >= dp(900) else 0.92), (0.78 if Window.height >= dp(700) else 0.96)
+    auto_dismiss: True
+    wide: self.width >= dp(560)
+    caption_hint: 0.8 if self.wide else 0.34
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(16)
+        spacing: dp(8)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(40)
+            spacing: dp(8)
+            Label:
+                text: tr._('File info')
+                font_size: '20sp'
+                bold: True
+                color: app.theme.text
+                halign: 'left'
+                valign: 'middle'
+                text_size: self.size
+            Button:
+                text: tr._('Close')
+                size_hint: None, None
+                size: dp(96), dp(36)
+                pos_hint: {'center_y': 0.5}
+                on_release: root.dismiss()
+        Label:
+            text: tr._('No file loaded')
+            color: app.theme.text
+            font_size: '15sp'
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.size
+            size_hint_y: None
+            height: dp(32) if root.show_empty else 0
+            opacity: 1 if root.show_empty else 0
+            disabled: not root.show_empty
+        GridLayout:
+            cols: 4 if root.wide else 2
+            size_hint_y: None
+            height: 0 if root.show_empty else self.minimum_height
+            opacity: 0 if root.show_empty else 1
+            disabled: root.show_empty
+            spacing: dp(12), dp(2)
+            FileSimInfoStat:
+                text: root.file_caption
+                muted: True
+                size_hint_x: root.caption_hint
+            FileSimInfoStat:
+                text: root.file_text
+            FileSimInfoStat:
+                text: root.time_caption
+                muted: True
+                size_hint_x: root.caption_hint
+            FileSimInfoStat:
+                text: root.time_text
+            FileSimInfoStat:
+                text: root.length_caption
+                muted: True
+                size_hint_x: root.caption_hint
+            FileSimInfoStat:
+                text: root.length_text
+            FileSimInfoStat:
+                text: root.volume_caption
+                muted: True
+                size_hint_x: root.caption_hint
+            FileSimInfoStat:
+                text: root.volume_text
+            FileSimInfoStat:
+                text: root.peak_caption
+                muted: True
+                size_hint_x: root.caption_hint
+            FileSimInfoStat:
+                text: root.peak_text
+            FileSimInfoStat:
+                text: root.average_caption
+                muted: True
+                size_hint_x: root.caption_hint
+            FileSimInfoStat:
+                text: root.average_text
+        Label:
+            text: root.coverage_text
+            color: app.theme.text_muted
+            font_size: '13sp'
+            halign: 'left'
+            valign: 'middle'
+            text_size: self.width, None
+            size_hint_y: None
+            height: (self.texture_size[1] + dp(4)) if root.coverage_text else 0
+        FloatLayout:
+            size_hint_y: 1
+            size_hint_min_y: dp(120)
+            StaticMatplotFigureTwinx:
+                id: chart
+                size_hint: 1, 1
+                pos_hint: {'x': 0, 'y': 0}
+                fast_draw: False
+            # Cursor line over the chart. Its position is set by the popup.
+            Widget:
+                opacity: 1 if root.hover_visible else 0
+                canvas:
+                    Color:
+                        rgba: list(app.theme.text)[:3] + [0.6]
+                    Line:
+                        points: root.hover_x, root.hover_y0, root.hover_x, root.hover_y1
+                        width: 1
+            Label:
+                id: hover_tip
+                text: root.hover_text
+                size_hint: None, None
+                size: self.texture_size[0] + dp(16), self.texture_size[1] + dp(10)
+                font_size: '13sp'
+                color: app.theme.text
+                halign: 'left'
+                valign: 'middle'
+                opacity: 1 if root.hover_visible else 0
+                x: (root.hover_x + dp(8)) if (root.hover_x + dp(8) + self.width <= chart.right) else (root.hover_x - dp(8) - self.width)
+                y: root.hover_y1 - self.height - dp(6)
+                canvas.before:
+                    Color:
+                        rgba: list(app.theme.graph_bg)[:3] + [0.92]
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                    Color:
+                        rgba: list(app.theme.graph_spine)[:3] + [1.0]
+                    Line:
+                        rectangle: self.x, self.y, self.width, self.height
+                        width: 1

@@ -495,3 +495,35 @@ def test_cylindrical_vbit_helix_floor_is_smooth():
     # Tip at Z=8; a grid-aligned V-bit should cut every X cell to about that.
     assert float(np.max(floor) - np.min(floor)) < 0.08
     assert float(np.max(floor)) < 8.25
+
+
+def test_cylindrical_reports_removed_volume():
+    """Reported volume matches the annular sectors actually lowered."""
+    import math
+
+    from carveracontroller.addons.stock.simulator.carver_select import resolve_cutting_profile
+
+    bounds = StockBounds(min_x=0, min_y=-14, min_z=-14, max_x=40, max_y=14, max_z=14)
+    shape = RotaryCylindricalStock(diameter_mm=28.0, length_mm=40.0)
+    cell = 0.5
+    tool = _flat_tool(diameter=6.0, flute_length=8.0)
+    profile = resolve_cutting_profile(tool, tool_unit_scale=1.0)
+    segment = ((8.0, 0.0, 8.0), (32.0, 0.0, 8.0), 90.0, 90.0)
+
+    plain = CylindricalBackend(bounds, cell, shape)
+    measured = CylindricalBackend(bounds, cell, shape)
+    before = np.array(measured.radii, copy=True)
+    volumes = np.zeros(1, dtype=np.float64)
+    plain.carve_segments([segment], profile)
+    measured.carve_segments([segment], profile, volumes=volumes)
+    assert np.array_equal(plain.radii, measured.radii)
+
+    theta = math.radians(float(measured.d_theta))
+    old = before.astype(np.float64)
+    new = measured.radii.astype(np.float64)
+    mask = (old > 0.0) & (new < old - 1e-6)
+    new_r = np.maximum(new, 0.0)
+    expected = float((0.5 * (old[mask] ** 2 - new_r[mask] ** 2) * theta * cell).sum())
+    reported = float(volumes[0])
+    assert expected > 1.0
+    assert abs(reported - expected) <= max(0.05, expected * 1e-3)

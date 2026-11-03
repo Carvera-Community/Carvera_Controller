@@ -270,6 +270,7 @@ class CylindricalBackend(LaserDecalMixin):
         profile,
         tool_unit_scale: float = 1.0,
         tool_def=None,
+        volumes=None,
     ) -> set[TileKey]:
         del tool_unit_scale, tool_def
         if not segments or not profile:
@@ -300,6 +301,7 @@ class CylindricalBackend(LaserDecalMixin):
             laser_wrap=False if laser is None else laser.wrap_v,
             laser_period=360.0 if laser is None else laser.v_period,
             laser_dirty=None if laser is None else laser.dirty_native_args(),
+            volumes=volumes,
         )
         if laser_changed:
             self._laser_dirty = True
