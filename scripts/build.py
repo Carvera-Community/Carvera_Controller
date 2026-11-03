@@ -107,6 +107,11 @@ def build_pyinstaller_args(
         "carveracontroller.addons.stock.simulator.native.lib._stock_carve",
     ]
 
+    # Registered at import from kivy_matplotlib_widget/fonts/NavigationIcons.ttf.
+    # The path is built from __file__, so PyInstaller does not pick the file up.
+    logger.info("Collect kivy_matplotlib_widget data files (NavigationIcons.ttf)")
+    build_args += ["--collect-data", "kivy_matplotlib_widget"]
+
     logger.info(f"Add bundled package assets: {PACKAGE_PATH}")
     build_args += ["--add-data", _pyinstaller_source_dest(PACKAGE_PATH, "carveracontroller")]
     fonts_path = ROOT_PATH / "assets" / "fonts"
