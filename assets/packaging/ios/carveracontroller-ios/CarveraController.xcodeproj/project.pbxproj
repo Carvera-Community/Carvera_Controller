@@ -28,6 +28,8 @@
 		59994E3B148E85C800863906 /* carveracontrollerpkg in Resources */ = {isa = PBXBuildFile; fileRef = 59994E3A148E85C800863906 /* carveracontrollerpkg */; };
 		59FDEA8B21E7D34E004E6ECE /* include in Resources */ = {isa = PBXBuildFile; fileRef = 59FDEA8A21E7D34E004E6ECE /* include */; };
 		5C4A47AEBBBA84F15498470F /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A45949769FBB857AFD4CC2FE /* libsqlite3.tbd */; };
+		6141462496FC53E8989EB610 /* libkiwisolver.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 106A479C9985BBAEAADABB8B /* libkiwisolver.xcframework */; };
+		6842400BAB224F545A3CAB72 /* libmatplotlib.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0949447D878C8F370C925793 /* libmatplotlib.xcframework */; };
 		6C52493B882E11EC9E57D4EF /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5124B098F07AB0CE70E7C0F /* UIKit.framework */; };
 		6C644356ABBDF9FF43C40333 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = BB7E40659FD98753F2835610 /* libz.tbd */; };
 		7A0D45EA98F7B2EF12AD9C02 /* libSDL2_ttf.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 339B48A886CA761D0A19C3D5 /* libSDL2_ttf.xcframework */; };
@@ -64,6 +66,8 @@
 /* Begin PBXFileReference section */
 		00EA418BA04982772267DF86 /* libSDL2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libSDL2.xcframework; path = ../../../../dist/xcframework/libSDL2.xcframework; sourceTree = SOURCE_ROOT; };
 		03E841FA9892EEDE7E244A1D /* libpng16.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpng16.xcframework; path = ../../../../dist/xcframework/libpng16.xcframework; sourceTree = SOURCE_ROOT; };
+		0949447D878C8F370C925793 /* libmatplotlib.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libmatplotlib.xcframework; path = ../../../../dist/xcframework/libmatplotlib.xcframework; sourceTree = SOURCE_ROOT; };
+		106A479C9985BBAEAADABB8B /* libkiwisolver.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libkiwisolver.xcframework; path = ../../../../dist/xcframework/libkiwisolver.xcframework; sourceTree = SOURCE_ROOT; };
 		17C445C2A54DAA82C0BBF162 /* libpython3.11.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libpython3.11.xcframework; path = ../../../../dist/xcframework/libpython3.11.xcframework; sourceTree = SOURCE_ROOT; };
 		1D6058910D05DD3D006BFB54 /* carveracontroller.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = carveracontroller.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		230943B0AFDC9C60CAF6C442 /* libcrypto.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libcrypto.xcframework; path = ../../../../dist/xcframework/libcrypto.xcframework; sourceTree = SOURCE_ROOT; };
@@ -168,6 +172,8 @@
 				4BA9401E95D3FA522F4E9937 /* libnpymath.xcframework in Frameworks */,
 				57BE4D24A86523C7B637473B /* libfreetype.xcframework in Frameworks */,
 				4A17486DB249CFDA29834213 /* libstock_carve.xcframework in Frameworks */,
+				6141462496FC53E8989EB610 /* libkiwisolver.xcframework in Frameworks */,
+				6842400BAB224F545A3CAB72 /* libmatplotlib.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,6 +279,8 @@
 				522B42809F414F852C795FD1 /* libnpymath.xcframework */,
 				A89846A1B3150D9DC56E7FF7 /* libfreetype.xcframework */,
 				633742DA982FB53794622241 /* libstock_carve.xcframework */,
+				106A479C9985BBAEAADABB8B /* libkiwisolver.xcframework */,
+				0949447D878C8F370C925793 /* libmatplotlib.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

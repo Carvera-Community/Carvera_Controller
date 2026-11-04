@@ -38,7 +38,7 @@ version = 0.0.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.1,pyserial==3.5,pyquicklz==1.4.1,filetype==1.2.0,numpy,pillow,android,charset-normalizer==2.1.1,stockcarve
+requirements = python3,kivy==2.3.1,pyserial==3.5,pyquicklz==1.4.1,filetype==1.2.0,numpy,pillow,android,charset-normalizer==2.1.1,stockcarve,matplotlib,kivy-matplotlib-widget==0.16.0
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -340,7 +340,8 @@ p4a.branch = v2026.05.09
 p4a.local_recipes = ./assets/packaging/android/recipes
 
 # (str) Filename to the hook for p4a
-#p4a.hook =
+# Gives Gradle enough heap to package matplotlib into the APK.
+p4a.hook = assets/packaging/android/gradle_heap_hook.py
 
 # (str) Bootstrap to use for android builds
 # p4a.bootstrap = sdl2
