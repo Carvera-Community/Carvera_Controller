@@ -340,7 +340,8 @@ p4a.branch = v2026.05.09
 p4a.local_recipes = ./assets/packaging/android/recipes
 
 # (str) Filename to the hook for p4a
-#p4a.hook =
+# Gives Gradle enough heap to package matplotlib into the APK.
+p4a.hook = assets/packaging/android/gradle_heap_hook.py
 
 # (str) Bootstrap to use for android builds
 # p4a.bootstrap = sdl2
