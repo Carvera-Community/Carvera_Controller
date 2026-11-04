@@ -42,10 +42,11 @@ cd $TOP_LEVEL || exit 1
 
 ln -sf $(pwd)/dist assets/packaging/ios/dist
 
-# Build the kivy-ios toolchain and needed dependencies (numpy is required for stock cut simulation)
-python3 -m kivy_ios.toolchain build --add-custom-recipe assets/packaging/ios/recipes/quicklz --add-custom-recipe assets/packaging/ios/recipes/pyserial --add-custom-recipe assets/packaging/ios/recipes/stock_carve kivy quicklz pyserial numpy pillow stock_carve
+# numpy is required for stock cut simulation. matplotlib and
+# kivy_matplotlib_widget are imported while the app is starting.
+python3 -m kivy_ios.toolchain build --add-custom-recipe assets/packaging/ios/recipes/quicklz --add-custom-recipe assets/packaging/ios/recipes/pyserial --add-custom-recipe assets/packaging/ios/recipes/stock_carve --add-custom-recipe assets/packaging/ios/recipes/kivy_matplotlib_widget kivy quicklz pyserial numpy pillow stock_carve matplotlib kivy_matplotlib_widget
 
-python3 -m kivy_ios.toolchain update --add-custom-recipe assets/packaging/ios/recipes/quicklz --add-custom-recipe assets/packaging/ios/recipes/pyserial --add-custom-recipe assets/packaging/ios/recipes/stock_carve assets/packaging/ios/carveracontroller-ios
+python3 -m kivy_ios.toolchain update --add-custom-recipe assets/packaging/ios/recipes/quicklz --add-custom-recipe assets/packaging/ios/recipes/pyserial --add-custom-recipe assets/packaging/ios/recipes/stock_carve --add-custom-recipe assets/packaging/ios/recipes/kivy_matplotlib_widget assets/packaging/ios/carveracontroller-ios
 
 # Patch version if we given as arg
 if [ -z "$1" ]
