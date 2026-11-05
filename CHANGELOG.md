@@ -3,6 +3,7 @@
 - Enhancement: Convert the "eye" button of the simulation panel to a dropdown that allows to display either paths only, the uncut stock shell or the simulation results
 - Enhancement: Monitoring graph now on the G-code viewer screen, showing up to two metrics: spindle temperature, rpm, target rpm, rpm deviation %, feed, and material removal rate (mm³/min) from stock simulation while a file is playing
 - Enhancement: UI is now themed. You can select one of multiple visual styles in the Settings. Themes can be further customised in the theme editer.
+- Enhancement: Gamepad bindings now also allow to assign buttons/triggers to jog an axis in each direction
 - Change: Previous G-Code highlighting settings page collapsed into theme settings
 - Change: Store probing presets, facing presets, bed settings, calibration settings, and custom bed meshes in the app user-data directory, and move existing copies out of ~/.kivy on first launch
 - Change: Optimize the file browser's thumbnail generation, and add settings to disable previews or set the cache size
