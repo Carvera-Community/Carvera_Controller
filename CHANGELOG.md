@@ -6,6 +6,7 @@
 - Change: Previous G-Code highlighting settings page collapsed into theme settings
 - Change: Store probing presets, facing presets, bed settings, calibration settings, and custom bed meshes in the app user-data directory, and move existing copies out of ~/.kivy on first launch
 - Change: Optimize the file browser's thumbnail generation, and add settings to disable previews or set the cache size
+- Change: Gamepad continuous jog speed percentage now scales the selected Jog Speed (same as WHB04), instead of a separate gamepad max-speed setting
 - Fixed: Gamepad hotplug would not detect a reconnected controller
 - Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
 - Fixed: File picker for Config Backups on Windows didn't have a drive selector
@@ -14,6 +15,7 @@
 - Fixed: Android builds were incorrectly detecting the default language
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Fixed: Stock simulation carved vertical walls with tapered tools that had a flute length shorter than their cone
+- Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

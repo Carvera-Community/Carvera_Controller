@@ -126,7 +126,6 @@ def _gamepad(controller):
     pendant._last_jog_direction = {}
     pendant._active_continuous_jog_action = None
     pendant._step_index = 1
-    pendant._max_jog_speed = GamepadPendant.DEFAULT_MAX_JOG_SPEED
     return pendant
 
 
@@ -151,9 +150,47 @@ def test_gamepad_stale_stop_starts_a_new_jog(controller):
 
     pendant._handle_continuous_jog("jog_x", "X", 1.0, 1)
 
-    assert commands == ["$J -c X1 F300.0"]
+    # jog_speed=1000 × 10% step fraction
+    assert commands == ["$J -c X1 F100.0"]
     assert pendant._active_continuous_jog_action == "jog_x"
     assert controller._continuous_jog_stop_requested_at == 0.0
+
+
+def test_gamepad_continuous_jog_scales_selected_jog_speed(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    controller.jog_speed = 2000
+    pendant = _gamepad(controller)
+
+    pendant._handle_continuous_jog("jog_x", "X", 1.0, 1)
+
+    assert commands == ["$J -c X1 F200.0"]
+
+
+def test_gamepad_continuous_jog_max_uses_firmware_scale(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    controller.jog_speed = 10000
+    pendant = _gamepad(controller)
+
+    pendant._handle_continuous_jog("jog_x", "X", 1.0, 1)
+
+    assert commands == ["$J -c X1 S0.1"]
+
+
+def test_gamepad_continuous_jog_z_caps_at_800(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    controller.jog_speed = 2000
+    pendant = _gamepad(controller)
+
+    pendant._handle_continuous_jog("jog_z", "Z", 1.0, 1)
+
+    # min(800, 2000) × 10%
+    assert commands == ["$J -c Z1 F80.0"]
 
 
 def test_gamepad_recent_stop_does_not_start(controller):
