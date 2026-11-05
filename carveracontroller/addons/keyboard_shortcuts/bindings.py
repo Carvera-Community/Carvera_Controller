@@ -169,17 +169,34 @@ BINDING_GROUPS = tuple(
 )
 
 
-def key_name_from_code(key_code: int, codepoint: str = "") -> str | None:
-    if key_code in PREFERRED_KEY_NAMES:
-        return PREFERRED_KEY_NAMES[key_code]
-    if codepoint and len(codepoint) == 1 and codepoint.isprintable():
-        return codepoint.lower()
-    if 32 <= key_code <= 126:
-        return chr(key_code).lower()
+def _keycodes_name(key_code: int) -> str | None:
     names = [name for name, code in Keyboard.keycodes.items() if code == key_code]
     if not names:
         return None
     return min(names, key=lambda name: (len(name), name))
+
+
+def key_name_from_code(key_code: int, codepoint: str = "") -> str | None:
+    if key_code in PREFERRED_KEY_NAMES:
+        return PREFERRED_KEY_NAMES[key_code]
+
+    # Prefer multi-character Kivy names over codepoint to avoid collision after calling lower().
+    named = _keycodes_name(key_code)
+    if named is not None and len(named) > 1:
+        return named
+
+    if codepoint and len(codepoint) == 1 and codepoint.isprintable():
+        try:
+            key_code_char = chr(key_code)
+        except (ValueError, OverflowError):
+            key_code_char = None
+        if codepoint != key_code_char:
+            return codepoint.lower()
+
+    if 32 <= key_code <= 126:
+        return chr(key_code).lower()
+
+    return named
 
 
 def is_modifier_key_event(key_code: int, scancode: int | None = None) -> bool:
@@ -213,12 +230,33 @@ def format_chord_parts(chord: KeyChord, platform: str | None = None) -> tuple[st
         "spacebar": "Space",
         "pageup": "Page Up",
         "pagedown": "Page Down",
+        "backspace": "Backspace",
+        "delete": "Delete",
+        "insert": "Insert",
+        "capslock": "Caps Lock",
+        "home": "Home",
+        "end": "End",
         "left": "Left",
         "right": "Right",
         "up": "Up",
         "down": "Down",
         "tab": "Tab",
         ",": ",",
+        "numpad0": "Num 0",
+        "numpad1": "Num 1",
+        "numpad2": "Num 2",
+        "numpad3": "Num 3",
+        "numpad4": "Num 4",
+        "numpad5": "Num 5",
+        "numpad6": "Num 6",
+        "numpad7": "Num 7",
+        "numpad8": "Num 8",
+        "numpad9": "Num 9",
+        "numpaddecimal": "Num .",
+        "numpaddivide": "Num /",
+        "numpadmul": "Num *",
+        "numpadsubstract": "Num -",
+        "numpadadd": "Num +",
     }
     parts = [modifier_labels[modifier] for modifier in chord.modifiers]
     key_label = key_labels.get(chord.key, chord.key.upper())

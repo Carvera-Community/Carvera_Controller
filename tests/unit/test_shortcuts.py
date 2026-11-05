@@ -126,6 +126,43 @@ def test_event_normalisation_ignores_lock_modifiers_and_uses_physical_punctuatio
 
 
 @pytest.mark.parametrize(
+    "key,name,display",
+    [
+        (256, "numpad0", "Num 0"),
+        (257, "numpad1", "Num 1"),
+        (266, "numpaddecimal", "Num ."),
+        (267, "numpaddivide", "Num /"),
+        (268, "numpadmul", "Num *"),
+        (269, "numpadsubstract", "Num -"),
+        (270, "numpadadd", "Num +"),
+    ],
+)
+def test_numpad_keys_ignore_sdl2_unichr_codepoint(key, name, display):
+    # Kivy passes accented chars for numpad; those must not become the key name.
+    chord = chord_from_event(key, [], chr(key))
+    assert chord == KeyChord(name)
+    assert format_chord(chord) == display
+
+
+def test_adjacent_numpad_keys_remain_distinct_bindings():
+    numpad0 = chord_from_event(256, [], chr(256))
+    numpad1 = chord_from_event(257, [], chr(257))
+    assert numpad0 == KeyChord("numpad0")
+    assert numpad1 == KeyChord("numpad1")
+    assert numpad0 != numpad1
+
+    bindings = ShortcutBindings()
+    bindings.assign("jog_a_positive", numpad0)
+    bindings.assign("jog_a_negative", numpad1)
+    assert bindings.binding_for("jog_a_positive") == numpad0
+    assert bindings.binding_for("jog_a_negative") == numpad1
+
+
+def test_divergent_codepoint_still_preferred_for_ascii_keys():
+    assert chord_from_event(49, [], "!") == KeyChord("!")
+
+
+@pytest.mark.parametrize(
     "key,scancode,codepoint",
     [
         (305, 224, "i"),  # Kivy left Ctrl keycode
