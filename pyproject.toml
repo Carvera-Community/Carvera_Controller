@@ -36,6 +36,7 @@ cython = "^3.1.2"
 toml = "^0.10.2"
 virtualenv = ">=20.31.2,<22.0.0"
 buildozer = "^1.5.0"
+towncrier = "^26.9.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.0"
@@ -138,3 +139,21 @@ name = "Machine layer is Kivy-free"
 type = "forbidden"
 source_modules = ["carveracontroller.machine"]
 forbidden_modules = ["kivy"]
+
+[tool.towncrier]
+directory = "changelog.d"
+filename = "CHANGELOG.md"
+template = "changelog.d/template.md"
+title_format = "[{version}]"
+
+[[tool.towncrier.type]]
+name = "Enhancement"
+
+[[tool.towncrier.type]]
+name = "Changed"
+
+[[tool.towncrier.type]]
+name = "Fixed"
+
+[[tool.towncrier.type]]
+name = "Removed"

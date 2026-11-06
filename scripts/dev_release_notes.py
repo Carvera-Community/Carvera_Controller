@@ -1,20 +1,26 @@
-import re
+import subprocess
+import sys
 
 
-def get_unreleased_section(changelog_text):
-    pattern = r"\[unreleased\]\s*((?:- .*?\n)+)"
-    match = re.search(pattern, changelog_text, re.IGNORECASE)
-    if match:
-        # Clean up and return the lines
-        return match.group(1).strip()
-    return "No unreleased notes currently."
+def render_unreleased_notes():
+    result = subprocess.run(
+        [sys.executable, "-m", "towncrier", "build", "--draft", "--version", "unreleased"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        raise SystemExit(result.returncode)
+
+    rendered = result.stdout.strip()
+    if not any(line.startswith("- ") for line in rendered.splitlines()):
+        return "No unreleased notes currently."
+    return rendered
 
 
 def main():
-    with open("CHANGELOG.md", encoding="utf-8") as f:
-        changelog = f.read()
-
-    unrelease_notes = get_unreleased_section(changelog)
+    unreleased_notes = render_unreleased_notes()
 
     dev_release_text = f"""# Welcome to the Dev Build Release Page for Carvera Controller Community!
 
@@ -35,7 +41,7 @@ Dev builds are the latest versions of Carvera Controller Community, automaticall
 ## Release notes
 The follow changes are present in the dev build:
 
-{unrelease_notes}
+{unreleased_notes}
 """
     with open("dev-CHANGELOG.md", "w") as file:
         file.write(dev_release_text)

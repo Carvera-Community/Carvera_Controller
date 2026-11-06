@@ -1,7 +1,3 @@
-[unreleased]
-- Fixed: Android builds were incorrectly detecting the default language
-- Fixed: Multi-line inputs were sent as a single frame instead of multiple ones
-
 [2.2.0]
 - Changed: Missed heartbeats with the machine are treated as comms backpressure, and the machine state is changed to "Waiting on comms". Only if link connection is lost will it be treated as a disconnect
 - Fixed: Consolidated the two different re-connection methods into one
