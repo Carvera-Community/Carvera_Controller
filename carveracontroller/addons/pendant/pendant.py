@@ -21,6 +21,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.settings import SettingItem
 from kivy.uix.spinner import Spinner
 
+from carveracontroller.addons.keyboard_shortcuts.ui import _CategoryHeader, _CategorySection
 from carveracontroller.CNC import CNC
 from carveracontroller.Controller import Controller
 from carveracontroller.documentation import resolve_documentation_url
@@ -479,15 +480,16 @@ class GamepadPendant(Pendant):
         if not self._is_jogging_enabled():
             return
 
-        axis_letter = self._action_to_axis(action)
-        if axis_letter is None:
-            return
-
-        if value == 0.0:
-            return
-
-        value = self._apply_inversion(axis_letter, value)
-        direction = 1 if value > 0 else -1
+        # Jog X + / Jog X - use their labeled direction. Inversion does not apply.
+        directional = gamepad_module.DIRECTIONAL_JOG_ACTIONS.get(action)
+        if directional is not None:
+            axis_letter, direction = directional
+        else:
+            axis_letter = self._action_to_axis(action)
+            if axis_letter is None or value == 0.0:
+                return
+            value = self._apply_inversion(axis_letter, value)
+            direction = 1 if value > 0 else -1
 
         if self._controller.jog_mode == Controller.JOG_MODE_STEP:
             self._handle_step_jog(action, axis_letter, direction)
@@ -751,19 +753,11 @@ class GamepadBindingsPopup(Popup):
         self._list_layout.bind(minimum_height=self._list_layout.setter("height"))
 
         for group_name, actions in gamepad_module.BINDING_GROUPS:
-            header = Label(
-                text=f"[b]{tr._(group_name)}[/b]",
-                markup=True,
-                size_hint_y=None,
-                height=dp(32),
-                halign="left",
-                valign="middle",
-            )
-            header.bind(size=lambda w, s: setattr(w, "text_size", s))
-            self._list_layout.add_widget(header)
-
+            section = _CategorySection()
+            section.add_widget(_CategoryHeader(text=f"[b]{tr._(group_name)}[/b]"))
             for action in actions:
-                self._add_action_row(action)
+                self._add_action_row(action, section)
+            self._list_layout.add_widget(section)
 
         scroll.add_widget(self._list_layout)
         root.add_widget(scroll)
@@ -795,7 +789,7 @@ class GamepadBindingsPopup(Popup):
         if self._manager is not None:
             self._manager.paused = True
 
-    def _add_action_row(self, action: str) -> None:
+    def _add_action_row(self, action: str, parent) -> None:
         label_text = tr._(gamepad_module.ACTION_LABELS.get(action, action))
         current = self._describe_binding(action)
 
@@ -817,7 +811,7 @@ class GamepadBindingsPopup(Popup):
         row.add_widget(binding_lbl)
         row.add_widget(bind_btn)
         row.add_widget(unbind_btn)
-        self._list_layout.add_widget(row)
+        parent.add_widget(row)
         self._row_widgets[action] = (binding_lbl, bind_btn)
 
     def _describe_binding(self, action: str) -> str:
@@ -869,60 +863,13 @@ class GamepadBindingsPopup(Popup):
         action = self._listening_for
         if action is None:
             return
-
-        # Axes and triggers share on_joy_axis events. Jog axes claim the
-        # whole physical axis, while triggers only claim one direction.
-        if category == "axes":
-            self._bindings.get("axes", {}).pop(input_id, None)
-            trigger_map = self._bindings.get("triggers", {})
-            for key in list(trigger_map.keys()):
-                trigger_axis_id, _ = gamepad_module.split_trigger_id(key)
-                if trigger_axis_id == input_id:
-                    del trigger_map[key]
-            self._remove_action_binding(action)
-            self._bindings.setdefault("axes", {})[input_id] = action
-        elif category == "triggers":
-            trigger_axis_id, trigger_direction = gamepad_module.split_trigger_id(input_id)
-            self._bindings.get("axes", {}).pop(trigger_axis_id, None)
-            trigger_map = self._bindings.get("triggers", {})
-            trigger_map.pop(input_id, None)
-            trigger_map.pop(trigger_axis_id, None)
-            self._remove_action_binding(action)
-            self._bindings.setdefault("triggers", {})[input_id] = action
-        elif category == "buttons":
-            self._bindings.get("buttons", {}).pop(input_id, None)
-            self._remove_action_binding(action)
-            self._bindings.setdefault("buttons", {})[input_id] = action
-        elif category == "hat":
-            pair = gamepad_module.hat_axis_pair(input_id) if action.startswith("jog_") else None
-            if pair:
-                # Jog on D-Pad: bind both directions on the same hat axis.
-                self._remove_action_binding(action)
-                hat_map = self._bindings.setdefault("hat", {})
-                for d in pair:
-                    hat_map.pop(d, None)
-                for d in pair:
-                    hat_map[d] = action
-            else:
-                self._bindings.get("hat", {}).pop(input_id, None)
-                self._remove_action_binding(action)
-                self._bindings.setdefault("hat", {})[input_id] = action
-        else:
-            return
+        gamepad_module.apply_captured_binding(self._bindings, action, category, input_id)
 
         self._stop_listening()
         self._refresh_all_binding_labels()
 
     def _remove_action_binding(self, action: str) -> None:
-        for cat in ("axes", "triggers", "buttons"):
-            cat_map = self._bindings.get(cat, {})
-            to_del = [k for k, v in cat_map.items() if v == action]
-            for k in to_del:
-                del cat_map[k]
-        hat_map = self._bindings.get("hat", {})
-        to_del = [k for k, v in hat_map.items() if v == action]
-        for k in to_del:
-            del hat_map[k]
+        gamepad_module.remove_action_binding(self._bindings, action)
 
     def _unbind_action(self, action: str) -> None:
         if self._listening_for is not None:
@@ -937,15 +884,8 @@ class GamepadBindingsPopup(Popup):
         action = self._listening_for
         if action is None:
             return
-        # Only jog actions use continuous axis semantics; everything else
-        # should be stored as a trigger (one-shot on threshold crossing).
-        is_axis = action in ("jog_x", "jog_y", "jog_z", "jog_a")
-        if is_axis:
-            self._apply_captured("axes", str(axisid))
-        else:
-            direction = "+" if normalised > 0 else "-"
-            trigger_id = gamepad_module.trigger_input_id(axisid, direction)
-            self._apply_captured("triggers", trigger_id)
+        category, input_id = gamepad_module.captured_axis_binding(action, axisid, normalised)
+        self._apply_captured(category, input_id)
 
     def _listen_button(self, win, stickid, buttonid) -> None:
         self._apply_captured("buttons", str(buttonid))

@@ -129,6 +129,17 @@ def _gamepad(controller):
     return pendant
 
 
+def _ready_gamepad(controller, **invert):
+    pendant = _gamepad(controller)
+    pendant._invert_x = invert.get("x", False)
+    pendant._invert_y = invert.get("y", False)
+    pendant._invert_z = invert.get("z", False)
+    pendant._invert_a = invert.get("a", False)
+    pendant._is_jogging_enabled = lambda: True
+    pendant._manager = SimpleNamespace(is_axis_held=lambda _action: False)
+    return pendant
+
+
 def _whb04(controller, *, jogging_enabled=True):
     pendant = WHB04.__new__(WHB04)
     pendant._controller = controller
@@ -246,6 +257,57 @@ def test_whb04_recent_stop_does_not_start(controller):
 
     assert commands == []
     assert controller.continuous_jog_active is True
+
+
+def test_directional_step_jog_ignores_inversion(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_STEP
+    pendant = _ready_gamepad(controller, x=True)
+
+    pendant._handle_jog_axis("jog_x_plus", 1.0)
+    pendant._handle_jog_axis("jog_x_minus", -1.0)
+
+    assert commands == ["$J X0.1 F10000", "$J X-0.1 F10000"]
+
+
+def test_directional_continuous_jog_ignores_inversion(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    pendant = _ready_gamepad(controller, z=True)
+
+    pendant._handle_jog_axis("jog_z_minus", -1.0)
+
+    assert commands == ["$J -c Z-1 F80.0"]
+    assert pendant._active_continuous_jog_action == "jog_z_minus"
+
+
+def test_stick_continuous_jog_still_inverts(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    pendant = _ready_gamepad(controller, x=True)
+
+    pendant._handle_jog_axis("jog_x", 1.0)
+
+    # Default jog speed (max) uses the firmware scale: 10% step fraction
+    assert commands == ["$J -c X-1 S0.1"]
+
+
+def test_opposite_directional_release_leaves_the_active_jog_running(controller):
+    commands = []
+    controller.executeCommand = commands.append
+    controller.jog_mode = Controller.JOG_MODE_CONTINUOUS
+    pendant = _ready_gamepad(controller)
+
+    pendant._handle_jog_axis("jog_x_plus", 1.0)
+    pendant._handle_jog_axis("jog_x_minus", -1.0)
+    pendant._handle_jog_stop("jog_x_minus")
+
+    assert commands == ["$J -c X1 S0.1"]
+    assert controller.continuous_jog_active is True
+    assert pendant._active_continuous_jog_action == "jog_x_plus"
 
 
 def test_whb04_disabled_jogging_leaves_a_stale_stop_alone(controller):
