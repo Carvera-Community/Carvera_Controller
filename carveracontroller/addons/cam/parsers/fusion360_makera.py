@@ -37,6 +37,7 @@ TOOL_TYPE_NAME_MAP = {
     "flat end mill": ToolType.FLAT_END_MILL,
     "ball end mill": ToolType.BALL_END_MILL,
     "bull nose end mill": ToolType.BULL_NOSE_END_MILL,
+    "bullnose end mill": ToolType.BULL_NOSE_END_MILL,
     "radius mill": ToolType.RADIUS_MILL,
     "chamfer mill": ToolType.CHAMFER_MILL,
     "tapered mill": ToolType.TAPERED_MILL,
