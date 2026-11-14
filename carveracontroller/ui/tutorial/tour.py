@@ -14,7 +14,7 @@ from kivy.uix.scrollview import ScrollView
 
 from carveracontroller.Controller import NOT_CONNECTED, STATECOLOR
 from carveracontroller.translation import tr
-from carveracontroller.ui.file_browser.sources import LOCATION_DEVICE
+from carveracontroller.ui.file_browser.sources import LOCATION_DEVICE, is_ios_platform
 from carveracontroller.ui.tutorial.overlay import TourOverlay
 from carveracontroller.ui.tutorial.placement import Rect
 from carveracontroller.ui.tutorial.policy import (
@@ -30,7 +30,7 @@ from carveracontroller.ui.tutorial.session import (
     set_demo_active,
     write_sample_gcode,
 )
-from carveracontroller.ui.tutorial.steps import TOUR_STEPS, TourStep
+from carveracontroller.ui.tutorial.steps import PLATFORM_DESKTOP, PLATFORM_IOS, TourStep, tour_steps
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ class Tutorial:
     def next(self) -> None:
         if self.phase != DEMO:
             return
-        if self.index >= len(TOUR_STEPS) - 1:
+        if self.index >= len(self._tour_steps()) - 1:
             self.finish()
             return
         self._show_step(self.index + 1)
@@ -223,11 +223,19 @@ class Tutorial:
         self.overlay.open()
         self.overlay.show_welcome()
 
+    def _tour_platform(self) -> str:
+        if is_ios_platform():
+            return PLATFORM_IOS
+        return PLATFORM_DESKTOP
+
+    def _tour_steps(self) -> tuple[TourStep, ...]:
+        return tour_steps(platform=self._tour_platform())
+
     def _show_step(self, index: int) -> None:
         self.index = index
-        step = TOUR_STEPS[index]
+        step = self._tour_steps()[index]
         self._prepare_step(step)
-        self.overlay.show_step(step, index, len(TOUR_STEPS))
+        self.overlay.show_step(step, index, len(self._tour_steps()))
         self._layout_token += 1
         token = self._layout_token
         Clock.schedule_once(lambda _dt, token=token, step=step: self._layout_step(step, token), 0)
@@ -290,9 +298,10 @@ class Tutorial:
         if self.phase != DEMO:
             self.overlay.layout_target(self.overlay._target)
             return
-        if self.index < 0 or self.index >= len(TOUR_STEPS):
+        steps = self._tour_steps()
+        if self.index < 0 or self.index >= len(steps):
             return
-        self._layout_step(TOUR_STEPS[self.index], self._layout_token, attempt=1)
+        self._layout_step(steps[self.index], self._layout_token, attempt=1)
 
     def _layout_step(self, step: TourStep, token: int, attempt: int = 0) -> None:
         if self._in_layout or token != self._layout_token or self.phase != DEMO:
@@ -445,9 +454,17 @@ class Tutorial:
         popup.firmware_mode = False
         popup.multi_select_mode = False
         popup.search_text = ""
-        popup.ios_device_mode = False
         popup.title_text = tr._("File Browser")
         popup.location = LOCATION_DEVICE
+        if is_ios_platform():
+            # No local folder listing on iOS. Open the document-picker browser.
+            popup.ios_device_mode = True
+            popup._rebuild_list(reset_scroll=True)
+            popup._sync_chrome()
+            if not popup._is_open:
+                popup.open()
+            return
+        popup.ios_device_mode = False
         directory = os.path.dirname(self._demo_path) if self._demo_path else ""
         if directory:
             popup.list_device_dir(directory, remember=False)
