@@ -9,6 +9,7 @@
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
 - Fixed: Use the right ID for bullnose endmills in the Fusion 360 parser
+- Fixed: Getting started tutorial would crash on iOS during the file browser section. Those steps are now adjusted with iOS specific variants.
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch
