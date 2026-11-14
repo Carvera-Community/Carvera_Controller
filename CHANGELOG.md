@@ -1,4 +1,4 @@
-[unreleased]
+[2.3.0-RC2]
 - Change: Gamepad continuous jog speed percentage now scales the selected Jog Speed (same as WHB04), instead of a separate gamepad max-speed setting
 - Fixed: Gamepad hotplug would not detect a reconnected controller
 - Fixed: Android builds were incorrectly detecting the default language
