@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from functools import partial
-from typing import Any
+from typing import Any, cast
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -93,6 +93,15 @@ def build_tool_comp_commands(
     return commands
 
 
+def _status_int(name: str, default: int = 0) -> int:
+    # CNC.vars mixes strings and numbers, so mypy types each value as object.
+    return int(cast(int, CNC.vars.get(name, default)))
+
+
+def _status_float(name: str, default: float = 0.0) -> float:
+    return float(cast(float, CNC.vars.get(name, default)))
+
+
 def _show_error(message: str) -> None:
     app = App.get_running_app()
     Clock.schedule_once(partial(app.root.show_message_popup, message, False), 0)
@@ -162,10 +171,10 @@ class ToolCompPopup(ModalView):
     def _fill_from_status(self) -> None:
         ids = self.ids
         ids.sp_mode.values = _labels(MODES)
-        mode = int(CNC.vars.get("cutter_comp_mode", 0))
+        mode = _status_int("cutter_comp_mode")
         mode_text = tr._(dict(MODES)[mode_key_from_status(mode)])
-        diameter_text = "%.3f" % float(CNC.vars.get("tool_diameter", 0.0))
-        wear_text = "%.3f" % float(CNC.vars.get("tool_diameter_wear", 0.0))
+        diameter_text = "%.3f" % _status_float("tool_diameter")
+        wear_text = "%.3f" % _status_float("tool_diameter_wear")
         # AliasProperty skips a refresh when the string is unchanged, which
         # leaves right-aligned text drawn at the old width.
         ids.sp_mode.text = mode_text
@@ -186,8 +195,8 @@ class ToolCompPopup(ModalView):
             _show_error(tr._("Enter a valid number."))
             return
 
-        stored_diameter = float(CNC.vars.get("tool_diameter", 0.0))
-        stored_wear = float(CNC.vars.get("tool_diameter_wear", 0.0))
+        stored_diameter = _status_float("tool_diameter")
+        stored_wear = _status_float("tool_diameter_wear")
         send_diameter = _changed(diameter, stored_diameter)
         send_wear = _changed(wear, stored_wear)
         if send_diameter is not None and send_diameter <= 0:
@@ -204,7 +213,7 @@ class ToolCompPopup(ModalView):
                 _show_error(tr._("Effective diameter (nominal plus wear) must be greater than 0."))
                 return
 
-        current_mode = mode_key_from_status(int(CNC.vars.get("cutter_comp_mode", 0)))
+        current_mode = mode_key_from_status(_status_int("cutter_comp_mode"))
         commands = build_tool_comp_commands(send_diameter, send_wear, mode, current_mode)
         if commands:
             app = App.get_running_app()
