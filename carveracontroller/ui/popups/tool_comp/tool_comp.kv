@@ -1,0 +1,97 @@
+#:import tr carveracontroller.__main__.tr
+
+<ToolCompPopup>:
+    size_hint: None, None
+    width: dp(560)
+    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+    auto_dismiss: False
+    BoxLayout:
+        id: tool_comp_body
+        orientation: 'vertical'
+        padding: '15dp'
+        spacing: dp(8)
+        size_hint: 1, None
+        height: self.minimum_height
+        Label:
+            canvas.before:
+                Color:
+                    rgba: app.theme.panel
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            size_hint_y: None
+            height: '30dp'
+            text: tr._('Cutter Compensation Values')
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+        BoxLayout:
+            size_hint_y: None
+            height: dp(32)
+            spacing: dp(8)
+            Label:
+                size_hint_x: None
+                width: dp(300)
+                text: tr._('Tool Nominal Diameter (mm):')
+                halign: 'right'
+                valign: 'middle'
+                text_size: self.size
+                shorten: False
+            ToolTipTextInput:
+                id: txt_diameter
+                font_size: '14dp'
+                hint_text: tr._('0.000')
+                tooltip_txt: tr._('Nominal tool diameter in millimetres. Sent as M493.3 D and must be greater than 0. Leave blank to keep the stored diameter.')
+                tooltip_image: ''
+                multiline: False
+                halign: 'right'
+                input_type: 'number'
+                input_filter: 'float'
+        BoxLayout:
+            size_hint_y: None
+            height: dp(32)
+            spacing: dp(8)
+            Label:
+                size_hint_x: None
+                width: dp(300)
+                text: tr._('Wear (mm):')
+                halign: 'right'
+                valign: 'middle'
+                text_size: self.size
+                shorten: False
+            ToolTipTextInput:
+                id: txt_wear
+                font_size: '14dp'
+                hint_text: tr._('0.000')
+                tooltip_txt: tr._('Additive diameter wear in millimetres. Sent as M493.3 W. Leave blank to keep the stored wear.')
+                tooltip_image: ''
+                multiline: False
+                halign: 'right'
+                input_type: 'number'
+                input_filter: 'float'
+        BoxLayout:
+            size_hint_y: None
+            height: dp(32)
+            spacing: dp(8)
+            Label:
+                size_hint_x: None
+                width: dp(300)
+                text: tr._('Compensation Mode:')
+                halign: 'right'
+                valign: 'middle'
+                text_size: self.size
+                shorten: False
+            Spinner:
+                id: sp_mode
+                text: 'None'
+                values: 'None', 'Left', 'Right'
+        BoxLayout:
+            spacing: '5dp'
+            size_hint_y: None
+            height: '40dp'
+            Button:
+                text: tr._('Cancel')
+                on_release: root.dismiss()
+            Button:
+                text: tr._('Apply')
+                on_release: root.on_apply_pressed()

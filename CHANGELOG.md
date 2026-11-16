@@ -1,4 +1,5 @@
 [unreleased]
+- Enhancement: Show cutter compensation mode and nominal tool diameter in the tool menu
 - Enhancement: Add an info button to the simulation panel that allows to access MRR statistics related to the current file
 - Enhancement: Convert the "eye" button of the simulation panel to a dropdown that allows to display either paths only, the uncut stock shell or the simulation results
 - Enhancement: Monitoring graph now on the G-code viewer screen, showing up to two metrics: spindle temperature, rpm, target rpm, rpm deviation %, feed, and material removal rate (mm³/min) from stock simulation while a file is playing

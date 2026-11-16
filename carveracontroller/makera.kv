@@ -39,6 +39,7 @@
 #:include addons/probing/ProbingPopup.kv
 #:include ui/popups/set_position/set_position.kv
 #:include ui/popups/adv_calibrate/adv_calibrate.kv
+#:include ui/popups/tool_comp/tool_comp.kv
 #:include addons/cmm_workbench/ui/CMMWorkbenchPopup.kv
 #:include addons/facing/FacingWizardPopup.kv
 #:include addons/stock/ui/StockSettingsPopup.kv
@@ -797,14 +798,17 @@
     change_dropdown: change_dropdown
     status_tlo: status_tlo
     status_wpvoltage: status_wpvoltage
+    status_comp_mode: status_comp_mode
+    status_tool_dia: status_tool_dia
+    status_tool_wear: status_tool_wear
     disabled: app.state != 'Idle'
     DropDownHint:
         text: tr._('Tool Status')
     BoxLayout:
         orientation: 'vertical'
         size_hint_y: None
-        height: '40dp'
         padding: '0.5dp'
+        height: self.padding[1] + self.padding[3] + status_tlo.height + status_wpvoltage.height + status_comp_mode.height + status_tool_dia.height + status_tool_wear.height
         canvas.before:
             Color:
                 rgba: app.theme.surface
@@ -819,7 +823,26 @@
             id: status_wpvoltage
             title: tr._('Probe:  ')
             value: '0.00v'
-            disabled: app.model == 'CA1' or app.model == 'Z1'
+            height: 0 if app.model == 'Z1' or app.model == 'CA1' else dp(20)
+            opacity: 0 if app.model == 'Z1' or app.model == 'CA1' else 1
+        StatusContent:
+            id: status_comp_mode
+            title: tr._('Comp:  ')
+            value: tr._('None')
+            color: app.theme.active_color if self.value != tr._('None') else self.default_color
+        StatusContent:
+            id: status_tool_dia
+            title: tr._('Dia:  ')
+            value: '0.000'
+            height: 0 if status_comp_mode.value == tr._('None') else dp(20)
+            opacity: 0 if status_comp_mode.value == tr._('None') else 1
+        StatusContent:
+            id: status_tool_wear
+            title: tr._('Wear:  ')
+            value: '0.000'
+            height: 0 if status_comp_mode.value == tr._('None') else dp(20)
+            opacity: 0 if status_comp_mode.value == tr._('None') else 1
+
     DropDownHint:
         text: tr._('Laser Mode')
     BoxLayout:
@@ -902,6 +925,14 @@
         on_release:
             root.select('Third Item')
             app.root.controller.unclampToolCommand()
+    Button:
+        text: tr._('Cutter Comp')
+        size_hint_y: None
+        height: '40dp'
+        disabled: not app.is_community_firmware
+        on_release:
+            root.select('Third Item')
+            app.root.open_tool_comp_popup()
 
 <LaserDropDown>:
     switch: switch

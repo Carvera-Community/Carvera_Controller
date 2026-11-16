@@ -669,6 +669,11 @@ class Controller:
             parts.append("R%d" % repeat_count)
         self.executeCommand(" ".join(parts) + "\n")
 
+    def executeCommands(self, commands):
+        """Send each command as its own line."""
+        for command in commands:
+            self.executeCommand("%s\n" % command)
+
     def clampToolCommand(self):
         self.executeCommand("M490.1\n")
 
@@ -1523,6 +1528,20 @@ class Controller:
             CNC.vars["max_delta"] = float(d["O"][0])
         else:
             CNC.vars["max_delta"] = 0.0
+
+        # |CC:mode,radius,nominal_diameter,wear
+        # mode is 0 (off), 41 (G41 left), or 42 (G42 right). Absent on older firmware.
+        if "CC" in d:
+            cc_fields = d["CC"]
+            CNC.vars["cutter_comp_mode"] = int(cc_fields[0]) if len(cc_fields) > 0 else 0
+            CNC.vars["cutter_comp_radius"] = float(cc_fields[1]) if len(cc_fields) > 1 else 0.0
+            CNC.vars["tool_diameter"] = float(cc_fields[2]) if len(cc_fields) > 2 else 0.0
+            CNC.vars["tool_diameter_wear"] = float(cc_fields[3]) if len(cc_fields) > 3 else 0.0
+        else:
+            CNC.vars["cutter_comp_mode"] = 0
+            CNC.vars["cutter_comp_radius"] = 0.0
+            CNC.vars["tool_diameter"] = 0.0
+            CNC.vars["tool_diameter_wear"] = 0.0
 
         if "H" in d:
             CNC.vars["halt_reason"] = int(d["H"][0])
