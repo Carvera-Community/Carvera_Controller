@@ -17,6 +17,11 @@
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Fixed: Stock simulation carved vertical walls with tapered tools that had a flute length shorter than their cone
 - Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
+- Fixed: Changed X+J and Y+J to X+2J and Y+2J in boss probing graphics to match actual impact to routine
+- Fixed: Updated M469.6 graphics to indicate diameter and arc toolpath
+- Fixed: Removed unused SideProbeDepth (E) from calibration inputs
+- Fixed: Blank image in the Y Clearance (C) tooltip of M469.5
+- Fixed: Probing UI renamed "Y Clearance (C)" to just "Clearance (C)" and an updated tooltip
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

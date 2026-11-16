@@ -69,15 +69,14 @@
 
             BoxLayout:
                 ProbeSettingLabel:
-                    label_text: 'Y Clearance (C):'
+                    label_text: 'Clearance (C):'
                 ToolTipTextInput:
                     id: ClearanceY
                     size_hint_x: 0.4
                     font_size: '14dp'
                     hint_text: tr._("0")
-                    tooltip_txt: tr._('When Probing A Axis Height, how far along Y to move after probing headstock before moving along X toward the pin. Use to avoid large chucks')
+                    tooltip_txt: tr._('In M469.6: Radial clearance between artifact and probe tip during arc movements \nIn M469.5: Z lift between consecutive probes')
                     tooltip_image: ''
-                    tooltip_image_size: 200,200
                     multiline: False
                     halign:'right'
                     input_type: 'number'
@@ -101,23 +100,6 @@
                     input_filter: 'float'
                     text: root.get_setting('PocketProbeDepth')
                     on_text: root.setting_changed('PocketProbeDepth', self.text)
-            
-            BoxLayout:
-                ProbeSettingLabel:
-                    label_text: '4th axis Y Depth (E):'
-                ToolTipTextInput:
-                    id: PocketProbeDepth
-                    size_hint_x: 0.4
-                    font_size: '14dp'
-                    hint_text: tr._("config")
-                    tooltip_txt: tr._('Not needed by default. \nUsed in calibrating 4th axis Y offset, see tooltip image')
-                    tooltip_image: ''
-                    multiline: False
-                    halign:'right'
-                    input_type: 'number'
-                    input_filter: 'float'
-                    text: root.get_setting('SideProbeDepth')
-                    on_text: root.setting_changed('SideProbeDepth', self.text)
 
             BoxLayout:
                 ProbeSettingLabel:
