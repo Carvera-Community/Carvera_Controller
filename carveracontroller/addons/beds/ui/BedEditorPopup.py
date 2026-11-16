@@ -247,7 +247,12 @@ class BedEditorPopup(ModalView):
                 bbox_max = meta.get("bbox_max")
                 if isinstance(bbox_min, tuple) and isinstance(bbox_max, tuple):
                     thickness = abs(float(bbox_max[2] - bbox_min[2]))
-        origin_txt = tr._("Origin is the front-left top corner (the surface you probe).")
+        origin_txt = tr._("Origin is the front-left top corner (the surface you probe).\n\n") + tr._(
+            "Machine Z is the machine Z of the top surface of the bed with the tool length offset (TLO) "
+            "removed, ie.: Machine Z = MPos Z - TLO. "
+            "To measure it: with a probe, touch the top surface of the bed, then take the measured machine "
+            "Z position and remove the tool length offset (TLO) of the probe (displayed in the top bar) from it.\n\n"
+        )
         if thickness and thickness > 0:
             self.thickness_hint = (
                 origin_txt
