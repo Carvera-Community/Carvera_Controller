@@ -929,7 +929,7 @@
         text: tr._('Cutter Comp')
         size_hint_y: None
         height: '40dp'
-        disabled: not app.is_community_firmware
+        disabled: not (app.is_community_firmware and app.fw_version_digitized >= digitize_v("2.4.0"))
         on_release:
             root.select('Third Item')
             app.root.open_tool_comp_popup()
