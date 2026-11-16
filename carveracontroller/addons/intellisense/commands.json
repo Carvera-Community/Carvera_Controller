@@ -511,6 +511,40 @@
         }
       }
     },
+    "G34": {
+      "type": "gcode",
+      "description": "Probe the bed Z along X at the current Y position and add the Z profile to flex compensation. Uses the X grid of the stored flex data and keeps a Y profile from G33. X and I set a new grid from the current X when there is no flex data",
+      "parameters": {
+        "X": {
+          "required": false,
+          "description": "Travel distance along X for a new grid. Not allowed with a Y profile from G33.",
+          "default": null,
+          "unit": "mm"
+        },
+        "I": {
+          "required": false,
+          "description": "Number of points for a new grid. Not allowed with a Y profile from G33.",
+          "default": null
+        },
+        "L": {
+          "required": false,
+          "description": "Repeat measurements at each point.",
+          "default": 1
+        },
+        "H": {
+          "required": false,
+          "description": "Probe height used instead of the configured one.",
+          "default": null,
+          "unit": "mm"
+        },
+        "R": {
+          "required": false,
+          "description": "Rapid feed between points.",
+          "default": 800,
+          "unit": "mm/min"
+        }
+      }
+    },
     "G38.2": {
       "type": "gcode",
       "description": "Probe toward the workpiece and stop on contact. Halts with an error if the probe does not trigger.",
@@ -657,6 +691,38 @@
         }
       }
     },
+    "G40": {
+      "type": "gcode",
+      "description": "Cancel cutter compensation. Finishes moves still held for lookahead, then motion follows the programmed path.",
+      "parameters": {},
+      "notes": "Also clears an XY offset held across G18/G19. A halt cancels compensation."
+    },
+    "G41": {
+      "type": "gcode",
+      "description": "Cutter compensation on, tool to the left of travel. Requires G17 and G90.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Nominal cutter diameter. If omitted, the diameter stored by M493.3 is used. Stored wear is added either way, and the sum must be greater than 0.",
+          "default": null,
+          "unit": "mm"
+        }
+      },
+      "notes": "The first moves are held until the corner can be offset; G40 runs what remains. G2/G3 must use I/J. R, A, or an inward arc no larger than the tool radius halts and cancels compensation. G18/G19 hold the current XY offset until G17. G10, G53, G92, a workspace or distance-mode change, and M3, M4, M5, M6, and M30 also halt and cancel it."
+    },
+    "G42": {
+      "type": "gcode",
+      "description": "Cutter compensation on, tool to the right of travel. Requires G17 and G90.",
+      "parameters": {
+        "D": {
+          "required": false,
+          "description": "Nominal cutter diameter. If omitted, the diameter stored by M493.3 is used. Stored wear is added either way, and the sum must be greater than 0.",
+          "default": null,
+          "unit": "mm"
+        }
+      },
+      "notes": "The first moves are held until the corner can be offset; G40 runs what remains. G2/G3 must use I/J. R, A, or an inward arc no larger than the tool radius halts and cancels compensation. G18/G19 hold the current XY offset until G17. G10, G53, G92, a workspace or distance-mode change, and M3, M4, M5, M6, and M30 also halt and cancel it."
+    },
     "G53": {
       "type": "gcode",
       "description": "Next move uses machine coordinates. Must be alone or the first G code on the line, followed by G0/G1.",
@@ -741,7 +807,7 @@
           "description": "Target or offset on A (rotary), if present.",
           "default": null
         }
-      }
+        }
     },
     "G92.1": {
       "type": "gcode",
@@ -782,7 +848,7 @@
           "description": "With A, take the short rotation onto that position.",
           "default": null
         }
-      }
+        }
     },
     "G93": {
       "type": "gcode",
@@ -815,7 +881,7 @@
           "unit": "rpm",
           "default_source": "spindle.default_rpm"
         }
-      }
+        }
     },
     "M4": {
       "type": "mcode",
@@ -828,7 +894,7 @@
           "unit": "rpm",
           "default_source": "spindle.default_rpm"
         }
-      }
+        }
     },
     "M5": {
       "type": "mcode",
@@ -883,7 +949,7 @@
           "default": null,
           "unit": "mm"
         }
-      }
+        }
     },
     "M7": {
       "type": "mcode",
@@ -987,7 +1053,7 @@
           "description": "File to delete when used as an SD remove command.",
           "default": null
         }
-      }
+        }
     },
     "M32": {
       "type": "mcode",
@@ -2394,6 +2460,74 @@
       "description": "Not implemented. The square probe is M466.1.",
       "parameters": {}
     },
+    "M468": {
+      "type": "mcode",
+      "description": "CAM probing helper macro. Optionally sets WCS from last probe operation using an offset. Optionally compares last probe operation against supplied values and errors if outside a supplied tolerance value. Can be run silently",
+      "parameters": {
+        "P": {
+          "required": false,
+          "description": "Work coordinate system: 1 G54 to 9 G59.3, 0 is the active one.",
+          "default": 0
+        },
+        "X": {
+          "required": false,
+          "description": "Expected X of the probed point (#154). Becomes the new X when S1 is set.",
+          "default": null
+        },
+        "Y": {
+          "required": false,
+          "description": "Expected Y of the probed point (#155). Becomes the new Y when S1 is set.",
+          "default": null
+        },
+        "Z": {
+          "required": false,
+          "description": "Expected Z of the probed point (#156). Becomes the new Z when S1 is set.",
+          "default": null
+        },
+        "R": {
+          "required": false,
+          "description": "Angle of the probed edge. The rotation becomes #153 minus R.",
+          "default": null,
+          "unit": "deg"
+        },
+        "D": {
+          "required": false,
+          "description": "Nominal size in X to compare last probe bore/boss against (#151)",
+          "default": null
+        },
+        "E": {
+          "required": false,
+          "description": "Nominal size in Y to compare last probe bore/boss against (#152)",
+          "default": null
+        },
+        "T": {
+          "required": false,
+          "description": "Position tolerance for X, Y and Z.",
+          "default": null
+        },
+        "U": {
+          "required": false,
+          "description": "Size tolerance for D and E.",
+          "default": null
+        },
+        "Q": {
+          "required": false,
+          "description": "Angle tolerance for R.",
+          "default": null,
+          "unit": "deg"
+        },
+        "W": {
+          "required": false,
+          "description": "W1 prints the measured values and deviations.",
+          "default": 0
+        },
+        "S": {
+          "required": false,
+          "description": "1 updates the WCS offset (and rotation, if R is given). Otherwise only checks are run.",
+          "default": 0
+        }
+      }
+    },
     "M469.1": {
       "type": "mcode",
       "description": "Calibrate Anchor 1 with the 3D probe. Check MDI for the config-set line to keep the result.",
@@ -3065,10 +3199,10 @@
     },
     "M493.3": {
       "type": "mcode",
-      "description": "Set TLO directly.",
+      "description": "Set tool length, stored cutter diameter, or diameter wear.",
       "parameters": {
         "Z": {
-          "required": true,
+          "required": false,
           "description": "TLO value.",
           "default": null,
           "unit": "mm"
@@ -3078,8 +3212,25 @@
           "description": "Set tool length from the current Z, as a height above Z0.",
           "default": null,
           "unit": "mm"
+        },
+        "D": {
+          "required": false,
+          "description": "Stored nominal cutter diameter used by G41/G42 when they omit D. Must be greater than 0.",
+          "default": null,
+          "unit": "mm"
+        },
+        "W": {
+          "required": false,
+          "description": "Diameter wear added to the nominal diameter when G41/G42 starts. May be negative.",
+          "default": null,
+          "unit": "mm"
         }
       }
+    },
+    "M493.4": {
+      "type": "mcode",
+      "description": "Report tool length, stored cutter diameter, diameter wear, and the tool-setter position.",
+      "parameters": {}
     },
     "M493.5": {
       "type": "mcode",
