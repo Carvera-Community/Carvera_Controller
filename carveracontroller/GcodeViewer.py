@@ -2262,7 +2262,7 @@ class GCodeViewer(Widget):
         """
         if not self.bed_visible:
             return
-        wcs = self._read_wcs_origin()
+        wcs = self._read_bed_wcs_origin()
         if self._bed_wcs_matches(wcs):
             return
         self._update_bed_uniforms()
@@ -2319,14 +2319,14 @@ class GCodeViewer(Widget):
         mat.set(flat=list(wcs_rotation_4x4(angle)))
         return mat
 
-    def _read_wcs_origin(self) -> tuple[float, float, float, float]:
+    def _read_bed_wcs_origin(self) -> tuple[float, float, float, float]:
         from .CNC import CNC
 
         vars_map: Any = CNC.vars
         return (
             float(vars_map.get("wcox") or 0.0),
             float(vars_map.get("wcoy") or 0.0),
-            float(vars_map.get("wcoz") or 0.0),
+            float(vars_map.get("wcoz") or 0.0) - float(vars_map.get("tlo") or 0.0),
             float(vars_map.get("rotation_angle") or 0.0),
         )
 
@@ -2340,7 +2340,7 @@ class GCodeViewer(Widget):
         if getattr(self, "bedmesh", None) is None:
             return
         center = getattr(self, "lines_center", [0.0, 0.0, 0.0])
-        wcox, wcoy, wcoz, angle = self._read_wcs_origin()
+        wcox, wcoy, wcoz, angle = self._read_bed_wcs_origin()
         style = style_for_bed_material(self._bed_material)
         self.bedmesh["center_offset"] = Matrix().translate(-center[0], -center[1], -center[2])
         self.bedmesh["view_mat"] = self.m_viewMatrix
