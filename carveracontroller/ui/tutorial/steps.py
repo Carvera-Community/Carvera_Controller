@@ -149,7 +149,7 @@ TOUR_STEPS: tuple[TourStep, ...] = (
         title="Tool menu",
         body=(
             "The tool button opens a panel where you can:\n"
-            "- See the current tool length offset (TLO) and probe voltage\n"
+            "- See the current tool length offset (TLO), probe voltage, and cutter compensation\n"
             "- Toggle laser mode on or off\n"
             "- Change or calibrate the current tool\n"
             "- Set the loaded tool number without a tool change"
