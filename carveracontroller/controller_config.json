@@ -320,7 +320,7 @@
         "title": "Estimate playback time remaining based on toolpaths",
         "desc": "This feature adds additional parsing time after selecting a file.",
         "section": "carvera",
-        "key": "high_precision_reamining_time_estimate",
+        "key": "high_precision_remaining_time_estimate",
         "default": "1"
     },
     {

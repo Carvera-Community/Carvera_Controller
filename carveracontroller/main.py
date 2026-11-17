@@ -3055,7 +3055,7 @@ class Makera(RelativeLayout):
         # init gcode viewer
         self.gcode_viewer = GCodeViewer()
         self.gcode_viewer.high_precision_time_estimate = Config.getboolean(
-            "carvera", "high_precision_reamining_time_estimate", fallback=True
+            "carvera", "high_precision_remaining_time_estimate", fallback=True
         )
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
@@ -3145,9 +3145,9 @@ class Makera(RelativeLayout):
         self._machine_ls_wanted_path = None
         self._machine_ls_sent_path = None
 
-        self.instantFSoverride = Config.get("carvera", "instantFSoverride") == "1"
+        self.instantFSoverride = Config.getboolean("carvera", "instantFSoverride", fallback=True)
 
-        self.show_update = Config.get("carvera", "show_update") == "1"
+        self.show_update = Config.getboolean("carvera", "show_update", fallback=True)
         if self.show_update:
             self.check_for_updates()
 
@@ -3160,11 +3160,11 @@ class Makera(RelativeLayout):
         if Config.has_option("carvera", "allow_mdi_while_machine_running"):
             self.allow_mdi_while_machine_running = Config.get("carvera", "allow_mdi_while_machine_running")
 
-        if Config.has_option("carvera", "allow_jogging_while_machine_running"):
-            self.allow_jogging_while_machine_running = Config.get("carvera", "allow_jogging_while_machine_running")
+        self.allow_jogging_while_machine_running = Config.get(
+            "carvera", "allow_jogging_while_machine_running", fallback="1"
+        )
 
-        if Config.has_option("carvera", "allow_jogging_while_spindle_on"):
-            self.allow_jogging_while_spindle_on = Config.get("carvera", "allow_jogging_while_spindle_on")
+        self.allow_jogging_while_spindle_on = Config.get("carvera", "allow_jogging_while_spindle_on", fallback="0")
 
         self._bind_jog_control_deps()
 
@@ -3173,15 +3173,16 @@ class Makera(RelativeLayout):
         self.setup_pendant()
 
         if Config.has_option("carvera", "tooltip_delay"):
-            delay_value = Config.getfloat("carvera", "tooltip_delay")
+            delay_value = Config.getfloat("carvera", "tooltip_delay", fallback=1.5)
             App.get_running_app().tooltip_delay = delay_value if delay_value >= 0 else 0.5
 
         if Config.has_option("carvera", "show_tooltips"):
-            default_show_tooltips = Config.get("carvera", "show_tooltips") != "0"
+            default_show_tooltips = Config.getdefault("carvera", "show_tooltips", "1") != "0"
             App.get_running_app().show_tooltips = default_show_tooltips
 
-        if Config.has_option("carvera", "invert_y_axis_jogging"):
-            App.get_running_app().invert_y_axis_jogging = Config.get("carvera", "invert_y_axis_jogging") == "1"
+        App.get_running_app().invert_y_axis_jogging = Config.getboolean(
+            "carvera", "invert_y_axis_jogging", fallback=False
+        )
 
         self._load_gcode_highlight_settings()
         self._stop_syntax_theme = watch_theme(self._refresh_syntax_highlighting)
@@ -5831,7 +5832,7 @@ class Makera(RelativeLayout):
 
     def onFirmwareDetected(self, version, *args):
         app = App.get_running_app()
-        if Config.get("carvera", "show_firmware_check") != "1":
+        if not Config.getboolean("carvera", "show_firmware_check", fallback=True):
             return
         if not app.is_community_firmware:
             content = BoxLayout(orientation="vertical", padding=dp(15))
@@ -8681,9 +8682,8 @@ class Makera(RelativeLayout):
             return
         if not app.is_community_firmware or not self.fw_version or app.fw_version_digitized < Utils.digitize_v("2.1.0"):
             return
-        use_higher_val = Config.get("carvera", "use_higher_baud", fallback="0")
-        use_higher = str(use_higher_val).lower() in ("1", "true", "yes", "on")
-        baud_str = Config.get("carvera", "usb_baud_rate", fallback="115200")
+        use_higher = Config.getboolean("carvera", "use_higher_baud", fallback=False)
+        baud_str = Config.get("carvera", "usb_baud_rate", fallback="1500000")
         if use_higher and baud_str and int(baud_str) != 115200:
             baud = int(baud_str)
             self.controller._baud_upgrade_attempted = True
@@ -9311,8 +9311,8 @@ class Makera(RelativeLayout):
         if "log_sent_receive" in self.controller_setting_change_list:
             self.controller.log_sent_receive = self.controller_setting_change_list.get("log_sent_receive")
 
-        if "high_precision_reamining_time_estimate" in self.controller_setting_change_list:
-            raw_enabled = self.controller_setting_change_list.get("high_precision_reamining_time_estimate")
+        if "high_precision_remaining_time_estimate" in self.controller_setting_change_list:
+            raw_enabled = self.controller_setting_change_list.get("high_precision_remaining_time_estimate")
             if isinstance(raw_enabled, str):
                 enabled = raw_enabled not in ("0", "false", "False", "")
             else:
@@ -10670,13 +10670,7 @@ def load_app_configs():
             logger.info(f"Log level set to {log_level}")
 
 
-def set_config_defaults(default_lang):
-    # A missing section is a new install. An existing section without the key
-    # is an upgrade, and those users already know the workflow.
-    new_install = not Config.has_section("carvera")
-    if new_install:
-        Config.add_section("carvera")
-
+def apply_kivy_config():
     if not Config.has_section("input"):
         Config.add_section("input")
 
@@ -10704,72 +10698,24 @@ def set_config_defaults(default_lang):
         Config.set("kivy", "exit_on_escape", "0")
         Config.set("kivy", "pause_on_minimize", "0")
 
-    # Configurable config options. Don't change if they are already set
-    if not Config.has_option("carvera", "show_update"):
-        Config.set("carvera", "show_update", "1")
-    # No default for CONFIG_INCLUDE_PRERELEASES — the popup infers a
-    # sensible default from the running controller/firmware versions and
-    # writes the key only when the user explicitly toggles the checkbox.
-    if not Config.has_option("carvera", "show_firmware_check"):
-        Config.set("carvera", "show_firmware_check", "1")
-    if not Config.has_option("carvera", "show_tooltips"):
-        Config.set("carvera", "show_tooltips", "1")
-    if not Config.has_option("carvera", "tooltip_delay"):
-        Config.set("carvera", "tooltip_delay", "1.5")
-    if not Config.has_option("carvera", "language"):
-        Config.set("carvera", "language", default_lang)
-    if not Config.has_option("carvera", "theme"):
-        Config.set("carvera", "theme", DEFAULT_THEME)
-    if not Config.has_option("carvera", "local_folder_1"):
-        Config.set("carvera", "local_folder_1", "")
-    if not Config.has_option("carvera", "local_folder_2"):
-        Config.set("carvera", "local_folder_2", "")
-    if not Config.has_option("carvera", "local_folder_3"):
-        Config.set("carvera", "local_folder_3", "")
-    if not Config.has_option("carvera", "local_folder_4"):
-        Config.set("carvera", "local_folder_4", "")
-    if not Config.has_option("carvera", "local_folder_5"):
-        Config.set("carvera", "local_folder_5", "")
-    if not Config.has_option("carvera", "remote_folder_1"):
-        Config.set("carvera", "remote_folder_1", "")
-    if not Config.has_option("carvera", "remote_folder_2"):
-        Config.set("carvera", "remote_folder_2", "")
-    if not Config.has_option("carvera", "remote_folder_3"):
-        Config.set("carvera", "remote_folder_3", "")
-    if not Config.has_option("carvera", "remote_folder_4"):
-        Config.set("carvera", "remote_folder_4", "")
-    if not Config.has_option("carvera", "remote_folder_5"):
-        Config.set("carvera", "remote_folder_5", "")
-    if not Config.has_option("carvera", "custom_bkg_img_dir"):
-        Config.set("carvera", "custom_bkg_img_dir", "")
-    if not Config.has_option("carvera", "invert_y_axis_jogging"):
-        Config.set("carvera", "invert_y_axis_jogging", "0")
+    if not Config.has_option("graphics", "allow_screensaver"):
+        Config.set("graphics", "allow_screensaver", "0")
+    if not Config.has_option("graphics", "height"):
+        Config.set("graphics", "height", "1440")
+    if not Config.has_option("graphics", "width"):
+        Config.set("graphics", "width", "900")
+
+    Config.write()
+
+
+def migrate_config(new_install):
     had_jogging_while_running = Config.has_option("carvera", "allow_jogging_while_machine_running")
-    if not had_jogging_while_running:
-        Config.set("carvera", "allow_jogging_while_machine_running", "1")
     if not Config.has_option("carvera", "allow_jogging_while_spindle_on"):
         migrate_spindle_on = had_jogging_while_running and Config.getboolean(
             "carvera", "allow_jogging_while_machine_running", fallback=False
         )
         Config.set("carvera", "allow_jogging_while_spindle_on", "1" if migrate_spindle_on else "0")
-    if not Config.has_option("carvera", "allow_manual_usb_device"):
-        Config.set("carvera", "allow_manual_usb_device", "0")
-    if not Config.has_option("carvera", "manual_usb_device"):
-        Config.set("carvera", "manual_usb_device", "")
-    if not Config.has_option("carvera", "use_higher_baud"):
-        Config.set("carvera", "use_higher_baud", "0")
-    if not Config.has_option("carvera", "usb_baud_rate"):
-        Config.set("carvera", "usb_baud_rate", "1500000")
-    if not Config.has_option("carvera", "reconnect_method"):
-        Config.set("carvera", "reconnect_method", "wifi")
-    if not Config.has_option("carvera", "usb_device_id"):
-        Config.set("carvera", "usb_device_id", "")
-    if not Config.has_option("carvera", "usb_serial"):
-        Config.set("carvera", "usb_serial", "")
-    if not Config.has_option("carvera", "last_connection_method"):
-        Config.set("carvera", "last_connection_method", "")
-    if not Config.has_option("carvera", "file_browser_location"):
-        Config.set("carvera", "file_browser_location", "")
+
     # Migrate legacy VID:PID:SERIAL stored in usb_device_id.
     legacy_id = Config.get("carvera", "usb_device_id", fallback="") or ""
     vid_pid, legacy_serial = Utils.parse_usb_device_id(legacy_id)
@@ -10777,34 +10723,19 @@ def set_config_defaults(default_lang):
         Config.set("carvera", "usb_device_id", vid_pid)
         if not Config.get("carvera", "usb_serial", fallback=""):
             Config.set("carvera", "usb_serial", legacy_serial)
-    if not Config.has_option("carvera", "high_precision_reamining_time_estimate"):
-        Config.set("carvera", "high_precision_reamining_time_estimate", "1")
-    if not Config.has_option("carvera", "background_image"):
-        Config.set("carvera", "background_image", "None")
-    if not Config.has_option("graphics", "allow_screensaver"):
-        Config.set("graphics", "allow_screensaver", "0")
-    if not Config.has_option("graphics", "height"):
-        Config.set("graphics", "height", "1440")
-    if not Config.has_option("graphics", "width"):
-        Config.set("graphics", "width", "900")
-    if not Config.has_option("carvera", "instantFSoverride"):
-        Config.set("carvera", "instantFSoverride", "1")
-    if not Config.has_option("carvera", "show_playbar_tool_change_markers"):
-        Config.set("carvera", "show_playbar_tool_change_markers", "1")
-    if not Config.has_option("carvera", "auto_lights_on_connect"):
-        Config.set("carvera", "auto_lights_on_connect", "0")
+
+    # Rename misspelled high_precision_reamining_time_estimate key.
+    old_key = "high_precision_reamining_time_estimate"
+    new_key = "high_precision_remaining_time_estimate"
+    if Config.has_option("carvera", old_key):
+        if not Config.has_option("carvera", new_key):
+            Config.set("carvera", new_key, Config.get("carvera", old_key))
+        Config.remove_option("carvera", old_key)
+
+    # A missing section is a new install. An existing section without the key
+    # is an upgrade, and those users already know the workflow.
     if not Config.has_option("carvera", "tutorial_completed"):
         Config.set("carvera", "tutorial_completed", "0" if new_install else "1")
-
-    # G-code viewer defaults
-    if not Config.has_option("carvera", "gcode_auto_show_stock"):
-        Config.set("carvera", "gcode_auto_show_stock", "1")
-    if not Config.has_option("carvera", "gcode_auto_simulate_cut"):
-        Config.set("carvera", "gcode_auto_simulate_cut", "0")
-    if not Config.has_option("carvera", "gcode_viewer_ghost_paths"):
-        Config.set("carvera", "gcode_viewer_ghost_paths", "0")
-    if not Config.has_option("carvera", "gcode_highlight_enabled"):
-        Config.set("carvera", "gcode_highlight_enabled", "1")
 
     Config.write()
 
@@ -10842,9 +10773,7 @@ def load_constants():
 
 
 def main():
-    langname = None
-    if Config.has_option("carvera", "language"):
-        langname = Config.get("carvera", "language")
+    langname = Config.get("carvera", "language", fallback=None)
     translation.init(langname)
 
     # load the global constants
@@ -10853,7 +10782,11 @@ def main():
     # Language translation needs to be globally accessible
     global HALT_REASON
 
-    set_config_defaults(tr.lang)
+    new_install = not Config.has_section("carvera")
+    if new_install:
+        Config.add_section("carvera")
+    apply_kivy_config()
+    migrate_config(new_install)
     load_app_configs()
 
     HALT_REASON = load_halt_translations(tr)

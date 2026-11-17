@@ -175,19 +175,24 @@ def kivy_app():
     from carveracontroller.main import (
         MakeraApp,
         app_base_path,
+        apply_kivy_config,
         load_app_configs,
         load_constants,
         load_halt_translations,
+        migrate_config,
         register_fonts,
         register_images,
-        set_config_defaults,
     )
     from carveracontroller.translation import tr
 
     # Replicate main() startup sequence (main.py:6470-6494)
     translation.init("en")
     load_constants()
-    set_config_defaults(tr.lang)
+    new_install = not Config.has_section("carvera")
+    if new_install:
+        Config.add_section("carvera")
+    apply_kivy_config()
+    migrate_config(new_install)
     load_app_configs()
 
     # Suppress hardware access and network requests AFTER config sections exist
