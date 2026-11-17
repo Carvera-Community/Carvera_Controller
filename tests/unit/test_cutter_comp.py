@@ -66,12 +66,22 @@ def test_diameter_and_left_cancels_before_storing_then_enables():
 
 
 def test_wear_and_off_does_not_send_a_second_cancel():
-    commands = build_tool_comp_commands(None, -0.05, "none", "left")
+    commands = build_tool_comp_commands(None, 0.05, "none", "left")
     assert commands == ["G40", "M493.3 W-0.050"]
 
 
+def test_positive_ui_wear_is_sent_negative():
+    commands = build_tool_comp_commands(None, 3, "none", "none")
+    assert commands == ["G40", "M493.3 W-3.000"]
+
+
+def test_negative_ui_wear_is_sent_positive():
+    commands = build_tool_comp_commands(None, -3, "none", "none")
+    assert commands == ["G40", "M493.3 W3.000"]
+
+
 def test_diameter_and_wear_share_one_m493_command():
-    commands = build_tool_comp_commands(6.35, -0.05, "right", "none")
+    commands = build_tool_comp_commands(6.35, 0.05, "right", "none")
     assert commands == ["G40", "M493.3 D6.350 W-0.050", "G42"]
 
 

@@ -70,8 +70,9 @@ def build_tool_comp_commands(
 
     A missing value is left unchanged. Diameter and wear changes are rejected
     while G41/G42 is active, so any stored value is preceded by G40. Both words
-    go on one M493.3. The requested mode is sent afterwards unless the cancel
-    already left compensation in that mode.
+    go on one M493.3. Wear is sent with the opposite sign of the form value, so
+    3 becomes W-3.000 and -3 becomes W3.000. The requested mode is sent
+    afterwards unless the cancel already left compensation in that mode.
     """
     if mode not in _MODE_GCODE:
         raise ValueError("Unknown cutter comp mode: %s" % mode)
@@ -81,7 +82,10 @@ def build_tool_comp_commands(
     if diameter is not None:
         words.append("D%.3f" % diameter)
     if wear is not None:
-        words.append("W%.3f" % wear)
+        wire_wear = -wear
+        if wire_wear == 0.0:
+            wire_wear = 0.0
+        words.append("W%.3f" % wire_wear)
     if words:
         commands.append("G40")
         commands.append("M493.3 " + " ".join(words))
@@ -204,7 +208,9 @@ class ToolCompPopup(ModalView):
             return
 
         effective_diameter = stored_diameter if diameter is None else diameter
-        effective_wear = stored_wear if wear is None else wear
+        # Blank or unchanged wear keeps the stored firmware value. A new form
+        # value is stored with the opposite sign.
+        effective_wear = stored_wear if send_wear is None else -send_wear
         if mode in ("left", "right"):
             if effective_diameter <= 0:
                 _show_error(tr._("Cutter compensation needs a nominal diameter greater than 0."))
