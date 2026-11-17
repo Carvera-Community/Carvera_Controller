@@ -3325,12 +3325,6 @@ class Makera(RelativeLayout):
         for setting in controller_config_definition:
             if "default" in setting:
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
-                # The bool switch only recognises "0" and "1". An earlier default
-                # of "true" draws the switch off while the feature stays on.
-                if setting["key"] == "mdi_auto_correct_case":
-                    stored = Config.get(setting["section"], setting["key"])
-                    if str(stored).lower() == "true":
-                        Config.set(setting["section"], setting["key"], "1")
                 setting.pop("default", None)
             controller_config.append(setting)
 
@@ -10708,7 +10702,56 @@ def apply_kivy_config():
     Config.write()
 
 
+# Settings panel definitions, relative to this package.
+SETTINGS_DEFINITION_FILES = (
+    "controller_config.json",
+    os.path.join("ui", "themes", "config.json"),
+    os.path.join("addons", "keyboard_shortcuts", "keyboard_shortcuts_config.json"),
+    "gcode_viewer_config.json",
+    os.path.join("ui", "file_browser", "config.json"),
+    "pendant_config.json",
+)
+
+# Bool settings whose code checks for "1", so a stored "true" has always behaved as off.
+TRUE_MEANS_OFF_KEYS = {("carvera", "allow_jogging_while_machine_running")}
+
+
+def settings_bool_keys():
+    """Yield (section, key) for every bool setting in the settings panel definitions."""
+    base = os.path.dirname(__file__)
+    for name in SETTINGS_DEFINITION_FILES:
+        try:
+            with open(os.path.join(base, name)) as file:
+                definition = json.load(file)
+        except (OSError, ValueError) as e:
+            logger.error(f"Failed to read {name}: {e}")
+            continue
+        for setting in definition:
+            if setting.get("type") == "bool" and "section" in setting and "key" in setting:
+                yield setting["section"], setting["key"]
+
+
+def normalize_bool_settings():
+    """Rewrite stored "true"/"false" bool settings as "1"/"0".
+
+    Older settings JSON files used "true"/"false" defaults, which were saved to
+    config.ini. The settings switch only understands "1"/"0", so a stored "true"
+    is drawn as off. The switch itself only ever writes "1"/"0", so these values
+    were never chosen by the user. Each key keeps the behaviour it had.
+    """
+    for section, key in settings_bool_keys():
+        if not Config.has_option(section, key):
+            continue
+        value = Config.get(section, key).strip().lower()
+        if value == "true":
+            Config.set(section, key, "0" if (section, key) in TRUE_MEANS_OFF_KEYS else "1")
+        elif value == "false":
+            Config.set(section, key, "0")
+
+
 def migrate_config(new_install):
+    normalize_bool_settings()
+
     had_jogging_while_running = Config.has_option("carvera", "allow_jogging_while_machine_running")
     if not Config.has_option("carvera", "allow_jogging_while_spindle_on"):
         migrate_spindle_on = had_jogging_while_running and Config.getboolean(

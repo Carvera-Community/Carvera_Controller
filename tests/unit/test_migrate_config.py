@@ -1,7 +1,7 @@
 import pytest
 from kivy.config import Config
 
-from carveracontroller.main import migrate_config
+from carveracontroller.main import migrate_config, settings_bool_keys
 
 RUNNING_KEY = "allow_jogging_while_machine_running"
 SPINDLE_KEY = "allow_jogging_while_spindle_on"
@@ -30,16 +30,17 @@ def test_new_install_disables_jogging_while_spindle_on(carvera_section):
     assert Config.get("carvera", SPINDLE_KEY) == "0"
 
 
-@pytest.mark.parametrize("running_value", ["1", "true", "True"])
-def test_upgrade_with_jogging_while_running_enables_spindle_on(carvera_section, running_value):
+def test_upgrade_with_jogging_while_running_enables_spindle_on(carvera_section):
     # Before the spindle-on setting existed, allowing jogging while running also
-    # allowed it with the spindle on. "true" is the old JSON panel default.
-    Config.set("carvera", RUNNING_KEY, running_value)
+    # allowed it with the spindle on.
+    Config.set("carvera", RUNNING_KEY, "1")
     migrate_config(new_install=False)
     assert Config.get("carvera", SPINDLE_KEY) == "1"
 
 
-@pytest.mark.parametrize("running_value", ["0", "false"])
+# A stored "true" for the running flag has always behaved as off (the code checks
+# for "1"), so it must not enable jogging with the spindle on.
+@pytest.mark.parametrize("running_value", ["0", "false", "true", "True"])
 def test_upgrade_without_jogging_while_running_disables_spindle_on(carvera_section, running_value):
     Config.set("carvera", RUNNING_KEY, running_value)
     migrate_config(new_install=False)
@@ -137,3 +138,55 @@ def test_existing_tutorial_completed_is_not_overwritten(carvera_section, value):
     Config.set("carvera", "tutorial_completed", value)
     migrate_config(new_install=value == "1")
     assert Config.get("carvera", "tutorial_completed") == value
+
+
+@pytest.mark.parametrize(
+    ("key", "stored", "expected"),
+    [
+        ("pendant_jogging_default", "true", "1"),
+        ("pendant_jogging_default", "True", "1"),
+        ("show_update", "true", "1"),
+        ("gamepad_invert_x", "false", "0"),
+        ("gamepad_invert_x", "False", "0"),
+        ("mdi_auto_correct_case", "true", "1"),
+    ],
+)
+def test_true_false_bool_settings_become_1_0(carvera_section, key, stored, expected):
+    Config.set("carvera", key, stored)
+    migrate_config(new_install=False)
+    assert Config.get("carvera", key) == expected
+
+
+def test_true_for_jogging_while_running_keeps_its_off_behaviour(carvera_section):
+    Config.set("carvera", RUNNING_KEY, "true")
+    migrate_config(new_install=False)
+    assert Config.get("carvera", RUNNING_KEY) == "0"
+
+
+@pytest.mark.parametrize("stored", ["0", "1"])
+def test_1_0_bool_settings_are_left_unchanged(carvera_section, stored):
+    Config.set("carvera", "pendant_jogging_default", stored)
+    migrate_config(new_install=False)
+    assert Config.get("carvera", "pendant_jogging_default") == stored
+
+
+def test_non_bool_settings_are_left_unchanged(carvera_section):
+    # usb_serial is a string setting; only bool settings are normalized.
+    Config.set("carvera", "usb_serial", "true")
+    migrate_config(new_install=False)
+    assert Config.get("carvera", "usb_serial") == "true"
+
+
+def test_bool_normalization_does_not_add_missing_keys(carvera_section):
+    migrate_config(new_install=False)
+    assert not Config.has_option("carvera", "pendant_jogging_default")
+
+
+def test_settings_bool_keys_reads_every_definition_file():
+    keys = set(settings_bool_keys())
+    # One bool from each definition file that has bool settings.
+    assert ("carvera", "pendant_jogging_default") in keys  # pendant_config.json
+    assert ("carvera", "gcode_highlight_enabled") in keys  # gcode_viewer_config.json
+    assert ("carvera", "file_browser_thumbnails") in keys  # ui/file_browser/config.json
+    assert ("carvera", "mdi_auto_correct_case") in keys  # controller_config.json
+    assert ("carvera", "usb_serial") not in keys
