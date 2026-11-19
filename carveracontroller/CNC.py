@@ -215,6 +215,12 @@ class CNC:
         "laserpower": 0.0,
         "laserscale": 0.0,
         "max_delta": 0.0,
+        # |CC:mode,radius,nominal_diameter,wear from community firmware.
+        # mode is 0 (off), 41 (G41 left), or 42 (G42 right).
+        "cutter_comp_mode": 0,
+        "cutter_comp_radius": 0.0,
+        "tool_diameter": 0.0,
+        "tool_diameter_wear": 0.0,
         "laser_module_offset_x": -37.3,
         "laser_module_offset_y": 4.8,
         "tarspindle": 0.0,
