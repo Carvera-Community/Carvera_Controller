@@ -17,6 +17,7 @@
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Fixed: Stock simulation carved vertical walls with tapered tools that had a flute length shorter than their cone
 - Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
+- Fixed: Some UI elements stayed bound after they were closed or rebuilt, which could freeze the UI
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

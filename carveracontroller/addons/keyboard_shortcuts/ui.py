@@ -79,6 +79,7 @@ class _KeyCap(Label):
     """Compact keyboard-key visualization sized to its label."""
 
     def __init__(self, **kwargs):
+        self._stop_theme = None
         kwargs.setdefault("size_hint", (None, None))
         kwargs.setdefault("height", dp(27))
         kwargs.setdefault("font_size", sp(13))
@@ -97,6 +98,13 @@ class _KeyCap(Label):
         self.bind(texture_size=self._sync_width, pos=self._sync_canvas, size=self._sync_canvas)
         self._sync_width()
         self._stop_theme = watch_theme(self._apply_theme)
+
+    def on_parent(self, _instance, parent):
+        if parent is not None or self._stop_theme is None:
+            return
+        stop = self._stop_theme
+        self._stop_theme = None
+        stop()
 
     def _apply_theme(self, theme) -> None:
         self.color = theme.text

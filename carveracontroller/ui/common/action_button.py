@@ -21,6 +21,7 @@ class PopupActionButton(ToolTipButton):
 
     def __init__(self, **kwargs):
         self._watched_theme = None
+        self._theme_app = None
         super().__init__(**kwargs)
         self.bind(
             state=self._sync_colors,
@@ -41,10 +42,20 @@ class PopupActionButton(ToolTipButton):
 
     def _bind_theme(self):
         app = App.get_running_app()
-        if app is None:
+        if app is None or self._theme_app is not None:
             return
+        self._theme_app = app
         app.fbind("theme", self._on_app_theme)
         self._on_app_theme(app, getattr(app, "theme", None))
+
+    def _unbind_theme(self):
+        """Drop app/theme references so a removed button can be garbage collected."""
+        app, self._theme_app = self._theme_app, None
+        if app is not None:
+            app.funbind("theme", self._on_app_theme)
+        if self._watched_theme is not None:
+            self._watched_theme.unbind(revision=self._sync_colors)
+            self._watched_theme = None
 
     def _on_app_theme(self, _app, theme):
         if self._watched_theme is not None:
@@ -98,6 +109,9 @@ class PopupActionButton(ToolTipButton):
         if parent is None:
             self.close_tooltip()
             Window.unbind(mouse_pos=self.on_mouse_pos)
+            self._unbind_theme()
+        else:
+            self._bind_theme()
 
 
 if "PopupActionButton" not in Factory.classes:

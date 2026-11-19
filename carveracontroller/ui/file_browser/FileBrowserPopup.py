@@ -199,9 +199,20 @@ class FileBrowserPopup(ModalView):
 
     def on_dismiss(self):
         Window.unbind(size=self._on_window_size)
+        self._unbind_app()
         self._remember_device_dir()
         self._remember_machine_dir()
         return super().on_dismiss()
+
+    def _unbind_app(self):
+        app = App.get_running_app()
+        if app is not None and self._bound_app:
+            app.unbind(
+                selected_remote_filename=self._on_job_changed,
+                selected_local_filename=self._on_job_changed,
+                state=self._on_app_state,
+            )
+        self._bound_app = False
 
     def open_for_jobs(self):
         self.firmware_mode = False
