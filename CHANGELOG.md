@@ -18,6 +18,7 @@
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Fixed: Stock simulation carved vertical walls with tapered tools that had a flute length shorter than their cone
 - Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
+- Fixed: Some UI elements stayed bound after they were closed or rebuilt, which could freeze the UI
 - Fixed: Changed X+J and Y+J to X+2J and Y+2J in boss probing graphics to match actual impact to routine
 - Fixed: Updated M469.6 graphics to indicate diameter and arc toolpath
 - Fixed: Removed unused SideProbeDepth (E) from calibration inputs

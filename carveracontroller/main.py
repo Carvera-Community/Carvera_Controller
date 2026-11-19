@@ -2508,10 +2508,10 @@ class GCodeRow(IntellisenseExplainRowMixin, RecycleDataViewBehavior, BoxLayout):
             app = App.get_running_app()
             if hasattr(app.root, "coord_popup") and app.root.coord_popup:
                 cp = app.root.coord_popup
-                if hasattr(cp, "txt_startline") and cp.txt_startline and self._resume_bind_uids[0] is not None:
-                    cp.txt_startline.funbind("text", self._resume_bind_uids[0])
-                if hasattr(cp, "cbx_startline") and cp.cbx_startline and self._resume_bind_uids[1] is not None:
-                    cp.cbx_startline.funbind("active", self._resume_bind_uids[1])
+                if hasattr(cp, "txt_startline") and cp.txt_startline and self._resume_bind_uids[0]:
+                    cp.txt_startline.unbind_uid("text", self._resume_bind_uids[0])
+                if hasattr(cp, "cbx_startline") and cp.cbx_startline and self._resume_bind_uids[1]:
+                    cp.cbx_startline.unbind_uid("active", self._resume_bind_uids[1])
             self._resume_bind_uids = None
         super().refresh_view_attrs(rv, index, data)
         self._update_is_resume_line()
