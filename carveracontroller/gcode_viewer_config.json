@@ -22,5 +22,13 @@
         "section": "carvera",
         "key": "gcode_highlight_enabled",
         "default": "true"
+    },
+    {
+        "type": "bool",
+        "title": "Reverse mouse-wheel zoom",
+        "desc": "Reverse direction of zoom on mouse wheel rotation.",
+        "section": "carvera",
+        "key": "gcode_zoom_revert",
+        "default": "false"
     }
 ]
