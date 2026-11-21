@@ -40,18 +40,29 @@ def test_clearing_keycaps_stops_theme_watch_and_new_ones_follow(themed_app):
     old_caps = list(display._keycaps)
     assert old_caps
     assert all(cap._stop_theme is not None for cap in old_caps)
-    stale_colors = [list(cap.color) for cap in old_caps]
+    # Check the canvas colors rather than ``color``: when the app's kv is loaded, the global
+    # ``<Label>`` rule re-themes ``color`` on every live label, detached or not. Only the
+    # keycap's own theme watch updates the background and outline.
+    stale_canvas = [(list(cap._bg_color.rgba), list(cap._outline_color.rgba)) for cap in old_caps]
 
     display.set_chord(KeyChord("m"))
     assert all(cap.parent is None for cap in old_caps)
     assert all(cap._stop_theme is None for cap in old_caps)
 
-    themed_app.theme.text = [0.2, 0.4, 0.6, 1]
-    for color, stale in zip([list(cap.color) for cap in old_caps], stale_colors, strict=True):
-        assert color == pytest.approx(stale)
+    new_text = [0.2, 0.4, 0.6, 1]
+    new_inset = [0.1, 0.3, 0.5, 1]
+    new_border = [0.7, 0.8, 0.9, 1]
+    themed_app.theme.text = new_text
+    themed_app.theme.panel_inset = new_inset
+    themed_app.theme.border = new_border
+    for cap, (bg, outline) in zip(old_caps, stale_canvas, strict=True):
+        assert list(cap._bg_color.rgba) == pytest.approx(bg)
+        assert list(cap._outline_color.rgba) == pytest.approx(outline)
     assert display._keycaps
     for cap in display._keycaps:
-        assert list(cap.color) == pytest.approx([0.2, 0.4, 0.6, 1])
+        assert list(cap.color) == pytest.approx(new_text)
+        assert list(cap._bg_color.rgba) == pytest.approx(new_inset)
+        assert list(cap._outline_color.rgba) == pytest.approx(new_border)
 
 
 def test_removed_keycaps_are_not_kept_by_theme(themed_app):

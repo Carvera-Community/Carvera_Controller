@@ -3404,6 +3404,8 @@
                                                     line2_metric: root.graph_line2_metric
                                                     time_range: root.graph_time_range
                                                     granularity: root.graph_granularity
+                                                    opacity: 1 if root.graph_pane_open else 0
+                                                    disabled: not root.graph_pane_open
                                                 TransparentButton:
                                                     size_hint: None, None
                                                     width: '25dp'
@@ -3412,6 +3414,8 @@
                                                     y: self.parent.y + dp(4) if self.parent else 0
                                                     icon_size: 16
                                                     chrome: True
+                                                    opacity: 1 if root.graph_pane_open else 0
+                                                    disabled: not root.graph_pane_open
                                                     icon: 'data/start.png' if root.graph_updates_paused else 'data/suspend.png'
                                                     tooltip_txt: tr._('Resume graph') if root.graph_updates_paused else tr._('Pause graph')
                                                     on_release: root.toggle_graph_updates()
