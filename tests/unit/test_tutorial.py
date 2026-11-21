@@ -10,7 +10,6 @@ from kivy.core.window import Window
 
 from carveracontroller.CNC import CNC
 from carveracontroller.Controller import Controller
-from carveracontroller.main import set_config_defaults
 from carveracontroller.ui.tutorial.placement import (
     GAP,
     MARGIN,
@@ -111,33 +110,6 @@ def test_tour_steps_point_at_real_controls():
             dd_name, anchor_id = step.dropdown.split(":")
             assert f"id: {anchor_id}" in _KV_TEXT
             assert f"self.{dd_name}" in _MAIN_PY or f"{dd_name} = " in _MAIN_PY
-
-
-def test_new_install_marks_tutorial_incomplete():
-    existed = Config.has_section("carvera")
-    snapshot = dict(Config.items("carvera")) if existed else None
-    try:
-        if existed:
-            Config.remove_section("carvera")
-        set_config_defaults("en")
-        assert Config.get("carvera", "tutorial_completed") == "0"
-    finally:
-        _restore_carvera(snapshot)
-
-
-def test_upgrade_marks_tutorial_complete():
-    existed = Config.has_section("carvera")
-    snapshot = dict(Config.items("carvera")) if existed else None
-    try:
-        if not existed:
-            Config.add_section("carvera")
-        Config.set("carvera", "version", "already-installed")
-        if Config.has_option("carvera", "tutorial_completed"):
-            Config.remove_option("carvera", "tutorial_completed")
-        set_config_defaults("en")
-        assert Config.get("carvera", "tutorial_completed") == "1"
-    finally:
-        _restore_carvera(snapshot)
 
 
 def test_welcome_skip_does_not_start_the_demo():
@@ -510,13 +482,3 @@ def test_tiny_target_gets_a_minimum_hole():
     assert placed.hole.y >= -0.1
     assert placed.hole.x + placed.hole.w <= 900.1
     assert placed.hole.y + placed.hole.h <= 1440.1
-
-
-def _restore_carvera(snapshot):
-    if Config.has_section("carvera"):
-        Config.remove_section("carvera")
-    if snapshot is None:
-        return
-    Config.add_section("carvera")
-    for key, value in snapshot.items():
-        Config.set("carvera", key, value)

@@ -13,7 +13,7 @@
         "desc": "This defines if the pendant jogging is automatically active on the jog screen",
         "section": "carvera",
         "key": "pendant_jogging_default",
-        "default": "true",
+        "default": "1",
         "pendant_types": ["WHB04", "Gamepad"]
     },
     {
@@ -22,7 +22,7 @@
         "desc": "Directly probe Z instead of opening the probing screen",
         "section": "carvera",
         "key": "pendant_probe_z_alt_cmd",
-        "default": "false",
+        "default": "0",
         "pendant_types": ["WHB04", "Gamepad"]
     },
     {
@@ -132,7 +132,7 @@
         "desc": "Invert the X axis direction on the gamepad thumbstick.",
         "section": "carvera",
         "key": "gamepad_invert_x",
-        "default": "false",
+        "default": "0",
         "pendant_types": ["Gamepad"]
     },
     {
@@ -141,7 +141,7 @@
         "desc": "Invert the Y axis direction on the gamepad thumbstick.",
         "section": "carvera",
         "key": "gamepad_invert_y",
-        "default": "false",
+        "default": "0",
         "pendant_types": ["Gamepad"]
     },
     {
@@ -150,7 +150,7 @@
         "desc": "Invert the Z axis direction on the gamepad thumbstick.",
         "section": "carvera",
         "key": "gamepad_invert_z",
-        "default": "false",
+        "default": "0",
         "pendant_types": ["Gamepad"]
     },
     {
@@ -159,7 +159,7 @@
         "desc": "Invert the A (rotary) axis direction on the gamepad thumbstick.",
         "section": "carvera",
         "key": "gamepad_invert_a",
-        "default": "false",
+        "default": "0",
         "pendant_types": ["Gamepad"]
     },
     {

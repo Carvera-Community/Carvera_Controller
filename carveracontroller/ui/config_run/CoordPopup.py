@@ -186,7 +186,7 @@ class CoordPopup(ModalView):
         self.MoveA_popup = MoveAPopup(self)
         self.mode = "Run"  # 'Margin' / 'ZProbe' / 'Leveling'
         self._suppress_background_image_config_write = False
-        self.user_play_file_image_dir = Config.get("carvera", "custom_bkg_img_dir")
+        self.user_play_file_image_dir = Config.get("carvera", "custom_bkg_img_dir", fallback="")
         self.custom_background_image_files = []
         self.builtin_background_image_files = []
         super().__init__(**kwargs)
@@ -306,7 +306,7 @@ class CoordPopup(ModalView):
         matching = filter_background_images(
             self.builtin_background_image_files, self.custom_background_image_files, model
         )
-        saved_image = Config.get("carvera", "background_image")
+        saved_image = Config.get("carvera", "background_image", fallback="")
         selected, persist = select_background_image(saved_image, matching)
         spinner = self.ids.background_image_spinner
         self._suppress_background_image_config_write = not persist

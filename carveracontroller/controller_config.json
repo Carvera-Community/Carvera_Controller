@@ -5,7 +5,7 @@
         "desc": "Should the OS DPI settings be overridden?",
         "section": "carvera",
         "key": "ui_density_override",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "numeric",
@@ -37,7 +37,7 @@
         "desc": "Should the screensaver be allowed to run?",
         "section": "graphics",
         "key": "allow_screensaver",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "bool",
@@ -45,7 +45,7 @@
         "desc": "Should the application window be always on top?",
         "section": "graphics",
         "key": "always_on_top",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "numeric",
@@ -61,7 +61,7 @@
         "desc": "Check for new updates on startup?",
         "section": "carvera",
         "key": "show_update",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "bool",
@@ -69,7 +69,7 @@
         "desc": "Warn if the connected machine's firmware doesn't allow full functionality",
         "section": "carvera",
         "key": "show_firmware_check",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "bool",
@@ -77,7 +77,7 @@
         "desc": "Off uses stock commands that wait for the current block to execute",
         "section": "carvera",
         "key": "instantFSoverride",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "path",
@@ -109,7 +109,7 @@
         "desc": "This could allow for dangerous movements, or firmware corruption if MDI commands are used while file uploads are occuring. Use this functionality with caution.",
         "section": "carvera",
         "key": "allow_mdi_while_machine_running",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "bool",
@@ -117,7 +117,7 @@
         "desc": "Allow jogging while the machine is in the Run state. Use this functionality with caution.",
         "section": "carvera",
         "key": "allow_jogging_while_machine_running",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "bool",
@@ -125,7 +125,7 @@
         "desc": "Allow jogging while the spindle is spinning or the laser is firing. Use this functionality with caution.",
         "section": "carvera",
         "key": "allow_jogging_while_spindle_on",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "bool",
@@ -133,7 +133,7 @@
         "desc": "When enabled, the upper jogging button shortcut move the spindle away from the user and the lower button move it towards the user. To invert the keyboard controls, use the Keyboard Shortcuts settings.",
         "section": "carvera",
         "key": "invert_y_axis_jogging",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "options",
@@ -222,7 +222,7 @@
         "desc": "Automatically attempt to reconnect when connection is lost, and auto-connect on app launch",
         "section": "carvera",
         "key": "auto_reconnect_enabled",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "bool",
@@ -280,7 +280,7 @@
         "desc": "Store logs to file",
         "section": "kivy",
         "key": "log_enable",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "bool",
@@ -288,7 +288,7 @@
         "desc": "Be warned that the logs will be very large. Debug level logging is also required.",
         "section": "carvera",
         "key": "log_sent_receive",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "bool",
@@ -296,7 +296,7 @@
         "desc": "When enabled, the USB connection menu includes a Manually Enter option to connect using a device path such as /dev/ttys020",
         "section": "carvera",
         "key": "allow_manual_usb_device",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "bool",
@@ -304,7 +304,7 @@
         "desc": "Requires Community firmware >= v2.1.0. If enabled the controller will negotiate to a higher usb connection speed",
         "section": "carvera",
         "key": "use_higher_baud",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "options",
@@ -320,8 +320,8 @@
         "title": "Estimate playback time remaining based on toolpaths",
         "desc": "This feature adds additional parsing time after selecting a file.",
         "section": "carvera",
-        "key": "high_precision_reamining_time_estimate",
-        "default": "true"
+        "key": "high_precision_remaining_time_estimate",
+        "default": "1"
     },
     {
         "type": "bool",
@@ -329,6 +329,6 @@
         "desc": "Display tool change markers on the job playback progress bar.",
         "section": "carvera",
         "key": "show_playbar_tool_change_markers",
-        "default": "true"
+        "default": "1"
     }
 ]

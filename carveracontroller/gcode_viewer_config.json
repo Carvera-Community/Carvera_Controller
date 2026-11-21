@@ -5,7 +5,7 @@
         "desc": "Show the stock model in the 3D viewer when stock dimensions are parsed from the G-code header. You can still toggle stock from the viewer toolbar.",
         "section": "carvera",
         "key": "gcode_auto_show_stock",
-        "default": "true"
+        "default": "1"
     },
     {
         "type": "bool",
@@ -13,7 +13,7 @@
         "desc": "When a loaded file shows stock from its G-code header, also turn on Simulate cut. Applies only if Automatically display stock when available is enabled and cut simulation is available. Uses the stock defaults for that file, including Update during playback.",
         "section": "carvera",
         "key": "gcode_auto_simulate_cut",
-        "default": "false"
+        "default": "0"
     },
     {
         "type": "bool",
@@ -21,6 +21,6 @@
         "desc": "Colorize G-code tokens in the file viewer. Disable on low-end machines for better scroll performance.",
         "section": "carvera",
         "key": "gcode_highlight_enabled",
-        "default": "true"
+        "default": "1"
     }
 ]
