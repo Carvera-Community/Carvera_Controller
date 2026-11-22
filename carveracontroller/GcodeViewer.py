@@ -3062,10 +3062,16 @@ class GCodeViewer(Widget):
 
                 if "button" in touch.profile:
                     if touch.is_mouse_scrolling:
-                        if touch.button == "scrolldown":
-                            self.zoom_out()
-                        elif touch.button == "scrollup":
-                            self.zoom_in()
+                        if Config.getboolean("carvera", "gcode_zoom_revert", fallback=False):
+                            if touch.button == "scrolldown":
+                                self.zoom_in()
+                            elif touch.button == "scrollup":
+                                self.zoom_out()
+                        else:
+                            if touch.button == "scrolldown":
+                                self.zoom_out()
+                            elif touch.button == "scrollup":
+                                self.zoom_in()
 
                 self.update_proj()
                 self.update_view()
