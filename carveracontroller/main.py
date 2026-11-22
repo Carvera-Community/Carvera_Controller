@@ -3145,9 +3145,9 @@ class Makera(RelativeLayout):
         self._machine_ls_wanted_path = None
         self._machine_ls_sent_path = None
 
-        self.instantFSoverride = Config.getboolean("carvera", "instantFSoverride", fallback=True)
+        self.instantFSoverride = Config.get("carvera", "instantFSoverride") == "1"
 
-        self.show_update = Config.getboolean("carvera", "show_update", fallback=True)
+        self.show_update = Config.get("carvera", "show_update") == "1"
         if self.show_update:
             self.check_for_updates()
 
@@ -3160,11 +3160,11 @@ class Makera(RelativeLayout):
         if Config.has_option("carvera", "allow_mdi_while_machine_running"):
             self.allow_mdi_while_machine_running = Config.get("carvera", "allow_mdi_while_machine_running")
 
-        self.allow_jogging_while_machine_running = Config.get(
-            "carvera", "allow_jogging_while_machine_running", fallback="1"
-        )
+        if Config.has_option("carvera", "allow_jogging_while_machine_running"):
+            self.allow_jogging_while_machine_running = Config.get("carvera", "allow_jogging_while_machine_running")
 
-        self.allow_jogging_while_spindle_on = Config.get("carvera", "allow_jogging_while_spindle_on", fallback="0")
+        if Config.has_option("carvera", "allow_jogging_while_spindle_on"):
+            self.allow_jogging_while_spindle_on = Config.get("carvera", "allow_jogging_while_spindle_on")
 
         self._bind_jog_control_deps()
 
@@ -3173,16 +3173,15 @@ class Makera(RelativeLayout):
         self.setup_pendant()
 
         if Config.has_option("carvera", "tooltip_delay"):
-            delay_value = Config.getfloat("carvera", "tooltip_delay", fallback=1.5)
+            delay_value = Config.getfloat("carvera", "tooltip_delay")
             App.get_running_app().tooltip_delay = delay_value if delay_value >= 0 else 0.5
 
         if Config.has_option("carvera", "show_tooltips"):
-            default_show_tooltips = Config.getdefault("carvera", "show_tooltips", "1") != "0"
+            default_show_tooltips = Config.get("carvera", "show_tooltips") != "0"
             App.get_running_app().show_tooltips = default_show_tooltips
 
-        App.get_running_app().invert_y_axis_jogging = Config.getboolean(
-            "carvera", "invert_y_axis_jogging", fallback=False
-        )
+        if Config.has_option("carvera", "invert_y_axis_jogging"):
+            App.get_running_app().invert_y_axis_jogging = Config.get("carvera", "invert_y_axis_jogging") == "1"
 
         self._load_gcode_highlight_settings()
         self._stop_syntax_theme = watch_theme(self._refresh_syntax_highlighting)
@@ -5826,7 +5825,7 @@ class Makera(RelativeLayout):
 
     def onFirmwareDetected(self, version, *args):
         app = App.get_running_app()
-        if not Config.getboolean("carvera", "show_firmware_check", fallback=True):
+        if Config.get("carvera", "show_firmware_check") != "1":
             return
         if not app.is_community_firmware:
             content = BoxLayout(orientation="vertical", padding=dp(15))
@@ -8676,8 +8675,9 @@ class Makera(RelativeLayout):
             return
         if not app.is_community_firmware or not self.fw_version or app.fw_version_digitized < Utils.digitize_v("2.1.0"):
             return
-        use_higher = Config.getboolean("carvera", "use_higher_baud", fallback=False)
-        baud_str = Config.get("carvera", "usb_baud_rate", fallback="1500000")
+        use_higher_val = Config.get("carvera", "use_higher_baud", fallback="0")
+        use_higher = str(use_higher_val).lower() in ("1", "true", "yes", "on")
+        baud_str = Config.get("carvera", "usb_baud_rate", fallback="115200")
         if use_higher and baud_str and int(baud_str) != 115200:
             baud = int(baud_str)
             self.controller._baud_upgrade_attempted = True
