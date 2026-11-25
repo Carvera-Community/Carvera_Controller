@@ -25,6 +25,7 @@ from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 
 from carveracontroller import Utils
+from carveracontroller.config_store import config_write_one
 from carveracontroller.translation import tr
 from carveracontroller.ui.common.action_button import PopupActionButton
 from carveracontroller.ui.common.compact import COMPACT_WIDTH_DP, is_compact_width
@@ -533,8 +534,7 @@ class FileBrowserPopup(ModalView):
     def _persist_location(self):
         if not Config.has_section("carvera"):
             return
-        Config.set("carvera", CONFIG_LAST_LOCATION, self.location)
-        Config.write()
+        config_write_one("carvera", CONFIG_LAST_LOCATION, self.location)
 
     def _on_window_size(self, *_args):
         self.set_compact_from_window()

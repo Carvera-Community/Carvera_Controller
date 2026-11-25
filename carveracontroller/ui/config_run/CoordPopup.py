@@ -18,6 +18,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.modalview import ModalView
 
 from carveracontroller.CNC import CNC
+from carveracontroller.config_store import config_write_one
 from carveracontroller.translation import tr
 from carveracontroller.ui.common.compact import COMPACT_WIDTH_DP, is_compact_width
 from carveracontroller.ui.popups.set_position import (
@@ -321,8 +322,7 @@ class CoordPopup(ModalView):
 
     def update_background_image(self, filename):
         if not self._suppress_background_image_config_write:
-            Config.set("carvera", "background_image", filename)
-            Config.write()
+            config_write_one("carvera", "background_image", filename)
 
         if filename != "None":
             old_source = os.path.join(_BUILTIN_BACKGROUND_DIR, filename)

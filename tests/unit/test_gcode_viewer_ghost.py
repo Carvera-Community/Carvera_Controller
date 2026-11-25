@@ -61,8 +61,8 @@ def _scaled_part_span(viewer) -> float:
     )
 
 
-@patch("carveracontroller.GcodeViewer.Config")
-def test_set_path_ghosted_sets_alpha_uniform(config):
+@patch("carveracontroller.GcodeViewer.config_write_one")
+def test_set_path_ghosted_sets_alpha_uniform(config_write_one):
     viewer = _ghost_viewer()
 
     viewer.set_path_ghosted(True)
@@ -70,8 +70,7 @@ def test_set_path_ghosted_sets_alpha_uniform(config):
     assert viewer.is_path_ghosted() is True
     assert viewer.linemesh["path_alpha"] == PATH_GHOST_ALPHA
     assert viewer.linemesh["path_alpha_recent"] == PATH_GHOST_RECENT_ALPHA
-    config.set.assert_called_once_with("carvera", CONFIG_GHOST_PATHS_KEY, "1")
-    config.write.assert_called_once()
+    config_write_one.assert_called_once_with("carvera", CONFIG_GHOST_PATHS_KEY, "1")
     assert viewer._scene_dirty is True
 
     viewer.set_path_ghosted(False)
@@ -79,11 +78,11 @@ def test_set_path_ghosted_sets_alpha_uniform(config):
     assert viewer.is_path_ghosted() is False
     assert viewer.linemesh["path_alpha"] == 1.0
     assert viewer.linemesh["path_alpha_recent"] == 1.0
-    config.set.assert_called_with("carvera", CONFIG_GHOST_PATHS_KEY, "0")
+    config_write_one.assert_called_with("carvera", CONFIG_GHOST_PATHS_KEY, "0")
 
 
-@patch("carveracontroller.GcodeViewer.Config")
-def test_set_path_ghosted_is_noop_when_unchanged(config):
+@patch("carveracontroller.GcodeViewer.config_write_one")
+def test_set_path_ghosted_is_noop_when_unchanged(config_write_one):
     viewer = _ghost_viewer(
         _path_ghosted=True,
         linemesh={"path_alpha": PATH_GHOST_ALPHA, "path_alpha_recent": PATH_GHOST_RECENT_ALPHA},
@@ -91,8 +90,7 @@ def test_set_path_ghosted_is_noop_when_unchanged(config):
 
     viewer.set_path_ghosted(True)
 
-    config.set.assert_not_called()
-    config.write.assert_not_called()
+    config_write_one.assert_not_called()
     assert viewer.linemesh["path_alpha"] == PATH_GHOST_ALPHA
     assert viewer._scene_dirty is False
 

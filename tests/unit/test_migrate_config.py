@@ -190,3 +190,28 @@ def test_settings_bool_keys_reads_every_definition_file():
     assert ("carvera", "file_browser_thumbnails") in keys  # ui/file_browser/config.json
     assert ("carvera", "mdi_auto_correct_case") in keys  # controller_config.json
     assert ("carvera", "usb_serial") not in keys
+
+
+def test_migrations_save_only_the_keys_they_change(carvera_section, tmp_path, monkeypatch):
+    import configparser
+
+    path = tmp_path / "config.ini"
+    path.write_text(
+        "[carvera]\nusb_device_id = 1a86:7523:ABC123\nhigh_precision_reamining_time_estimate = 0\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(Config, "filename", str(path))
+    Config.set("carvera", "usb_device_id", "1a86:7523:ABC123")
+    Config.set("carvera", OLD_TIME_ESTIMATE_KEY, "0")
+    Config.setdefault("carvera", "show_update", "1")  # an in-memory JSON default
+
+    migrate_config(new_install=False)
+
+    disk = configparser.RawConfigParser()
+    disk.read(path, encoding="utf-8")
+    assert dict(disk.items("carvera")) == {
+        "usb_device_id": "1A86:7523",
+        "usb_serial": "ABC123",
+        NEW_TIME_ESTIMATE_KEY: "0",
+        SPINDLE_KEY: "0",
+        "tutorial_completed": "1",
+    }

@@ -18,6 +18,7 @@ from kivy.uix.modalview import ModalView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.utils import platform as kivy_platform
 
+from carveracontroller.config_store import config_write_one
 from carveracontroller.translation import tr
 from carveracontroller.ui.common.action_button import PopupActionButton
 from carveracontroller.ui.common.compact import COMPACT_WIDTH_DP, is_compact_width
@@ -495,10 +496,7 @@ def _config_flag(key: str, default: bool) -> bool:
 
 
 def _set_config_flag(key: str, value: bool) -> None:
-    if not Config.has_section("carvera"):
-        Config.add_section("carvera")
-    Config.set("carvera", key, "1" if value else "0")
-    Config.write()
+    config_write_one("carvera", key, "1" if value else "0")
 
 
 def _current_version_text(current: str, *, missing: str) -> str:

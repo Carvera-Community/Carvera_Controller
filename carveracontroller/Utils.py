@@ -792,15 +792,13 @@ def update_recent_local_directory_list(dirs, new_dir):
 
 def persist_recent_local_directories(dirs):
     """Write recent local directories to Kivy Config."""
-    from kivy.config import Config
+    from carveracontroller.config_store import config_write_many
 
+    folders = {}
     for index in range(RECENT_LOCAL_DIR_SLOTS):
         key = "local_folder_" + str(index + 1)
-        if index < len(dirs):
-            Config.set("carvera", key, dirs[index])
-        else:
-            Config.set("carvera", key, "")
-    Config.write()
+        folders[key] = dirs[index] if index < len(dirs) else ""
+    config_write_many({"carvera": folders})
 
 
 def record_recent_local_directory(new_dir):

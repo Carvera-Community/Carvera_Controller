@@ -801,14 +801,12 @@ def test_first_launch_persists_invert_aware_defaults_once():
 
     with (
         patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get),
-        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.set") as config_set,
-        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.write") as config_write,
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.config_write_one") as config_set,
     ):
         ShortcutManager.seed_config_if_uninitialized()
         persisted = config_set.call_args.args[2]
         values["keyboard_shortcuts"] = persisted
         config_set.reset_mock()
-        config_write.reset_mock()
         ShortcutManager.seed_config_if_uninitialized()
 
     payload = json.loads(persisted)
@@ -816,7 +814,6 @@ def test_first_launch_persists_invert_aware_defaults_once():
     assert payload["bindings"]["jog_y_positive"] == {"key": "up", "modifiers": []}
     assert payload["bindings"]["jog_y_negative"] == {"key": "down", "modifiers": []}
     config_set.assert_not_called()
-    config_write.assert_not_called()
 
 
 def test_first_launch_without_invert_persists_an_initialized_empty_map():
@@ -827,8 +824,7 @@ def test_first_launch_without_invert_persists_an_initialized_empty_map():
 
     with (
         patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.get", side_effect=_config_get),
-        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.set") as config_set,
-        patch("carveracontroller.addons.keyboard_shortcuts.manager.Config.write"),
+        patch("carveracontroller.addons.keyboard_shortcuts.manager.config_write_one") as config_set,
     ):
         ShortcutManager.seed_config_if_uninitialized()
 

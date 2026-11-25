@@ -22,6 +22,7 @@ from kivy.properties import BooleanProperty, ListProperty, NumericProperty, Stri
 from kivy.uix.widget import Widget
 from kivy.utils import platform
 
+from carveracontroller.config_store import config_write_one
 from carveracontroller.translation import tr
 from carveracontroller.ui.file_sim_info.summary import FileSimSummary, summarize_file_sim
 
@@ -3141,8 +3142,7 @@ class GCodeViewer(Widget):
         if visible == self._grid_visible:
             return
         self._grid_visible = visible
-        Config.set("carvera", CONFIG_GRID_VISIBLE_KEY, "1" if visible else "0")
-        Config.write()
+        config_write_one("carvera", CONFIG_GRID_VISIBLE_KEY, "1" if visible else "0")
         self._update_grid_uniforms()
         self._scene_dirty = True
 
@@ -3220,8 +3220,7 @@ class GCodeViewer(Widget):
         if enabled == self._path_ghosted:
             return
         self._path_ghosted = enabled
-        Config.set("carvera", CONFIG_GHOST_PATHS_KEY, "1" if enabled else "0")
-        Config.write()
+        config_write_one("carvera", CONFIG_GHOST_PATHS_KEY, "1" if enabled else "0")
         self._apply_path_alpha_uniform()
         self._scene_dirty = True
 

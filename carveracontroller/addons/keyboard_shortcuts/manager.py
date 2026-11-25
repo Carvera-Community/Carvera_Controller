@@ -9,6 +9,7 @@ from kivy.core.window import Window
 from kivy.uix.modalview import ModalView
 from kivy.uix.textinput import TextInput
 
+from carveracontroller.config_store import config_write_one
 from carveracontroller.translation import tr
 
 from .bindings import KeyChord, ShortcutBindings, chord_from_event, format_chord
@@ -80,8 +81,7 @@ class ShortcutManager:
         if _shortcut_config_raw():
             return
         bindings = ShortcutBindings.from_json("", invert_y_axis_jogging=_invert_y_axis_from_config())
-        Config.set("carvera", "keyboard_shortcuts", bindings.to_json())
-        Config.write()
+        config_write_one("carvera", "keyboard_shortcuts", bindings.to_json())
 
     def on_window_children(self, _window, children) -> None:
         for child in children:
