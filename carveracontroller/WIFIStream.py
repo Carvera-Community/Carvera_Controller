@@ -124,6 +124,10 @@ class WIFIStream:
         self.socket.settimeout(2)
         self.socket.connect((address.split(":")[0], (int)(address.split(":")[1]) if len(ip_port) > 1 else TCP_PORT))
         self.socket.settimeout(SOCKET_TIMEOUT)
+        try:
+            self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError:
+            logger.debug("Socket option TCP_NODELAY=1 was not applied", exc_info=True)
         self._arm_link_loss_detection()
 
         return True

@@ -1,6 +1,8 @@
 """Tests for WIFIStream socket write semantics."""
 
+import socket
 import struct
+import threading
 
 from carveracontroller.protocols.framing import PTYPE_FILE_DATA, build_frame
 from carveracontroller.WIFIStream import WIFIStream
@@ -64,3 +66,27 @@ def test_putc_sends_the_complete_makera_file_data_frame_and_returns_its_length()
     frame = _makera_file_data_frame()
     assert len(frame) == 8205, "fixture must model a complete Makera FILE_DATA frame"
     _assert_putc_writes_complete_frame(frame)
+
+
+def test_open_sets_tcp_nodelay():
+    """open() should disable Nagle's algorithm via TCP_NODELAY."""
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+
+    def _accept():
+        conn, _ = srv.accept()
+        conn.close()
+
+    thread = threading.Thread(target=_accept, daemon=True)
+    thread.start()
+
+    stream = WIFIStream()
+    stream.open(f"127.0.0.1:{port}")
+    try:
+        assert stream.socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY) != 0
+    finally:
+        stream.close()
+        thread.join(timeout=2.0)
+        srv.close()
