@@ -358,5 +358,64 @@ TOUR_STEPS: tuple[TourStep, ...] = (
 )
 
 
-def tour_steps() -> tuple[TourStep, ...]:
-    return TOUR_STEPS
+# Same positions as the desktop file-browser steps. iOS has no folder listing,
+# Preview, or Upload & select; Browse uploads a picked file, and the machine tab runs it.
+IOS_FILE_BROWSER_STEPS: tuple[TourStep, ...] = (
+    TourStep(
+        step_id="file_places",
+        title="File browser",
+        body=(
+            "The file browser contains two tabs: one for files on this device and one for files stored on the machine.\n\n"
+            '"This device" does not list folders on iOS. Browse opens the system file picker and uploads the file you choose.\n\n'
+            'Files already stored on the machine are shown in the "CNC Machine" tab. Choose one there when you want to run it.'
+        ),
+        target_ids=("tab_device", "tab_machine"),
+        screen="File",
+        icon="data/folder-32.png",
+        popup="files",
+    ),
+    TourStep(
+        step_id="file_preview",
+        title="Browse on this device",
+        body=(
+            "Browse opens the iOS file picker.\n\n"
+            "The file you choose is uploaded to the machine. It is not opened in the viewer from this device, "
+            "and it is not selected to run yet."
+        ),
+        target_ids=("btn_ios_browse",),
+        screen="File",
+        icon="data/file.png",
+        popup="files",
+    ),
+    TourStep(
+        step_id="file_play",
+        title="Select a file on the machine",
+        body=(
+            'When you are ready to run a file, open the "CNC Machine" tab and choose it there.\n\n'
+            "That loads the file in the controller so you can review the setup and run it. "
+            "A file you just sent with Browse appears in this tab after the upload finishes."
+        ),
+        target_ids=("tab_machine",),
+        screen="File",
+        icon="data/play.png",
+        popup="files",
+    ),
+)
+
+
+PLATFORM_DESKTOP = "desktop"
+PLATFORM_IOS = "ios"
+
+# Replacement steps for a platform, swapped in by step_id. Other platforms use TOUR_STEPS.
+_PLATFORM_STEPS: dict[str, tuple[TourStep, ...]] = {
+    PLATFORM_IOS: IOS_FILE_BROWSER_STEPS,
+}
+
+
+def tour_steps(*, platform: str = PLATFORM_DESKTOP) -> tuple[TourStep, ...]:
+    """Shared script, with that platform's replacement steps swapped in by id."""
+    variants = _PLATFORM_STEPS.get(platform)
+    if not variants:
+        return TOUR_STEPS
+    replacements = {step.step_id: step for step in variants}
+    return tuple(replacements.get(step.step_id, step) for step in TOUR_STEPS)
