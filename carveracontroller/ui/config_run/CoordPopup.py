@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import configparser
 import logging
+import math
 import os
 import platform
 import subprocess
@@ -64,6 +66,37 @@ def select_background_image(saved, matching):
     if matching:
         return matching[0], False
     return "None", False
+
+
+ZPROBE_DEFAULTS = {"origin": 1, "x_offset": 5.0, "y_offset": 5.0}
+
+
+def load_zprobe_settings(config=Config):
+    """Saved Auto Z Probe origin and offsets; missing or invalid values use ZPROBE_DEFAULTS."""
+    settings = dict(ZPROBE_DEFAULTS)
+    try:
+        origin = config.getint("carvera", "zprobe_origin")
+        if origin in (1, 2):
+            settings["origin"] = origin
+    except (configparser.Error, ValueError):
+        pass
+    for key in ("x_offset", "y_offset"):
+        try:
+            value = config.getfloat("carvera", "zprobe_" + key)
+            if math.isfinite(value):
+                settings[key] = value
+        except (configparser.Error, ValueError):
+            pass
+    return settings
+
+
+def save_zprobe_settings(origin, x_offset, y_offset, config=Config):
+    if not config.has_section("carvera"):
+        return False
+    config.set("carvera", "zprobe_origin", str(origin))
+    config.set("carvera", "zprobe_x_offset", str(x_offset))
+    config.set("carvera", "zprobe_y_offset", str(y_offset))
+    return config.write()
 
 
 def feature_switch_card_height(padding, *row_heights):
@@ -214,7 +247,7 @@ class CoordPopup(ModalView):
         if self.lb_origin and not self.lb_origin.text:
             self.lb_origin.text = tr._(" (0, 0) from Anchor1")
         if self.lb_zprobe and not self.lb_zprobe.text:
-            self.lb_zprobe.text = tr._(" (10, 10) from Path Origin")
+            self.lb_zprobe.text = tr._(" (5, 5) from Work Origin")
         if self.lb_leveling and not self.lb_leveling.text:
             self.lb_leveling.text = tr._(" X Points: 10, Y Points: 10, Height: 5")
 

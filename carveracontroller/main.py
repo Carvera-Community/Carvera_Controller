@@ -186,6 +186,7 @@ from carveracontroller.documentation import resolve_documentation_url
 from carveracontroller.serial_listeners import dispatch_serial_line
 from carveracontroller.timelapse import format_timelapse_status, timelapse_is_recording
 from carveracontroller.ui.config_run import CoordPopup
+from carveracontroller.ui.config_run.CoordPopup import load_zprobe_settings, save_zprobe_settings
 from carveracontroller.ui.file_browser import FileBrowserPopup
 from carveracontroller.ui.file_browser.sources import (
     LOCATION_DEVICE,
@@ -1205,9 +1206,19 @@ class ZProbePopup(ModalView):
         """Handle OK button press with validation."""
         is_valid, error_message = self.validate_inputs()
         if is_valid:
-            self.coord_popup.set_config("zprobe", "origin", 1 if self.ids.cbx_origin1.active else 2)
-            self.coord_popup.set_config("zprobe", "x_offset", float(self.ids.txt_x_offset.text))
-            self.coord_popup.set_config("zprobe", "y_offset", float(self.ids.txt_y_offset.text))
+            origin = 1 if self.ids.cbx_origin1.active else 2
+            x_offset = float(self.ids.txt_x_offset.text)
+            y_offset = float(self.ids.txt_y_offset.text)
+            if not save_zprobe_settings(origin, x_offset, y_offset):
+                app = App.get_running_app()
+                app.root.show_message_popup(
+                    tr._("Unable to save Auto Z Probe settings. Check configuration file permissions and try again."),
+                    False,
+                )
+                return
+            self.coord_popup.set_config("zprobe", "origin", origin)
+            self.coord_popup.set_config("zprobe", "x_offset", x_offset)
+            self.coord_popup.set_config("zprobe", "y_offset", y_offset)
             self.coord_popup.load_zprobe_label()
             self.dismiss()
         else:
@@ -2963,7 +2974,7 @@ class Makera(RelativeLayout):
         self.coord_config = {
             "origin": {"anchor": 1, "x_offset": 0.0, "y_offset": 0.0},
             "margin": {"active": False},
-            "zprobe": {"active": False, "origin": 2, "x_offset": 5.0, "y_offset": 5.0},
+            "zprobe": {"active": False, **load_zprobe_settings()},
             "leveling": {
                 "active": False,
                 "x_points": 5,

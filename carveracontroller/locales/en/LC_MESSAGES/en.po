@@ -1297,6 +1297,14 @@ msgstr ""
 msgid " Auto Z Probe"
 msgstr ""
 
+#: ui/config_run/CoordPopup.py:250
+msgid " (5, 5) from Work Origin"
+msgstr ""
+
+#: main.py:1218
+msgid "Unable to save Auto Z Probe settings. Check configuration file permissions and try again."
+msgstr ""
+
 #: makera.kv:2847 makera.kv:3362
 msgid " (10, 10) from Path Origin"
 msgstr ""
