@@ -47,6 +47,8 @@ class _Panel:
 def user_themes(tmp_path):
     from kivy.config import Config
 
+    from carveracontroller.config_store import config_remove_one, config_write_one
+
     app = App.get_running_app()
     previous_name = app.theme.name if app is not None and getattr(app, "theme", None) is not None else None
     had_theme = Config.has_option("carvera", "theme")
@@ -57,10 +59,9 @@ def user_themes(tmp_path):
     if previous_name and app is not None and hasattr(app, "set_theme"):
         app.set_theme(previous_name)
     if had_theme:
-        Config.set("carvera", "theme", previous_config)
+        config_write_one("carvera", "theme", previous_config)
     elif Config.has_option("carvera", "theme"):
-        Config.remove_option("carvera", "theme")
-    Config.write()
+        config_remove_one("carvera", "theme")
 
 
 @pytest.fixture(autouse=True)
@@ -234,6 +235,8 @@ def test_save_records_the_edited_theme_and_keeps_it_when_saving_custom(user_them
 
 def test_choosing_a_theme_drops_unsaved_edits_without_applying(user_themes, editor):
     from kivy.config import Config
+
+    from carveracontroller.config_store import config_remove_one, config_write_one
 
     app = App.get_running_app()
     live_name = app.theme.name if app is not None and getattr(app, "theme", None) is not None else None

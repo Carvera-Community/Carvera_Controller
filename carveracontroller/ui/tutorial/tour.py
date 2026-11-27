@@ -12,6 +12,7 @@ from kivy.config import Config
 from kivy.uix.screenmanager import NoTransition
 from kivy.uix.scrollview import ScrollView
 
+from carveracontroller.config_store import config_write_one
 from carveracontroller.Controller import NOT_CONNECTED
 from carveracontroller.translation import tr
 from carveracontroller.ui.file_browser.sources import LOCATION_DEVICE
@@ -578,8 +579,7 @@ class Tutorial:
         self.root.manually_input_ip()
 
     def _mark_completed(self) -> None:
-        Config.set("carvera", "tutorial_completed", "1")
-        Config.write()
+        config_write_one("carvera", "tutorial_completed", "1")
 
     def _close_overlay(self) -> None:
         self._layout_token += 1

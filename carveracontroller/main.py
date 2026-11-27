@@ -67,6 +67,7 @@ from kivy.core.clipboard import Clipboard
 from kivy.utils import platform as kivy_platform
 
 from . import translation
+from .config_store import config_remove_one, config_write_many, config_write_one
 from .translation import tr
 
 logger = logging.getLogger(__name__)
@@ -1416,7 +1417,9 @@ class DeferredSettingsPanel(SettingsPanel):
             if current == value:
                 return
             config = self.config
-            if config:
+            if config is Config:
+                config_write_one(section, key, value)
+            elif config:
                 config.set(section, key, value)
                 config.write()
             if self.settings:
@@ -1481,13 +1484,19 @@ class ConfigPopup(ModalView):
             commit = getattr(widget, "commit_for_apply", None)
             if commit is not None:
                 commit()
-        # Write pending widget values to their Config instances
+        # Write pending widget values to their Config instances. Only the changed
+        # keys are saved, so untouched settings keep following their defaults.
+        changed = {}
         for widget in self._all_setting_items():
             original = self._widget_snapshot.get((widget.section, widget.key))
             if original is not None and str(widget.value) != str(original):
                 config = widget.panel.config
-                config.set(widget.section, widget.key, widget.value)
-        Config.write()
+                if config is Config:
+                    changed.setdefault(widget.section, {})[widget.key] = widget.value
+                else:
+                    config.set(widget.section, widget.key, widget.value)
+        if changed:
+            config_write_many(changed)
         app.root.apply_setting_changes()
         for widget in self._all_setting_items():
             finish = getattr(widget, "finish_apply", None)
@@ -1540,19 +1549,9 @@ class WCSSettingsPopup(ModalView):
 
     def change_wcs_description(self, wcs):
         """Change the WCS description when the WCS is changed"""
-        if wcs == "G54":
-            Config.set("carvera", "g54_description", self.ids.g54_description.text)
-        elif wcs == "G55":
-            Config.set("carvera", "g55_description", self.ids.g55_description.text)
-        elif wcs == "G56":
-            Config.set("carvera", "g56_description", self.ids.g56_description.text)
-        elif wcs == "G57":
-            Config.set("carvera", "g57_description", self.ids.g57_description.text)
-        elif wcs == "G58":
-            Config.set("carvera", "g58_description", self.ids.g58_description.text)
-        elif wcs == "G59":
-            Config.set("carvera", "g59_description", self.ids.g59_description.text)
-        Config.write()
+        if wcs in ("G54", "G55", "G56", "G57", "G58", "G59"):
+            key = f"{wcs.lower()}_description"
+            config_write_one("carvera", key, self.ids[key].text)
 
     def on_open(self):
         """Parse WCS values from machine and populate fields when popup opens"""
@@ -3057,7 +3056,7 @@ class Makera(RelativeLayout):
         # init gcode viewer
         self.gcode_viewer = GCodeViewer()
         self.gcode_viewer.high_precision_time_estimate = Config.getboolean(
-            "carvera", "high_precision_reamining_time_estimate", fallback=True
+            "carvera", "high_precision_remaining_time_estimate", fallback=True
         )
         self.gcode_viewer_container.add_widget(self.gcode_viewer)
         self.gcode_viewer.set_frame_callback(self.gcode_play_call_back)
@@ -3311,9 +3310,14 @@ class Makera(RelativeLayout):
         # Save the last window size.
         # Seems that kivvy uses the window size before dpi scaling in the config,
         # but after dp scaling in Window.size
-        Config.set("graphics", "width", int(Window.size[0] / Metrics.dp))
-        Config.set("graphics", "height", int(Window.size[1] / Metrics.dp))
-        Config.write()
+        config_write_many(
+            {
+                "graphics": {
+                    "width": str(int(Window.size[0] / Metrics.dp)),
+                    "height": str(int(Window.size[1] / Metrics.dp)),
+                }
+            }
+        )
         return False  # Allow the window to close
 
     def load_controller_config(self):
@@ -3326,12 +3330,6 @@ class Makera(RelativeLayout):
         for setting in controller_config_definition:
             if "default" in setting:
                 Config.setdefault(setting["section"], setting["key"], setting["default"])
-                # The bool switch only recognises "0" and "1". An earlier default
-                # of "true" draws the switch off while the feature stays on.
-                if setting["key"] == "mdi_auto_correct_case":
-                    stored = Config.get(setting["section"], setting["key"])
-                    if str(stored).lower() == "true":
-                        Config.set(setting["section"], setting["key"], "1")
                 setting.pop("default", None)
             controller_config.append(setting)
 
@@ -3886,8 +3884,7 @@ class Makera(RelativeLayout):
             if translation.LANGS[lang_key] == lang_desc:
                 if tr.lang != lang_key:
                     tr.switch_lang(lang_key)
-                    Config.set("carvera", "language", lang_key)
-                    Config.write()
+                    config_write_one("carvera", "language", lang_key)
         self.language_popup.dismiss()
         self.config_popup.btn_apply.disabled = True
         self.message_popup.lb_content.text = tr._("Language setting applied, restart Controller app to take effect !")
@@ -4151,8 +4148,7 @@ class Makera(RelativeLayout):
         self.input_popup.dismiss()
         if not device:
             return False
-        Config.set("carvera", "manual_usb_device", device)
-        Config.write()
+        config_write_one("carvera", "manual_usb_device", device)
         self.openUSB(device)
 
     def open_spindle_or_laser_drop_down(self, button):
@@ -4212,12 +4208,13 @@ class Makera(RelativeLayout):
         self.recent_remote_dir_list.insert(0, new_dir)
         del self.recent_remote_dir_list[5:]
         # save config
+        remote_folders = {}
         for index in range(5):
             if index < len(self.recent_remote_dir_list):
-                Config.set("carvera", "remote_folder_" + str(index + 1), self.recent_remote_dir_list[index])
+                remote_folders["remote_folder_" + str(index + 1)] = self.recent_remote_dir_list[index]
             else:
-                Config.set("carvera", "remote_folder_" + str(index + 1), "")
-        Config.write()
+                remote_folders["remote_folder_" + str(index + 1)] = ""
+        config_write_many({"carvera": remote_folders})
 
     # -----------------------------------------------------------------------
     def open_remote_dir_drop_down(self, button):
@@ -4306,8 +4303,7 @@ class Makera(RelativeLayout):
         if method not in ("wifi", "usb"):
             return
         self.last_connection_method = method
-        Config.set("carvera", "last_connection_method", method)
-        Config.write()
+        config_write_one("carvera", "last_connection_method", method)
 
     def _preferred_reconnect_method(self, for_app_launch=False):
         """
@@ -4330,9 +4326,9 @@ class Makera(RelativeLayout):
         vid_pid, legacy_serial = Utils.parse_usb_device_id(device_id)
         if not vid_pid:
             return
-        Config.set("carvera", "usb_device_id", vid_pid)
-        Config.set("carvera", "usb_serial", (serial or legacy_serial or "").strip())
-        Config.write()
+        config_write_many(
+            {"carvera": {"usb_device_id": vid_pid, "usb_serial": (serial or legacy_serial or "").strip()}}
+        )
 
     def _store_usb_device_id_for_path(self, device_path):
         for entry in Utils.list_identifiable_usb_devices():
@@ -4504,8 +4500,7 @@ class Makera(RelativeLayout):
         self.openWIFI(ip)
 
     def store_machine_address(self, address):
-        Config.set("carvera", "address", address)
-        Config.write()
+        config_write_one("carvera", "address", address)
         self.past_machine_addr = address
 
     def manually_input_ssid(self):
@@ -5869,8 +5864,7 @@ class Makera(RelativeLayout):
             btn_dont_show = Button(text=tr._("Don't Show Again"))
             btn_dont_show.bind(
                 on_release=lambda *a: (
-                    Config.set("carvera", "show_firmware_check", "0"),
-                    Config.write(),
+                    config_write_one("carvera", "show_firmware_check", "0"),
                     popup.dismiss(),
                 )
             )
@@ -5919,8 +5913,7 @@ class Makera(RelativeLayout):
             btn_dont_show = Button(text=tr._("Don't Show Again"))
             btn_dont_show.bind(
                 on_release=lambda *a: (
-                    Config.set("carvera", "show_firmware_check", "0"),
-                    Config.write(),
+                    config_write_one("carvera", "show_firmware_check", "0"),
                     popup.dismiss(),
                 )
             )
@@ -7666,11 +7659,16 @@ class Makera(RelativeLayout):
     def _persist_graph_options(self):
         if not getattr(self, "_graph_options_ready", False):
             return
-        Config.set("carvera", "graph_line1", self.graph_line1_metric)
-        Config.set("carvera", "graph_line2", self.graph_line2_metric)
-        Config.set("carvera", "graph_time_range", str(self.graph_time_range))
-        Config.set("carvera", "graph_granularity", str(self.graph_granularity))
-        Config.write()
+        config_write_many(
+            {
+                "carvera": {
+                    "graph_line1": self.graph_line1_metric,
+                    "graph_line2": self.graph_line2_metric,
+                    "graph_time_range": str(self.graph_time_range),
+                    "graph_granularity": str(self.graph_granularity),
+                }
+            }
+        )
 
     # -----------------------------------------------------------------------
     def _close_graph_controls(self):
@@ -9324,8 +9322,8 @@ class Makera(RelativeLayout):
         if "log_sent_receive" in self.controller_setting_change_list:
             self.controller.log_sent_receive = self.controller_setting_change_list.get("log_sent_receive")
 
-        if "high_precision_reamining_time_estimate" in self.controller_setting_change_list:
-            raw_enabled = self.controller_setting_change_list.get("high_precision_reamining_time_estimate")
+        if "high_precision_remaining_time_estimate" in self.controller_setting_change_list:
+            raw_enabled = self.controller_setting_change_list.get("high_precision_remaining_time_estimate")
             if isinstance(raw_enabled, str):
                 enabled = raw_enabled not in ("0", "false", "False", "")
             else:
@@ -9372,8 +9370,7 @@ class Makera(RelativeLayout):
             clamped = clamp_thumbnail_cache_size(raw_size)
             if str(raw_size) != str(clamped):
                 clamped_text = str(clamped)
-                Config.set("carvera", "file_browser_thumbnail_cache_size", clamped_text)
-                Config.write()
+                config_write_one("carvera", "file_browser_thumbnail_cache_size", clamped_text)
                 settings = getattr(self, "config_popup", None)
                 if settings is not None:
                     for widget in settings._all_setting_items():
@@ -10683,143 +10680,165 @@ def load_app_configs():
             logger.info(f"Log level set to {log_level}")
 
 
-def set_config_defaults(default_lang):
-    # A missing section is a new install. An existing section without the key
-    # is an upgrade, and those users already know the workflow.
-    new_install = not Config.has_section("carvera")
-    if new_install:
-        Config.add_section("carvera")
-
-    if not Config.has_section("input"):
-        Config.add_section("input")
-
+def apply_kivy_config():
+    """Set the Kivy-owned options and save only those keys."""
     if not kivy_platform in ["android", "ios"]:
-        Config.set(
-            "input", "mouse", "mouse,multitouch_on_demand"
-        )  # disable multitouch simulation on non-mobile platforms
+        # disable multitouch simulation on non-mobile platforms
+        config_write_one("input", "mouse", "mouse,multitouch_on_demand")
 
     if kivy_platform == "linux":
         # Remove the default probesysfs entry that treats trackpads as touchscreens.
         # Kivy's default adds '%(name)s = probesysfs,provider=hidinput' which picks up
         # all HID devices including laptop trackpads.
         if Config.has_option("input", "%(name)s"):
-            Config.remove_option("input", "%(name)s")
+            config_remove_one("input", "%(name)s")
         # Re-add probesysfs using mtdev, filtered to devices whose name contains
         # "touchscreen" (case-insensitive). This preserves real touchscreen support
         # while excluding trackpads, which never have "touchscreen" in their device name.
-        Config.set("input", "touchscreen_%(name)s", "probesysfs,provider=mtdev,match=(?i)touchscreen")
+        config_write_one("input", "touchscreen_%(name)s", "probesysfs,provider=mtdev,match=(?i)touchscreen")
 
     # Only update config if running new version
     if not Config.has_option("carvera", "version") or Config.get("carvera", "version") != __version__:
-        Config.set("carvera", "version", __version__)
         # Default params that are not configurable, set only once
-        Config.set("kivy", "window_icon", "data/icon.png")
-        Config.set("kivy", "exit_on_escape", "0")
-        Config.set("kivy", "pause_on_minimize", "0")
+        config_write_many(
+            {
+                "carvera": {"version": __version__},
+                "kivy": {"window_icon": "data/icon.png", "exit_on_escape": "0", "pause_on_minimize": "0"},
+            }
+        )
 
-    # Configurable config options. Don't change if they are already set
-    if not Config.has_option("carvera", "show_update"):
-        Config.set("carvera", "show_update", "1")
-    # No default for CONFIG_INCLUDE_PRERELEASES — the popup infers a
-    # sensible default from the running controller/firmware versions and
-    # writes the key only when the user explicitly toggles the checkbox.
-    if not Config.has_option("carvera", "show_firmware_check"):
-        Config.set("carvera", "show_firmware_check", "1")
-    if not Config.has_option("carvera", "show_tooltips"):
-        Config.set("carvera", "show_tooltips", "1")
-    if not Config.has_option("carvera", "tooltip_delay"):
-        Config.set("carvera", "tooltip_delay", "1.5")
-    if not Config.has_option("carvera", "language"):
-        Config.set("carvera", "language", default_lang)
-    if not Config.has_option("carvera", "theme"):
-        Config.set("carvera", "theme", DEFAULT_THEME)
-    if not Config.has_option("carvera", "local_folder_1"):
-        Config.set("carvera", "local_folder_1", "")
-    if not Config.has_option("carvera", "local_folder_2"):
-        Config.set("carvera", "local_folder_2", "")
-    if not Config.has_option("carvera", "local_folder_3"):
-        Config.set("carvera", "local_folder_3", "")
-    if not Config.has_option("carvera", "local_folder_4"):
-        Config.set("carvera", "local_folder_4", "")
-    if not Config.has_option("carvera", "local_folder_5"):
-        Config.set("carvera", "local_folder_5", "")
-    if not Config.has_option("carvera", "remote_folder_1"):
-        Config.set("carvera", "remote_folder_1", "")
-    if not Config.has_option("carvera", "remote_folder_2"):
-        Config.set("carvera", "remote_folder_2", "")
-    if not Config.has_option("carvera", "remote_folder_3"):
-        Config.set("carvera", "remote_folder_3", "")
-    if not Config.has_option("carvera", "remote_folder_4"):
-        Config.set("carvera", "remote_folder_4", "")
-    if not Config.has_option("carvera", "remote_folder_5"):
-        Config.set("carvera", "remote_folder_5", "")
-    if not Config.has_option("carvera", "custom_bkg_img_dir"):
-        Config.set("carvera", "custom_bkg_img_dir", "")
-    if not Config.has_option("carvera", "invert_y_axis_jogging"):
-        Config.set("carvera", "invert_y_axis_jogging", "0")
+    for key, value in (("allow_screensaver", "0"), ("height", "1440"), ("width", "900")):
+        if not Config.has_option("graphics", key):
+            config_write_one("graphics", key, value)
+
+
+# Settings panel definitions, relative to this package.
+SETTINGS_DEFINITION_FILES = (
+    "controller_config.json",
+    os.path.join("ui", "themes", "config.json"),
+    os.path.join("addons", "keyboard_shortcuts", "keyboard_shortcuts_config.json"),
+    "gcode_viewer_config.json",
+    os.path.join("ui", "file_browser", "config.json"),
+    "pendant_config.json",
+)
+
+# Bool settings whose code checks for "1", so a stored "true" has always behaved as off.
+TRUE_MEANS_OFF_KEYS = {("carvera", "allow_jogging_while_machine_running")}
+
+
+def settings_bool_keys():
+    """Yield (section, key) for every bool setting in the settings panel definitions."""
+    base = os.path.dirname(__file__)
+    for name in SETTINGS_DEFINITION_FILES:
+        try:
+            with open(os.path.join(base, name)) as file:
+                definition = json.load(file)
+        except (OSError, ValueError) as e:
+            logger.error(f"Failed to read {name}: {e}")
+            continue
+        for setting in definition:
+            if setting.get("type") == "bool" and "section" in setting and "key" in setting:
+                yield setting["section"], setting["key"]
+
+
+def normalize_bool_settings():
+    """Rewrite stored "true"/"false" bool settings as "1"/"0".
+
+    Older settings JSON files used "true"/"false" defaults, which were saved to
+    config.ini. The settings switch only understands "1"/"0", so a stored "true"
+    is drawn as off. The switch itself only ever writes "1"/"0", so these values
+    were never chosen by the user. Each key keeps the behaviour it had.
+    """
+    for section, key in settings_bool_keys():
+        if not Config.has_option(section, key):
+            continue
+        value = Config.get(section, key).strip().lower()
+        if value == "true":
+            config_write_one(section, key, "0" if (section, key) in TRUE_MEANS_OFF_KEYS else "1")
+        elif value == "false":
+            config_write_one(section, key, "0")
+
+
+CONFIG_SCHEMA_KEY = "config_schema_version"
+# Configs written before the schema version existed.
+LEGACY_SCHEMA_VERSION = (1, 0)
+
+
+def parse_schema_version(text):
+    """Return a version string like "2.0" as a tuple of ints, or None if invalid."""
+    try:
+        parts = tuple(int(part) for part in str(text).strip().split("."))
+    except ValueError:
+        return None
+    return parts if parts and all(part >= 0 for part in parts) else None
+
+
+def format_schema_version(version):
+    return ".".join(str(part) for part in version)
+
+
+def migrate_config(new_install):
+    """Bring the config up to CONFIG_SCHEMA_VERSION. Each step saves only the keys it changes."""
+    if new_install:
+        config_write_one("carvera", "tutorial_completed", "0")
+        config_write_one("carvera", CONFIG_SCHEMA_KEY, format_schema_version(CONFIG_SCHEMA_VERSION))
+        return
+
+    stored_text = Config.get("carvera", CONFIG_SCHEMA_KEY, fallback="")
+    stored = parse_schema_version(stored_text) or LEGACY_SCHEMA_VERSION
+    if stored > CONFIG_SCHEMA_VERSION:
+        logger.warning(
+            f"Config schema version {stored_text} is newer than this app supports "
+            f"({format_schema_version(CONFIG_SCHEMA_VERSION)}); skipping config migrations."
+        )
+        return
+
+    # Run every step newer than the stored version, oldest first, so an old config
+    # is upgraded one version at a time. The version is saved after each step, so
+    # an interrupted upgrade resumes from the last step that finished.
+    for version, step in CONFIG_MIGRATIONS:
+        if stored < version:
+            step()
+            config_write_one("carvera", CONFIG_SCHEMA_KEY, format_schema_version(version))
+            stored = version
+
+
+def _migrate_to_2_0():
+    """Migrate configs from before the schema version existed."""
+    normalize_bool_settings()
+
     had_jogging_while_running = Config.has_option("carvera", "allow_jogging_while_machine_running")
-    if not had_jogging_while_running:
-        Config.set("carvera", "allow_jogging_while_machine_running", "1")
     if not Config.has_option("carvera", "allow_jogging_while_spindle_on"):
         migrate_spindle_on = had_jogging_while_running and Config.getboolean(
             "carvera", "allow_jogging_while_machine_running", fallback=False
         )
-        Config.set("carvera", "allow_jogging_while_spindle_on", "1" if migrate_spindle_on else "0")
-    if not Config.has_option("carvera", "allow_manual_usb_device"):
-        Config.set("carvera", "allow_manual_usb_device", "0")
-    if not Config.has_option("carvera", "manual_usb_device"):
-        Config.set("carvera", "manual_usb_device", "")
-    if not Config.has_option("carvera", "use_higher_baud"):
-        Config.set("carvera", "use_higher_baud", "0")
-    if not Config.has_option("carvera", "usb_baud_rate"):
-        Config.set("carvera", "usb_baud_rate", "1500000")
-    if not Config.has_option("carvera", "reconnect_method"):
-        Config.set("carvera", "reconnect_method", "wifi")
-    if not Config.has_option("carvera", "usb_device_id"):
-        Config.set("carvera", "usb_device_id", "")
-    if not Config.has_option("carvera", "usb_serial"):
-        Config.set("carvera", "usb_serial", "")
-    if not Config.has_option("carvera", "last_connection_method"):
-        Config.set("carvera", "last_connection_method", "")
-    if not Config.has_option("carvera", "file_browser_location"):
-        Config.set("carvera", "file_browser_location", "")
+        config_write_one("carvera", "allow_jogging_while_spindle_on", "1" if migrate_spindle_on else "0")
+
     # Migrate legacy VID:PID:SERIAL stored in usb_device_id.
     legacy_id = Config.get("carvera", "usb_device_id", fallback="") or ""
     vid_pid, legacy_serial = Utils.parse_usb_device_id(legacy_id)
     if vid_pid and legacy_serial and legacy_id.count(":") >= 2:
-        Config.set("carvera", "usb_device_id", vid_pid)
+        config_write_one("carvera", "usb_device_id", vid_pid)
         if not Config.get("carvera", "usb_serial", fallback=""):
-            Config.set("carvera", "usb_serial", legacy_serial)
-    if not Config.has_option("carvera", "high_precision_reamining_time_estimate"):
-        Config.set("carvera", "high_precision_reamining_time_estimate", "1")
-    if not Config.has_option("carvera", "background_image"):
-        Config.set("carvera", "background_image", "None")
-    if not Config.has_option("graphics", "allow_screensaver"):
-        Config.set("graphics", "allow_screensaver", "0")
-    if not Config.has_option("graphics", "height"):
-        Config.set("graphics", "height", "1440")
-    if not Config.has_option("graphics", "width"):
-        Config.set("graphics", "width", "900")
-    if not Config.has_option("carvera", "instantFSoverride"):
-        Config.set("carvera", "instantFSoverride", "1")
-    if not Config.has_option("carvera", "show_playbar_tool_change_markers"):
-        Config.set("carvera", "show_playbar_tool_change_markers", "1")
-    if not Config.has_option("carvera", "auto_lights_on_connect"):
-        Config.set("carvera", "auto_lights_on_connect", "0")
+            config_write_one("carvera", "usb_serial", legacy_serial)
+
+    # Rename misspelled high_precision_reamining_time_estimate key.
+    old_key = "high_precision_reamining_time_estimate"
+    new_key = "high_precision_remaining_time_estimate"
+    if Config.has_option("carvera", old_key):
+        if not Config.has_option("carvera", new_key):
+            config_write_one("carvera", new_key, Config.get("carvera", old_key))
+        config_remove_one("carvera", old_key)
+
+    # Existing users already know the workflow, so they skip the tour.
     if not Config.has_option("carvera", "tutorial_completed"):
-        Config.set("carvera", "tutorial_completed", "0" if new_install else "1")
+        config_write_one("carvera", "tutorial_completed", "1")
 
-    # G-code viewer defaults
-    if not Config.has_option("carvera", "gcode_auto_show_stock"):
-        Config.set("carvera", "gcode_auto_show_stock", "1")
-    if not Config.has_option("carvera", "gcode_auto_simulate_cut"):
-        Config.set("carvera", "gcode_auto_simulate_cut", "0")
-    if not Config.has_option("carvera", "gcode_viewer_ghost_paths"):
-        Config.set("carvera", "gcode_viewer_ghost_paths", "0")
-    if not Config.has_option("carvera", "gcode_highlight_enabled"):
-        Config.set("carvera", "gcode_highlight_enabled", "1")
 
-    Config.write()
+# Config migrations, oldest first. To change the config layout, add a
+# _migrate_to_X_Y() function and append it here; never edit an earlier step.
+CONFIG_MIGRATIONS = (((2, 0), _migrate_to_2_0),)
+CONFIG_SCHEMA_VERSION = CONFIG_MIGRATIONS[-1][0]
 
 
 def load_constants():
@@ -10855,9 +10874,7 @@ def load_constants():
 
 
 def main():
-    langname = None
-    if Config.has_option("carvera", "language"):
-        langname = Config.get("carvera", "language")
+    langname = Config.get("carvera", "language", fallback=None)
     translation.init(langname)
 
     # load the global constants
@@ -10866,7 +10883,11 @@ def main():
     # Language translation needs to be globally accessible
     global HALT_REASON
 
-    set_config_defaults(tr.lang)
+    new_install = not Config.has_section("carvera")
+    if new_install:
+        Config.add_section("carvera")
+    apply_kivy_config()
+    migrate_config(new_install)
     load_app_configs()
 
     HALT_REASON = load_halt_translations(tr)

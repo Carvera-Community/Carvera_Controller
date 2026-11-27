@@ -1519,8 +1519,7 @@ def test_cache_size_apply_shows_clamped_value(monkeypatch):
         file_popup=SimpleNamespace(apply_thumbnail_preferences=MagicMock()),
         _gcode_thumbnail_cache=lambda: cache,
     )
-    monkeypatch.setattr("carveracontroller.main.Config.set", MagicMock())
-    monkeypatch.setattr("carveracontroller.main.Config.write", MagicMock())
+    monkeypatch.setattr("carveracontroller.main.config_write_one", MagicMock())
     monkeypatch.setattr("carveracontroller.main.thumbnails_enabled", lambda: True)
 
     Makera._apply_file_browser_setting_changes(root)
