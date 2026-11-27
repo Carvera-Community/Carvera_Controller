@@ -620,9 +620,17 @@ jobs:
         with:  # Skip downloading docker images
           pattern: '*-assets*'
 
+      - name: Set up Python for dev release notes
+        if: startsWith(github.ref, 'refs/heads/develop')
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
       - name: Generate dev release notes (dev builds only)
         if: startsWith(github.ref, 'refs/heads/develop')
-        run: python3 ./scripts/dev_release_notes.py
+        run: |
+          python -m pip install "towncrier==26.9.0"
+          python ./scripts/dev_release_notes.py
 
       - name: Force move 'dev' tag to latest commit on develop (dev builds only)
         if: startsWith(github.ref, 'refs/heads/develop')
