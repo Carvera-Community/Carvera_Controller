@@ -341,9 +341,13 @@ class GcodeThumbnailCache:
         self._write_bytes_atomic(index_path, payload.encode("utf-8"))
 
     def _write_bytes_atomic(self, path: Path, data: bytes) -> None:
+        """Replace ``path`` with ``data``. A locked destination is left unchanged."""
         tmp = path.with_suffix(path.suffix + ".tmp")
-        tmp.write_bytes(data)
-        tmp.replace(path)
+        try:
+            tmp.write_bytes(data)
+            tmp.replace(path)
+        except OSError as exc:
+            logger.warning("Skipped thumbnail cache update for %s: %s", path, exc)
 
 
 def thumbnail_cache_for_app(user_data_dir: str | os.PathLike[str] | None = None) -> GcodeThumbnailCache | None:

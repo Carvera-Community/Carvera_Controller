@@ -38,7 +38,7 @@ from carveracontroller.ui.tutorial.session import (
     set_demo_active,
     tutorial_blocks_motion,
 )
-from carveracontroller.ui.tutorial.steps import tour_steps
+from carveracontroller.ui.tutorial.steps import IOS_FILE_BROWSER_STEPS, PLATFORM_IOS, tour_steps
 
 _ROOT = Path(__file__).resolve().parents[2]
 _KV_TEXT = "\n".join(
@@ -111,6 +111,34 @@ def test_tour_steps_point_at_real_controls():
             dd_name, anchor_id = step.dropdown.split(":")
             assert f"id: {anchor_id}" in _KV_TEXT
             assert f"self.{dd_name}" in _MAIN_PY or f"{dd_name} = " in _MAIN_PY
+
+
+def test_ios_tour_uses_file_browser_equivalents():
+    desktop = {step.step_id: step for step in tour_steps()}
+    assert tour_steps(platform="android") is tour_steps()
+    ios_steps = tour_steps(platform=PLATFORM_IOS)
+    ios = {step.step_id: step for step in ios_steps}
+    assert [step.step_id for step in ios_steps] == list(desktop)
+    assert ios["file_places"].target_ids == ("tab_device", "tab_machine")
+    assert "Browse" in ios["file_places"].body
+    assert "does not list folders" in ios["file_places"].body
+    assert ios["file_preview"].title == "Browse on this device"
+    assert ios["file_preview"].target_ids == ("btn_ios_browse",)
+    assert ios["file_play"].title == "Select a file on the machine"
+    assert ios["file_play"].target_ids == ("tab_machine",)
+    assert desktop["file_preview"].target_ids == ("file_preview_btn",)
+    assert desktop["file_play"].target_ids == ("file_upload_select_btn",)
+    assert "Preview loads a file" in desktop["file_preview"].body
+    assert [step.step_id for step in IOS_FILE_BROWSER_STEPS] == ["file_places", "file_preview", "file_play"]
+    for step in IOS_FILE_BROWSER_STEPS:
+        assert ios[step.step_id] is step
+        assert desktop[step.step_id] is not step
+    for step in ios_steps:
+        assert (_ROOT / "carveracontroller" / step.icon).is_file()
+        for target_id in step.target_ids:
+            in_kv = f"id: {target_id}" in _KV_TEXT
+            in_browser = f'tour_id="{target_id}"' in _BROWSER_PY
+            assert in_kv or in_browser
 
 
 def test_new_install_marks_tutorial_incomplete():

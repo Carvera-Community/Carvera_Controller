@@ -1,29 +1,15 @@
-[unreleased]
-- Enhancement: Show cutter compensation mode and nominal tool diameter in the tool menu
-- Enhancement: Add an info button to the simulation panel that allows to access MRR statistics related to the current file
-- Enhancement: Convert the "eye" button of the simulation panel to a dropdown that allows to display either paths only, the uncut stock shell or the simulation results
-- Enhancement: Monitoring graph now on the G-code viewer screen, showing up to two metrics: spindle temperature, rpm, target rpm, rpm deviation %, feed, and material removal rate (mm³/min) from stock simulation while a file is playing
-- Enhancement: UI is now themed. You can select one of multiple visual styles in the Settings. Themes can be further customised in the theme editer.
-- Enhancement: Gamepad bindings now also allow to assign buttons/triggers to jog an axis in each direction
-- Change: Previous G-Code highlighting settings page collapsed into theme settings
-- Change: Store probing presets, facing presets, bed settings, calibration settings, and custom bed meshes in the app user-data directory, and move existing copies out of ~/.kivy on first launch
-- Change: Optimize the file browser's thumbnail generation, and add settings to disable previews or set the cache size
+[2.3.0-RC2]
 - Change: Gamepad continuous jog speed percentage now scales the selected Jog Speed (same as WHB04), instead of a separate gamepad max-speed setting
 - Fixed: Gamepad hotplug would not detect a reconnected controller
+- Fixed: Android builds were incorrectly detecting the default language
 - Fixed: File playback will start by going the configured clearance_z. Previously if the spindle was within the bounds of the gcode file margins, moving to clearance_z was not performed
 - Fixed: File picker for Config Backups on Windows didn't have a drive selector
 - Fixed: Colors of the rows in the MDI were sometimes not matching their content
 - Fixed: Multi-line inputs were sent as a single frame instead of multiple ones
-- Fixed: Android builds were incorrectly detecting the default language
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
-- Fixed: Stock simulation carved vertical walls with tapered tools that had a flute length shorter than their cone
 - Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
-- Fixed: Some UI elements stayed bound after they were closed or rebuilt, which could freeze the UI
-- Fixed: Changed X+J and Y+J to X+2J and Y+2J in boss probing graphics to match actual impact to routine
-- Fixed: Updated M469.6 graphics to indicate diameter and arc toolpath
-- Fixed: Removed unused SideProbeDepth (E) from calibration inputs
-- Fixed: Blank image in the Y Clearance (C) tooltip of M469.5
-- Fixed: Probing UI renamed "Y Clearance (C)" to just "Clearance (C)" and an updated tooltip
+- Fixed: Use the right ID for bullnose endmills in the Fusion 360 parser
+- Fixed: Getting started tutorial would crash on iOS during the file browser section. Those steps are now adjusted with iOS specific variants.
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

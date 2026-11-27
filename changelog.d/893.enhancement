@@ -1,0 +1,1 @@
+Monitoring graph now on the G-code viewer screen, showing up to two metrics: spindle temperature, rpm, target rpm, rpm deviation %, feed, and material removal rate (mm³/min) from stock simulation while a file is playing

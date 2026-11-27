@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 from pathlib import Path
 
 from PIL import Image
@@ -139,6 +140,44 @@ def test_ingest_skips_quicklz_payload(tmp_path: Path):
     stat = compressed.stat()
     assert cache.ingest_file(str(compressed), key, stat.st_size, stat.st_mtime) is None
     assert cache.lookup(key, stat.st_size, stat.st_mtime).hit is False
+
+
+def test_locked_cache_file_keeps_previous_copy(tmp_path: Path, monkeypatch, caplog):
+    cache = GcodeThumbnailCache(tmp_path / "cache")
+    target = cache.root / "index.json"
+    target.write_text('{"version": 1}', encoding="utf-8")
+
+    def locked_replace(self, _other):
+        raise PermissionError(5, "Access is denied", str(self))
+
+    monkeypatch.setattr(Path, "replace", locked_replace)
+    with caplog.at_level(logging.WARNING, logger=thumbs.logger.name):
+        cache._write_bytes_atomic(target, b'{"version": 2}')
+
+    assert target.read_text(encoding="utf-8") == '{"version": 1}'
+    assert any("Skipped thumbnail cache update" in record.message for record in caplog.records)
+
+
+def test_lookup_survives_locked_index(tmp_path: Path, monkeypatch):
+    png = _png_bytes(2, 2, color=(0, 255, 0))
+    gcode = tmp_path / "cached.nc"
+    gcode.write_bytes(_gcode_with_thumbnail(png))
+    cache = GcodeThumbnailCache(tmp_path / "cache")
+    key = local_cache_key(str(gcode))
+    size = gcode.stat().st_size
+    mtime = gcode.stat().st_mtime
+    stored = cache.ingest_file(str(gcode), key, size, mtime)
+    index_before = (cache.root / "index.json").read_bytes()
+
+    def locked_replace(self, _other):
+        raise PermissionError(5, "Access is denied", str(self))
+
+    monkeypatch.setattr(Path, "replace", locked_replace)
+    hit = cache.lookup(key, size, mtime)
+
+    assert hit.hit is True
+    assert hit.image_path == stored
+    assert (cache.root / "index.json").read_bytes() == index_before
 
 
 def test_machine_cache_key_normalizes_slashes():

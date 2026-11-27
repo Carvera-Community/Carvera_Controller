@@ -1,0 +1,1 @@
+Some UI elements stayed bound after they were closed or rebuilt, which could freeze the UI
