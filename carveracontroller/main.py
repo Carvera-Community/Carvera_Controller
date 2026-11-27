@@ -10759,8 +10759,52 @@ def normalize_bool_settings():
             config_write_one(section, key, "0")
 
 
+CONFIG_SCHEMA_KEY = "config_schema_version"
+# Configs written before the schema version existed.
+LEGACY_SCHEMA_VERSION = (1, 0)
+
+
+def parse_schema_version(text):
+    """Return a version string like "2.0" as a tuple of ints, or None if invalid."""
+    try:
+        parts = tuple(int(part) for part in str(text).strip().split("."))
+    except ValueError:
+        return None
+    return parts if parts and all(part >= 0 for part in parts) else None
+
+
+def format_schema_version(version):
+    return ".".join(str(part) for part in version)
+
+
 def migrate_config(new_install):
-    """Apply upgrade migrations. Each one saves only the keys it changes."""
+    """Bring the config up to CONFIG_SCHEMA_VERSION. Each step saves only the keys it changes."""
+    if new_install:
+        config_write_one("carvera", "tutorial_completed", "0")
+        config_write_one("carvera", CONFIG_SCHEMA_KEY, format_schema_version(CONFIG_SCHEMA_VERSION))
+        return
+
+    stored_text = Config.get("carvera", CONFIG_SCHEMA_KEY, fallback="")
+    stored = parse_schema_version(stored_text) or LEGACY_SCHEMA_VERSION
+    if stored > CONFIG_SCHEMA_VERSION:
+        logger.warning(
+            f"Config schema version {stored_text} is newer than this app supports "
+            f"({format_schema_version(CONFIG_SCHEMA_VERSION)}); skipping config migrations."
+        )
+        return
+
+    # Run every step newer than the stored version, oldest first, so an old config
+    # is upgraded one version at a time. The version is saved after each step, so
+    # an interrupted upgrade resumes from the last step that finished.
+    for version, step in CONFIG_MIGRATIONS:
+        if stored < version:
+            step()
+            config_write_one("carvera", CONFIG_SCHEMA_KEY, format_schema_version(version))
+            stored = version
+
+
+def _migrate_to_2_0():
+    """Migrate configs from before the schema version existed."""
     normalize_bool_settings()
 
     had_jogging_while_running = Config.has_option("carvera", "allow_jogging_while_machine_running")
@@ -10768,8 +10812,6 @@ def migrate_config(new_install):
         migrate_spindle_on = had_jogging_while_running and Config.getboolean(
             "carvera", "allow_jogging_while_machine_running", fallback=False
         )
-        # Saved even when it matches the default: its presence marks this
-        # migration as done, so a later change to the running flag can't rerun it.
         config_write_one("carvera", "allow_jogging_while_spindle_on", "1" if migrate_spindle_on else "0")
 
     # Migrate legacy VID:PID:SERIAL stored in usb_device_id.
@@ -10788,10 +10830,15 @@ def migrate_config(new_install):
             config_write_one("carvera", new_key, Config.get("carvera", old_key))
         config_remove_one("carvera", old_key)
 
-    # A missing section is a new install. An existing section without the key
-    # is an upgrade, and those users already know the workflow.
+    # Existing users already know the workflow, so they skip the tour.
     if not Config.has_option("carvera", "tutorial_completed"):
-        config_write_one("carvera", "tutorial_completed", "0" if new_install else "1")
+        config_write_one("carvera", "tutorial_completed", "1")
+
+
+# Config migrations, oldest first. To change the config layout, add a
+# _migrate_to_X_Y() function and append it here; never edit an earlier step.
+CONFIG_MIGRATIONS = (((2, 0), _migrate_to_2_0),)
+CONFIG_SCHEMA_VERSION = CONFIG_MIGRATIONS[-1][0]
 
 
 def load_constants():
