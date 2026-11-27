@@ -1,0 +1,1 @@
+Prevent the app from crashing if it wasn't able to write into the gcode thumbnails cache

@@ -1,7 +1,3 @@
-[unreleased]
-- Fixed: The bed visualization Z offset did not account for the TLO. Existing beds' Z values must be adjusted by subtracting the TLO of the reference tool/probe.
-- Fixed: Prevent the app from crashing if it wasn't able to write into the gcode thumbnails cache
-
 [2.3.0-RC2]
 - Change: Gamepad continuous jog speed percentage now scales the selected Jog Speed (same as WHB04), instead of a separate gamepad max-speed setting
 - Fixed: Gamepad hotplug would not detect a reconnected controller
