@@ -1,4 +1,5 @@
 [unreleased]
+- Enhancement: Show cutter compensation mode and nominal tool diameter in the tool menu
 - Enhancement: Add an info button to the simulation panel that allows to access MRR statistics related to the current file
 - Enhancement: Convert the "eye" button of the simulation panel to a dropdown that allows to display either paths only, the uncut stock shell or the simulation results
 - Enhancement: Monitoring graph now on the G-code viewer screen, showing up to two metrics: spindle temperature, rpm, target rpm, rpm deviation %, feed, and material removal rate (mm³/min) from stock simulation while a file is playing
@@ -17,6 +18,12 @@
 - Fixed: Small files could enter a race condition on the upload and decompression progress bar
 - Fixed: Stock simulation carved vertical walls with tapered tools that had a flute length shorter than their cone
 - Fixed: Keyboard shortcuts were not handling numeric pad keys (and possibly other special cases) properly
+- Fixed: Some UI elements stayed bound after they were closed or rebuilt, which could freeze the UI
+- Fixed: Changed X+J and Y+J to X+2J and Y+2J in boss probing graphics to match actual impact to routine
+- Fixed: Updated M469.6 graphics to indicate diameter and arc toolpath
+- Fixed: Removed unused SideProbeDepth (E) from calibration inputs
+- Fixed: Blank image in the Y Clearance (C) tooltip of M469.5
+- Fixed: Probing UI renamed "Y Clearance (C)" to just "Clearance (C)" and an updated tooltip
 
 [2.3.0-RC1]
 - Enhancement: Upload and download multiple selected files from the file browser, with one progress popup for the batch

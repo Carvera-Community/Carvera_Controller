@@ -50,6 +50,10 @@ class ProbingPopup(ModalView):
         self.controller = controller
 
         self.preview_popup = ProbingPreviewPopup(controller)
+        self._mdi_data_bound = False
+        self._preview_link_event = None
+        self._preview_link_token = 0
+        self.preview_popup.bind(on_dismiss=self._on_preview_dismiss)
 
         # wait on UI to finish loading
         Clock.schedule_once(self.delayed_bind, 0.1)
@@ -155,8 +159,54 @@ class ProbingPopup(ModalView):
             self.preview_popup.probe_preview_label = "Missing required parameter " + missing_definition.label
 
         self.preview_popup.open()
+        self._schedule_preview_link()
 
-        Clock.schedule_once(lambda dt: self.link_shared_data_with_refresh(self.preview_popup), 0.1)
+    def _schedule_preview_link(self):
+        self._cancel_preview_link()
+        self._preview_link_token += 1
+        token = self._preview_link_token
+        self._preview_link_event = Clock.schedule_once(
+            lambda dt, token=token: self._on_preview_link(token),
+            0.1,
+        )
+
+    def _cancel_preview_link(self):
+        event = self._preview_link_event
+        self._preview_link_event = None
+        if event is not None:
+            event.cancel()
+
+    def _on_preview_link(self, token):
+        if token != self._preview_link_token:
+            return
+        self._preview_link_event = None
+        self.link_shared_data_with_refresh(self.preview_popup)
+
+    def _on_preview_dismiss(self, *_args):
+        self._preview_link_token += 1
+        self._cancel_preview_link()
+        self._unbind_mdi_data()
+
+    def _bind_mdi_data(self, app=None):
+        if self._mdi_data_bound:
+            return
+        if app is None:
+            app = App.get_running_app()
+        if app is None:
+            return
+        app.bind(mdi_data=self._on_mdi_data)
+        self._mdi_data_bound = True
+
+    def _unbind_mdi_data(self):
+        if not self._mdi_data_bound:
+            return
+        app = App.get_running_app()
+        if app is not None:
+            app.unbind(mdi_data=self._on_mdi_data)
+        self._mdi_data_bound = False
+
+    def _on_mdi_data(self, _instance, _value):
+        self.on_mdi_data_changed(self.preview_popup)
 
     def link_shared_data_with_refresh(self, popup):
         app = App.get_running_app()
@@ -166,7 +216,7 @@ class ProbingPopup(ModalView):
         except IndexError:
             logger.error("Recycle view layout change ignored")
 
-        app.bind(mdi_data=lambda instance, value: self.on_mdi_data_changed(popup))
+        self._bind_mdi_data(app)
 
     def on_mdi_data_changed(self, popup):
         try:

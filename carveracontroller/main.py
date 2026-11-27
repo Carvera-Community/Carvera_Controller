@@ -375,6 +375,7 @@ from .ui.popups.set_position import (
     SetYPopup,
     SetZPopup,
 )
+from .ui.popups.tool_comp import ToolCompPopup, cutter_comp_mode_label
 
 HALT_REASON_ESTOP = 13
 
@@ -2506,10 +2507,10 @@ class GCodeRow(IntellisenseExplainRowMixin, RecycleDataViewBehavior, BoxLayout):
             app = App.get_running_app()
             if hasattr(app.root, "coord_popup") and app.root.coord_popup:
                 cp = app.root.coord_popup
-                if hasattr(cp, "txt_startline") and cp.txt_startline and self._resume_bind_uids[0] is not None:
-                    cp.txt_startline.funbind("text", self._resume_bind_uids[0])
-                if hasattr(cp, "cbx_startline") and cp.cbx_startline and self._resume_bind_uids[1] is not None:
-                    cp.cbx_startline.funbind("active", self._resume_bind_uids[1])
+                if hasattr(cp, "txt_startline") and cp.txt_startline and self._resume_bind_uids[0]:
+                    cp.txt_startline.unbind_uid("text", self._resume_bind_uids[0])
+                if hasattr(cp, "cbx_startline") and cp.cbx_startline and self._resume_bind_uids[1]:
+                    cp.cbx_startline.unbind_uid("active", self._resume_bind_uids[1])
             self._resume_bind_uids = None
         super().refresh_view_attrs(rv, index, data)
         self._update_is_resume_line()
@@ -3036,6 +3037,7 @@ class Makera(RelativeLayout):
         self.file_sim_info_popup = FileSimInfoPopup()
         self.bed_settings_popup = BedSettingsPopup()
         self.adv_calibrate_popup = AdvCalibratePopup()
+        self.tool_comp_popup = ToolCompPopup()
         self.wcs_settings_popup = WCSSettingsPopup(self.controller, self.wcs_names)
         self.set_rotation_popup = SetRotationPopup(self.controller, self.cnc)
         self.comports_drop_down = DropDown(auto_width=False, width="250dp")
@@ -3777,6 +3779,13 @@ class Makera(RelativeLayout):
             self.show_message_popup(tr._("Adv Calibrate requires the Community firmware."), False)
             return
         self.adv_calibrate_popup.open()
+
+    def open_tool_comp_popup(self):
+        app = App.get_running_app()
+        if not app.is_community_firmware:
+            self.show_message_popup(tr._("Cutter compensation requires the Community firmware."), False)
+            return
+        self.tool_comp_popup.open()
 
     def open_update_popup(self):
         self.upgrade_popup.open()
@@ -8187,6 +8196,10 @@ class Makera(RelativeLayout):
                 else:
                     self.tool_data_view.main_text = "{:.0f}".format(CNC.vars["tool"])
             self.tool_drop_down.status_wpvoltage.value = "{:.2f}v".format(CNC.vars["wpvoltage"])
+            self.tool_drop_down.status_comp_mode.value = cutter_comp_mode_label(int(CNC.vars["cutter_comp_mode"]))
+            self.tool_drop_down.status_tool_dia.value = "{:.3f}".format(CNC.vars["tool_diameter"])
+            self.tool_drop_down.status_tool_wear.value = "{:.3f}".format(CNC.vars["tool_diameter_wear"])
+            self.tool_data_view.scale = 80.0 if int(CNC.vars["cutter_comp_mode"]) != 0 else 100.0
 
             self.tool_data_view.active = CNC.vars["atc_state"] in [1, 2, 3]
 
